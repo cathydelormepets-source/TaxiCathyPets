@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bon de Livraison - Cathy Pets</title>
+<style>
+:root {
+  --main: #2563eb;
+  --bg: #f8fafc;
+  --card: #ffffff;
+  --text: #1e293b;
+  --border: #e2e8f0;
+  --success: #10b981;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  padding: 20px;
+  line-height: 1.6;
+}
+.container { max-width: 800px; margin: 0 auto; }
+.card {
+  background: var(--card);
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+h1 {
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: var(--main);
+}
+h2 {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--border);
+}
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  margin-bottom: 24px;
+  padding-bottom: 20px;
+  border-bottom: 3px solid var(--main);
+}
+.logo {
+  max-width: 150px;
+  height: auto;
+}
+.header-info {
+  text-align: right;
+  font-size: 14px;
+}
+.form-group {
+  margin-bottom: 16px;
+}
+label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 6px;
+  font-size: 14px;
+}
+input, textarea, select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: inherit;
+}
+input:focus, textarea:focus, select:focus {
+  outline: none;
+  border-color: var(--main);
+  box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+}
+.row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.animal-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 8px;
+  align-items: end;
+  margin-bottom: 8px;
+}
+.btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+.btn-primary {
+  background: var(--main);
+  color: white;
+}
+.btn-primary:hover {
+  background: #1d4ed8;
+  transform: translateY(-1px);
+}
+.btn-success {
+  background: var(--success);
+  color: white;
+}
+.btn-secondary {
+  background: var(--border);
+  color: var(--text);
+}
+.btn-small {
+  padding: 6px 12px;
+  font-size: 12px;
+}
+.signature-section {
+  margin-top: 32px;
+}
+.signature-box {
+  border: 2px dashed var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+  background: #fafafa;
+}
+canvas {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: crosshair;
+  background: white;
+  touch-action: none;
+}
+.animal-list {
+  background: #f8f9fa;
+  padding: 12px;
+  border-radius: 6px;
+  margin-top: 8px;
+}
+.animal-tag {
+  display: inline-block;
+  background: white;
+  padding: 6px 12px;
+  border-radius: 20px;
+  margin: 4px;
+  font-size: 13px;
+  border: 1px solid var(--border);
+}
+.info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.info-item {
+  background: #f8f9fa;
+  padding: 12px;
+  border-radius: 6px;
+}
+.info-label {
+  font-size: 12px;
+  color: #64748b;
+  margin-bottom: 4px;
+}
+.info-value {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+}
+.actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+}
+@media print {
+  body { background: white; padding: 0; }
+  .card { box-shadow: none; }
+  .btn, .actions { display: none; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="card">
+    <div class="header">
+      <div>
+        <h1>🐾 BON DE LIVRAISON</h1>
+        <p style="color:#64748b; font-size:14px; margin-top:4px">
+          Transport professionnel d'animaux
+        </p>
+      </div>
+      <div class="header-info">
+        <strong style="color:var(--main)">Cathy Pets SAS</strong><br>
+        6 Chemin Du Lavoir<br>
+        02470 Neuilly-Saint-Front<br>
+        SIRET: 928 564 269<br>
+        Tél: 07.81.30.41.10<br>
+        cathydelormepets@gmail.com
+      </div>
+    </div>
+
+    <div class="info-grid">
+      <div class="info-item">
+        <div class="info-label">N° BON</div>
+        <div class="info-value" id="bonNumero">BL-2026-001</div>
+      </div>
+      <div class="info-item">
+        <div class="info-label">DATE</div>
+        <div class="info-value" id="bonDate"></div>
+      </div>
+    </div>
+
+    <h2>Informations Client</h2>
+    <div class="row">
+      <div class="form-group">
+        <label>Nom du client *</label>
+        <input type="text" id="clientNom" placeholder="Ex: Martin Dupont" required>
+      </div>
+      <div class="form-group">
+        <label>Téléphone</label>
+        <input type="tel" id="clientTel" placeholder="Ex: 06 12 34 56 78">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Email</label>
+      <input type="email" id="clientEmail" placeholder="Ex: martin@example.com">
+    </div>
+
+    <h2>Détails du Transport</h2>
+    <div class="row">
+      <div class="form-group">
+        <label>Date du transport *</label>
+        <input type="date" id="dateTransport" required>
+      </div>
+      <div class="form-group">
+        <label>Heure de départ</label>
+        <input type="time" id="heureDepart">
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="form-group">
+        <label>Lieu de départ *</label>
+        <input type="text" id="lieuDepart" placeholder="Adresse complète" required>
+      </div>
+      <div class="form-group">
+        <label>Lieu d'arrivée *</label>
+        <input type="text" id="lieuArrivee" placeholder="Adresse complète" required>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="form-group">
+        <label>Distance (km)</label>
+        <input type="number" id="distance" placeholder="Ex: 45" step="0.1">
+      </div>
+      <div class="form-group">
+        <label>Heure d'arrivée</label>
+        <input type="time" id="heureArrivee">
+      </div>
+    </div>
+
+    <h2>Animaux Transportés</h2>
+    <div id="animauxContainer"></div>
+    <button class="btn btn-secondary btn-small" onclick="ajouterAnimal()" style="margin-top:8px">
+      + Ajouter un animal
+    </button>
+
+    <h2>Tarification</h2>
+    <div class="row">
+      <div class="form-group">
+        <label>Tarif TTC (€)</label>
+        <input type="number" id="tarifTTC" placeholder="Ex: 81.00" step="0.01">
+      </div>
+      <div class="form-group">
+        <label>Mode de paiement</label>
+        <select id="modePaiement">
+          <option value="Espèces">Espèces</option>
+          <option value="Carte bancaire">Carte bancaire</option>
+          <option value="Chèque">Chèque</option>
+          <option value="Virement">Virement</option>
+          <option value="À facturer">À facturer</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Observations / Notes</label>
+      <textarea id="observations" rows="3" placeholder="Comportement de l'animal, incidents, remarques..."></textarea>
+    </div>
+
+    <div class="signature-section">
+      <h2>Signature du client</h2>
+      <div class="signature-box">
+        <p style="margin-bottom:12px; color:#64748b">
+          Je certifie avoir réceptionné mon/mes animal(aux) en bon état de santé
+        </p>
+        <canvas id="signatureCanvas" width="700" height="200"></canvas>
+        <div style="margin-top:12px">
+          <button class="btn btn-secondary btn-small" onclick="effacerSignature()">
+            Effacer
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-primary" onclick="genererPDF()">
+        📄 Générer PDF
+      </button>
+      <button class="btn btn-success" onclick="validerBon()">
+        ✅ Valider et sauvegarder
+      </button>
+      <button class="btn btn-secondary" onclick="window.print()">
+        🖨️ Imprimer
+      </button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+// Configuration
+let animauxCount = 0;
+let signatureData = null;
+let canvas, ctx;
+let isDrawing = false;
+
+// Initialisation
+document.addEventListener('DOMContentLoaded', function() {
+  // Date du jour par défaut
+  const aujourdhui = new Date().toISOString().split('T')[0];
+  document.getElementById('dateTransport').value = aujourdhui;
+  document.getElementById('bonDate').textContent = new Date().toLocaleDateString('fr-FR', {
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric'
+  });
+  
+  // Générer numéro de bon
+  genererNumeroBon();
+  
+  // Ajouter un premier animal par défaut
+  ajouterAnimal();
+  
+  // Initialiser le canvas de signature
+  initSignature();
+});
+
+function genererNumeroBon() {
+  const date = new Date();
+  const annee = date.getFullYear();
+  const numero = Math.floor(1000 + Math.random() * 9000); // Numéro aléatoire pour démo
+  document.getElementById('bonNumero').textContent = `BL-${annee}-${numero}`;
+}
+
+function ajouterAnimal() {
+  animauxCount++;
+  const container = document.getElementById('animauxContainer');
+  const div = document.createElement('div');
+  div.className = 'animal-row';
+  div.id = `animal-${animauxCount}`;
+  div.innerHTML = `
+    <input type="text" placeholder="Nom, espèce, race (ex: Rex, Chien, Berger Allemand)" id="animalNom-${animauxCount}">
+    <input type="text" placeholder="Identification" id="animalId-${animauxCount}" style="max-width:150px">
+    <button class="btn btn-secondary btn-small" onclick="retirerAnimal(${animauxCount})">✕</button>
+  `;
+  container.appendChild(div);
+}
+
+function retirerAnimal(id) {
+  const elem = document.getElementById(`animal-${id}`);
+  if (elem) elem.remove();
+}
+
+function initSignature() {
+  canvas = document.getElementById('signatureCanvas');
+  ctx = canvas.getContext('2d');
+  ctx.lineWidth = 2;
+  ctx.lineCap = 'round';
+  ctx.strokeStyle = '#000';
+
+  // Événements souris
+  canvas.addEventListener('mousedown', startDraw);
+  canvas.addEventListener('mousemove', draw);
+  canvas.addEventListener('mouseup', stopDraw);
+  canvas.addEventListener('mouseout', stopDraw);
+
+  // Événements tactiles
+  canvas.addEventListener('touchstart', function(e) {
+    e.preventDefault();
+    const touch = e.touches[0];
+    const mouseEvent = new MouseEvent('mousedown', {
+      clientX: touch.clientX,
+      clientY: touch.clientY
+    });
+    canvas.dispatchEvent(mouseEvent);
+  });
+
+  canvas.addEventListener('touchmove', function(e) {
+    e.preventDefault();
+    const touch = e.touches[0];
+    const mouseEvent = new MouseEvent('mousemove', {
+      clientX: touch.clientX,
+      clientY: touch.clientY
+    });
+    canvas.dispatchEvent(mouseEvent);
+  });
+
+  canvas.addEventListener('touchend', function(e) {
+    e.preventDefault();
+    const mouseEvent = new MouseEvent('mouseup', {});
+    canvas.dispatchEvent(mouseEvent);
+  });
+}
+
+function startDraw(e) {
+  isDrawing = true;
+  const rect = canvas.getBoundingClientRect();
+  ctx.beginPath();
+  ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+}
+
+function draw(e) {
+  if (!isDrawing) return;
+  const rect = canvas.getBoundingClientRect();
+  ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+  ctx.stroke();
+}
+
+function stopDraw() {
+  if (isDrawing) {
+    isDrawing = false;
+    signatureData = canvas.toDataURL();
+  }
+}
+
+function effacerSignature() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  signatureData = null;
+}
+
+function collecterAnimaux() {
+  const animaux = [];
+  const rows = document.querySelectorAll('[id^="animal-"]');
+  rows.forEach(row => {
+    const id = row.id.split('-')[1];
+    const nom = document.getElementById(`animalNom-${id}`)?.value;
+    const identification = document.getElementById(`animalId-${id}`)?.value;
+    if (nom) {
+      animaux.push({ nom, identification });
+    }
+  });
+  return animaux;
+}
+
+function validerBon() {
+  // Validation
+  const clientNom = document.getElementById('clientNom').value;
+  const dateTransport = document.getElementById('dateTransport').value;
+  const lieuDepart = document.getElementById('lieuDepart').value;
+  const lieuArrivee = document.getElementById('lieuArrivee').value;
+
+  if (!clientNom || !dateTransport || !lieuDepart || !lieuArrivee) {
+    alert('⚠️ Veuillez remplir tous les champs obligatoires (*)');
+    return;
+  }
+
+  if (!signatureData) {
+    alert('⚠️ La signature du client est obligatoire');
+    return;
+  }
+
+  // Collecter les données
+  const bon = {
+    numero: document.getElementById('bonNumero').textContent,
+    date: new Date().toISOString(),
+    client: {
+      nom: clientNom,
+      tel: document.getElementById('clientTel').value,
+      email: document.getElementById('clientEmail').value
+    },
+    transport: {
+      date: dateTransport,
+      heureDepart: document.getElementById('heureDepart').value,
+      heureArrivee: document.getElementById('heureArrivee').value,
+      lieuDepart: lieuDepart,
+      lieuArrivee: lieuArrivee,
+      distance: document.getElementById('distance').value
+    },
+    animaux: collecterAnimaux(),
+    tarif: {
+      ttc: document.getElementById('tarifTTC').value,
+      modePaiement: document.getElementById('modePaiement').value
+    },
+    observations: document.getElementById('observations').value,
+    signature: signatureData
+  };
+
+  // Sauvegarder dans localStorage
+  const bons = JSON.parse(localStorage.getItem('cathypets_bons_livraison') || '[]');
+  bons.push(bon);
+  localStorage.setItem('cathypets_bons_livraison', JSON.stringify(bons));
+
+  alert('✅ Bon de livraison sauvegardé !');
+  console.log('Bon sauvegardé:', bon);
+}
+
+function genererPDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  
+  // En-tête
+  doc.setFontSize(20);
+  doc.setTextColor(37, 99, 235);
+  doc.text('BON DE LIVRAISON', 105, 20, { align: 'center' });
+  
+  doc.setFontSize(10);
+  doc.setTextColor(0, 0, 0);
+  doc.text('Cathy Pets SAS', 150, 30);
+  doc.text('6 Chemin Du Lavoir', 150, 35);
+  doc.text('02470 Neuilly-Saint-Front', 150, 40);
+  doc.text('SIRET: 928 564 269', 150, 45);
+  doc.text('Tél: 07.81.30.41.10', 150, 50);
+  
+  // Numéro et date
+  doc.setFontSize(12);
+  doc.text(`N°: ${document.getElementById('bonNumero').textContent}`, 20, 30);
+  doc.text(`Date: ${document.getElementById('bonDate').textContent}`, 20, 37);
+  
+  // Client
+  doc.setFontSize(11);
+  doc.setFont(undefined, 'bold');
+  doc.text('CLIENT', 20, 55);
+  doc.setFont(undefined, 'normal');
+  doc.text(document.getElementById('clientNom').value || '-', 20, 61);
+  doc.text(document.getElementById('clientTel').value || '-', 20, 67);
+  
+  // Transport
+  doc.setFont(undefined, 'bold');
+  doc.text('TRANSPORT', 20, 80);
+  doc.setFont(undefined, 'normal');
+  doc.text(`Date: ${document.getElementById('dateTransport').value}`, 20, 86);
+  doc.text(`Départ: ${document.getElementById('lieuDepart').value}`, 20, 92);
+  doc.text(`Arrivée: ${document.getElementById('lieuArrivee').value}`, 20, 98);
+  doc.text(`Distance: ${document.getElementById('distance').value || '-'} km`, 20, 104);
+  
+  // Animaux
+  const animaux = collecterAnimaux();
+  doc.setFont(undefined, 'bold');
+  doc.text('ANIMAUX TRANSPORTÉS', 20, 117);
+  doc.setFont(undefined, 'normal');
+  let y = 123;
+  animaux.forEach((animal, i) => {
+    doc.text(`${i + 1}. ${animal.nom}${animal.identification ? ` (${animal.identification})` : ''}`, 25, y);
+    y += 6;
+  });
+  
+  // Tarif
+  y += 5;
+  doc.setFont(undefined, 'bold');
+  doc.text('TARIF', 20, y);
+  y += 6;
+  doc.setFont(undefined, 'normal');
+  doc.text(`Montant TTC: ${document.getElementById('tarifTTC').value || '0'} €`, 20, y);
+  y += 6;
+  doc.text(`Mode de paiement: ${document.getElementById('modePaiement').value}`, 20, y);
+  
+  // Observations
+  const obs = document.getElementById('observations').value;
+  if (obs) {
+    y += 10;
+    doc.setFont(undefined, 'bold');
+    doc.text('OBSERVATIONS', 20, y);
+    y += 6;
+    doc.setFont(undefined, 'normal');
+    const lines = doc.splitTextToSize(obs, 170);
+    doc.text(lines, 20, y);
+    y += lines.length * 5;
+  }
+  
+  // Signature
+  if (signatureData) {
+    y += 10;
+    doc.setFont(undefined, 'bold');
+    doc.text('Signature du client', 20, y);
+    y += 5;
+    doc.addImage(signatureData, 'PNG', 20, y, 60, 20);
+  }
+  
+  doc.save(`BL-${document.getElementById('bonNumero').textContent}.pdf`);
+}
+</script>
+</body>
+</html>
