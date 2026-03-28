@@ -2502,8 +2502,10 @@ function geocode(q){
   if(_geoCache[q])return Promise.resolve(_geoCache[q]);
   return new Promise(function(resolve){_geoQueue.push({q:q,resolve:resolve});_geoFlush()});
 }
-function osrmRoute(a,b){
-  return fetch('https://router.project-osrm.org/route/v1/driving/'+a.lon+','+a.lat+';'+b.lon+','+b.lat+'?overview=false')
+function osrmRoute(a,b,excludeMotorway){
+  var url='https://router.project-osrm.org/route/v1/driving/'+a.lon+','+a.lat+';'+b.lon+','+b.lat+'?overview=false';
+  if(excludeMotorway)url+='&exclude=motorway';
+  return fetch(url)
   .then(function(r){return r.json()})
   .then(function(j){return(j.code==='Ok'&&j.routes&&j.routes[0])?{km:Math.round(j.routes[0].distance/1000),min:Math.round(j.routes[0].duration/60)}:null})
   .catch(function(){return null});
@@ -2524,7 +2526,7 @@ function gmapsRoute(a,b,avoidTolls){
     return null;
   }).catch(function(){return null});
 }
-// Estimation éco (sans autoroute) : +20% km, +35% temps
+// Estimation éco fallback (seulement si OSRM exclude=motorway échoue) : +20% km, +35% temps
 function ecoFromRapide(km,min){
   return{km:Math.round(km*1.20),min:Math.round(min*1.35)};
 }
@@ -2579,11 +2581,20 @@ function calcDistAll(from,to){
   });
 }
 function osrmFallback(a,b){
-  return osrmRoute(a,b).then(function(rt){
-    if(rt){
-      var eco=ecoFromRapide(rt.km,rt.min);
-      return{rapide:{km:rt.km,min:rt.min,ok:true,a:a,b:b,src:'osrm'},eco:{km:eco.km,min:eco.min,ok:true,a:a,b:b,src:'estimation'}};
+  return Promise.all([osrmRoute(a,b,false),osrmRoute(a,b,true)]).then(function(arr){
+    var rtR=arr[0],rtE=arr[1];
+    if(rtR&&rtE){
+      return{rapide:{km:rtR.km,min:rtR.min,ok:true,a:a,b:b,src:'osrm'},eco:{km:rtE.km,min:rtE.min,ok:true,a:a,b:b,src:'osrm'}};
     }
+    if(rtR&&!rtE){
+      // Eco call failed, fallback estimation from rapide
+      var eco=ecoFromRapide(rtR.km,rtR.min);
+      return{rapide:{km:rtR.km,min:rtR.min,ok:true,a:a,b:b,src:'osrm'},eco:{km:eco.km,min:eco.min,ok:true,a:a,b:b,src:'estimation'}};
+    }
+    if(!rtR&&rtE){
+      return{rapide:{km:rtE.km,min:rtE.min,ok:true,a:a,b:b,src:'osrm'},eco:{km:rtE.km,min:rtE.min,ok:true,a:a,b:b,src:'osrm'}};
+    }
+    // Both failed — haversine fallback
     var R=6371,dLat=(b.lat-a.lat)*Math.PI/180,dLon=(b.lon-a.lon)*Math.PI/180;
     var x=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(a.lat*Math.PI/180)*Math.cos(b.lat*Math.PI/180)*Math.sin(dLon/2)*Math.sin(dLon/2);
     var km=Math.round(R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x))*1.3);
@@ -2747,11 +2758,13 @@ function calcTr(){
 
     var opts=[
       {key:'peage',icon:'🛣️',name:'Avec péage (rapide)',color:'#3b82f6',km:kmRapide,min:minRapide,tolls:tolls,routeKey:'rapide'},
-      {key:'sanspeage',icon:'🚫',name:'Sans péage (+20% km)',color:'#22a693',km:kmEco,min:minEco,tolls:0,routeKey:'eco'}
+      {key:'sanspeage',icon:'🚫',name:'Sans péage (éco)',color:'#22a693',km:kmEco,min:minEco,tolls:0,routeKey:'eco'}
     ];
 
     var html='';
-    html+='<div class="nt" style="margin-bottom:8px">🛣️ <b>Péages estimés :</b> '+te.pct+'% autoroute (~'+te.kmAutoroute+' km) × '+(db.settings.tollPerKm||0.09).toFixed(2)+' €/km = <b>'+euro(te.toll)+'</b>'+(manualTolls>0?' — ⚠️ remplacé par saisie manuelle: <b>'+euro(manualTolls)+'</b>':'')+'<br>🌿 <b>Sans péage :</b> route estimée +20% km ('+kmEco+' km au lieu de '+kmRapide+' km), +35% temps</div>';
+    var kmDiffPct=kmRapide>0?Math.round((kmEco-kmRapide)/kmRapide*100):0;
+    var srcLabel=allResults.length>0&&allResults[0].eco.src==='estimation'?'estimé':'réel';
+    html+='<div class="nt" style="margin-bottom:8px">🛣️ <b>Péages estimés :</b> '+te.pct+'% autoroute (~'+te.kmAutoroute+' km) × '+(db.settings.tollPerKm||0.09).toFixed(2)+' €/km = <b>'+euro(te.toll)+'</b>'+(manualTolls>0?' — ⚠️ remplacé par saisie manuelle: <b>'+euro(manualTolls)+'</b>':'')+'<br>🌿 <b>Sans péage ('+srcLabel+') :</b> '+kmEco+' km'+(kmDiffPct>0?' ('+(kmDiffPct>0?'+':'')+kmDiffPct+'% vs rapide)':'')+'</div>';
     // OPTION 1: AVEC PÉAGE
     html+=renderRouteCard(opts[0],d1,allResults,'rapide',colors,pts);
     html+=costHtml(cd1);
