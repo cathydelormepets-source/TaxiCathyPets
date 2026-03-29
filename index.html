@@ -190,6 +190,33 @@ body.nuit .card{border-color:#0a1520}
 #tournees .sug-apply{margin-top:6px;padding:4px 10px;background:var(--a2);color:#fff;border:none;border-radius:5px;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit}
 .leaflet-popup-content-wrapper{border-radius:10px !important;box-shadow:0 4px 20px rgba(0,0,0,.3) !important}
 @media(max-width:800px){#tournees .tour-grid{grid-template-columns:1fr;height:auto}#tournees .tour-sidebar{max-height:40vh}#tournees .tour-map-wrap{height:50vh}}
+/* ═══ PROXIMITÉ ═══ */
+#tournees .prox-panel{position:absolute;top:12px;left:12px;z-index:1000;width:320px;background:var(--c2);border:1px solid var(--ln);border-radius:10px;box-shadow:0 6px 24px rgba(0,0,0,.5);overflow:hidden;transition:all .3s}
+#tournees .prox-header{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;font-size:12px;font-weight:600;cursor:pointer;background:rgba(244,114,182,.08);border-bottom:1px solid var(--ln)}
+#tournees .prox-toggle{background:none;border:none;color:var(--mt);font-size:12px;cursor:pointer}
+#tournees .prox-body{padding:10px 12px}
+#tournees .prox-body.collapsed{display:none}
+#tournees .prox-row{display:flex;gap:6px;margin-bottom:8px}
+#tournees .prox-input{flex:1;padding:7px 10px;border-radius:7px;border:1px solid var(--ln);background:var(--bg);color:var(--tx);font-size:12px;font-family:inherit;outline:none}
+#tournees .prox-input:focus{border-color:var(--a2)}
+#tournees .prox-go{padding:7px 12px;border-radius:7px;border:none;background:var(--a2);color:#fff;font-size:13px;cursor:pointer;transition:all .2s}
+#tournees .prox-go:hover{opacity:.85}
+#tournees .prox-options{display:flex;gap:8px;margin-bottom:8px}
+#tournees .prox-opt{flex:1}
+#tournees .prox-opt label{display:block;font-size:9px;color:var(--mt);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px;font-weight:600}
+#tournees .prox-sel{width:100%;padding:5px 8px;border-radius:6px;border:1px solid var(--ln);background:var(--bg);color:var(--tx);font-size:11px;font-family:inherit;outline:none}
+#tournees .prox-results{max-height:280px;overflow-y:auto;font-size:11px}
+#tournees .prox-results::-webkit-scrollbar{width:3px}
+#tournees .prox-results::-webkit-scrollbar-thumb{background:var(--ln);border-radius:3px}
+#tournees .prox-match{background:var(--bg);border:1px solid var(--ln);border-radius:8px;padding:8px;margin-bottom:5px;cursor:pointer;transition:all .2s}
+#tournees .prox-match:hover{border-color:#f472b6;transform:translateX(2px)}
+#tournees .prox-match .pm-dist{float:right;background:rgba(244,114,182,.15);color:#f472b6;padding:2px 6px;border-radius:4px;font-size:9px;font-weight:700}
+#tournees .prox-match .pm-cli{font-weight:600;font-size:12px}
+#tournees .prox-match .pm-route{color:var(--mt);margin-top:2px}
+#tournees .prox-match .pm-meta{color:var(--mt);margin-top:3px;display:flex;justify-content:space-between}
+#tournees .prox-empty{text-align:center;color:var(--mt);padding:16px;font-size:11px}
+#tournees .prox-found{padding:6px 0;font-size:10px;color:#f472b6;font-weight:600;text-align:center;border-bottom:1px solid var(--ln);margin-bottom:6px}
+#tournees .prox-circle{opacity:.15;stroke-opacity:.6}
 </style>
 <body>
 <div class="obg" id="obg" onclick="tSb(false)"></div>
@@ -460,6 +487,67 @@ body.nuit .card{border-color:#0a1520}
   </div>
   <div class="tour-map-wrap">
     <div id="tourMap"></div>
+    <!-- PROXIMITY SEARCH PANEL -->
+    <div class="prox-panel" id="proxPanel">
+      <div class="prox-header">
+        <span>📞 Recherche proximité</span>
+        <button class="prox-toggle" id="proxToggle" onclick="toggleProxPanel()">▼</button>
+      </div>
+      <div class="prox-body" id="proxBody">
+        <div class="prox-row">
+          <input type="text" id="proxCity" list="proxCities" placeholder="Ville du client..." class="prox-input" onkeydown="if(event.key==='Enter')searchProx()">
+          <button class="prox-go" onclick="searchProx()">🔍</button>
+        </div>
+        <datalist id="proxCities">
+          <option value="Paris"><option value="Lyon"><option value="Marseille"><option value="Toulouse"><option value="Nice">
+          <option value="Nantes"><option value="Strasbourg"><option value="Montpellier"><option value="Bordeaux"><option value="Lille">
+          <option value="Rennes"><option value="Reims"><option value="Toulon"><option value="Le Havre"><option value="Saint-Étienne">
+          <option value="Grenoble"><option value="Dijon"><option value="Angers"><option value="Nîmes"><option value="Clermont-Ferrand">
+          <option value="Tours"><option value="Limoges"><option value="Metz"><option value="Perpignan"><option value="Besançon">
+          <option value="Orléans"><option value="Rouen"><option value="Caen"><option value="Mulhouse"><option value="Nancy">
+          <option value="Brest"><option value="Avignon"><option value="Pau"><option value="Poitiers"><option value="La Rochelle">
+          <option value="Amiens"><option value="Dunkerque"><option value="Troyes"><option value="Soissons"><option value="Laon">
+          <option value="Château-Thierry"><option value="Neuilly-Saint-Front"><option value="Villers-Cotterêts">
+          <option value="Londres"><option value="Bruxelles"><option value="Amsterdam"><option value="Berlin"><option value="Madrid">
+          <option value="Barcelone"><option value="Rome"><option value="Milan"><option value="Lisbonne"><option value="Zurich">
+          <option value="Genève"><option value="Luxembourg"><option value="Munich"><option value="Francfort"><option value="Vienne">
+          <option value="Prague"><option value="Varsovie"><option value="Dublin"><option value="Copenhague"><option value="Stockholm">
+          <option value="Oslo"><option value="Helsinki"><option value="Athènes"><option value="Budapest"><option value="Bucarest">
+          <option value="Porto"><option value="Séville"><option value="Valence"><option value="Naples"><option value="Florence">
+          <option value="Venise"><option value="Hambourg"><option value="Cologne"><option value="Stuttgart"><option value="Düsseldorf">
+          <option value="Leipzig"><option value="Dresde"><option value="Rotterdam"><option value="La Haye"><option value="Anvers">
+          <option value="Gand"><option value="Liège"><option value="Bâle"><option value="Berne"><option value="Lausanne">
+          <option value="Cracovie"><option value="Gdansk"><option value="Édimbourg"><option value="Manchester"><option value="Birmingham">
+          <option value="Liverpool"><option value="Glasgow"><option value="Leeds"><option value="Bristol"><option value="Cardiff">
+          <option value="Belfast"><option value="Zagreb"><option value="Ljubljana"><option value="Bratislava"><option value="Sofia">
+          <option value="Belgrade"><option value="Sarajevo"><option value="Tirana"><option value="Skopje"><option value="Tallinn">
+          <option value="Riga"><option value="Vilnius"><option value="Nicosie"><option value="La Valette"><option value="Reykjavik">
+          <option value="Malaga"><option value="Palma de Majorque"><option value="Tenerife"><option value="Ibiza">
+        </datalist>
+        <div class="prox-options">
+          <div class="prox-opt">
+            <label>Rayon</label>
+            <select id="proxRadius" class="prox-sel">
+              <option value="50">50 km</option>
+              <option value="100" selected>100 km</option>
+              <option value="200">200 km</option>
+              <option value="300">300 km</option>
+              <option value="500">500 km</option>
+            </select>
+          </div>
+          <div class="prox-opt">
+            <label>Période</label>
+            <select id="proxPeriod" class="prox-sel">
+              <option value="7">7 jours</option>
+              <option value="15" selected>15 jours</option>
+              <option value="30">30 jours</option>
+              <option value="0">Tout</option>
+            </select>
+          </div>
+        </div>
+        <div id="proxResults" class="prox-results"></div>
+      </div>
+    </div>
     <div class="tour-legend">
       <div class="tleg"><div class="tleg-dot" style="background:var(--or)"></div> Demande</div>
       <div class="tleg"><div class="tleg-dot" style="background:var(--gn)"></div> Signé</div>
@@ -6032,6 +6120,109 @@ function tourApplyDate(d){
 
 function tourCloseSug(){
   var ov=$('tourSugOv');if(ov)ov.classList.remove('show');
+}
+
+// ═══ PROXIMITÉ — recherche trajets proches d'une ville ═══
+var _proxCircle=null,_proxMarker=null;
+
+function toggleProxPanel(){
+  var body=$('proxBody'),btn=$('proxToggle');
+  if(!body)return;
+  body.classList.toggle('collapsed');
+  btn.textContent=body.classList.contains('collapsed')?'▶':'▼';
+}
+
+function searchProx(){
+  var city=V('proxCity');if(!city||!city.trim()){showToast('⚠️ Saisissez une ville');return}
+  var radius=parseInt(V('proxRadius'))||100;
+  var period=parseInt(V('proxPeriod'));
+  var resEl=$('proxResults');if(!resEl)return;
+  resEl.innerHTML='<div class="prox-empty">🔄 Recherche en cours...</div>';
+
+  geocode(city.trim()).then(function(geo){
+    if(!geo){resEl.innerHTML='<div class="prox-empty">❌ Ville introuvable</div>';return}
+
+    // Center map on city + show radius circle
+    if(_tourMap){
+      _tourMap.setView([geo.lat,geo.lon],radius<=100?8:radius<=200?7:6);
+      if(_proxCircle){_tourMap.removeLayer(_proxCircle);_proxCircle=null}
+      if(_proxMarker){_tourMap.removeLayer(_proxMarker);_proxMarker=null}
+      _proxCircle=L.circle([geo.lat,geo.lon],{radius:radius*1000,color:'#f472b6',fillColor:'#f472b6',fillOpacity:.08,weight:2,dashArray:'6 4',className:'prox-circle'}).addTo(_tourMap);
+      _proxMarker=L.marker([geo.lat,geo.lon],{icon:L.divIcon({className:'',html:'<div style="background:#f472b6;color:#fff;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:700;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.4);border:2px solid #fff">📞 '+city.trim()+'</div>',iconSize:[0,0],iconAnchor:[0,20]})}).addTo(_tourMap);
+    }
+
+    // Filter trips by date period
+    var now=new Date();
+    var maxDate=null;
+    if(period>0){maxDate=new Date();maxDate.setDate(maxDate.getDate()+period)}
+
+    // Build candidates: check if from or to is within radius
+    var candidates=_tourData.filter(function(t){
+      if(t.type==='garde')return false; // gardes don't have routes
+      // Date filter
+      if(period>0&&t.date){
+        var td=new Date(t.date);
+        if(td<now||td>maxDate)return false;
+      }
+      return true;
+    });
+
+    // Geocode all candidates and check distance
+    var matches=[];
+    var chain=Promise.resolve();
+    candidates.forEach(function(trip){
+      chain=chain.then(function(){
+        var checks=[];
+        if(trip.from)checks.push(geocode(trip.from).then(function(g){
+          if(g){var d=haversine(geo.lat,geo.lon,g.lat,g.lon);if(d<=radius)return{trip:trip,dist:Math.round(d),point:'départ',loc:trip.from}}
+          return null;
+        }));
+        if(trip.to&&trip.to!==trip.from)checks.push(geocode(trip.to).then(function(g){
+          if(g){var d=haversine(geo.lat,geo.lon,g.lat,g.lon);if(d<=radius)return{trip:trip,dist:Math.round(d),point:'arrivée',loc:trip.to}}
+          return null;
+        }));
+        return Promise.all(checks).then(function(results){
+          results.forEach(function(r){if(r)matches.push(r)});
+        });
+      });
+    });
+
+    chain.then(function(){
+      // Deduplicate by trip id (keep closest match)
+      var seen={};
+      matches.forEach(function(m){
+        if(!seen[m.trip.id]||m.dist<seen[m.trip.id].dist)seen[m.trip.id]=m;
+      });
+      var unique=Object.values(seen).sort(function(a,b){return a.dist-b.dist});
+
+      if(!unique.length){
+        resEl.innerHTML='<div class="prox-empty">Aucun trajet trouvé à moins de '+radius+' km de <b>'+city.trim()+'</b>'+(period>0?' dans les '+period+' prochains jours':'')+'</div>';
+        return;
+      }
+
+      var html='<div class="prox-found">✅ '+unique.length+' trajet'+(unique.length>1?'s':'')+' à proximité de '+city.trim()+'</div>';
+      unique.forEach(function(m){
+        var t=m.trip;
+        html+='<div class="prox-match" onclick="tourFocus(\''+t.id+'\')">'+
+          '<span class="pm-dist">'+m.dist+' km</span>'+
+          '<div class="pm-cli">'+_tourEmoji[t.type]+' '+t.client+'</div>'+
+          '<div class="pm-route">'+t.from+(t.to?' → '+t.to:'')+' <span style="color:#f472b6;font-size:9px">('+m.point+' à '+m.dist+' km)</span></div>'+
+          (t.animal?'<div style="font-size:10px;color:var(--mt)">🐾 '+t.animal+'</div>':'')+
+          '<div class="pm-meta"><span>📅 '+fmtTourDate(t.date)+'</span><span style="color:'+_tourColors[t.type]+'">'+euro(t.prix)+'</span></div>'+
+          '<button style="margin-top:4px;padding:3px 8px;background:#f472b6;color:#fff;border:none;border-radius:4px;font-size:9px;font-weight:600;cursor:pointer;font-family:inherit" onclick="event.stopPropagation();tourAdd(\''+t.id+'\')">+ Tournée</button>'+
+        '</div>';
+      });
+      resEl.innerHTML=html;
+    });
+  });
+}
+
+function haversine(lat1,lon1,lat2,lon2){
+  var R=6371;
+  var dLat=(lat2-lat1)*Math.PI/180;
+  var dLon=(lon2-lon1)*Math.PI/180;
+  var a=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)*Math.sin(dLon/2);
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
 }
 
 // =================== MAILS AUTO V15 ===================
