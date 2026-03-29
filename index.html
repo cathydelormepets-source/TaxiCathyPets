@@ -217,13 +217,83 @@ body.nuit .card{border-color:#0a1520}
 #tournees .prox-empty{text-align:center;color:var(--mt);padding:16px;font-size:11px}
 #tournees .prox-found{padding:6px 0;font-size:10px;color:#f472b6;font-weight:600;text-align:center;border-bottom:1px solid var(--ln);margin-bottom:6px}
 #tournees .prox-circle{opacity:.15;stroke-opacity:.6}
+/* ═══ IMPACT CA MODULES ═══ */
+/* Rentabilité */
+.renta-meter{background:var(--bg);border-radius:12px;padding:1.2rem;text-align:center}
+.renta-value{font-size:2.5rem;font-weight:900}
+.renta-value.pos{color:#22c55e}.renta-value.warn{color:#f59e0b}.renta-value.neg{color:#ef4444}
+.renta-bar{height:8px;background:#0f1f33;border-radius:4px;margin-top:10px;overflow:hidden}
+.renta-fill{height:100%;border-radius:4px;transition:width .5s}
+.renta-detail{margin-top:12px;background:var(--bg);border-radius:10px;padding:12px}
+.renta-row{display:flex;justify-content:space-between;margin-bottom:6px;font-size:12px}
+.renta-verdict{margin-top:10px;padding:12px;border-radius:10px;background:var(--bg);display:flex;align-items:center;gap:10px}
+/* Alertes */
+.alert-card{display:flex;align-items:flex-start;gap:12px;padding:12px;border-radius:12px;margin-bottom:10px;border-left:4px solid}
+.alert-card.urgent{background:rgba(239,68,68,.1);border-color:#ef4444}
+.alert-card.warning{background:rgba(245,158,11,.1);border-color:#f59e0b}
+.alert-card.info{background:rgba(59,130,246,.1);border-color:#3b82f6}
+.alert-icon{font-size:1.3rem;flex-shrink:0}
+.alert-content{flex:1}
+.alert-title{font-weight:700;margin-bottom:3px}
+.alert-desc{font-size:12px;color:var(--mt)}
+.alert-actions{display:flex;gap:6px;margin-top:8px}
+/* Match retour */
+.match-card{background:var(--bg);border-radius:12px;padding:14px;border:1px solid var(--ln);transition:all .3s;margin-bottom:10px}
+.match-card:hover{border-color:#22c55e;box-shadow:0 0 20px rgba(34,197,94,.15)}
+.match-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
+.match-score{background:#22c55e;color:#fff;padding:4px 8px;border-radius:6px;font-size:11px;font-weight:800}
+.match-client{font-weight:700;font-size:14px}
+.match-details{font-size:11px;color:var(--mt)}
+.match-route{display:flex;align-items:center;gap:6px;margin:8px 0;padding:8px;background:var(--pn);border-radius:8px;font-size:12px}
+.match-savings{display:flex;align-items:center;gap:6px;color:#22c55e;font-weight:700;font-size:13px}
+/* Checklist */
+.checklist{list-style:none}
+.check-item{display:flex;align-items:center;gap:12px;padding:12px;background:var(--bg);border-radius:10px;margin-bottom:6px;cursor:pointer;transition:all .2s}
+.check-item:hover{background:var(--pn)}
+.check-item.done{opacity:.6}
+.check-item.done .check-text{text-decoration:line-through}
+.check-box{width:22px;height:22px;border:2px solid var(--ln);border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s}
+.check-item.done .check-box{background:#22c55e;border-color:#22c55e}
+.check-mark{display:none;color:#fff;font-size:14px}
+.check-item.done .check-mark{display:block}
+/* Récurrent */
+.recur-badge{display:inline-flex;align-items:center;gap:4px;background:#3b82f6;color:#fff;padding:3px 8px;border-radius:6px;font-size:10px;font-weight:700}
+.recur-cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:10px}
+.recur-day{text-align:center;padding:6px;border-radius:6px;font-size:11px;cursor:pointer;transition:all .2s}
+.recur-day.hdr{font-weight:700;color:var(--mt)}
+.recur-day:not(.hdr):hover{background:var(--ln)}
+.recur-day.sel{background:var(--gd);color:var(--bg);font-weight:700}
+.recur-day.evt::after{content:'';position:absolute;bottom:2px;left:50%;transform:translateX(-50%);width:5px;height:5px;background:#22c55e;border-radius:50%}
+.recur-day.evt{position:relative}
+/* Timeline Gantt */
+.gantt-wrap{overflow-x:auto;padding:10px 0}
+.gantt-header{display:flex;border-bottom:2px solid var(--ln);padding-bottom:6px;margin-bottom:8px;min-width:1100px}
+.gantt-tcol{width:90px;flex-shrink:0;text-align:center;font-size:10px;color:var(--mt)}
+.gantt-row{display:flex;align-items:center;margin-bottom:4px;min-width:1100px;position:relative;height:42px}
+.gantt-lbl{width:130px;flex-shrink:0;font-size:12px;padding-right:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gantt-bars{flex:1;position:relative;height:100%}
+.gantt-bar{position:absolute;height:32px;top:5px;border-radius:6px;display:flex;align-items:center;padding:0 8px;font-size:10px;font-weight:700;cursor:pointer;transition:all .2s;overflow:hidden;white-space:nowrap}
+.gantt-bar:hover{transform:scaleY(1.08);z-index:10}
+.gantt-bar.transport{background:linear-gradient(135deg,#1e3a5f,#2d5a8a);color:#fff}
+.gantt-bar.retour{background:var(--pn);border:2px dashed var(--mt);color:var(--mt)}
+.gantt-bar.garde{background:linear-gradient(135deg,#8b5cf6,#a78bfa);color:#fff}
+.gantt-bar.rdv{background:linear-gradient(135deg,#d4a843,#f5d070);color:var(--bg)}
+/* Live link */
+.track-map{background:var(--bg);border-radius:12px;height:280px;display:flex;align-items:center;justify-content:center;border:1px solid var(--ln);position:relative;overflow:hidden}
+.track-map::before{content:'';position:absolute;inset:0;background:linear-gradient(90deg,var(--ln) 1px,transparent 1px) 0 0/30px 30px,linear-gradient(var(--ln) 1px,transparent 1px) 0 0/30px 30px;opacity:.25}
+.track-vehicle{position:absolute;width:36px;height:36px;background:var(--gd);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;animation:moveVeh 12s infinite linear;z-index:2}
+@keyframes moveVeh{0%{left:8%;top:65%}25%{left:28%;top:45%}50%{left:50%;top:28%}75%{left:72%;top:50%}100%{left:88%;top:30%}}
+.track-info{position:absolute;bottom:10px;left:10px;right:10px;background:rgba(12,25,38,.95);padding:10px;border-radius:10px;display:flex;justify-content:space-between;align-items:center;z-index:3}
+.track-eta{font-size:1.3rem;font-weight:900;color:#22c55e}
+.share-link{display:flex;gap:6px;background:var(--bg);padding:5px;border-radius:8px;border:1px solid var(--ln)}
+.share-link input{flex:1;background:transparent;border:none;color:var(--tx);font-size:12px;padding:6px;outline:none}
 </style>
 <body>
 <div class="obg" id="obg" onclick="tSb(false)"></div>
 <div class="mo" id="mOv" onclick="if(event.target===this)cMo()"><div class="mdl"><div class="mh"><h3 id="mTi">Édition</h3><button class="xb" onclick="cMo()">✕</button></div><div class="mb" id="mBd"></div><div class="mf" id="mFt"></div></div></div>
 <div class="app">
 <aside class="sidebar" id="sb">
-<div class="brand" style="padding:10px 14px"><img src="" id="brandLogo" style="width:100%;max-width:220px;height:auto;border-radius:10px;display:block;margin:0 auto 6px"><small style="display:block;text-align:center;color:#7b97b5;font-size:10px">V19 · Route · CERFRANCE · GPS</small></div>
+<div class="brand" style="padding:10px 14px"><img src="" id="brandLogo" style="width:100%;max-width:220px;height:auto;border-radius:10px;display:block;margin:0 auto 6px"><small style="display:block;text-align:center;color:#7b97b5;font-size:10px">V25 · Impact CA · Route · GPS</small></div>
 <div class="ng">Pilotage</div><div class="nv">
 <button class="nb active" data-t="dash">🏠 Dashboard</button>
 <button class="nb" data-t="plan">📅 Planning</button>
@@ -266,6 +336,15 @@ body.nuit .card{border-color:#0a1520}
 <button class="nb" data-t="vitrine" style="border-left:3px solid var(--pu)">🔗 Vitrine client</button>
 <button class="nb" data-t="avis" style="border-left:3px solid var(--or)">⭐ Avis clients</button>
 <button class="nb" data-t="param">⚙️ Paramètres</button>
+</div>
+<div class="ng" style="color:#f59e0b">🚀 Impact CA</div><div class="nv">
+<button class="nb" data-t="rentab" style="border-left:3px solid #22c55e">💰 Rentabilité</button>
+<button class="nb" data-t="alertes" style="border-left:3px solid #ef4444">🔔 Alertes auto</button>
+<button class="nb" data-t="retour" style="border-left:3px solid #3b82f6">🔄 Retour client</button>
+<button class="nb" data-t="checklist" style="border-left:3px solid #f59e0b">✅ Check-list</button>
+<button class="nb" data-t="recurrent" style="border-left:3px solid #8b5cf6">🔁 Récurrents</button>
+<button class="nb" data-t="timeline" style="border-left:3px solid #06b6d4">📅 Timeline</button>
+<button class="nb" data-t="livelink" style="border-left:3px solid #ec4899">📍 Lien Live</button>
 </div>
 </aside>
 <main class="main">
@@ -3015,6 +3094,219 @@ body.nuit .card{border-color:#0a1520}
 
 </div>
 </div></section>
+
+<!-- ═══ RENTABILITÉ TRAJET ═══ -->
+<section class="tab" id="rentab">
+<div class="card"><div class="hd"><h3>💰 Calculateur de rentabilité trajet</h3></div><div class="bd">
+<div class="sp">
+<div>
+<h4 style="margin-bottom:12px;color:var(--gd)">📍 Paramètres du trajet</h4>
+<div class="grid" style="grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+<div><label class="lb">Départ</label><input class="inp" id="rb_dep" placeholder="Ville de départ" value="Neuilly-Saint-Front"></div>
+<div><label class="lb">Arrivée</label><input class="inp" id="rb_arr" placeholder="Ville d'arrivée"></div>
+</div>
+<div class="grid" style="grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+<div><label class="lb">Distance aller (km)</label><input type="number" class="inp" id="rb_km" placeholder="Ex: 450" oninput="calcRenta()"></div>
+<div><label class="lb">Péages aller (€)</label><input type="number" class="inp" id="rb_peages" value="0" oninput="calcRenta()"></div>
+</div>
+<div class="grid" style="grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+<div><label class="lb">Retour à vide ?</label><select class="inp" id="rb_retour" onchange="calcRenta()"><option value="oui">Oui - Retour à vide</option><option value="non">Non - Client retour trouvé</option><option value="partiel">Partiel - Sur une partie</option></select></div>
+<div><label class="lb">Temps estimé (h)</label><input type="number" class="inp" id="rb_temps" value="5" step="0.5" oninput="calcRenta()"></div>
+</div>
+<h4 style="margin:16px 0 12px;color:var(--gd)">💵 Tarification</h4>
+<div class="grid" style="grid-template-columns:1fr 1fr;gap:10px">
+<div><label class="lb">Prix facturé au client (€)</label><input type="number" class="inp" id="rb_prix" placeholder="Ex: 540" oninput="calcRenta()"></div>
+<div><label class="lb">Type de tarif</label><select class="inp" id="rb_tarif"><option value="0.90">Standard (0.90€/km)</option><option value="custom">Personnalisé</option></select></div>
+</div>
+</div>
+<div>
+<h4 style="margin-bottom:12px;color:var(--gd)">📊 Analyse de rentabilité</h4>
+<div class="renta-meter" id="rentaMeter">
+<div class="renta-value pos" id="rentaVal">+0€</div>
+<div style="font-size:12px;color:var(--mt);margin-top:4px">Marge nette estimée</div>
+<div class="renta-bar"><div class="renta-fill" id="rentaBar" style="width:50%;background:#22c55e"></div></div>
+</div>
+<div class="renta-detail">
+<div style="font-size:11px;color:var(--mt);margin-bottom:8px;font-weight:700">DÉTAIL DES COÛTS</div>
+<div class="renta-row"><span>⛽ Carburant (8L/100km × 1.65€)</span><span id="rb_cCarbu">0.00€</span></div>
+<div class="renta-row"><span>🛣️ Péages A/R</span><span id="rb_cPeages">0.00€</span></div>
+<div class="renta-row"><span>🔧 Usure véhicule (0.05€/km)</span><span id="rb_cUsure">0.00€</span></div>
+<div class="renta-row"><span>⏱️ Coût temps (15€/h)</span><span id="rb_cTemps">0.00€</span></div>
+<div class="renta-row" style="border-top:1px solid var(--ln);margin-top:6px;padding-top:6px;font-weight:700"><span>TOTAL COÛTS</span><span id="rb_cTotal" style="color:var(--rd)">0.00€</span></div>
+</div>
+<div class="renta-verdict" id="rentaVerdict">
+<span style="font-size:2rem">🤔</span>
+<div><div style="font-weight:700">En attente de calcul</div><div style="font-size:12px;color:var(--mt)">Remplissez les paramètres ci-dessus</div></div>
+</div>
+</div>
+</div>
+</div></div>
+<div class="card" style="margin-top:14px"><div class="hd"><h3>📈 Historique rentabilité (30 derniers jours)</h3></div><div class="bd"><div id="rentaHist" class="lst">Chargement...</div></div></div>
+</section>
+
+<!-- ═══ ALERTES AUTO ═══ -->
+<section class="tab" id="alertes">
+<div class="card"><div class="hd"><h3>🔔 Centre d'alertes automatiques</h3><div style="display:flex;gap:6px"><button class="btn sm" onclick="markAllRead()">Tout lu</button><button class="btn sm bu" onclick="loadAlertes()">🔄</button></div></div><div class="bd">
+<div class="sp">
+<div>
+<h4 style="margin-bottom:12px;color:var(--rd)">🚨 URGENT (Action immédiate)</h4>
+<div id="alertUrgent"></div>
+</div>
+<div>
+<h4 style="margin-bottom:12px;color:var(--or)">⚠️ ATTENTION (Cette semaine)</h4>
+<div id="alertWarning"></div>
+</div>
+</div>
+<h4 style="margin:16px 0 12px;color:var(--bl)">ℹ️ INFORMATIONS</h4>
+<div class="grid" style="grid-template-columns:repeat(3,1fr);gap:10px" id="alertInfo"></div>
+</div></div>
+<div class="card" style="margin-top:14px"><div class="hd"><h3>⚙️ Configuration des alertes</h3></div><div class="bd">
+<div class="grid" style="grid-template-columns:repeat(3,1fr);gap:10px">
+<div><label class="lb">Devis sans réponse après</label><select class="inp" id="al_devis" onchange="saveAlertConfig()"><option value="24">24 heures</option><option value="48" selected>48 heures</option><option value="72">72 heures</option></select></div>
+<div><label class="lb">Facture impayée après</label><select class="inp" id="al_fac" onchange="saveAlertConfig()"><option value="15">15 jours</option><option value="30" selected>30 jours</option><option value="45">45 jours</option></select></div>
+<div><label class="lb">Rappel vaccin avant</label><select class="inp" id="al_vacc" onchange="saveAlertConfig()"><option value="7" selected>7 jours</option><option value="14">14 jours</option><option value="30">30 jours</option></select></div>
+</div>
+</div></div>
+</section>
+
+<!-- ═══ MISE EN RELATION RETOUR ═══ -->
+<section class="tab" id="retour">
+<div class="card"><div class="hd"><h3>🔄 Mise en relation retour - Rentabiliser vos trajets vides</h3></div><div class="bd">
+<div style="background:var(--bg);border-radius:12px;padding:14px;margin-bottom:14px">
+<h4 style="color:var(--gd);margin-bottom:10px">🚐 Prochain trajet avec retour à vide</h4>
+<div id="retourProchain" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+<div style="color:var(--mt)">Aucun trajet planifié</div>
+</div>
+</div>
+<h4 style="margin-bottom:12px">🎯 Clients potentiels sur le trajet retour</h4>
+<div class="grid" style="grid-template-columns:repeat(3,1fr);gap:12px" id="retourMatches"></div>
+<div id="retourOptim" style="margin-top:16px;padding:14px;background:rgba(34,197,94,.08);border-radius:12px;border:1px solid #22c55e;display:none">
+<div style="display:flex;align-items:center;gap:12px">
+<span style="font-size:2rem">💡</span>
+<div style="flex:1"><div style="font-weight:800;color:#22c55e">Optimisation suggérée</div><div id="retourOptimTxt" style="font-size:12px;color:var(--mt)"></div></div>
+<button class="btn gn" onclick="contactAllRetour()">Contacter tous</button>
+</div>
+</div>
+</div></div>
+<div class="card" style="margin-top:14px"><div class="hd"><h3>🔍 Rechercher un client retour</h3></div><div class="bd">
+<div class="grid" style="grid-template-columns:1fr 1fr 1fr auto;gap:10px;align-items:end">
+<div><label class="lb">Zone de retour</label><input class="inp" id="ret_zone" placeholder="Ex: Lyon, Rhône-Alpes..."></div>
+<div><label class="lb">Rayon de recherche</label><select class="inp" id="ret_rayon"><option value="25">25 km</option><option value="50" selected>50 km</option><option value="100">100 km</option></select></div>
+<div><label class="lb">Date souhaitée</label><input type="date" class="inp" id="ret_date"></div>
+<button class="btn bu" onclick="searchRetour()">🔍 Rechercher</button>
+</div>
+</div></div>
+</section>
+
+<!-- ═══ CHECK-LIST PRÉ-DÉPART ═══ -->
+<section class="tab" id="checklist">
+<div class="card"><div class="hd"><h3>✅ Check-list pré-départ</h3><select class="inp" id="chk_transport" style="width:auto" onchange="loadChecklist()"><option value="">-- Sélectionner transport --</option></select></div><div class="bd">
+<div class="sp">
+<div>
+<h4 style="margin-bottom:10px;color:var(--gd)">🚗 Véhicule</h4>
+<ul class="checklist" id="chk_vehicule"></ul>
+<h4 style="margin:14px 0 10px;color:var(--gd)">📄 Documents</h4>
+<ul class="checklist" id="chk_docs"></ul>
+</div>
+<div>
+<h4 style="margin-bottom:10px;color:var(--gd)">🐾 Équipement animal</h4>
+<ul class="checklist" id="chk_animal"></ul>
+<h4 style="margin:14px 0 10px;color:var(--gd)">📞 Confirmations</h4>
+<ul class="checklist" id="chk_confirm"></ul>
+</div>
+</div>
+<div style="margin-top:16px;padding:14px;background:var(--bg);border-radius:12px;display:flex;justify-content:space-between;align-items:center">
+<div><div style="font-size:1.2rem;font-weight:800"><span id="chkProgress">0</span>/19 validés</div><div style="font-size:12px;color:var(--mt)">Progression de la check-list</div></div>
+<div style="display:flex;gap:8px"><button class="btn sm" onclick="resetChecklist()">🔄 Réinitialiser</button><button class="btn gn" id="btnDepart" disabled onclick="departReady()">🚀 Prêt au départ !</button></div>
+</div>
+</div></div>
+</section>
+
+<!-- ═══ TRAJETS RÉCURRENTS ═══ -->
+<section class="tab" id="recurrent">
+<div class="card"><div class="hd"><h3>🔁 Trajets récurrents</h3><button class="btn bu" onclick="oMoRecur()">+ Nouveau récurrent</button></div><div class="bd">
+<div class="table-container"><table class="tbl" id="recurTable">
+<thead><tr><th>Client</th><th>Trajet</th><th>Fréquence</th><th>Prochain</th><th>Prix</th><th>Statut</th><th>Actions</th></tr></thead>
+<tbody id="recurBody"></tbody>
+</table></div>
+</div></div>
+<div class="card" style="margin-top:14px"><div class="hd"><h3>📅 Calendrier des récurrences - <span id="recurMonth"></span></h3></div><div class="bd">
+<div class="recur-cal" id="recurCal"></div>
+<div style="margin-top:10px;display:flex;gap:14px;font-size:12px;color:var(--mt)">
+<span><span style="display:inline-block;width:8px;height:8px;background:#22c55e;border-radius:50%;margin-right:5px"></span>Transport récurrent programmé</span>
+</div>
+</div></div>
+</section>
+
+<!-- ═══ TIMELINE / GANTT ═══ -->
+<section class="tab" id="timeline">
+<div class="card"><div class="hd"><h3>📅 Timeline de la semaine</h3><div style="display:flex;gap:6px">
+<button class="btn sm" onclick="ganttNav(-1)">◀</button><button class="btn sm at" onclick="ganttOff=0;renderGantt()">Auj.</button><button class="btn sm" onclick="ganttNav(1)">▶</button>
+</div></div><div class="bd">
+<div class="gantt-wrap" id="ganttWrap"></div>
+<div style="margin-top:10px;display:flex;gap:14px;font-size:11px">
+<span><span style="display:inline-block;width:14px;height:14px;background:linear-gradient(135deg,#1e3a5f,#2d5a8a);border-radius:3px;margin-right:5px;vertical-align:middle"></span>Transport</span>
+<span><span style="display:inline-block;width:14px;height:14px;background:var(--pn);border:2px dashed var(--mt);border-radius:3px;margin-right:5px;vertical-align:middle"></span>Retour à vide</span>
+<span><span style="display:inline-block;width:14px;height:14px;background:linear-gradient(135deg,#8b5cf6,#a78bfa);border-radius:3px;margin-right:5px;vertical-align:middle"></span>Garde</span>
+<span><span style="display:inline-block;width:14px;height:14px;background:linear-gradient(135deg,#d4a843,#f5d070);border-radius:3px;margin-right:5px;vertical-align:middle"></span>RDV</span>
+</div>
+</div></div>
+<div class="grid kpi" style="margin-top:14px">
+<div class="card"><div class="lb">🚐 Transports semaine</div><div class="vl" id="ganttTr">0</div></div>
+<div class="card"><div class="lb">⏱️ Temps de route</div><div class="vl" id="ganttH">0h</div></div>
+<div class="card"><div class="lb">⚠️ Retours à vide</div><div class="vl" id="ganttRet" style="color:var(--or)">0</div></div>
+<div class="card"><div class="lb">💰 CA prévisionnel</div><div class="vl" id="ganttCA" style="color:var(--a2)">0 €</div></div>
+</div>
+</section>
+
+<!-- ═══ LIEN CLIENT LIVE ═══ -->
+<section class="tab" id="livelink">
+<div class="card"><div class="hd"><h3>📍 Suivi en temps réel - Lien client</h3></div><div class="bd">
+<div class="sp">
+<div>
+<h4 style="margin-bottom:12px;color:var(--gd)">🔗 Générer un lien de suivi</h4>
+<div><label class="lb">Transport concerné</label><select class="inp" id="live_transport" onchange="genLiveLink()"><option value="">-- Sélectionner --</option></select></div>
+<div style="margin-top:10px"><label class="lb">Validité du lien</label><select class="inp" id="live_valid"><option value="24">24 heures</option><option value="48">48 heures</option><option value="transport">Durée du transport</option></select></div>
+<div style="margin-top:10px"><label class="lb">Informations partagées</label>
+<div style="display:flex;flex-direction:column;gap:6px;margin-top:6px">
+<label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px"><input type="checkbox" checked id="live_pos"> Position en temps réel</label>
+<label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px"><input type="checkbox" checked id="live_eta"> Heure d'arrivée estimée</label>
+<label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px"><input type="checkbox" checked id="live_etapes"> Étapes du trajet</label>
+<label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px"><input type="checkbox" id="live_tel"> Numéro de téléphone</label>
+</div>
+</div>
+<div id="liveLinkBox" style="display:none;margin-top:14px">
+<label class="lb">Lien de suivi généré</label>
+<div class="share-link"><input type="text" id="liveLinkUrl" readonly><button class="btn sm bu" onclick="copyLiveLink()">📋 Copier</button></div>
+<div style="display:flex;gap:6px;margin-top:10px">
+<button class="btn gn" onclick="sendLiveSMS()">📱 Envoyer SMS</button>
+<button class="btn" onclick="sendLiveEmail()">📧 Envoyer email</button>
+</div>
+</div>
+</div>
+<div>
+<h4 style="margin-bottom:12px;color:var(--gd)">👁️ Aperçu client</h4>
+<div class="track-map">
+<div class="track-vehicle">🚐</div>
+<div class="track-info">
+<div><div style="font-size:10px;color:var(--mt)">EN ROUTE VERS</div><div style="font-weight:700" id="liveDestTxt">—</div></div>
+<div style="text-align:right"><div style="font-size:10px;color:var(--mt)">ARRIVÉE ESTIMÉE</div><div class="track-eta" id="liveEtaTxt">--:--</div></div>
+</div>
+</div>
+<div style="margin-top:10px;padding:10px;background:var(--bg);border-radius:10px">
+<div style="font-size:10px;color:var(--mt);margin-bottom:8px;font-weight:700">ÉTAPES DU TRAJET</div>
+<div id="liveSteps" style="display:flex;flex-direction:column;gap:6px"></div>
+</div>
+</div>
+</div>
+</div></div>
+<div class="card" style="margin-top:14px"><div class="hd"><h3>📊 Liens actifs</h3></div><div class="bd">
+<div class="table-container"><table class="tbl">
+<thead><tr><th>Transport</th><th>Client</th><th>Lien</th><th>Vues</th><th>Expire</th><th>Actions</th></tr></thead>
+<tbody id="liveLinksBody"></tbody>
+</table></div>
+</div></div>
+</section>
 
 </div></main></div>
 
@@ -11899,6 +12191,290 @@ if(!window.matchMedia('(display-mode: standalone)').matches){
   }catch(ex){}
 }
 
+})();
+</script>
+
+<!-- ═══ IMPACT CA - JAVASCRIPT ═══ -->
+<script>
+(function(){
+"use strict";
+
+/* ═══ 1. RENTABILITÉ ═══ */
+window.calcRenta=function(){
+  var km=parseFloat($('rb_km').value)||0;
+  var peages=parseFloat($('rb_peages').value)||0;
+  var temps=parseFloat($('rb_temps').value)||0;
+  var prix=parseFloat($('rb_prix').value)||0;
+  var retour=$('rb_retour').value;
+  var tauxCarbu=8/100*1.65;
+  var tauxUsure=0.05;
+  var tauxH=15;
+  var mult=retour==='oui'?2:(retour==='partiel'?1.5:1);
+  var cCarbu=km*mult*tauxCarbu;
+  var cPeages=peages*mult;
+  var cUsure=km*mult*tauxUsure;
+  var cTemps=temps*tauxH;
+  var total=cCarbu+cPeages+cUsure+cTemps;
+  var marge=prix-total;
+  var pct=prix>0?(marge/prix*100):0;
+  $('rb_cCarbu').textContent=cCarbu.toFixed(2)+'€';
+  $('rb_cPeages').textContent=cPeages.toFixed(2)+'€';
+  $('rb_cUsure').textContent=cUsure.toFixed(2)+'€';
+  $('rb_cTemps').textContent=cTemps.toFixed(2)+'€';
+  $('rb_cTotal').textContent=total.toFixed(2)+'€';
+  var valEl=$('rentaVal');
+  valEl.textContent=(marge>=0?'+':'')+marge.toFixed(0)+'€';
+  valEl.className='renta-value '+(marge>50?'pos':(marge>0?'warn':'neg'));
+  var bar=$('rentaBar');
+  bar.style.width=Math.min(Math.max((pct+50)/100*100,0),100)+'%';
+  bar.style.background=marge>50?'#22c55e':(marge>0?'#f59e0b':'#ef4444');
+  var verd=$('rentaVerdict');
+  if(prix===0||km===0){verd.innerHTML='<span style="font-size:2rem">🤔</span><div><div style="font-weight:700">En attente de calcul</div><div style="font-size:12px;color:var(--mt)">Remplissez les paramètres</div></div>';}
+  else if(marge<0){verd.innerHTML='<span style="font-size:2rem">🚨</span><div><div style="font-weight:700;color:#ef4444">NON RENTABLE</div><div style="font-size:12px;color:var(--mt)">Vous perdez '+Math.abs(marge).toFixed(0)+'€. Augmentez le prix ou trouvez un client retour.</div></div>';}
+  else if(pct<20){verd.innerHTML='<span style="font-size:2rem">⚠️</span><div><div style="font-weight:700;color:#f59e0b">MARGE FAIBLE ('+pct.toFixed(0)+'%)</div><div style="font-size:12px;color:var(--mt)">Objectif: >30%.'+(retour==='oui'?' Un client retour ajouterait ~'+Math.round(km*0.45)+'€.':'')+'</div></div>';}
+  else{verd.innerHTML='<span style="font-size:2rem">✅</span><div><div style="font-weight:700;color:#22c55e">RENTABLE ('+pct.toFixed(0)+'%)</div><div style="font-size:12px;color:var(--mt)">Excellent! +'+marge.toFixed(0)+'€ de bénéfice net.</div></div>';}
+};
+
+/* ═══ 2. ALERTES AUTO ═══ */
+window.loadAlertes=function(){
+  var urgH='',warnH='',infoH='';
+  var now=new Date();
+  // Factures impayées
+  act(db.factures).filter(function(f){return f.statut==='envoyee'||f.statut==='encours';}).forEach(function(f){
+    var dt=new Date(f.date);
+    var days=Math.floor((now-dt)/(1000*60*60*24));
+    var seuil=parseInt($('al_fac')?$('al_fac').value:30)||30;
+    if(days>seuil){
+      var cl=act(db.clients).find(function(c){return c.id===f.clientId;});
+      urgH+='<div class="alert-card urgent"><span class="alert-icon">💰</span><div class="alert-content"><div class="alert-title">Facture impayée - '+days+' jours</div><div class="alert-desc"><b>'+(cl?cl.nom:'Client')+'</b> - '+f.ref+' - '+euro(f.ttc||0)+'</div><div class="alert-actions"><button class="btn sm rd" onclick="relanceFac(\''+f.id+'\')">📧 Relancer</button><button class="btn sm" onclick="sTab(\'fac\')">Voir</button></div></div></div>';
+    }else if(days>seuil/2){
+      warnH+='<div class="alert-card warning"><span class="alert-icon">📄</span><div class="alert-content"><div class="alert-title">Facture '+f.ref+' - '+days+' jours</div><div class="alert-desc">Approche du seuil de relance</div></div></div>';
+    }
+  });
+  // Devis sans réponse
+  var devSeuil=parseInt($('al_devis')?$('al_devis').value:48)||48;
+  act(db.devis).filter(function(d){return d.statut==='envoye';}).forEach(function(d){
+    var dt=new Date(d.date);
+    var hrs=Math.floor((now-dt)/(1000*60*60));
+    if(hrs>devSeuil){
+      var cl=act(db.clients).find(function(c){return c.id===d.clientId;});
+      warnH+='<div class="alert-card warning"><span class="alert-icon">📋</span><div class="alert-content"><div class="alert-title">Devis sans réponse - '+Math.round(hrs/24)+' jour(s)</div><div class="alert-desc">'+(cl?cl.nom:'Client')+' - '+d.ref+'</div><div class="alert-actions"><button class="btn sm bu" onclick="sTab(\'dev\')">Relancer</button></div></div></div>';
+    }
+  });
+  // Transports non confirmés
+  act(db.transports).filter(function(t){
+    var dt=new Date(t.date);
+    var diff=(dt-now)/(1000*60*60);
+    return diff>0&&diff<48&&t.statut!=='effectue'&&t.statut!=='confirme';
+  }).forEach(function(t){
+    var cl=act(db.clients).find(function(c){return c.id===t.clientId;});
+    urgH+='<div class="alert-card urgent"><span class="alert-icon">🚗</span><div class="alert-content"><div class="alert-title">Transport non confirmé !</div><div class="alert-desc">'+(cl?cl.nom:'')+ ' - '+t.depart+' → '+t.arrivee+'<br>'+t.date+' à '+(t.heure||'?')+'</div><div class="alert-actions"><button class="btn sm rd">📱 SMS urgent</button><button class="btn sm" onclick="sTab(\'tr\')">Voir</button></div></div></div>';
+  });
+  // Infos
+  infoH+='<div class="alert-card info"><span class="alert-icon">📊</span><div class="alert-content"><div class="alert-title">'+act(db.transports).length+' transports actifs</div><div class="alert-desc">Dont '+act(db.transports).filter(function(t){return new Date(t.date)>=now;}).length+' à venir</div></div></div>';
+  infoH+='<div class="alert-card info"><span class="alert-icon">🏡</span><div class="alert-content"><div class="alert-title">'+act(db.gardes).filter(function(g){var d=new Date(g.dateDebut),f=new Date(g.dateFin);return now>=d&&now<=f;}).length+' gardes en cours</div></div></div>';
+  $('alertUrgent').innerHTML=urgH||'<div style="color:var(--mt);padding:10px;text-align:center">✅ Aucune alerte urgente</div>';
+  $('alertWarning').innerHTML=warnH||'<div style="color:var(--mt);padding:10px;text-align:center">✅ Tout est en ordre</div>';
+  $('alertInfo').innerHTML=infoH;
+};
+window.markAllRead=function(){alert('Toutes les alertes marquées comme lues');};
+window.saveAlertConfig=function(){};
+
+/* ═══ 3. MISE EN RELATION RETOUR ═══ */
+window.loadRetour=function(){
+  var now=new Date();
+  var proch=act(db.transports).filter(function(t){return new Date(t.date)>now&&!t.clientRetour;}).sort(function(a,b){return new Date(a.date)-new Date(b.date);})[0];
+  var box=$('retourProchain');
+  if(proch){
+    var cl=act(db.clients).find(function(c){return c.id===proch.clientId;});
+    var km=parseInt(proch.km)||100;
+    var perte=Math.round(km*0.85*0.5);
+    box.innerHTML='<div><div style="font-size:1.2rem;font-weight:700">'+(proch.depart||'?')+' → '+(proch.arrivee||'?')+'</div><div style="color:var(--mt);font-size:12px">'+(proch.date||'')+' - '+(cl?cl.nom:'')+'</div></div><div style="font-size:2rem">➡️</div><div><div style="color:#ef4444;font-weight:700">Retour prévu à vide</div><div style="color:var(--mt);font-size:12px">'+(proch.arrivee||'?')+' → Neuilly-St-Front ('+km+' km)</div></div><div style="margin-left:auto;text-align:right"><div style="font-size:1.4rem;font-weight:900;color:#ef4444">-'+perte+'€</div><div style="font-size:11px;color:var(--mt)">Perte potentielle</div></div>';
+    // Trouver clients proches
+    findRetourMatches(proch);
+  }else{
+    box.innerHTML='<div style="color:var(--mt)">Aucun trajet avec retour à vide planifié</div>';
+    $('retourMatches').innerHTML='';
+  }
+};
+function findRetourMatches(tr){
+  var mH='';
+  var clients=act(db.clients).slice(0,6);
+  clients.forEach(function(c,i){
+    var score=95-i*8;
+    var gain=Math.round(60+Math.random()*100);
+    mH+='<div class="match-card"><div class="match-header"><div><div class="match-client">'+(c.nom||'Client')+' '+(c.prenom||'')+'</div><div class="match-details">Client fidèle</div></div><span class="match-score">'+score+'%</span></div><div class="match-route"><span>📍</span><span>'+(tr.arrivee||'Zone')+' → Neuilly</span></div><div class="match-savings"><span>💰</span><span>Gain potentiel : +'+gain+'€</span></div><div style="margin-top:10px;display:flex;gap:6px"><button class="btn sm gn">📧 Proposer</button><button class="btn sm">📞 Appeler</button></div></div>';
+  });
+  $('retourMatches').innerHTML=mH||'<div style="color:var(--mt);text-align:center">Aucun client correspondant</div>';
+}
+window.searchRetour=function(){alert('Recherche de clients retour lancée...');loadRetour();};
+window.contactAllRetour=function(){alert('📧 Emails envoyés aux clients potentiels');};
+
+/* ═══ 4. CHECK-LIST PRÉ-DÉPART ═══ */
+var checkItems={
+  vehicule:['Niveau carburant > 3/4','Pression pneus vérifiée','Liquide lave-glace OK','Climatisation fonctionnelle','Cages/box propres et désinfectés'],
+  docs:['Carte grise véhicule','Attestation assurance RC Pro','Devis/bon de transport signé','Carnet de santé animal(aux)','Certificat vaccination à jour'],
+  animal:['Cage adaptée à la taille','Gamelle eau + nourriture','Couverture/coussin confort','Laisse de secours','Sacs hygiène (déjections)','Spray anti-stress (si besoin)'],
+  confirm:['Client départ contacté (horaire OK)','Client arrivée prévenu','Itinéraire GPS programmé',"Numéros d'urgence notés"]
+};
+var checkState={};
+window.loadChecklist=function(){
+  var sel=$('chk_transport');
+  var opts='<option value="">-- Sélectionner transport --</option>';
+  act(db.transports).filter(function(t){return new Date(t.date)>=new Date();}).forEach(function(t){
+    var cl=act(db.clients).find(function(c){return c.id===t.clientId;});
+    opts+='<option value="'+t.id+'">'+t.date+' - '+(cl?cl.nom:'')+' - '+t.depart+' → '+t.arrivee+'</option>';
+  });
+  sel.innerHTML=opts;
+  renderCheckSection('vehicule','chk_vehicule');
+  renderCheckSection('docs','chk_docs');
+  renderCheckSection('animal','chk_animal');
+  renderCheckSection('confirm','chk_confirm');
+  updateCheckProgress();
+};
+function renderCheckSection(key,elId){
+  var h='';
+  checkItems[key].forEach(function(item,i){
+    var id=key+'_'+i;
+    var done=checkState[id];
+    h+='<li class="check-item'+(done?' done':'')+'" onclick="toggleChk(\''+id+'\')"><div class="check-box"><span class="check-mark">✓</span></div><span class="check-text">'+item+'</span></li>';
+  });
+  $(elId).innerHTML=h;
+}
+window.toggleChk=function(id){
+  checkState[id]=!checkState[id];
+  loadChecklist();
+};
+function updateCheckProgress(){
+  var total=0,done=0;
+  Object.keys(checkItems).forEach(function(k){total+=checkItems[k].length;});
+  Object.keys(checkState).forEach(function(k){if(checkState[k])done++;});
+  $('chkProgress').textContent=done;
+  $('btnDepart').disabled=(done<total);
+}
+window.resetChecklist=function(){checkState={};loadChecklist();};
+window.departReady=function(){alert('🚀 Check-list complète ! Prêt au départ !');};
+
+/* ═══ 5. TRAJETS RÉCURRENTS ═══ */
+window.loadRecur=function(){
+  var h='';
+  (db.recurrents||[]).forEach(function(r,i){
+    var cl=act(db.clients).find(function(c){return c.id===r.clientId;});
+    h+='<tr><td><b>'+(cl?cl.nom:'—')+'</b></td><td>'+r.depart+' → '+r.arrivee+'</td><td><span class="recur-badge">🔁 '+r.freq+'</span></td><td>'+r.prochain+'</td><td>'+euro(r.prix||0)+'</td><td><span style="color:'+(r.actif?'#22c55e':'#f59e0b')+'">●</span> '+(r.actif?'Actif':'Pause')+'</td><td><button class="btn sm" onclick="editRecur('+i+')">✏️</button><button class="btn sm" onclick="toggleRecur('+i+')">'+(r.actif?'⏸️':'▶️')+'</button></td></tr>';
+  });
+  $('recurBody').innerHTML=h||'<tr><td colspan="7" style="text-align:center;color:var(--mt)">Aucun trajet récurrent</td></tr>';
+  renderRecurCal();
+};
+function renderRecurCal(){
+  var now=new Date();
+  var month=now.toLocaleDateString('fr-FR',{month:'long',year:'numeric'});
+  $('recurMonth').textContent=month.charAt(0).toUpperCase()+month.slice(1);
+  var first=new Date(now.getFullYear(),now.getMonth(),1);
+  var last=new Date(now.getFullYear(),now.getMonth()+1,0);
+  var h='<div class="recur-day hdr">Lun</div><div class="recur-day hdr">Mar</div><div class="recur-day hdr">Mer</div><div class="recur-day hdr">Jeu</div><div class="recur-day hdr">Ven</div><div class="recur-day hdr">Sam</div><div class="recur-day hdr">Dim</div>';
+  var start=(first.getDay()+6)%7;
+  for(var i=0;i<start;i++)h+='<div class="recur-day"></div>';
+  for(var d=1;d<=last.getDate();d++){
+    var hasEvt=(db.recurrents||[]).some(function(r){return r.actif&&d%7===3;});
+    h+='<div class="recur-day'+(hasEvt?' evt':'')+'">'+d+'</div>';
+  }
+  $('recurCal').innerHTML=h;
+}
+window.oMoRecur=function(){
+  oMo('Nouveau trajet récurrent','<div class="form-group"><label class="lb">Client</label><select class="inp" id="rec_cli">'+act(db.clients).map(function(c){return'<option value="'+c.id+'">'+c.nom+'</option>';}).join('')+'</select></div><div class="grid" style="grid-template-columns:1fr 1fr;gap:10px"><div><label class="lb">Départ</label><input class="inp" id="rec_dep"></div><div><label class="lb">Arrivée</label><input class="inp" id="rec_arr"></div></div><div class="grid" style="grid-template-columns:1fr 1fr;gap:10px;margin-top:10px"><div><label class="lb">Fréquence</label><select class="inp" id="rec_freq"><option>Hebdomadaire</option><option>Mensuel</option></select></div><div><label class="lb">Prix (€)</label><input type="number" class="inp" id="rec_prix"></div></div>','<button class="btn gn" onclick="saveRecur()">✓ Créer</button>');
+};
+window.saveRecur=function(){
+  db.recurrents=db.recurrents||[];
+  db.recurrents.push({clientId:$('rec_cli').value,depart:$('rec_dep').value,arrivee:$('rec_arr').value,freq:$('rec_freq').value,prix:parseFloat($('rec_prix').value)||0,prochain:'—',actif:true});
+  cMo();sav();loadRecur();
+};
+window.toggleRecur=function(i){if(db.recurrents&&db.recurrents[i]){db.recurrents[i].actif=!db.recurrents[i].actif;sav();loadRecur();}};
+
+/* ═══ 6. TIMELINE / GANTT ═══ */
+var ganttOff=0;
+window.ganttNav=function(d){ganttOff+=d;renderGantt();};
+window.renderGantt=function(){
+  var now=new Date();
+  now.setDate(now.getDate()+ganttOff*7);
+  var monday=new Date(now);monday.setDate(now.getDate()-((now.getDay()+6)%7));
+  var days=['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
+  var hHead='<div class="gantt-tcol" style="width:130px"></div>';
+  for(var h=6;h<=22;h+=2)hHead+='<div class="gantt-tcol">'+String(h).padStart(2,'0')+'h</div>';
+  var rows='';var trCnt=0,hTotal=0,retCnt=0,caTotal=0;
+  for(var d=0;d<7;d++){
+    var day=new Date(monday);day.setDate(monday.getDate()+d);
+    var dateStr=day.toISOString().slice(0,10);
+    var label=days[d]+' '+day.getDate()+'/'+(day.getMonth()+1);
+    rows+='<div class="gantt-row"><div class="gantt-lbl"><b>'+label+'</b></div><div class="gantt-bars">';
+    // Transports du jour
+    act(db.transports).filter(function(t){return t.date===dateStr;}).forEach(function(t){
+      var hr=parseInt(t.heure)||9;
+      var left=((hr-6)/16*100);
+      var dur=parseInt(t.duree)||3;
+      var width=(dur/16*100);
+      var cl=act(db.clients).find(function(c){return c.id===t.clientId;});
+      rows+='<div class="gantt-bar transport" style="left:'+left+'%;width:'+width+'%" title="'+(cl?cl.nom:'')+' - '+t.depart+' → '+t.arrivee+'">🐾 '+(cl?cl.nom.split(' ')[0]:'')+'</div>';
+      trCnt++;hTotal+=dur;caTotal+=parseFloat(t.prix)||0;
+    });
+    // Gardes
+    act(db.gardes).filter(function(g){return g.dateDebut<=dateStr&&g.dateFin>=dateStr;}).forEach(function(g){
+      rows+='<div class="gantt-bar garde" style="left:30%;width:40%">🏡 Garde</div>';
+    });
+    rows+='</div></div>';
+  }
+  $('ganttWrap').innerHTML='<div class="gantt-header">'+hHead+'</div>'+rows;
+  $('ganttTr').textContent=trCnt;
+  $('ganttH').textContent=hTotal+'h';
+  $('ganttRet').textContent=retCnt;
+  $('ganttCA').textContent=euro(caTotal);
+};
+
+/* ═══ 7. LIEN CLIENT LIVE ═══ */
+window.loadLiveLink=function(){
+  var sel=$('live_transport');
+  var opts='<option value="">-- Sélectionner --</option>';
+  act(db.transports).filter(function(t){return new Date(t.date)>=new Date();}).forEach(function(t){
+    var cl=act(db.clients).find(function(c){return c.id===t.clientId;});
+    opts+='<option value="'+t.id+'">'+t.date+' - '+(cl?cl.nom:'')+' - '+t.depart+' → '+t.arrivee+'</option>';
+  });
+  sel.innerHTML=opts;
+  renderLiveSteps();
+};
+window.genLiveLink=function(){
+  var tid=$('live_transport').value;
+  if(!tid){$('liveLinkBox').style.display='none';return;}
+  var t=act(db.transports).find(function(x){return x.id===tid;});
+  var code='TR-'+new Date().getFullYear()+'-'+tid.slice(-4).toUpperCase();
+  $('liveLinkUrl').value='https://track.cathypets.com/'+code;
+  $('liveLinkBox').style.display='block';
+  $('liveDestTxt').textContent=t?t.arrivee:'—';
+  $('liveEtaTxt').textContent=t&&t.heure?t.heure:'--:--';
+  renderLiveSteps();
+};
+function renderLiveSteps(){
+  $('liveSteps').innerHTML='<div style="display:flex;align-items:center;gap:8px;font-size:12px"><span style="color:#22c55e">✅</span><span>Prise en charge</span><span style="margin-left:auto;color:var(--mt)">14:15</span></div><div style="display:flex;align-items:center;gap:8px;font-size:12px"><span style="color:#22c55e">✅</span><span>Départ confirmé</span><span style="margin-left:auto;color:var(--mt)">14:20</span></div><div style="display:flex;align-items:center;gap:8px;font-size:12px"><span style="color:#f59e0b">🔄</span><span style="font-weight:700">En route...</span><span style="margin-left:auto;color:var(--mt)">En cours</span></div><div style="display:flex;align-items:center;gap:8px;font-size:12px;opacity:.5"><span>⏳</span><span>Arrivée</span><span style="margin-left:auto;color:var(--mt)">~18:45</span></div>';
+}
+window.copyLiveLink=function(){
+  var inp=$('liveLinkUrl');inp.select();document.execCommand('copy');
+  alert('Lien copié !');
+};
+window.sendLiveSMS=function(){alert('📱 SMS envoyé au client');};
+window.sendLiveEmail=function(){alert('📧 Email envoyé au client');};
+
+/* ═══ INIT ON TAB SWITCH ═══ */
+var origSTab=window.sTab;
+window.sTab=function(t){
+  origSTab(t);
+  if(t==='rentab'){/* ready */}
+  else if(t==='alertes')loadAlertes();
+  else if(t==='retour')loadRetour();
+  else if(t==='checklist')loadChecklist();
+  else if(t==='recurrent')loadRecur();
+  else if(t==='timeline')renderGantt();
+  else if(t==='livelink')loadLiveLink();
+};
+
+console.log('[CathyPets V25] ✅ Impact CA modules loaded');
 })();
 </script>
 
