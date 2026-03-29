@@ -427,7 +427,8 @@ body.nuit .card{border-color:#0a1520}
 <div class="sp">
 <div class="card"><div class="hd"><h3>Nouveau transport</h3></div><div class="bd">
 <div class="row">
-<div class="c6 fd"><label>Client</label>
+<div class="c6 fd"><label>Client <span style="font-size:10px;color:var(--mt)">(min 3 lettres)</span></label>
+  <input id="t_cl_search" type="text" placeholder="🔍 Rechercher (min 3 lettres)..." style="margin-bottom:5px;padding:8px;font-size:12px" oninput="filterCliSelect(this.value,document.getElementById('t_cl'))">
   <div style="display:flex;gap:5px;align-items:center">
     <select id="t_cl" style="flex:1" onchange="forceRefreshTrAniSelect()"></select>
     <button class="btn sm gn" onclick="openNewCliModal('t_cl')" title="Nouveau client" style="padding:7px 10px">➕</button>
@@ -497,7 +498,10 @@ body.nuit .card{border-color:#0a1520}
 <div class="sp">
 <div class="card"><div class="hd"><h3>Nouvelle garde</h3></div><div class="bd">
 <div class="row">
-<div class="c6 fd"><label>Client</label><select id="g_cl" onchange="forceRefreshGrdAniSelect()"></select></div>
+<div class="c6 fd"><label>Client <span style="font-size:10px;color:var(--mt)">(min 3 lettres)</span></label>
+  <input id="g_cl_search" type="text" placeholder="🔍 Rechercher (min 3 lettres)..." style="margin-bottom:5px;padding:8px;font-size:12px" oninput="filterCliSelect(this.value,document.getElementById('g_cl'))">
+  <select id="g_cl" onchange="forceRefreshGrdAniSelect()"></select>
+</div>
 </div>
 <div id="g_aniZone"></div>
 <div id="g_accZone"></div>
@@ -593,7 +597,10 @@ body.nuit .card{border-color:#0a1520}
 <div class="fd"><label>Notes</label><textarea id="c_no"></textarea></div>
 <button class="btn gn" onclick="addCli()">➕ Ajouter</button>
 </div></div>
-<div class="card"><div class="hd"><h3>Clients</h3></div><div class="bd"><div id="clTbl"></div></div></div>
+<div class="card"><div class="hd"><h3>Clients</h3></div><div class="bd">
+  <input id="cli_search" type="text" placeholder="🔍 Rechercher un client (min 3 lettres)..." style="width:100%;padding:10px;margin-bottom:10px;font-size:13px;background:#080f1a;border:1px solid var(--ln);border-radius:8px;color:var(--tx)" oninput="filterCliTable(this.value)">
+  <div id="clTbl"></div>
+</div></div>
 </div></section>
 
 <!-- ANIMAUX -->
@@ -749,7 +756,8 @@ body.nuit .card{border-color:#0a1520}
 <div class="card"><div class="hd"><h3>Nouveau devis</h3></div><div class="bd">
 <div class="row">
 <div class="c4 fd"><label>Mode</label><select id="q_mo"><option value="transport">Transport</option><option value="garde">Garde</option><option value="combine">Combiné</option></select></div>
-<div class="c4 fd"><label>Client</label>
+<div class="c4 fd"><label>Client <span style="font-size:10px;color:var(--mt)">(min 3 lettres)</span></label>
+  <input id="q_cl_search" type="text" placeholder="🔍 Min 3 lettres..." style="margin-bottom:5px;padding:6px;font-size:11px" oninput="filterCliSelect(this.value,document.getElementById('q_cl'))">
   <div style="display:flex;gap:5px;align-items:center">
     <select id="q_cl" style="flex:1" onchange="qClChange();forceRefreshDevAniSelect()"></select>
     <button class="btn sm gn" onclick="openNewCliModal('q_cl')" title="Créer un nouveau client" style="padding:7px 10px;white-space:nowrap">➕</button>
@@ -820,7 +828,8 @@ body.nuit .card{border-color:#0a1520}
 <!-- FACTURE DIRECTE -->
 <div id="fac_panel_direct">
   <div class="row">
-    <div class="c6 fd"><label>Client *</label>
+    <div class="c6 fd"><label>Client * <span style="font-size:10px;color:var(--mt)">(min 3 lettres)</span></label>
+      <input id="fd_cl_search" type="text" placeholder="🔍 Rechercher (min 3 lettres)..." style="margin-bottom:5px;padding:8px;font-size:12px" oninput="filterCliSelect(this.value,document.getElementById('fd_cl'))">
       <div style="display:flex;gap:5px">
         <select id="fd_cl" style="flex:1" onchange="fdClChange()"></select>
         <button class="btn sm gn" onclick="openNewCliModal('fd_cl')" style="padding:7px 10px">➕</button>
@@ -2866,6 +2875,65 @@ function margShort(priceTTC,cost){
 function tdy(){return new Date().toISOString().slice(0,10)}
 function fD(v){return v?new Date(v).toLocaleString('fr-FR'):''}
 function cN(id){var c=db.clients.find(function(x){return x.id===id});return c?(c.nom+' '+(c.prenom||'')).trim():'—'}
+
+// --- RECHERCHE CLIENTS (tri alphabétique + min 3 lettres) ---
+function getClientsSorted(){
+  return act(db.clients).sort(function(a,b){
+    var na=(a.nom||'').toLowerCase();
+    var nb=(b.nom||'').toLowerCase();
+    if(na<nb)return -1;
+    if(na>nb)return 1;
+    var pa=(a.prenom||'').toLowerCase();
+    var pb=(b.prenom||'').toLowerCase();
+    return pa<pb?-1:(pa>pb?1:0);
+  });
+}
+function getCliOpts(selectedId,emptyLabel){
+  var opts=emptyLabel?'<option value="">'+emptyLabel+'</option>':'';
+  opts+=getClientsSorted().map(function(c){
+    var nm=(c.nom+' '+(c.prenom||'')).trim();
+    var sel=selectedId&&c.id===selectedId?' selected':'';
+    return '<option value="'+c.id+'"'+sel+'>'+nm+'</option>';
+  }).join('');
+  return opts;
+}
+function filterCliSelect(searchVal,selectEl){
+  var q=(searchVal||'').toLowerCase().trim();
+  var opts=selectEl.querySelectorAll('option');
+  var firstMatch=null;
+  for(var i=0;i<opts.length;i++){
+    var opt=opts[i];
+    if(!opt.value){opt.style.display='';continue;}
+    var txt=opt.textContent.toLowerCase();
+    if(q.length<3){opt.style.display='';continue;}
+    if(txt.indexOf(q)>=0){
+      opt.style.display='';
+      if(!firstMatch)firstMatch=opt;
+    }else{
+      opt.style.display='none';
+    }
+  }
+  if(q.length>=3&&firstMatch&&!selectEl.value){
+    selectEl.value=firstMatch.value;
+  }
+}
+function setupCliSearchField(inputId,selectId){
+  var inp=document.getElementById(inputId);
+  var sel=document.getElementById(selectId);
+  if(!inp||!sel)return;
+  inp.addEventListener('input',function(){
+    filterCliSelect(inp.value,sel);
+  });
+  inp.addEventListener('keydown',function(e){
+    if(e.key==='Escape'){inp.value='';filterCliSelect('',sel);}
+  });
+}
+function fillCliSelectSorted(selectId,selectedId,emptyLabel){
+  var sel=document.getElementById(selectId);
+  if(!sel)return;
+  sel.innerHTML=getCliOpts(selectedId,emptyLabel||'— Client —');
+}
+
 function aN(id){var a=db.animaux.find(function(x){return x.id===id});return a?a.nom+' ('+a.espece+')':'—'}
 // --- MULTI-ANIMAUX helpers ---
 function getAniIds(rec){if(rec.animalIds&&rec.animalIds.length)return rec.animalIds;if(rec.animalId)return[rec.animalId];return[]}
@@ -3019,7 +3087,8 @@ function addSeg(prefix,data){
   var zone=zoneId?$(zoneId):null;
   if(!zone)return;
   var pfx=prefix+'_'+idx;
-  var cOpts='<option value="">— Client —</option>'+act(db.clients).map(function(c){return'<option value="'+c.id+'"'+(data&&data.clientId===c.id?' selected':'')+'>'+((c.nom||'')+' '+(c.prenom||'')).trim()+'</option>'}).join('');
+  var sortedCli=act(db.clients).slice().sort(function(a,b){return((a.nom||'')+' '+(a.prenom||'')).toLowerCase().localeCompare(((b.nom||'')+' '+(b.prenom||'')).toLowerCase(),'fr');});
+  var cOpts='<option value="">— Client —</option>'+sortedCli.map(function(c){return'<option value="'+c.id+'"'+(data&&data.clientId===c.id?' selected':'')+'>'+((c.nom||'')+' '+(c.prenom||'')).trim()+'</option>'}).join('');
   var aOpts='<option value="">— Animal —</option>'+act(db.animaux).map(function(a){return'<option value="'+a.id+'"'+'>'+a.nom+' · '+a.espece+'</option>'}).join('');
   var colors=['#22a693','#d4a843','#3b82f6','#ef4444','#8b5cf6','#f59e0b'];
   var col=colors[idx%colors.length];
@@ -3479,7 +3548,15 @@ function delRec(col,id,lb){if(!confirm('Supprimer '+lb+' ?'))return;var item=(db
 // SELECTS
 function oLst(arr,fn){return '<option value="">—</option>'+arr.map(function(i){return '<option value="'+i.id+'">'+fn(i)+'</option>'}).join('')}
 function bSel(){
-  var cH=oLst(db.clients,function(c){return (c.nom+' '+(c.prenom||'')).trim()});
+  // Trier les clients par ordre alphabétique
+  var sortedClients = act(db.clients).slice().sort(function(a,b){
+    var nomA = ((a.nom||'')+ ' ' +(a.prenom||'')).trim().toLowerCase();
+    var nomB = ((b.nom||'')+ ' ' +(b.prenom||'')).trim().toLowerCase();
+    return nomA.localeCompare(nomB, 'fr');
+  });
+  var cH = '<option value="">—</option>' + sortedClients.map(function(c){
+    return '<option value="'+c.id+'">'+(c.nom+' '+(c.prenom||'')).trim()+'</option>';
+  }).join('');
   // Preserve current selections before repopulating
   var preserved={};
   ['t_cl','g_cl','a_cl','p_cl','q_cl','fd_cl','tt_cli_id','ct_cl','intl_cl'].forEach(function(id){var e=$(id);if(e){preserved[id]=e.value;e.innerHTML=cH;if(preserved[id])e.value=preserved[id]}});
@@ -3500,7 +3577,12 @@ function bSel(){
 
 function bSelFac(){
   // Synchronise fd_cl — appelé aussi par bSel directement
-  var cH='<option value="">—</option>'+act(db.clients).map(function(c){return '<option value="'+c.id+'">'+(c.nom+' '+(c.prenom||'')).trim()+'</option>'}).join('');
+  var sortedClients = act(db.clients).slice().sort(function(a,b){
+    var nomA = ((a.nom||'')+ ' ' +(a.prenom||'')).trim().toLowerCase();
+    var nomB = ((b.nom||'')+ ' ' +(b.prenom||'')).trim().toLowerCase();
+    return nomA.localeCompare(nomB, 'fr');
+  });
+  var cH='<option value="">—</option>'+sortedClients.map(function(c){return '<option value="'+c.id+'">'+(c.nom+' '+(c.prenom||'')).trim()+'</option>'}).join('');
   var e=document.getElementById('fd_cl');if(e)e.innerHTML=cH;
 }
 
@@ -4511,11 +4593,6 @@ function marquerPayee(id){
   showToast('✅ '+f.ref+' marquée payée');
 }
 
-function bSelFac(){
-  var cH='<option value="">—</option>'+act(db.clients).map(function(c){return '<option value="'+c.id+'">'+(c.nom+' '+(c.prenom||'')).trim()+'</option>'}).join('');
-  var e=document.getElementById('fd_cl');if(e)e.innerHTML=cH;
-}
-
 function sFac(id){var f=db.factures.find(function(x){return x.id===id;});if(!f)return;var nr=V('ef_ref');if(nr&&nr.trim())f.ref=nr.trim();f.status=V('ef_s');f.total=E(V('ef_t'));f.acompte=E(V('ef_ac'));f.paiementAcompte=V('ef_mpac');f.paiement=V('ef_mp');var obj=((document.getElementById('ef_obj')||{}).value||'').trim();if(obj)f.objet=obj;var dt=V('ef_dt');if(dt)f.date=dt;var dp=V('ef_dpay');if(dp)f.datePaiement=dp;if(f.status==='payée'&&!f.datePaiement)f.datePaiement=tdy();lH('edit','Facture: '+f.ref);sav();cMo();rFac2();}
 function eCol(id){var p=db.colis.find(function(x){return x.id===id});if(!p)return;oMo('✏️ Colis','<div class="row"><div class="c6 fd"><label>Type</label><input id="ep_t" value="'+esc(p.type)+'"></div><div class="c3 fd"><label>Coût €</label><input id="ep_c" type="number" step="0.01" value="'+(p.cost||0)+'"></div><div class="c3 fd"><label>Vente €</label><input id="ep_p" type="number" step="0.01" value="'+(p.price||0)+'"></div></div>','<button class="btn rd" onclick="delRec(\'colis\',\''+id+'\',\'Colis\')">🗑️</button> <button class="btn gn" onclick="sCol(\''+id+'\')">💾</button>')}
 function sCol(id){var p=db.colis.find(function(x){return x.id===id});if(!p)return;p.type=V('ep_t');p.cost=E(V('ep_c'));p.price=E(V('ep_p'));lH('edit','Colis');sav();cMo()}
@@ -4540,8 +4617,19 @@ function rAll(){
   fns.forEach(function(fn){try{window[fn]()}catch(e){console.error(fn,e)}});
   $('synI').textContent=(fbConnected?'☁️ Cloud':'💾 Local')+' · '+new Date().toLocaleString('fr-FR');
 }
-function rCli(){rTbl('clTbl',['Nom','Tél','Ville','Type','Actions'],act(db.clients).map(function(cl){var cid=cl.id;return '<tr><td><b>'+cl.nom+' '+(cl.prenom||'')+'</b></td><td>'+(cl.tel||'')+'</td><td>'+(cl.ville||'')+'</td><td>'+(cl.type||'')+'</td><td style="display:flex;gap:3px"><button class="btn sm gn" onclick="showFicheClient(\''+cid+'\')" title="Fiche">👤</button><button class="btn sm bu" onclick="eCli(\''+cid+'\')" title="Modifier">✏️</button><button class="btn sm" style="background:#1a2a3a;border-color:#2a4060;color:#aac" onclick="showQR(\''+cid+'\')" title="QR">📱</button></td></tr>';}))}
-
+function rCli(filterQuery){
+  var q=(filterQuery||'').toLowerCase().trim();
+  var sortedCli = act(db.clients).slice().sort(function(a,b){return((a.nom||'')+' '+(a.prenom||'')).toLowerCase().localeCompare(((b.nom||'')+' '+(b.prenom||'')).toLowerCase(),'fr');});
+  // Filtre uniquement si >= 3 caractères
+  if(q.length>=3){
+    sortedCli=sortedCli.filter(function(cl){
+      var hay=((cl.nom||'')+' '+(cl.prenom||'')+' '+(cl.tel||'')+' '+(cl.ville||'')+' '+(cl.email||'')).toLowerCase();
+      return hay.indexOf(q)>=0;
+    });
+  }
+  rTbl('clTbl',['Nom','Tél','Ville','Type','Actions'],sortedCli.map(function(cl){var cid=cl.id;return '<tr><td><b>'+cl.nom+' '+(cl.prenom||'')+'</b></td><td>'+(cl.tel||'')+'</td><td>'+(cl.ville||'')+'</td><td>'+(cl.type||'')+'</td><td style="display:flex;gap:3px"><button class="btn sm gn" onclick="showFicheClient(\''+cid+'\')" title="Fiche">👤</button><button class="btn sm bu" onclick="eCli(\''+cid+'\')" title="Modifier">✏️</button><button class="btn sm" style="background:#1a2a3a;border-color:#2a4060;color:#aac" onclick="showQR(\''+cid+'\')" title="QR">📱</button></td></tr>';}));
+}
+function filterCliTable(val){rCli(val);}
 function rAni(){rTbl('anTbl',['Animal','Client','Espèce','Race','CITES',''],act(db.animaux).map(function(a){return '<tr><td>'+a.nom+'</td><td>'+cN(a.clientId)+'</td><td>'+a.espece+'</td><td>'+(a.race||'')+'</td><td>'+(a.cites||'')+'</td><td><button class="btn sm bu" onclick="eAni(\''+a.id+'\')">✏️</button></td></tr>'}))}
 function rTrp(){rTbl('trTbl',['Réf','Date','Client','Trajet','Km','Coût','TTC','HT','Brute','Nette','Extras','GPS',''],act(db.transports).map(function(t){var l=tLegs(t);var tr=l.length<=3?l.join(' → '):(l[0]+' → ... → '+l[l.length-1]);var co=totalCostTr(t);var m=fmtMarg(t.price,co);var gmUrl=l.length>1?'https://www.google.com/maps/dir/?api=1&origin='+l.map(encodeURIComponent)[0]+'&destination='+l.map(encodeURIComponent)[l.length-1]+(l.length>2?'&waypoints='+l.slice(1,l.length-1).map(encodeURIComponent).join('|'):'')+'&travelmode=driving':'';var gmNoToll=gmUrl?gmUrl+'&avoid=tolls':'';return '<tr><td>'+t.ref+'</td><td>'+t.date+'</td><td>'+cN(t.clientId)+'</td><td style="font-size:11px">'+tr+'</td><td>'+(t.kmManual||0)+'</td><td>'+euro(co)+'</td><td>'+euro(t.price)+'</td><td>'+euro(m.priceHT)+'</td><td style="color:'+(m.brute>=0?'var(--a2)':'var(--rd)')+'">'+euro(m.brute)+'</td><td style="color:'+(m.nette>=0?'var(--a2)':'var(--rd)')+'"><b>'+euro(m.nette)+'</b></td><td style="font-size:10px">'+extraHtml(t)+'</td><td style="white-space:nowrap">'+(gmUrl?'<a class="btn sm bu" href="'+gmUrl+'" target="_blank" title="Rapide">🚀</a> <a class="btn sm" style="background:#16332015;border-color:#22a69340;color:#22a693" href="'+gmNoToll+'" target="_blank" title="Sans péage">🌿</a>':'')+'</td><td><button class="btn sm bu" onclick="eTr(\''+t.id+'\')">✏️</button><button class="btn sm og" onclick="dupTr(\''+t.id+'\')" title="Dupliquer">📋</button></td></tr>'}))}
 function rGrd2(){rTbl('grTbl',['Réf','Animal','Entrée','Sortie','Coût','TTC','HT','Brute TTC','Nette HT',''],act(db.gardes).map(function(g){var m=fmtMarg(g.price,E(g.cost));return '<tr><td>'+g.ref+'</td><td>'+aNs(g)+'</td><td>'+fD(g.start)+'</td><td>'+fD(g.end)+'</td><td>'+euro(g.cost||0)+'</td><td>'+euro(g.price)+'</td><td>'+euro(m.priceHT)+'</td><td style="color:'+(m.brute>=0?'var(--a2)':'var(--rd)')+'">'+euro(m.brute)+'</td><td style="color:'+(m.nette>=0?'var(--a2)':'var(--rd)')+'"><b>'+euro(m.nette)+'</b></td><td><button class="btn sm bu" onclick="eGrd(\''+g.id+'\')">✏️</button></td></tr>'}))}
@@ -5296,14 +5384,56 @@ function rStat(){
 }
 function rHist(){$('hiC').innerHTML=db.history.map(function(h){return '<div class="itm"><span class="sm-t">'+fD(h.date)+'</span> · '+h.type+' · '+h.text+'</div>'}).join('')||'<div class="itm">—</div>'}
 function gSrch(){
-  var q=(V('srI')||'').toLowerCase();if(!q){$('srC').innerHTML='<div class="itm" style="color:var(--mt)">Tapez un mot</div>';return}
+  var q=(V('srI')||'').toLowerCase();
+  // Minimum 3 caractères pour lancer la recherche
+  if(q.length < 3){
+    $('srC').innerHTML='<div class="itm" style="color:var(--mt)">'+(q.length === 0 ? 'Tapez au moins 3 lettres' : 'Encore '+(3-q.length)+' lettre(s)...')+'</div>';
+    return;
+  }
   var r=[];
-  act(db.clients).forEach(function(c){if(JSON.stringify(c).toLowerCase().indexOf(q)>=0)r.push('👥 '+c.nom+' '+(c.prenom||''))});
-  act(db.animaux).forEach(function(a){if(JSON.stringify(a).toLowerCase().indexOf(q)>=0)r.push('🐶 '+a.nom)});
-  act(db.transports).forEach(function(t){if(JSON.stringify(t).toLowerCase().indexOf(q)>=0)r.push('🚗 '+t.ref)});
-  act(db.devis).forEach(function(d){if(JSON.stringify(d).toLowerCase().indexOf(q)>=0)r.push('🧾 '+d.ref)});
-  act(db.factures).forEach(function(f){if(JSON.stringify(f).toLowerCase().indexOf(q)>=0)r.push('💶 '+f.ref)});
-  $('srC').innerHTML=r.map(function(x){return '<div class="itm">'+x+'</div>'}).join('')||'<div class="itm">Aucun résultat</div>';
+  // Clients triés alphabétiquement
+  act(db.clients).slice().sort(function(a,b){
+    return ((a.nom||'')+' '+(a.prenom||'')).toLowerCase().localeCompare(((b.nom||'')+' '+(b.prenom||'')).toLowerCase(), 'fr');
+  }).forEach(function(c){
+    if(JSON.stringify(c).toLowerCase().indexOf(q)>=0) r.push({type:'cli', sort:(c.nom||'').toLowerCase(), html:'<div class="itm" onclick="eCli(\''+c.id+'\')" style="cursor:pointer">👥 <b>'+c.nom+' '+(c.prenom||'')+'</b>'+(c.ville?' <span style="color:var(--mt);font-size:11px">· '+c.ville+'</span>':'')+'</div>'});
+  });
+  // Animaux triés
+  act(db.animaux).slice().sort(function(a,b){
+    return (a.nom||'').toLowerCase().localeCompare((b.nom||'').toLowerCase(), 'fr');
+  }).forEach(function(a){
+    if(JSON.stringify(a).toLowerCase().indexOf(q)>=0) r.push({type:'ani', sort:(a.nom||'').toLowerCase(), html:'<div class="itm" onclick="eAni(\''+a.id+'\')" style="cursor:pointer">🐾 <b>'+a.nom+'</b> <span style="color:var(--mt);font-size:11px">· '+a.espece+' · '+cN(a.clientId)+'</span></div>'});
+  });
+  // Transports triés par ref
+  act(db.transports).slice().sort(function(a,b){
+    return (b.ref||'').localeCompare(a.ref||'');
+  }).forEach(function(t){
+    if(JSON.stringify(t).toLowerCase().indexOf(q)>=0) r.push({type:'tr', sort:t.ref||'', html:'<div class="itm" onclick="eTr(\''+t.id+'\')" style="cursor:pointer">🚗 <b>'+t.ref+'</b> <span style="color:var(--mt);font-size:11px">· '+t.date+' · '+cN(t.clientId)+'</span></div>'});
+  });
+  // Devis triés par ref
+  act(db.devis).slice().sort(function(a,b){
+    return (b.ref||'').localeCompare(a.ref||'');
+  }).forEach(function(d){
+    if(JSON.stringify(d).toLowerCase().indexOf(q)>=0) r.push({type:'dev', sort:d.ref||'', html:'<div class="itm" onclick="eDev(\''+d.id+'\')" style="cursor:pointer">📝 <b>'+d.ref+'</b> <span style="color:var(--mt);font-size:11px">· '+cN(d.clientId)+' · '+euro(d.total)+'</span></div>'});
+  });
+  // Factures triées par ref
+  act(db.factures).slice().sort(function(a,b){
+    return (b.ref||'').localeCompare(a.ref||'');
+  }).forEach(function(f){
+    if(JSON.stringify(f).toLowerCase().indexOf(q)>=0) r.push({type:'fac', sort:f.ref||'', html:'<div class="itm" onclick="eFac(\''+f.id+'\')" style="cursor:pointer">💶 <b>'+f.ref+'</b> <span style="color:var(--mt);font-size:11px">· '+cN(f.clientId)+' · '+euro(f.total)+' · '+(f.status||'')+'</span></div>'});
+  });
+  // Afficher les résultats groupés par type
+  var html = '';
+  var clis = r.filter(function(x){return x.type==='cli'});
+  var anis = r.filter(function(x){return x.type==='ani'});
+  var trs = r.filter(function(x){return x.type==='tr'});
+  var devs = r.filter(function(x){return x.type==='dev'});
+  var facs = r.filter(function(x){return x.type==='fac'});
+  if(clis.length) html += '<div class="nt" style="font-weight:700;margin:8px 0 4px;color:var(--ac)">👥 Clients ('+clis.length+')</div>' + clis.map(function(x){return x.html}).join('');
+  if(anis.length) html += '<div class="nt" style="font-weight:700;margin:8px 0 4px;color:var(--ac)">🐾 Animaux ('+anis.length+')</div>' + anis.map(function(x){return x.html}).join('');
+  if(trs.length) html += '<div class="nt" style="font-weight:700;margin:8px 0 4px;color:var(--ac)">🚗 Transports ('+trs.length+')</div>' + trs.map(function(x){return x.html}).join('');
+  if(devs.length) html += '<div class="nt" style="font-weight:700;margin:8px 0 4px;color:var(--ac)">📝 Devis ('+devs.length+')</div>' + devs.map(function(x){return x.html}).join('');
+  if(facs.length) html += '<div class="nt" style="font-weight:700;margin:8px 0 4px;color:var(--ac)">💶 Factures ('+facs.length+')</div>' + facs.map(function(x){return x.html}).join('');
+  $('srC').innerHTML = html || '<div class="itm">Aucun résultat pour "'+q+'"</div>';
 }
 function rDrv(){
   var up=act(db.transports).filter(function(t){return t.date>=tdy()}).sort(function(a,b){return (a.date||'').localeCompare(b.date||'')}).slice(0,10);
@@ -5528,7 +5658,8 @@ function rMails(){
 }
 
 function bSelMail(){
-  var cH='<option value="">—</option>'+act(db.clients).map(function(c){return '<option value="'+c.id+'">'+(c.nom+' '+(c.prenom||'')).trim()+'</option>'}).join('');
+  var sortedCli = act(db.clients).slice().sort(function(a,b){return((a.nom||'')+' '+(a.prenom||'')).toLowerCase().localeCompare(((b.nom||'')+' '+(b.prenom||'')).toLowerCase(),'fr');});
+  var cH='<option value="">—</option>'+sortedCli.map(function(c){return '<option value="'+c.id+'">'+(c.nom+' '+(c.prenom||'')).trim()+'</option>'}).join('');
   var mCl=$('mCl');if(mCl)mCl.innerHTML=cH;
   updateMailRef();
 }
@@ -6424,7 +6555,13 @@ function rCliHist(){
 // Populate cliHist select
 function bSelCliHist(){
   var el=$('chCl');if(!el)return;
-  var h='<option value="">— Choisir —</option>'+act(db.clients).map(function(c){return '<option value="'+c.id+'">'+(c.nom+' '+(c.prenom||'')).trim()+'</option>'}).join('');
+  // Trier les clients alphabétiquement
+  var sortedClients = act(db.clients).slice().sort(function(a,b){
+    var nomA = ((a.nom||'')+ ' ' +(a.prenom||'')).trim().toLowerCase();
+    var nomB = ((b.nom||'')+ ' ' +(b.prenom||'')).trim().toLowerCase();
+    return nomA.localeCompare(nomB, 'fr');
+  });
+  var h='<option value="">— Choisir —</option>'+sortedClients.map(function(c){return '<option value="'+c.id+'">'+(c.nom+' '+(c.prenom||'')).trim()+'</option>'}).join('');
   el.innerHTML=h;
 }
 
@@ -6743,10 +6880,11 @@ function msPrint(){
 
 function rMission(){
   msFillSelect();
-  // Fill SMS client select
+  // Fill SMS client select (sorted alphabetically)
+  var sortedCli = act(db.clients).slice().sort(function(a,b){return((a.nom||'')+' '+(a.prenom||'')).toLowerCase().localeCompare(((b.nom||'')+' '+(b.prenom||'')).toLowerCase(),'fr');});
   var smsClEl = document.getElementById('sms_cl');
   if(smsClEl){
-    smsClEl.innerHTML = '<option value="">—</option>'+act(db.clients).map(function(c){return '<option value="'+c.id+'">'+(c.nom+' '+(c.prenom||'')).trim()+' · '+(c.tel||'—')+'</option>';}).join('');
+    smsClEl.innerHTML = '<option value="">—</option>'+sortedCli.map(function(c){return '<option value="'+c.id+'">'+(c.nom+' '+(c.prenom||'')).trim()+' · '+(c.tel||'—')+'</option>';}).join('');
   }
 }
 
@@ -7190,7 +7328,6 @@ function initRapport(){
   rRapport();
 }
 
-function rMission(){msFillSelect();var smsClEl=document.getElementById("sms_cl");if(smsClEl){smsClEl.innerHTML='<option value="">—</option>'+act(db.clients).map(function(c){return '<option value="'+c.id+'">'+((c.nom+' '+( c.prenom||'' )).trim())+' · '+(c.tel||'—')+'</option>';}).join('');}}
 // =================== FIN V18 ===================
 
 // =================== FIN V16 ===================
