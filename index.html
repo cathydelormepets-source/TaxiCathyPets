@@ -20,7 +20,7 @@ if(typeof caches!=='undefined'&&caches.keys){
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <meta name="apple-mobile-web-app-title" content="Cathy Pets"/>
 <meta name="theme-color" content="#060e18"/>
-<title>Cathy Pets V27</title>
+<title>Cathy Pets V28</title>
 <link id="pwa-manifest" rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" sizes="192x192" href="icon-192.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -474,7 +474,7 @@ body.nuit .card{border-color:#0a1520}
 <div class="mo" id="mOv" onclick="if(event.target===this)cMo()"><div class="mdl"><div class="mh"><h3 id="mTi">Édition</h3><button class="xb" onclick="cMo()">✕</button></div><div class="mb" id="mBd"></div><div class="mf" id="mFt"></div></div></div>
 <div class="app">
 <aside class="sidebar" id="sb">
-<div class="brand" style="padding:10px 14px"><img src="" id="brandLogo" style="width:100%;max-width:220px;height:auto;border-radius:10px;display:block;margin:0 auto 6px"><small style="display:block;text-align:center;color:#7b97b5;font-size:10px">V27 · Frais Route · Péages</small></div>
+<div class="brand" style="padding:10px 14px"><img src="" id="brandLogo" style="width:100%;max-width:220px;height:auto;border-radius:10px;display:block;margin:0 auto 6px"><small style="display:block;text-align:center;color:#7b97b5;font-size:10px">V28 · Articles Devis · QR Fix · Fidélisation</small></div>
 <div class="ng">Pilotage</div><div class="nv">
 <button class="nb active" data-t="dash">🏠 Dashboard</button>
 <button class="nb" data-t="plan">📅 Planning</button>
@@ -1376,6 +1376,23 @@ body.nuit .card{border-color:#0a1520}
 <div class="c6 fd"><label>Total € TTC</label><input id="q_to" type="number" step="0.01"></div>
 </div>
 <div class="fd"><label>Objet / description</label><textarea id="q_no" placeholder="Transport animalier de..."></textarea></div>
+
+  <!-- LIGNES ARTICLES DEVIS V28 -->
+  <div style="font-size:11px;font-weight:800;color:var(--mt);text-transform:uppercase;letter-spacing:.1em;margin:8px 0 6px">📦 Articles / Lignes du devis</div>
+  <div id="q_lignes"></div>
+  <button class="btn sm bu" onclick="devAddLigne()" style="margin-bottom:10px">➕ Ajouter un article</button>
+
+  <div class="row">
+    <div class="c4 fd"><label>Remise %</label><input id="q_remise" type="number" min="0" max="100" step="1" value="0" oninput="devCalcTotal()"></div>
+    <div class="c4 fd"><label>TVA %</label>
+      <select id="q_tva" onchange="devCalcTotal()" style="background:#080f1a;border:1px solid var(--ln);color:var(--tx);border-radius:10px;padding:10px 12px;font:inherit;font-size:13px;width:100%">
+        <option value="20">20%</option><option value="10">10%</option><option value="5.5">5,5%</option><option value="0">0% (exo)</option>
+      </select>
+    </div>
+    <div class="c4 fd"><label>Total TTC calculé €</label><input id="q_to_calc" type="number" step="0.01" readonly style="color:var(--gd);font-weight:800;font-size:15px"></div>
+  </div>
+  <div id="q_recap" style="padding:10px 14px;background:#0f1f33;border-radius:8px;font-size:12px;margin-bottom:10px;display:none"></div>
+
 <div class="nt" style="margin:8px 0 6px">🏨 <b>Hébergement</b> (optionnel)</div>
 <div class="row">
 <div class="c4 fd"><label>Hôtel / lieu</label><input id="q_htl" placeholder="Ex: Ibis Lyon"></div>
@@ -5654,6 +5671,69 @@ function preFill(){
     t.waypoints.forEach(function(w){addDWP(w.label,w.address)});
   }
 }
+// ---- V28 : LIGNES ARTICLES DEVIS ----
+var _devLigneCount = 0;
+function devAddLigne(desc, qty, pu){
+  var i = _devLigneCount++;
+  var box = document.getElementById('q_lignes');
+  if(!box) return;
+  var row = document.createElement('div');
+  row.id = 'q_lg_row_'+i;
+  row.style.cssText = 'display:grid;grid-template-columns:1fr 70px 90px 36px;gap:6px;margin-bottom:6px;align-items:center';
+  row.innerHTML =
+    '<input id="q_lg_d_'+i+'" placeholder="Description article..." value="'+esc(desc||'')+'" oninput="devCalcTotal()" style="background:#080f1a;border:1px solid var(--ln);color:var(--tx);border-radius:8px;padding:7px 8px;font:inherit;font-size:12px">'+
+    '<input id="q_lg_q_'+i+'" type="number" min="0.5" step="0.5" value="'+(qty||1)+'" oninput="devCalcTotal()" style="background:#080f1a;border:1px solid var(--ln);color:var(--tx);border-radius:8px;padding:7px 8px;font:inherit;font-size:12px;text-align:center" placeholder="Qté">'+
+    '<input id="q_lg_p_'+i+'" type="number" step="0.01" min="0" value="'+(pu||'')+'" oninput="devCalcTotal()" style="background:#080f1a;border:1px solid var(--ln);color:var(--tx);border-radius:8px;padding:7px 8px;font:inherit;font-size:12px" placeholder="PU HT €">'+
+    '<button class="btn sm rd" onclick="devDelLigne('+i+')" style="padding:5px 8px">✕</button>';
+  box.appendChild(row);
+  devCalcTotal();
+}
+function devDelLigne(i){
+  var row = document.getElementById('q_lg_row_'+i);
+  if(row) row.remove();
+  devCalcTotal();
+}
+function devGetLignes(){
+  var lignes = [];
+  for(var i = 0; i < _devLigneCount+5; i++){
+    var dEl = document.getElementById('q_lg_d_'+i);
+    var qEl = document.getElementById('q_lg_q_'+i);
+    var pEl = document.getElementById('q_lg_p_'+i);
+    if(dEl && qEl && pEl){
+      var d = dEl.value.trim();
+      var q = parseFloat(qEl.value)||0;
+      var p = parseFloat(pEl.value)||0;
+      if(d || p > 0) lignes.push({desc:d, qty:q, pu:p, montant:q*p});
+    }
+  }
+  return lignes;
+}
+function devCalcTotal(){
+  var lignes = devGetLignes();
+  var totalHT = lignes.reduce(function(s,l){ return s + l.montant; }, 0);
+  var remise = parseFloat((document.getElementById('q_remise')||{}).value||0)||0;
+  var tva = parseFloat((document.getElementById('q_tva')||{}).value||20)||20;
+  var htApresRemise = totalHT * (1 - remise/100);
+  var tvaM = htApresRemise * tva / 100;
+  var ttc = htApresRemise + tvaM;
+  var calcEl = document.getElementById('q_to_calc');
+  if(calcEl) calcEl.value = ttc.toFixed(2);
+  // Synchroniser aussi le champ total TTC existant
+  var toEl = document.getElementById('q_to');
+  if(toEl && lignes.length > 0) toEl.value = ttc.toFixed(2);
+  // Recap
+  var recap = document.getElementById('q_recap');
+  if(recap && lignes.length > 0){
+    recap.style.display = 'block';
+    recap.innerHTML = '<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>Total HT lignes</span><b>'+euro(totalHT)+'</b></div>'+
+      (remise > 0 ? '<div style="display:flex;justify-content:space-between;margin-bottom:4px;color:var(--or)"><span>Remise '+remise+'%</span><b>-'+euro(totalHT*remise/100)+'</b></div>' : '')+
+      '<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>HT après remise</span><b>'+euro(htApresRemise)+'</b></div>'+
+      '<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>TVA '+tva+'%</span><b>'+euro(tvaM)+'</b></div>'+
+      '<div style="display:flex;justify-content:space-between;font-size:14px;color:var(--gd)"><span><b>Total TTC</b></span><b>'+euro(ttc)+'</b></div>';
+  } else if(recap){ recap.style.display = 'none'; }
+}
+// ---- FIN V28 LIGNES ARTICLES DEVIS ----
+
 function addDev(){
   var wps=getDWPs();
   var aniIds=[];try{aniIds=getPickerAniIds('dv')}catch(e){}
@@ -5661,15 +5741,24 @@ function addDev(){
   var be=[];try{be=getBeData('dv')}catch(e){}
   var segs=[];try{segs=getSegs('qseg')}catch(e){}
   var sigs={};try{sigs=sigGetData('dv')}catch(e){}
-  var q={id:uid('q'),ref:'CP-DEV-'+_Y+'-'+db.settings.nextQuote,mode:V('q_mo'),clientId:V('q_cl'),animalIds:aniIds,animalId:aniIds[0]||'',accompagnants:accs,bienEtre:be,segments:segs,sigPec:sigs.sigPec||'',sigDep:sigs.sigDep||'',total:E(V('q_to')),notes:V('q_no'),waypoints:wps,hotel:V('q_htl'),hotelNuits:E(V('q_htn')),hotelCost:E(V('q_htc')),multiModal:V('q_mm'),mmCompagnie:V('q_mmc'),mmRef:V('q_mmr'),mmCost:E(V('q_mmx')),status:'brouillon',date:new Date().toISOString()};
+  var devLignes=devGetLignes();
+  var tvaRate=parseFloat((document.getElementById('q_tva')||{}).value||20)||20;
+  var remiseRate=parseFloat((document.getElementById('q_remise')||{}).value||0)||0;
+  var q={id:uid('q'),ref:'CP-DEV-'+_Y+'-'+db.settings.nextQuote,mode:V('q_mo'),clientId:V('q_cl'),animalIds:aniIds,animalId:aniIds[0]||'',accompagnants:accs,bienEtre:be,segments:segs,sigPec:sigs.sigPec||'',sigDep:sigs.sigDep||'',total:E(V('q_to')),notes:V('q_no'),lignes:devLignes,tva:tvaRate,remise:remiseRate,waypoints:wps,hotel:V('q_htl'),hotelNuits:E(V('q_htn')),hotelCost:E(V('q_htc')),multiModal:V('q_mm'),mmCompagnie:V('q_mmc'),mmRef:V('q_mmr'),mmCost:E(V('q_mmx')),status:'brouillon',date:new Date().toISOString()};
   if(!q.clientId||!q.total){alert('Client+montant requis');return}
-  db.settings.nextQuote++;db.devis.push(q);lH('devis','Devis: '+q.ref+' ('+wps.length+' étapes)');sav();
+  db.settings.nextQuote++;db.devis.push(q);lH('devis','Devis: '+q.ref+' ('+wps.length+' étapes, '+devLignes.length+' article(s))');sav();
   var dz=$('q_aniZone');if(dz)dz.innerHTML='';
   var da=$('q_accZone');if(da)da.innerHTML='';
   var db2=$('q_beZone');if(db2)db2.innerHTML='';
   var ds=$('q_segZone');if(ds)ds.innerHTML='';_segCounters['qseg']=0;
   var qsg=$('q_sigZone');if(qsg){qsg.innerHTML=renderSigBlock('dv');initSigBlock('dv')}
+  // Reset articles devis
+  _devLigneCount=0;var qlBox=document.getElementById('q_lignes');if(qlBox)qlBox.innerHTML='';
+  var qRemise=document.getElementById('q_remise');if(qRemise)qRemise.value='0';
+  var qRecap=document.getElementById('q_recap');if(qRecap)qRecap.style.display='none';
+  var qToCalc=document.getElementById('q_to_calc');if(qToCalc)qToCalc.value='';
   try{refreshDevAniPicker();refreshDevAccBlock()}catch(e){}
+  showToast('✅ Devis '+q.ref+' créé avec '+devLignes.length+' article(s)');
 }
 // ---- FACTURES ----
 var _fdLigneCount = 0;
@@ -7801,7 +7890,7 @@ function qrCodeImg(url, size) {
   return '<img src="' + qrUrl + '" style="width:' + size + 'px;height:' + size + 'px" alt="QR Code">';
 }
 function getVitrineUrl(refOrId) {
-  return 'https://cathypetsitter.com/suivi/' + encodeURIComponent(refOrId);
+  return 'https://www.cathypetsitter.com/';
 }
 
 // =================== V16 NOUVEAUTÉS ===================
@@ -7848,23 +7937,37 @@ function printDevisPro(id) {
   html += '<tr><td><strong>Titre:</strong></td><td>' + (q.notes || '') + '</td></tr>';
   html += '<tr><td><strong>Date:</strong></td><td>' + dateStr + '</td></tr>';
   html += '<tr><td><strong>Validite:</strong></td><td>' + validiteStr + '</td></tr></table></div>';
+  // V28 : Support articles multi-lignes
   html += '<div style="margin:20px 0;border:1px solid #999;width:100%"><table style="width:100%;border-collapse:collapse;font-size:11px">';
-  html += '<tr style="background:#ddd"><th style="border:1px solid #999;padding:8px;text-align:left">Designation</th><th style="border:1px solid #999;padding:8px">Qte</th>';
-  html += '<th style="border:1px solid #999;padding:8px">Unite</th><th style="border:1px solid #999;padding:8px;text-align:right">PU HT</th>';
-  html += '<th style="border:1px solid #999;padding:8px;text-align:right">Montant</th><th style="border:1px solid #999;padding:8px">TVA</th></tr>';
-  var montantHT = ht;
-  html += '<tr style="border-bottom:1px solid #999"><td style="border:1px solid #999;padding:8px">' + (q.notes || 'Transport animalier') + '</td>';
-  html += '<td style="border:1px solid #999;padding:8px;text-align:center">1.00</td><td style="border:1px solid #999;padding:8px;text-align:center">1</td>';
-  html += '<td style="border:1px solid #999;padding:8px;text-align:right">' + euro(montantHT) + '</td>';
-  html += '<td style="border:1px solid #999;padding:8px;text-align:right">' + euro(montantHT) + '</td>';
-  html += '<td style="border:1px solid #999;padding:8px;text-align:center">' + tva.toFixed(2) + '%</td></tr></table></div>';
+  html += '<tr style="background:#ddd"><th style="border:1px solid #999;padding:8px;text-align:left">Désignation</th><th style="border:1px solid #999;padding:8px">Quantité</th>';
+  html += '<th style="border:1px solid #999;padding:8px">Unité</th><th style="border:1px solid #999;padding:8px;text-align:right">Prix unitaire HT</th>';
+  html += '<th style="border:1px solid #999;padding:8px;text-align:right">Montant net HT</th><th style="border:1px solid #999;padding:8px">Taux TVA</th></tr>';
+  var qLignes = q.lignes && q.lignes.length ? q.lignes : [{desc: q.notes || 'Transport animalier', qty: 1, pu: ht, montant: ht}];
+  var totalHTLignes = 0;
+  qLignes.forEach(function(lg){
+    var mnt = (lg.qty||1) * (lg.pu||0);
+    totalHTLignes += mnt;
+    html += '<tr style="border-bottom:1px solid #999"><td style="border:1px solid #999;padding:8px">' + (lg.desc || 'Article') + '</td>';
+    html += '<td style="border:1px solid #999;padding:8px;text-align:center">' + (lg.qty||1).toFixed(2) + '</td>';
+    html += '<td style="border:1px solid #999;padding:8px;text-align:center">1</td>';
+    html += '<td style="border:1px solid #999;padding:8px;text-align:right">' + euro(lg.pu||0) + '</td>';
+    html += '<td style="border:1px solid #999;padding:8px;text-align:right">' + euro(mnt) + '</td>';
+    html += '<td style="border:1px solid #999;padding:8px;text-align:center">' + tva.toFixed(2) + '%</td></tr>';
+  });
+  html += '</table></div>';
+  var remisePct = E(q.remise) || 0;
+  var htApresRemise = totalHTLignes * (1 - remisePct/100);
+  var tvaMontant = htApresRemise * tva / 100;
   html += '<div style="margin:15px 0"><table style="width:100%;border:1px solid #999;font-size:11px"><tr style="background:#ddd">';
   html += '<th style="border:1px solid #999;padding:8px">Taux</th><th style="border:1px solid #999;padding:8px">Total HT</th><th style="border:1px solid #999;padding:8px">Montant TVA</th></tr>';
-  html += '<tr><td style="border:1px solid #999;padding:8px">' + tva.toFixed(2) + ' %</td><td style="border:1px solid #999;padding:8px">' + euro(montantHT) + '</td>';
-  html += '<td style="border:1px solid #999;padding:8px">' + euro(tvaM) + '</td></tr></table></div>';
-  html += '<div style="margin:15px 0"><table style="width:100%;border:1px solid #999;font-size:11px"><tr><td style="border:1px solid #999;padding:8px;font-weight:bold">Total HT</td>';
-  html += '<td style="border:1px solid #999;padding:8px;text-align:right">' + euro(ht) + '</td></tr><tr><td style="border:1px solid #999;padding:8px;font-weight:bold">TVA</td>';
-  html += '<td style="border:1px solid #999;padding:8px;text-align:right">' + euro(tvaM) + '</td></tr><tr style="background:#ddd"><td style="border:1px solid #999;padding:8px;font-weight:bold">Total TTC</td>';
+  html += '<tr><td style="border:1px solid #999;padding:8px">' + tva.toFixed(2) + ' %</td><td style="border:1px solid #999;padding:8px">' + euro(htApresRemise) + '</td>';
+  html += '<td style="border:1px solid #999;padding:8px">' + euro(tvaMontant) + '</td></tr></table></div>';
+  html += '<div style="margin:15px 0"><table style="width:100%;border:1px solid #999;font-size:11px">';
+  html += '<tr><td style="border:1px solid #999;padding:8px;font-weight:bold">Total HT</td>';
+  html += '<td style="border:1px solid #999;padding:8px;text-align:right">' + euro(totalHTLignes) + '</td></tr>';
+  if(remisePct > 0){ html += '<tr><td style="border:1px solid #999;padding:8px;color:#e67e22">Remise ' + remisePct + '%</td><td style="border:1px solid #999;padding:8px;text-align:right;color:#e67e22">-' + euro(totalHTLignes * remisePct/100) + '</td></tr>'; }
+  html += '<tr><td style="border:1px solid #999;padding:8px;font-weight:bold">TVA</td>';
+  html += '<td style="border:1px solid #999;padding:8px;text-align:right">' + euro(tvaMontant) + '</td></tr><tr style="background:#ddd"><td style="border:1px solid #999;padding:8px;font-weight:bold">Total TTC</td>';
   html += '<td style="border:1px solid #999;padding:8px;text-align:right;font-weight:bold">' + euro(E(q.total)) + '</td></tr></table></div>';
   html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin:15px 0">';
   html += '<div style="font-size:11px"><p><strong>BIC: BDEIFRPPXXX</strong></p><p><strong>IBAN: FR3311449000010139336001S46</strong></p></div>';
@@ -7898,12 +8001,31 @@ function printFacturePro(id) {
     html += '</div>';
   }
   html += '<h4 style="font-size:12px;font-weight:bold;margin:0 0 4px 0">Facture ' + f.ref + '</h4><p style="font-size:11px">Date: ' + dateStr + '</p></div></div>';
+  // V28 : Support articles multi-lignes facture
   html += '<div style="margin:20px 0;border:1px solid #999"><table style="width:100%;border-collapse:collapse;font-size:11px"><tr style="background:#ddd">';
-  html += '<th style="border:1px solid #999;padding:8px;text-align:left">Designation</th><th style="border:1px solid #999;padding:8px">Montant HT</th><th style="border:1px solid #999;padding:8px">TVA</th></tr>';
-  html += '<tr><td style="border:1px solid #999;padding:8px">Transport animalier</td><td style="border:1px solid #999;padding:8px;text-align:right">' + euro(ht) + '</td>';
-  html += '<td style="border:1px solid #999;padding:8px;text-align:right">' + euro(tvaM) + '</td></tr></table></div>';
-  html += '<div style="margin:15px 0"><table style="width:100%;border:1px solid #999;font-size:11px"><tr><td style="border:1px solid #999;padding:8px;font-weight:bold">Total HT</td>';
-  html += '<td style="border:1px solid #999;padding:8px;text-align:right">' + euro(ht) + '</td></tr><tr style="background:#ddd"><td style="border:1px solid #999;padding:8px;font-weight:bold">Total TTC</td>';
+  html += '<th style="border:1px solid #999;padding:8px;text-align:left">Désignation</th><th style="border:1px solid #999;padding:8px">Quantité</th><th style="border:1px solid #999;padding:8px;text-align:right">PU HT</th><th style="border:1px solid #999;padding:8px;text-align:right">Montant HT</th><th style="border:1px solid #999;padding:8px">TVA</th></tr>';
+  var facLignes = f.lignes && f.lignes.length ? f.lignes : [{desc: f.objet || 'Transport animalier', qty: 1, pu: ht}];
+  var facTotalHT = 0;
+  facLignes.forEach(function(lg){
+    var mnt = (lg.qty||1) * (lg.pu||0);
+    facTotalHT += mnt;
+    html += '<tr><td style="border:1px solid #999;padding:8px">' + (lg.desc || 'Article') + '</td>';
+    html += '<td style="border:1px solid #999;padding:8px;text-align:center">' + (lg.qty||1).toFixed(2) + '</td>';
+    html += '<td style="border:1px solid #999;padding:8px;text-align:right">' + euro(lg.pu||0) + '</td>';
+    html += '<td style="border:1px solid #999;padding:8px;text-align:right">' + euro(mnt) + '</td>';
+    html += '<td style="border:1px solid #999;padding:8px;text-align:center">' + tva.toFixed(2) + '%</td></tr>';
+  });
+  html += '</table></div>';
+  var facRemise = E(f.remise) || 0;
+  var facHTApresRemise = facTotalHT * (1 - facRemise/100);
+  var facTvaMontant = facHTApresRemise * tva / 100;
+  html += '<div style="margin:15px 0"><table style="width:100%;border:1px solid #999;font-size:11px">';
+  html += '<tr><td style="border:1px solid #999;padding:8px;font-weight:bold">Total HT</td>';
+  html += '<td style="border:1px solid #999;padding:8px;text-align:right">' + euro(facTotalHT) + '</td></tr>';
+  if(facRemise > 0){ html += '<tr><td style="border:1px solid #999;padding:8px;color:#e67e22">Remise ' + facRemise + '%</td><td style="border:1px solid #999;padding:8px;text-align:right;color:#e67e22">-' + euro(facTotalHT*facRemise/100) + '</td></tr>'; }
+  html += '<tr><td style="border:1px solid #999;padding:8px;font-weight:bold">TVA</td>';
+  html += '<td style="border:1px solid #999;padding:8px;text-align:right">' + euro(facTvaMontant) + '</td></tr>';
+  html += '<tr style="background:#ddd"><td style="border:1px solid #999;padding:8px;font-weight:bold">Total TTC</td>';
   html += '<td style="border:1px solid #999;padding:8px;text-align:right;font-weight:bold">' + euro(E(f.total)) + '</td></tr></table></div>';
   html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin:15px 0">';
   html += '<div style="font-size:11px"><p><strong>BIC: BDEIFRPPXXX</strong></p><p><strong>IBAN: FR3311449000010139336001S46</strong></p></div>';
@@ -8125,9 +8247,16 @@ function printDevis(id){
   if(q.hotel)extras.push('🏨 '+q.hotel+(q.hotelNuits?' ('+q.hotelNuits+' nuit(s))':'')+' : '+euro(q.hotelCost));
   if(q.multiModal){var icons2={ferry:'🚢',train:'🚄',avion:'✈️',bateau:'⛵'};extras.push((icons2[q.multiModal]||'🔀')+' '+(q.mmCompagnie||q.multiModal)+(q.mmRef?' – Réf: '+q.mmRef:'')+' : '+euro(q.mmCost))}
   if(extras.length){h+='<div class="extras"><h4 style="font-size:10px;text-transform:uppercase;color:#666;letter-spacing:.1em;margin-bottom:6px">Options incluses</h4>'+extras.map(function(e){return '<span class="extra-item">'+e+'</span>'}).join('')+'</div>'}
-  // Montants
+  // Montants V28 : articles multi-lignes
   h+='<div class="montants"><table>';
-  h+='<tr><td>Prestation transport animalier</td><td style="text-align:right">'+euro(ht)+'</td></tr>';
+  var devLignesPdf = q.lignes && q.lignes.length ? q.lignes : [{desc:'Prestation transport animalier', qty:1, pu:ht}];
+  var devTotalHTPdf = 0;
+  devLignesPdf.forEach(function(lg){
+    var mnt = (lg.qty||1)*(lg.pu||0);
+    devTotalHTPdf += mnt;
+    h+='<tr><td>'+(lg.desc||'Article')+' <span style="color:#888;font-size:11px">(x'+(lg.qty||1)+')</span></td><td style="text-align:right">'+euro(mnt)+'</td></tr>';
+  });
+  if(E(q.remise)>0) h+='<tr><td style="color:#e67e22">Remise '+q.remise+'%</td><td style="text-align:right;color:#e67e22">-'+euro(devTotalHTPdf*q.remise/100)+'</td></tr>';
   h+='<tr><td>TVA '+tva+'%</td><td style="text-align:right">'+euro(tvaM)+'</td></tr>';
   if(q.hotelCost>0)h+='<tr><td>Hébergement</td><td style="text-align:right">'+euro(q.hotelCost)+'</td></tr>';
   if(q.mmCost>0)h+='<tr><td>Transport multimodal</td><td style="text-align:right">'+euro(q.mmCost)+'</td></tr>';
@@ -14058,6 +14187,13 @@ window.stopQRScan = function(){
 
 
 /* ═══════════════════════════════════════════════════════════════════════════
+   V28 FIX : Compatibilité champs factures (status/statut, total/ttc)
+   ═══════════════════════════════════════════════════════════════════════════ */
+function facGetStatus(f){ return f.statut || f.status || ''; }
+function facGetTTC(f){ return parseFloat(f.ttc) || parseFloat(f.total) || 0; }
+function facIsPaid(f){ var s = facGetStatus(f); return s === 'payee' || s === 'payée'; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
    V26 FIDÉLISATION - 8 FONCTIONNALITÉS
    ═══════════════════════════════════════════════════════════════════════════ */
 
@@ -14073,9 +14209,9 @@ window.refreshScoring = function(){
   
   // Calculer CA par client
   var scores = clients.map(function(c){
-    var factures = act(db.factures).filter(function(f){ return f.clientId === c.id && f.statut === 'payee'; });
-    var caTotal = factures.reduce(function(sum, f){ return sum + (parseFloat(f.ttc)||0); }, 0);
-    var ca12m = factures.filter(function(f){ return new Date(f.date) >= yearAgo; }).reduce(function(sum, f){ return sum + (parseFloat(f.ttc)||0); }, 0);
+    var factures = act(db.factures).filter(function(f){ return f.clientId === c.id && facIsPaid(f); });
+    var caTotal = factures.reduce(function(sum, f){ return sum + facGetTTC(f); }, 0);
+    var ca12m = factures.filter(function(f){ return new Date(f.date) >= yearAgo; }).reduce(function(sum, f){ return sum + facGetTTC(f); }, 0);
     var transports = act(db.transports).filter(function(t){ return t.clientId === c.id; }).length;
     var lastTr = act(db.transports).filter(function(t){ return t.clientId === c.id; }).sort(function(a,b){ return new Date(b.date)-new Date(a.date); })[0];
     
@@ -14212,10 +14348,10 @@ window.loadComparison = function(){
   }
   
   // CA
-  var facCurrent = act(db.factures).filter(function(f){ var d = new Date(f.date); return d >= startCurrent && d <= endCurrent && f.statut === 'payee'; });
-  var facPrev = act(db.factures).filter(function(f){ var d = new Date(f.date); return d >= startPrev && d <= endPrev && f.statut === 'payee'; });
-  var caCurrent = facCurrent.reduce(function(s,f){ return s + (parseFloat(f.ttc)||0); }, 0);
-  var caPrev = facPrev.reduce(function(s,f){ return s + (parseFloat(f.ttc)||0); }, 0);
+  var facCurrent = act(db.factures).filter(function(f){ var d = new Date(f.date); return d >= startCurrent && d <= endCurrent && facIsPaid(f); });
+  var facPrev = act(db.factures).filter(function(f){ var d = new Date(f.date); return d >= startPrev && d <= endPrev && facIsPaid(f); });
+  var caCurrent = facCurrent.reduce(function(s,f){ return s + facGetTTC(f); }, 0);
+  var caPrev = facPrev.reduce(function(s,f){ return s + facGetTTC(f); }, 0);
   
   $('cmp_ca_now').textContent = euro(caCurrent);
   $('cmp_ca_prev').textContent = euro(caPrev);
@@ -14262,8 +14398,8 @@ function renderCompareChart(){
   var h = '';
   var now = new Date();
   for(var m = 0; m < 12; m++){
-    var mCurrent = act(db.factures).filter(function(f){ var d = new Date(f.date); return d.getMonth() === m && d.getFullYear() === now.getFullYear() && f.statut === 'payee'; }).reduce(function(s,f){ return s + (parseFloat(f.ttc)||0); }, 0);
-    var mPrev = act(db.factures).filter(function(f){ var d = new Date(f.date); return d.getMonth() === m && d.getFullYear() === now.getFullYear()-1 && f.statut === 'payee'; }).reduce(function(s,f){ return s + (parseFloat(f.ttc)||0); }, 0);
+    var mCurrent = act(db.factures).filter(function(f){ var d = new Date(f.date); return d.getMonth() === m && d.getFullYear() === now.getFullYear() && facIsPaid(f); }).reduce(function(s,f){ return s + facGetTTC(f); }, 0);
+    var mPrev = act(db.factures).filter(function(f){ var d = new Date(f.date); return d.getMonth() === m && d.getFullYear() === now.getFullYear()-1 && facIsPaid(f); }).reduce(function(s,f){ return s + facGetTTC(f); }, 0);
     var maxVal = Math.max(mCurrent, mPrev, 1000);
     var hCurrent = Math.max((mCurrent / maxVal * 120), 5);
     var hPrev = Math.max((mPrev / maxVal * 120), 5);
@@ -14438,7 +14574,7 @@ window.loadGamification = function(){
   var monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
   
   // CA semaine
-  var caWeek = act(db.factures).filter(function(f){ return new Date(f.date) >= weekStart && f.statut === 'payee'; }).reduce(function(s,f){ return s + (parseFloat(f.ttc)||0); }, 0);
+  var caWeek = act(db.factures).filter(function(f){ return new Date(f.date) >= weekStart && facIsPaid(f); }).reduce(function(s,f){ return s + facGetTTC(f); }, 0);
   var objWeek = 1500;
   var pctWeek = Math.min((caWeek / objWeek * 100), 100);
   $('gamif_week_val').textContent = euro(caWeek) + ' / ' + euro(objWeek);
@@ -14446,7 +14582,7 @@ window.loadGamification = function(){
   $('gamif_week_pct').textContent = Math.round(pctWeek) + '%';
   
   // CA mois
-  var caMonth = act(db.factures).filter(function(f){ return new Date(f.date) >= monthStart && f.statut === 'payee'; }).reduce(function(s,f){ return s + (parseFloat(f.ttc)||0); }, 0);
+  var caMonth = act(db.factures).filter(function(f){ return new Date(f.date) >= monthStart && facIsPaid(f); }).reduce(function(s,f){ return s + facGetTTC(f); }, 0);
   var objMonth = 5000;
   var pctMonth = Math.min((caMonth / objMonth * 100), 100);
   $('gamif_month_val').textContent = euro(caMonth) + ' / ' + euro(objMonth);
