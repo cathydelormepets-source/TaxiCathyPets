@@ -3501,6 +3501,16 @@ body.nuit .card{border-color:#0a1520}
       <div class="c12 fd"><label>Database URL</label><input id="fb_url" placeholder="https://mon-projet.firebasedatabase.app"></div>
       <div class="c12 fd"><label>Code salon</label><input id="fb_room" value="cathypets-default"></div>
     </div>
+    <div class="nt" style="margin:10px 0 6px;border-top:1px solid var(--ln);padding-top:10px;font-weight:800;color:var(--or)">🔐 Authentification Firebase</div>
+    <div class="row">
+      <div class="c6 fd"><label>Email</label><input id="fb_email" type="email" placeholder="cathy@cathypetsitter.com"></div>
+      <div class="c6 fd"><label>Mot de passe</label><input id="fb_pass" type="password" placeholder="••••••••"></div>
+    </div>
+    <div class="nt" style="font-size:10px;color:var(--mt);margin-bottom:8px">
+      ⚠️ Active "Email/Password" dans Firebase Console → Authentication → Sign-in method.<br>
+      Crée un compte dans Authentication → Users → Add user. Puis configure les règles :<br>
+      <code style="background:#0a1822;padding:4px 8px;border-radius:4px;display:block;margin-top:4px;font-size:11px;white-space:pre-wrap">{"rules": {".read": "auth != null", ".write": "auth != null"}}</code>
+    </div>
     <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
       <button class="btn sm at" onclick="fbConnect()">🔌 Connecter</button>
       <button class="btn sm rd" onclick="fbDisconnect()">⛔ Déco</button>
@@ -3508,6 +3518,7 @@ body.nuit .card{border-color:#0a1520}
       <button class="btn sm bu" onclick="fbPull()">⬇️ Récupérer</button>
     </div>
     <div id="fbStatus" class="nt" style="margin-top:8px;font-size:11px">⚪ Non connecté</div>
+    <div id="fbAuthStatus" class="nt" style="margin-top:4px;font-size:10px;color:var(--mt)"></div>
   </div>
 </div>
 
@@ -4432,6 +4443,7 @@ Cathy Pets - 07.81.30.41.10</textarea></div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
 "use strict";
@@ -4984,39 +4996,80 @@ function syncUI(state,msg){
   lbl.textContent=msg;
   if(st)st.textContent=(state==='on'?'🟢':state==='syncing'?'🟡':state==='err'?'🔴':'⚪')+' '+msg;
 }
+var _fbAuth=null;
 function fbConnect(){
   var ak=V('fb_ak')||db.settings.fbApiKey;
   var pid=V('fb_pid')||db.settings.fbProjectId;
   var url=V('fb_url')||db.settings.fbDatabaseUrl;
   var room=V('fb_room')||db.settings.fbRoom||'cathypets-default';
+  var email=V('fb_email')||db.settings.fbEmail||'';
+  var pass=V('fb_pass')||db.settings.fbPass||'';
   if(!ak||!pid||!url){alert('Remplis API Key, Project ID et Database URL');return}
   // Save config
   db.settings.fbApiKey=ak;db.settings.fbProjectId=pid;db.settings.fbDatabaseUrl=url;db.settings.fbRoom=room;
+  if(email)db.settings.fbEmail=email;
   localStorage.setItem(SK,JSON.stringify(db));
   try{
     if(fbApp){try{fbApp.delete()}catch(e){}}
     var cfg={apiKey:ak,projectId:pid,databaseURL:url};
     fbApp=firebase.initializeApp(cfg,'cathypets_'+Date.now());
     fbDb=fbApp.database();
-    fbRef=fbDb.ref('salons/'+room+'/data');
-    fbConnected=true;
-    syncUI('on','Cloud connecté ('+room+')');
-    // Listen for remote changes
-    if(fbListener)fbRef.off('value',fbListener);
-    fbListener=fbRef.on('value',function(snap){
-      if(_skipRemote){_skipRemote=false;return}
-      var remote=snap.val();
-      if(!remote)return;
-      try{
-        var merged=mergeData(db,remote);
-        db=merged;
-        localStorage.setItem(SK,JSON.stringify(db));
-        rAll();
-        syncUI('on','Sync OK — '+new Date().toLocaleTimeString('fr-FR'));
-        showToast('☁️ Données reçues du cloud');
-      }catch(e){console.error('merge err',e);syncUI('err','Erreur merge')}
-    },function(err){console.error('fb listen err',err);syncUI('err','Erreur: '+err.message)});
-    lH('cloud','Firebase connecté: '+room);
+    _fbAuth=fbApp.auth();
+
+    function afterAuth(){
+      fbRef=fbDb.ref('salons/'+room+'/data');
+      fbConnected=true;
+      syncUI('on','Cloud connecté ('+room+')');
+      var authSt=$('fbAuthStatus');
+      if(authSt){
+        var u=_fbAuth.currentUser;
+        authSt.innerHTML=u?'🔐 Authentifié: <b>'+u.email+'</b>':'🔓 Mode anonyme (non sécurisé)';
+        authSt.style.color=u?'var(--a2)':'var(--rd)';
+      }
+      if(fbListener)fbRef.off('value',fbListener);
+      fbListener=fbRef.on('value',function(snap){
+        if(_skipRemote){_skipRemote=false;return}
+        var remote=snap.val();
+        if(!remote)return;
+        try{
+          var merged=mergeData(db,remote);
+          db=merged;
+          localStorage.setItem(SK,JSON.stringify(db));
+          rAll();
+          syncUI('on','Sync OK — '+new Date().toLocaleTimeString('fr-FR'));
+          showToast('☁️ Données reçues du cloud');
+        }catch(e){console.error('merge err',e);syncUI('err','Erreur merge')}
+      },function(err){
+        console.error('fb listen err',err);
+        if(err.message&&err.message.indexOf('PERMISSION_DENIED')>=0){
+          syncUI('err','🔒 Accès refusé — vérifie email/mot de passe');
+        }else{
+          syncUI('err','Erreur: '+err.message);
+        }
+      });
+      lH('cloud','Firebase connecté: '+room+(email?' (auth: '+email+')':''));
+    }
+
+    // Auth si email/pass fournis
+    if(email&&pass){
+      syncUI('syncing','🔐 Authentification...');
+      _fbAuth.signInWithEmailAndPassword(email,pass).then(function(){
+        showToast('🔐 Authentifié: '+email);
+        afterAuth();
+      }).catch(function(err){
+        if(err.code==='auth/user-not-found'||err.code==='auth/invalid-credential'){
+          syncUI('err','❌ Email ou mot de passe incorrect');
+          alert('❌ Email ou mot de passe incorrect.\nVérifie dans Firebase Console → Authentication → Users');
+        }else{
+          syncUI('err','❌ Auth: '+err.message);
+          alert('Erreur auth: '+err.message);
+        }
+        fbConnected=false;
+      });
+    }else{
+      // Pas d'auth — mode ouvert (non sécurisé)
+      afterAuth();
+    }
   }catch(e){console.error('fb connect err',e);syncUI('err','Erreur: '+e.message);fbConnected=false}
 }
 function fbDisconnect(){
@@ -5087,6 +5140,7 @@ function mergeData(local,remote){
     // Keep local Firebase config
     m.settings.fbApiKey=local.settings.fbApiKey;m.settings.fbProjectId=local.settings.fbProjectId;
     m.settings.fbDatabaseUrl=local.settings.fbDatabaseUrl;m.settings.fbRoom=local.settings.fbRoom;
+    m.settings.fbEmail=local.settings.fbEmail;m.settings.fbPass=local.settings.fbPass;
   }
   // Sort history by date desc, trim
   m.history.sort(function(a,b){return (b.date||'').localeCompare(a.date||'')});
@@ -7303,6 +7357,7 @@ function rSet(){
   sv('fb_pid', s.fbProjectId||'');
   sv('fb_url', s.fbDatabaseUrl||'');
   sv('fb_room', s.fbRoom||'cathypets-default');
+  sv('fb_email', s.fbEmail||'');
   sv('s_asl', s.autoSaveLocal?'1':'0');
   sv('s_asc', s.autoSaveCloud?'1':'0');
   // Solde banque + objectif dans dashboard
