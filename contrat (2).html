@@ -1,0 +1,2004 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Contrat de Garde d'Animaux 2026 — Cathy Pets</title>
+<style>
+  :root {
+    --green: #c45400;
+    --green-light: #e65c00;
+    --green-pale: #fff3e0;
+    --green-border: #ffcc80;
+    --orange: #7b3f00;
+    --orange-light: #a0522d;
+    --grey: #546e7a;
+    --grey-light: #eceff1;
+    --grey-border: #cfd8dc;
+    --text: #263238;
+    --white: #ffffff;
+    --shadow: 0 2px 8px rgba(0,0,0,0.10);
+    --radius: 8px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: #fdf6ee;
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    background: linear-gradient(135deg, #b84700 0%, #e65c00 60%, #ff8c00 100%);
+    color: white;
+    padding: 28px 40px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+  }
+  .header-logo {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .logo-icon {
+    width: 64px;
+    height: 64px;
+    background: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 34px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    flex-shrink: 0;
+  }
+  .header-title h1 {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+  }
+  .header-title p {
+    font-size: 12px;
+    opacity: 0.85;
+    margin-top: 2px;
+  }
+  .header-contact {
+    text-align: right;
+    font-size: 12px;
+    line-height: 1.8;
+    opacity: 0.95;
+  }
+  .header-contact strong {
+    font-size: 13px;
+  }
+  .header-contact a {
+    color: white;
+    text-decoration: none;
+  }
+
+  /* ── BANNER ── */
+  .banner {
+    background: var(--green-pale);
+    border-bottom: 2px solid var(--green-border);
+    padding: 10px 40px;
+    font-size: 13px;
+    color: var(--green);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* ── MAIN LAYOUT ── */
+  .container {
+    max-width: 900px;
+    margin: 24px auto 40px;
+    padding: 0 16px;
+  }
+
+  /* ── SECTIONS ── */
+  .section {
+    background: white;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    margin-bottom: 20px;
+    overflow: hidden;
+  }
+  .section-header {
+    background: var(--green);
+    color: white;
+    padding: 10px 20px;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-header.orange {
+    background: #7b3f00;
+  }
+  .section-header.grey {
+    background: var(--grey);
+  }
+  .section-body {
+    padding: 20px;
+  }
+
+  /* ── GRID ── */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+  .grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 14px; }
+  .span-2 { grid-column: span 2; }
+  .span-3 { grid-column: span 3; }
+  .span-4 { grid-column: span 4; }
+
+  @media (max-width: 650px) {
+    .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr 1fr; }
+    .span-3, .span-4 { grid-column: span 2; }
+    .header { flex-direction: column; align-items: flex-start; }
+    .header-contact { text-align: left; }
+  }
+  @media (max-width: 440px) {
+    .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+    .span-2, .span-3, .span-4 { grid-column: span 1; }
+  }
+
+  /* ── FIELDS ── */
+  .field { display: flex; flex-direction: column; gap: 4px; }
+  .field label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--grey);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+  .field label .req { color: #c62828; }
+  .field input,
+  .field select,
+  .field textarea {
+    border: 1.5px solid var(--grey-border);
+    border-radius: 5px;
+    padding: 8px 10px;
+    font-size: 13.5px;
+    color: var(--text);
+    font-family: inherit;
+    background: #fafcfb;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    width: 100%;
+  }
+  .field input:focus,
+  .field select:focus,
+  .field textarea:focus {
+    outline: none;
+    border-color: var(--green-light);
+    box-shadow: 0 0 0 3px rgba(67,160,71,0.12);
+    background: white;
+  }
+  .field textarea { resize: vertical; min-height: 72px; }
+  .field input.error { border-color: #c62828; }
+
+  /* ── TARIF TABLE ── */
+  .tarif-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 6px;
+    font-size: 13px;
+  }
+  .tarif-table th {
+    background: var(--green-pale);
+    color: var(--green);
+    font-weight: 700;
+    padding: 8px 12px;
+    text-align: left;
+    border: 1px solid var(--green-border);
+    font-size: 12px;
+    text-transform: uppercase;
+  }
+  .tarif-table td {
+    padding: 8px 12px;
+    border: 1px solid var(--grey-border);
+    vertical-align: middle;
+  }
+  .tarif-table tr:nth-child(even) td { background: #fafafa; }
+  .tarif-table input {
+    border: 1.5px solid var(--grey-border);
+    border-radius: 4px;
+    padding: 5px 8px;
+    font-size: 13px;
+    width: 100%;
+    font-family: inherit;
+    background: #fafcfb;
+  }
+  .tarif-table input:focus {
+    outline: none;
+    border-color: var(--green-light);
+    background: white;
+  }
+  .total-row td {
+    background: var(--green-pale) !important;
+    font-weight: 700;
+    color: var(--green);
+    font-size: 14px;
+  }
+
+  /* ── CHECKBOX GROUPS ── */
+  .check-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 4px;
+  }
+  .check-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    cursor: pointer;
+    background: var(--grey-light);
+    border: 1.5px solid var(--grey-border);
+    border-radius: 20px;
+    padding: 5px 12px;
+    transition: all 0.15s;
+    user-select: none;
+  }
+  .check-item:has(input:checked) {
+    background: #fff3e0;
+    border-color: #e65c00;
+    color: #b84700;
+    font-weight: 600;
+  }
+  .check-item input[type=checkbox] {
+    accent-color: var(--green);
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+  }
+
+  /* ── ARTICLE LEGAL ── */
+  .article {
+    border-left: 3px solid var(--green-border);
+    padding: 10px 14px;
+    margin-bottom: 10px;
+    background: var(--grey-light);
+    border-radius: 0 var(--radius) var(--radius) 0;
+  }
+  .article h4 {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--green);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    margin-bottom: 4px;
+  }
+  .article p, .article ul {
+    font-size: 12px;
+    color: #455a64;
+    line-height: 1.6;
+  }
+  .article ul { padding-left: 16px; }
+  .article ul li { margin-bottom: 2px; }
+
+  /* ── SIGNATURE ZONE ── */
+  .sig-zone {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-top: 8px;
+  }
+  .sig-box {
+    border: 1.5px dashed var(--grey-border);
+    border-radius: var(--radius);
+    padding: 16px;
+    text-align: center;
+    min-height: 110px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    background: #fafcfb;
+  }
+  .sig-box .sig-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--grey);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+  .sig-box .sig-name {
+    font-size: 13px;
+    color: var(--green);
+    font-weight: 600;
+  }
+  .sig-box .sig-stamp {
+    font-size: 11px;
+    color: #78909c;
+    font-style: italic;
+  }
+  .sig-read {
+    font-size: 11px;
+    color: #455a64;
+    margin-top: 6px;
+    font-style: italic;
+  }
+
+  /* ── ANIMAL CARD ── */
+  .animal-card {
+    background: var(--grey-light);
+    border-radius: var(--radius);
+    padding: 16px;
+    border: 1.5px solid var(--grey-border);
+    margin-bottom: 8px;
+    position: relative;
+  }
+  .animal-number {
+    position: absolute;
+    top: -10px;
+    left: 14px;
+    background: var(--green);
+    color: white;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 10px;
+    border-radius: 10px;
+    text-transform: uppercase;
+  }
+
+  /* ── BUTTONS ── */
+  .btn-bar {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    margin-top: 24px;
+    flex-wrap: wrap;
+  }
+  .btn {
+    padding: 12px 28px;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 0.3px;
+    transition: transform 0.1s, box-shadow 0.1s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+  }
+  .btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.18); }
+  .btn:active { transform: translateY(0); }
+  .btn-primary { background: var(--green); color: white; }
+  .btn-secondary { background: var(--orange); color: white; }
+  .btn-ghost { background: var(--grey-light); color: var(--grey); border: 1.5px solid var(--grey-border); }
+  .btn-add { background: var(--green-pale); color: var(--green); border: 1.5px solid var(--green-border); font-size: 13px; padding: 8px 16px; }
+
+  /* ── INFO BOX ── */
+  .info-box {
+    background: var(--green-pale);
+    border: 1.5px solid var(--green-border);
+    border-radius: var(--radius);
+    padding: 12px 16px;
+    font-size: 12.5px;
+    color: var(--green);
+    margin-bottom: 16px;
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+  }
+  .warn-box {
+    background: #fff8e1;
+    border: 1.5px solid #ffe082;
+    border-radius: var(--radius);
+    padding: 12px 16px;
+    font-size: 12.5px;
+    color: #e65100;
+    margin-top: 12px;
+  }
+
+  /* ── DIVIDER ── */
+  .divider {
+    border: none;
+    border-top: 1.5px solid var(--grey-border);
+    margin: 16px 0;
+  }
+
+  /* ── FOOTER ── */
+  .footer {
+    background: var(--text);
+    color: #90a4ae;
+    text-align: center;
+    padding: 16px;
+    font-size: 11.5px;
+    margin-top: 10px;
+  }
+  .footer a { color: #80cbc4; text-decoration: none; }
+
+  /* ── ONGLET ADMIN ── */
+  .admin-tab {
+    background: linear-gradient(135deg, #1a237e 0%, #3949ab 100%);
+    border-radius: 8px;
+    margin-bottom: 20px;
+    overflow: hidden;
+    box-shadow: 0 4px 16px rgba(26,35,126,0.25);
+    border: 2px solid #3949ab;
+  }
+  .admin-tab-header {
+    background: linear-gradient(135deg, #0d1b6e 0%, #1a237e 100%);
+    color: white;
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    user-select: none;
+  }
+  .admin-tab-header h3 {
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .admin-tab-header .admin-badge {
+    background: #ff5722;
+    color: white;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 10px;
+    letter-spacing: 0.5px;
+  }
+  .admin-tab-body {
+    background: #e8eaf6;
+    padding: 20px;
+  }
+  .admin-note-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 14px;
+  }
+  .admin-note-grid .field label { color: #1a237e; }
+  .admin-note-grid input,
+  .admin-note-grid select,
+  .admin-note-grid textarea {
+    border-color: #7986cb;
+    background: white;
+  }
+  .admin-note-grid input:focus,
+  .admin-note-grid select:focus,
+  .admin-note-grid textarea:focus {
+    border-color: #3949ab;
+    box-shadow: 0 0 0 3px rgba(57,73,171,0.15);
+  }
+  @media (max-width:600px) { .admin-note-grid { grid-template-columns:1fr; } }
+
+  /* ── CHAMPS VERROUILLÉS ── */
+  .locked input, .locked select, .locked textarea {
+    background: #f5f0e8 !important;
+    border-color: #e0c97a !important;
+    color: #5a3e00 !important;
+    cursor: not-allowed !important;
+    font-weight: 600;
+  }
+  .locked-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #fff3cd;
+    border: 1.5px solid #e0c97a;
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #7a4f00;
+    margin-bottom: 10px;
+  }
+  .admin-bar {
+    background: linear-gradient(135deg, #1a237e 0%, #283593 100%);
+    color: white;
+    padding: 10px 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .admin-bar span { font-size: 12px; opacity: 0.9; }
+  .btn-admin {
+    background: white;
+    color: #1a237e;
+    border: none;
+    border-radius: 6px;
+    padding: 7px 18px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: transform 0.1s;
+  }
+  .btn-admin:hover { transform: translateY(-1px); }
+  .btn-admin.active { background: #ffeb3b; color: #1a237e; }
+  .section-locked-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  /* ── PRINT ── */
+  @media print {
+    body { background: white; font-size: 12px; }
+    .container { max-width: 100%; padding: 0; margin: 0; }
+    .header { padding: 16px; }
+    .btn-bar, .banner { display: none !important; }
+    .section { box-shadow: none; border: 1px solid #ccc; }
+    .field input, .field select, .field textarea {
+      border: none; border-bottom: 1px solid #999; background: transparent; padding: 2px 0;
+    }
+  }
+
+  /* ── SUCCESS OVERLAY ── */
+  #success-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+  }
+  #success-overlay.show { display: flex; }
+  .success-card {
+    background: white;
+    border-radius: 12px;
+    padding: 40px;
+    text-align: center;
+    max-width: 420px;
+    margin: 16px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+  }
+  .success-icon { font-size: 56px; margin-bottom: 12px; }
+  .success-card h2 { color: var(--green); margin-bottom: 8px; }
+  .success-card p { color: var(--grey); font-size: 13px; margin-bottom: 20px; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-logo">
+    <div class="logo-icon" style="padding:0; background:transparent; border-radius:0; box-shadow:none; width:130px; height:130px; display:flex; align-items:center; justify-content:center; flex-shrink:0;"><img src="data:image/png;base64,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" style="width:130px; height:130px; object-fit:contain;" alt="Cathy Pets logo"></div>
+    <div class="header-title">
+      <h1>CATHY PETS SAS</h1>
+      <p>Garde & Transport d'animaux — Professionnels de confiance</p>
+      <p style="margin-top:4px; font-size:11px; opacity:0.8;">SIRET 928 564 269 | RCS Soissons | RC Pro Hiscox HSXIN320028640M</p>
+    </div>
+  </div>
+  <div class="header-contact">
+    <strong>Cathy Delorme</strong><br>
+    <span style="display:inline-flex;align-items:center;gap:5px;">🐶 <span>Garde : <a href="tel:0783436306">07.83.43.63.06</a></span></span><br>
+    <span style="display:inline-flex;align-items:center;gap:5px;">🚗 <span>Taxi : <a href="tel:0781304110">07.81.30.41.10</a></span></span><br>
+    <span style="display:inline-flex;align-items:center;gap:5px;">✉️ <a href="mailto:cathydelormepets@gmail.com">cathydelormepets@gmail.com</a></span><br>
+    <span style="display:inline-flex;align-items:center;gap:5px;">🌐 <a href="https://cathypetsitter.com">cathypetsitter.com</a></span>
+  </div>
+</div>
+
+<!-- BANNER -->
+<div class="banner">
+  📋 &nbsp;<strong>Contrat de Garde d'Animaux — Édition 2026</strong> &nbsp;|&nbsp; Remplissez ce formulaire et cliquez sur "Envoyer" pour le transmettre directement à Cathy Pets.
+</div>
+
+<!-- ADMIN BAR -->
+<div class="admin-bar" id="admin-bar">
+  <span>🔐 <strong>Espace Cathy Pets</strong> — Remplissez la période et les tarifs avant d'envoyer au client</span>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+    <button class="btn-admin active" id="btn-unlock" onclick="toggleAdmin()">✏️ &nbsp;Mode saisie</button>
+    <button class="btn-admin" id="btn-lock" onclick="lockAndSend()" style="background:#4caf50;color:white;">🔒 &nbsp;Verrouiller</button>
+    <div id="send-buttons" style="display:none; display:none; gap:8px; flex-wrap:wrap;">
+      <button class="btn-admin" onclick="generatePDF()" style="background:#e65100;color:white;">📄 &nbsp;Générer PDF client</button>
+      <button class="btn-admin" onclick="sendSMS()" style="background:#00897b;color:white;">📱 &nbsp;Envoyer par SMS</button>
+      <button class="btn-admin" onclick="copyLink()" style="background:#6a1b9a;color:white;">🔗 &nbsp;Copier lien client</button>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="container">
+
+  <div class="info-box">
+    ℹ️ <span>Tous les champs marqués d'un <strong style="color:#c62828">*</strong> sont obligatoires. Une fois le formulaire complété, cliquez sur <strong>"Envoyer à Cathy Pets"</strong> en bas de page. Un email pré-rempli s'ouvrira automatiquement dans votre messagerie.</span>
+  </div>
+
+  <!-- ── ONGLET ADMIN CATHY PETS (invisible client) ── -->
+  <div class="admin-tab" id="admin-tab">
+    <div class="admin-tab-header" onclick="toggleAdminTab()">
+      <h3>🔐 &nbsp;Espace privé Cathy Pets <span class="admin-badge">RÉSERVÉ</span></h3>
+      <span id="admin-tab-arrow" style="font-size:18px; transition:transform 0.2s;">▼</span>
+    </div>
+    <div class="admin-tab-body" id="admin-tab-body">
+
+      <div style="background:#fff3e0; border:1.5px solid #ffb74d; border-radius:6px; padding:10px 14px; margin-bottom:14px; font-size:12px; color:#e65100;">
+        ⚠️ <strong>Cet onglet est uniquement visible par Cathy Pets.</strong> Il disparaît automatiquement lors du verrouillage avant envoi au client.
+      </div>
+
+      <div class="admin-note-grid">
+        <div class="field">
+          <label>🏷️ N° dossier interne</label>
+          <input type="text" id="admin-dossier" placeholder="Ex. : DOSS-2026-089">
+        </div>
+        <div class="field">
+          <label>📋 Statut dossier</label>
+          <select id="admin-statut">
+            <option value="">— Choisir —</option>
+            <option value="nouveau">🟡 Nouveau</option>
+            <option value="confirme">🟢 Confirmé</option>
+            <option value="en_cours">🔵 En cours</option>
+            <option value="termine">⚫ Terminé</option>
+            <option value="annule">🔴 Annulé</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>💶 Acompte reçu (€)</label>
+          <input type="number" id="admin-acompte-recu" placeholder="0.00" step="0.01">
+        </div>
+        <div class="field">
+          <label>📅 Date de réception acompte</label>
+          <input type="date" id="admin-acompte-date">
+        </div>
+        <div class="field">
+          <label>💳 Mode de paiement acompte</label>
+          <select id="admin-acompte-mode">
+            <option value="">— Choisir —</option>
+            <option>Virement</option>
+            <option>Espèces</option>
+            <option>Chèque</option>
+            <option>PayPal / Lydia</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>⚠️ Alerte / point de vigilance</label>
+          <input type="text" id="admin-alerte" placeholder="Ex. : chien fugitif, traitement délicat...">
+        </div>
+        <div class="field" style="grid-column:span 2">
+          <label>📝 Notes internes (non transmises au client)</label>
+          <textarea id="admin-notes" placeholder="Ex. : Client déjà venu en 2024, chien difficile en voiture, appeler avant 18h..." style="min-height:80px;"></textarea>
+        </div>
+        <div class="field">
+          <label>🚗 Véhicule assigné</label>
+          <select id="admin-vehicule">
+            <option value="">— Choisir —</option>
+            <option>Fourgon principal</option>
+            <option>Véhicule léger</option>
+            <option>Sous-traitant partenaire</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>👤 Responsable mission</label>
+          <input type="text" id="admin-responsable" placeholder="Ex. : Cathy" value="Cathy Delorme">
+        </div>
+      </div>
+
+      <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:4px;">
+        <button class="btn" style="background:#1a237e;color:white;font-size:12px;padding:8px 16px;" onclick="saveAdminNotes()">💾 &nbsp;Sauvegarder notes internes</button>
+        <div id="admin-save-msg" style="display:none; color:#2e7d32; font-size:12px; font-weight:700; align-self:center;">✅ Sauvegardé</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── SECTION 1 : INFOS CLIENT ── -->
+  <div class="section">
+    <div class="section-header">👤 &nbsp;1. Coordonnées du Client</div>
+    <div class="section-body">
+      <div class="grid-2" style="margin-bottom:14px">
+        <div class="field">
+          <label>Civilité</label>
+          <select id="civilite">
+            <option value="">— Choisir —</option>
+            <option>M.</option>
+            <option>Mme</option>
+            <option>M. et Mme</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Nom &amp; Prénom <span class="req">*</span></label>
+          <input type="text" id="client-nom" placeholder="Dupont Jean" required>
+        </div>
+        <div class="field">
+          <label>Téléphone principal <span class="req">*</span></label>
+          <input type="tel" id="client-tel" placeholder="06 XX XX XX XX" required>
+        </div>
+        <div class="field">
+          <label>Téléphone secondaire</label>
+          <input type="tel" id="client-tel2" placeholder="(facultatif)">
+        </div>
+        <div class="field span-2">
+          <label>Adresse email <span class="req">*</span></label>
+          <input type="email" id="client-email" placeholder="votre@email.com" required>
+        </div>
+        <div class="field span-2">
+          <label>Adresse postale <span class="req">*</span></label>
+          <input type="text" id="client-adresse" placeholder="12 rue des Fleurs, 02000 Laon" required>
+        </div>
+      </div>
+      <hr class="divider">
+      <div class="grid-2">
+        <div class="field">
+          <label>Contact d'urgence (nom &amp; lien)</label>
+          <input type="text" id="urgence-nom" placeholder="Marie Dupont — sœur">
+        </div>
+        <div class="field">
+          <label>Téléphone contact d'urgence</label>
+          <input type="tel" id="urgence-tel" placeholder="06 XX XX XX XX">
+        </div>
+      </div>
+      <div style="margin-top:14px; background:#fff8f0; border:1.5px solid #ffcc80; border-radius:8px; padding:14px;">
+        <div style="font-size:12px; font-weight:700; color:#c45400; text-transform:uppercase; letter-spacing:0.3px; margin-bottom:10px;">
+          🐕 Contact de secours cohabitation — Obligatoire (Art. 6bis)
+        </div>
+        <div class="grid-2">
+          <div class="field">
+            <label>Personne à contacter si incompatibilité <span class="req">*</span></label>
+            <input type="text" id="cohab-nom" placeholder="Jean Dupont — conjoint" required>
+          </div>
+          <div class="field">
+            <label>Téléphone joignable sous 2h <span class="req">*</span></label>
+            <input type="tel" id="cohab-tel" placeholder="06 XX XX XX XX" required>
+          </div>
+          <div class="field span-2">
+            <label>En cas d'incompatibilité, je préfère :</label>
+            <select id="cohab-option">
+              <option value="">— Choisir une option —</option>
+              <option value="pension">Option 1 — Dépôt en pension partenaire (frais à ma charge)</option>
+              <option value="retour">Option 2 — Retour à mon domicile (forfait taxi fixe : 150 € TTC)</option>
+              <option value="contact">Option 3 — Remise à la personne de secours ci-dessus</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SECTION 2 : PÉRIODE & PRESTATION ── -->
+  <div class="section" id="section-periode">
+    <div class="section-locked-header">
+        <div class="section-header" style="flex:1;">📅 &nbsp;2. Période de Garde &amp; Prestation</div>
+      </div>
+      <div class="locked-badge" id="badge-periode">🔒 Défini par Cathy Pets — non modifiable</div>
+    <div class="section-body">
+      <div class="grid-2" style="margin-bottom:14px">
+        <div class="field">
+          <label>Type de prestation <span class="req">*</span></label>
+          <select id="prestation-type" onchange="updatePrestation()">
+            <option value="">— Choisir —</option>
+            <option value="gardien">Garde au domicile du Gardien</option>
+            <option value="client">Garde au domicile du Client</option>
+            <option value="visite">Visites ponctuelles</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Adresse de garde (si différente)</label>
+          <input type="text" id="adresse-garde" placeholder="Par défaut : domicile renseigné ci-dessus">
+        </div>
+        <div class="field">
+          <label>Date de début <span class="req">*</span></label>
+          <input type="date" id="date-debut" required onchange="calcDuree()">
+        </div>
+        <div class="field">
+          <label>Heure de dépôt</label>
+          <input type="time" id="heure-depot">
+        </div>
+        <div class="field">
+          <label>Date de fin <span class="req">*</span></label>
+          <input type="date" id="date-fin" required onchange="calcDuree()">
+        </div>
+        <div class="field">
+          <label>Heure de reprise</label>
+          <input type="time" id="heure-reprise">
+        </div>
+      </div>
+      <div id="duree-info" class="info-box" style="display:none;">
+        📆 <span id="duree-text">Durée calculée</span>
+      </div>
+
+      <hr class="divider">
+      <div style="margin-bottom:10px">
+        <div class="field" style="margin-bottom:8px">
+          <label>Services inclus</label>
+        </div>
+        <div class="check-group" id="services">
+          <label class="check-item"><input type="checkbox" value="hebergement" checked> 🏠 Hébergement</label>
+          <label class="check-item"><input type="checkbox" value="alimentation"> 🍖 Alimentation fournie par Cathy</label>
+          <label class="check-item"><input type="checkbox" value="promenade"> 🦮 Promenades quotidiennes</label>
+          <label class="check-item"><input type="checkbox" value="medicaments"> 💊 Administration médicaments</label>
+          <label class="check-item"><input type="checkbox" value="taxi"> 🚗 Taxi animalier aller</label>
+          <label class="check-item"><input type="checkbox" value="taxi-retour"> 🚗 Taxi animalier retour</label>
+          <label class="check-item"><input type="checkbox" value="photos"> 📸 Envoi photos/vidéos</label>
+          <label class="check-item"><input type="checkbox" value="toilettage"> ✂️ Toilettage (sur devis)</label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SECTION 3 : TARIFICATION ── -->
+  <div class="section" id="section-tarif">
+    <div class="section-locked-header">
+        <div class="section-header orange" style="flex:1;">💶 &nbsp;3. Tarification</div>
+      </div>
+      <div class="locked-badge" id="badge-tarif">🔒 Défini par Cathy Pets — non modifiable</div>
+    <div class="section-body">
+      <table class="tarif-table">
+        <thead>
+          <tr>
+            <th>Désignation</th>
+            <th style="width:100px">Qté / Jours</th>
+            <th style="width:110px">Prix unitaire (€)</th>
+            <th style="width:110px">Montant (€)</th>
+          </tr>
+        </thead>
+        <tbody id="tarif-body">
+          <tr>
+            <td>Garde (tarif journalier)</td>
+            <td><input type="number" id="t-jours" placeholder="0" min="0" oninput="calcTotal()"></td>
+            <td><input type="number" id="t-prix-jour" placeholder="0.00" step="0.01" oninput="calcTotal()"></td>
+            <td id="t-mont-1" style="font-weight:600; color:var(--green)">0,00 €</td>
+          </tr>
+          <tr>
+            <td>Supplément jours fériés / week-end férié</td>
+            <td><input type="number" id="t-feries" placeholder="0" min="0" oninput="calcTotal()"></td>
+            <td><input type="number" id="t-prix-feries" placeholder="0.00" step="0.01" oninput="calcTotal()"></td>
+            <td id="t-mont-2" style="font-weight:600; color:var(--green)">0,00 €</td>
+          </tr>
+          <tr>
+            <td>Taxi animalier (aller) <small style="color:#888">— forfait 150 € TTC</small></td>
+            <td><input type="number" id="t-taxi-nb" placeholder="1" min="0" oninput="calcTotal()"></td>
+            <td><input type="number" id="t-taxi-prix" value="150" step="0.01" oninput="calcTotal()"></td>
+            <td id="t-mont-3" style="font-weight:600; color:var(--green)">0,00 €</td>
+          </tr>
+          <tr>
+            <td>Taxi animalier (retour) <small style="color:#888">— forfait 150 € TTC</small></td>
+            <td><input type="number" id="t-taxi2-nb" placeholder="1" min="0" oninput="calcTotal()"></td>
+            <td><input type="number" id="t-taxi2-prix" value="150" step="0.01" oninput="calcTotal()"></td>
+            <td id="t-mont-4" style="font-weight:600; color:var(--green)">0,00 €</td>
+          </tr>
+          <tr>
+            <td>Frais complémentaires (toilettage, etc.)</td>
+            <td><input type="number" id="t-compl-nb" placeholder="1" min="0" oninput="calcTotal()"></td>
+            <td><input type="number" id="t-compl-prix" placeholder="0.00" step="0.01" oninput="calcTotal()"></td>
+            <td id="t-mont-5" style="font-weight:600; color:var(--green)">0,00 €</td>
+          </tr>
+        </tbody>
+        <tfoot>
+          <tr class="total-row">
+            <td colspan="3" style="text-align:right; text-transform:uppercase; letter-spacing:0.5px">TOTAL TTC</td>
+            <td id="t-total">0,00 €</td>
+          </tr>
+          <tr class="total-row" style="background:var(--green-pale)">
+            <td colspan="3" style="text-align:right; font-size:12px; color:#555; font-weight:normal">Acompte 40% (à la réservation)</td>
+            <td id="t-acompte" style="color:#555; font-size:13px">0,00 €</td>
+          </tr>
+          <tr class="total-row" style="background:var(--green-pale)">
+            <td colspan="3" style="text-align:right; font-size:12px; color:#555; font-weight:normal">Solde (1er jour de garde)</td>
+            <td id="t-solde" style="color:#555; font-size:13px">0,00 €</td>
+          </tr>
+        </tfoot>
+      </table>
+
+      <hr class="divider">
+      <div class="grid-2">
+        <div class="field">
+          <label>Moyen de paiement préféré</label>
+          <select id="paiement">
+            <option value="">— Choisir —</option>
+            <option>Virement bancaire</option>
+            <option>Espèces</option>
+            <option>Chèque</option>
+            <option>PayPal / Lydia</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Observations tarif</label>
+          <input type="text" id="obs-tarif" placeholder="Remise, code promo...">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SECTION 4 : ANIMAUX ── -->
+  <div class="section">
+    <div class="section-header">🐾 &nbsp;4. Fiche(s) Animal / Animaux</div>
+    <div class="section-body">
+      <div id="animaux-container">
+        <!-- Animal 1 injecté par JS -->
+      </div>
+      <button class="btn btn-add" type="button" onclick="addAnimal()">➕ &nbsp;Ajouter un animal</button>
+    </div>
+  </div>
+
+  <!-- ── SECTION 5 : VÉTÉRINAIRE & ASSURANCES ── -->
+  <div class="section">
+    <div class="section-header grey">🏥 &nbsp;5. Vétérinaire Traitant &amp; Assurances</div>
+    <div class="section-body">
+
+      <!-- Vétérinaire -->
+      <div style="font-size:11px;font-weight:700;color:#546e7a;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:10px;">🩺 Vétérinaire traitant</div>
+      <div class="grid-2" style="margin-bottom:16px">
+        <div class="field">
+          <label>Nom du cabinet / vétérinaire <span class="req">*</span></label>
+          <input type="text" id="vet-nom" placeholder="Cabinet Vétérinaire Dupont" required>
+        </div>
+        <div class="field">
+          <label>Téléphone <span class="req">*</span></label>
+          <input type="tel" id="vet-tel" placeholder="03 XX XX XX XX" required>
+        </div>
+        <div class="field span-2">
+          <label>Adresse</label>
+          <input type="text" id="vet-adresse" placeholder="Adresse du cabinet">
+        </div>
+        <div class="field span-2">
+          <label>Ordonnances / Traitements en cours à transmettre</label>
+          <textarea id="vet-ordo" placeholder="Ex. : Traitement cœur — 1 comprimé matin / Antiparasitaire à renouveler le 15/05..."></textarea>
+        </div>
+      </div>
+
+      <hr class="divider">
+
+      <!-- Assurance santé / mutuelle animale -->
+      <div style="font-size:11px;font-weight:700;color:#546e7a;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:10px;">💊 Assurance santé / Mutuelle animale</div>
+      <div class="grid-2" style="margin-bottom:16px">
+        <div class="field">
+          <label>L'animal est-il couvert par une mutuelle ?</label>
+          <select id="mutuelle-oui">
+            <option value="non">Non</option>
+            <option value="oui">Oui</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Nom de l'assureur / mutuelle</label>
+          <input type="text" id="mutuelle-nom" placeholder="Ex. : Santevet, Assur O'Poil, Agria...">
+        </div>
+        <div class="field">
+          <label>N° de contrat / adhérent</label>
+          <input type="text" id="mutuelle-contrat" placeholder="Ex. : 123456789">
+        </div>
+        <div class="field">
+          <label>Téléphone assistance / sinistre</label>
+          <input type="tel" id="mutuelle-tel" placeholder="N° d'urgence assureur">
+        </div>
+      </div>
+
+      <hr class="divider">
+
+      <!-- RC animale et assurance habitation -->
+      <div style="font-size:11px;font-weight:700;color:#c45400;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:8px;">⚖️ Responsabilité Civile — Obligatoire</div>
+      <div class="info-box" style="margin-bottom:12px; font-size:12px;">
+        ℹ️ <span>La RC de votre animal (chien de catégorie 1 &amp; 2 : <strong>obligatoire par la loi</strong>) couvre les dommages causés à des tiers. En l'absence de RC déclarée, la responsabilité financière revient entièrement au CLIENT.</span>
+      </div>
+      <div class="grid-2">
+        <div class="field">
+          <label>RC animale couverte par <span class="req">*</span></label>
+          <select id="rc-type">
+            <option value="">— Choisir —</option>
+            <option value="habitation">Assurance habitation (clause animaux)</option>
+            <option value="specifique">Assurance RC spécifique animal</option>
+            <option value="multirisque">Multirisque (incluse)</option>
+            <option value="aucune">Aucune couverture RC</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Nom de la compagnie d'assurance</label>
+          <input type="text" id="rc-assureur" placeholder="Ex. : Maif, Macif, Axa, Groupama...">
+        </div>
+        <div class="field">
+          <label>N° de contrat RC</label>
+          <input type="text" id="rc-contrat" placeholder="N° de police d'assurance">
+        </div>
+        <div class="field">
+          <label>Téléphone déclaration sinistre</label>
+          <input type="tel" id="rc-tel" placeholder="N° sinistre assureur">
+        </div>
+        <div class="field span-2">
+          <label>Observations / couvertures spécifiques</label>
+          <input type="text" id="rc-obs" placeholder="Ex. : Chien de catégorie 2 — RC obligatoire souscrite le 01/01/2026...">
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── SECTION 6 : CONDITIONS GÉNÉRALES ── -->
+  <div class="section">
+    <div class="section-header grey">📜 &nbsp;6. Conditions Générales &amp; Engagements</div>
+    <div class="section-body">
+
+      <div class="article">
+        <h4>Art. 1 — Objet</h4>
+        <p>Cathy Pets SAS assure la garde et les soins d'animaux de compagnie au domicile du CLIENT ou du GARDIEN. La garde comprend l'hébergement, l'alimentation (si souhaitée), les soins quotidiens, les promenades et la surveillance pendant la durée convenue.</p>
+      </div>
+
+      <div class="article">
+        <h4>Art. 2 — Documents obligatoires avant la garde</h4>
+        <ul>
+          <li>Carnet de santé à jour (vaccinations en cours de validité)</li>
+          <li>Certificat de vaccination antirabique + toux de chenil</li>
+          <li>Attestation d'identification (puce ou tatouage)</li>
+          <li>Traitement antiparasitaire à jour (puces, tiques, vers)</li>
+          <li>Coordonnées du vétérinaire traitant</li>
+        </ul>
+      </div>
+
+      <div class="article">
+        <h4>Art. 3 — Obligations du Gardien</h4>
+        <ul>
+          <li>Soins quotidiens professionnels et bienveillants — respect du régime alimentaire et des habitudes</li>
+          <li>Administration des traitements selon instructions — promenades adaptées</li>
+          <li>Hébergement en conditions d'hygiène optimales — nouvelles régulières (photos, messages)</li>
+          <li>En cas d'urgence médicale : <strong>1/ contact immédiat de notre vétérinaire</strong> — <strong>2/ contact immédiat du CLIENT</strong></li>
+        </ul>
+      </div>
+
+      <div class="article">
+        <h4>Art. 4 — Obligations du Client</h4>
+        <ul>
+          <li>Fournir toutes informations utiles sur l'animal avant la garde</li>
+          <li>Fournir la nourriture habituelle en quantité suffisante, les accessoires (laisse, panier, jouets) et les traitements médicaux avec instructions</li>
+          <li>Signer l'autorisation de soins vétérinaires d'urgence</li>
+          <li>Régler selon les conditions convenues et récupérer l'animal à la date/heure prévues</li>
+        </ul>
+      </div>
+
+      <div class="article">
+        <h4>Art. 5 — Annulation</h4>
+        <ul>
+          <li><strong>Plus de 14 jours avant :</strong> remboursement intégral de l'acompte</li>
+          <li><strong>Entre 14 et 7 jours :</strong> 50 % de l'acompte retenu</li>
+          <li><strong>Moins de 7 jours :</strong> acompte non remboursable</li>
+          <li>Jours fériés et week-ends de fête nationale : facturation double</li>
+        </ul>
+      </div>
+
+      <div class="article">
+        <h4>Art. 6 — Responsabilité &amp; Assurance</h4>
+        <p>Le Gardien est couvert par la RC Professionnelle Hiscox (HSXIN320028640M). Les frais vétérinaires d'urgence sont à la charge du CLIENT sauf faute avérée du Gardien. Le Gardien décline toute responsabilité pour pathologies préexistantes non déclarées, fugues malgré précautions normales ou dommages imprévisibles.</p>
+      </div>
+
+      <div class="article" style="border-left-color: #e65c00; background:#fff8f0;">
+        <h4 style="color:#c45400;">Art. 6bis — Cohabitation &amp; Comportement — CLAUSE OBLIGATOIRE</h4>
+        <p style="margin-bottom:8px">Le CLIENT s'engage à déclarer <strong>avec exactitude et sincérité</strong> le comportement de son animal vis-à-vis des autres animaux, des personnes et des enfants. Toute omission ou fausse déclaration engage la seule responsabilité du CLIENT.</p>
+        <ul>
+          <li><strong>En cas d'incompatibilité avérée avec les animaux du Gardien</strong> ou les autres animaux en garde, constatée à l'arrivée ou en cours de séjour, Cathy Pets se réserve le droit de mettre fin immédiatement à la garde sans remboursement.</li>
+          <li><strong>Option 1 — Pension partenaire :</strong> l'animal sera déposé dans une pension agréée partenaire. Les frais de pension ainsi que les frais de transport aller-retour seront intégralement à la charge du CLIENT.</li>
+          <li><strong>Option 2 — Restitution au CLIENT :</strong> l'animal sera ramené au domicile du CLIENT ou à une personne désignée par le CLIENT. Les frais de taxi animalier (forfait fixe de 150 € TTC) seront facturés au CLIENT.</li>
+          <li><strong>Contact de secours désigné :</strong> le CLIENT doit obligatoirement renseigner une personne joignable pouvant récupérer l'animal dans les <strong>2 heures</strong> en cas d'incompatibilité.</li>
+          <li>En cas de morsure, agression ou blessure causée par l'animal du CLIENT à un tiers, un animal ou aux biens du Gardien, les frais vétérinaires, réparations et préjudices seront entièrement supportés par le CLIENT et/ou son assurance.</li>
+        </ul>
+      </div>
+
+      <div class="article">
+        <h4>Art. 7 — Autorisation de soins vétérinaires d'urgence</h4>
+        <p>Le CLIENT autorise expressément le Gardien à prendre toute décision médicale urgente, y compris chirurgicale, si la vie de l'animal est en danger. Les frais engagés seront remboursés sur justificatifs.</p>
+      </div>
+
+      <div class="article">
+        <h4>Art. 8 — RGPD &amp; Données Personnelles</h4>
+        <p>Les données collectées sont traitées exclusivement pour l'exécution du contrat. Droit d'accès, rectification, suppression : <a href="mailto:cathydelormepets@gmail.com">cathydelormepets@gmail.com</a>. Conformément au Règlement EU 2016/679.</p>
+      </div>
+
+      <div class="article">
+        <h4>Art. 9 — Litiges</h4>
+        <p>En cas de litige, les parties s'engagent à rechercher une solution amiable. À défaut, le Tribunal de Commerce de Soissons sera seul compétent. Droit applicable : droit français.</p>
+      </div>
+
+      <hr class="divider">
+      <div style="display:flex; flex-direction:column; gap:10px; margin-bottom:10px">
+        <label class="check-item" style="border-radius:6px; background:#fff8e1; border-color:#ffe082">
+          <input type="checkbox" id="cg-accept" required>
+          <span>✅ &nbsp;Je déclare avoir lu et accepté <strong>sans réserve</strong> l'ensemble des conditions générales ci-dessus.</span>
+        </label>
+        <label class="check-item" style="border-radius:6px; background:#fff8e1; border-color:#ffe082">
+          <input type="checkbox" id="soins-accept" required>
+          <span>🏥 &nbsp;J'autorise expressément Cathy Pets à prendre toute décision médicale urgente pour mon/mes animal(aux) en mon absence.</span>
+        </label>
+        <label class="check-item" style="border-radius:6px; background:#fff8e1; border-color:#ffe082">
+          <input type="checkbox" id="rgpd-accept" required>
+          <span>🔒 &nbsp;J'accepte que mes données personnelles soient traitées pour l'exécution de ce contrat (RGPD Art. 6.1b).</span>
+        </label>
+        <label class="check-item" style="border-radius:6px; background:#fff8f0; border-color:#ffcc80;">
+          <input type="checkbox" id="cohab-accept" required>
+          <span>🐕 &nbsp;Je déclare avoir renseigné <strong>sincèrement et complètement</strong> le comportement de mon animal (Art. 6bis). Je reconnais qu'en cas d'incompatibilité ou de fausse déclaration, Cathy Pets pourra mettre fin à la garde et que les frais de pension partenaire ou de retour seront à <strong>ma charge exclusive</strong>.</span>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SECTION 7 : SIGNATURE ── -->
+  <div class="section">
+    <div class="section-header">✍️ &nbsp;7. Lieu, Date &amp; Signature</div>
+    <div class="section-body">
+      <div class="grid-3" style="margin-bottom:16px">
+        <div class="field">
+          <label>Fait à <span class="req">*</span></label>
+          <input type="text" id="fait-a" placeholder="Neuilly-Saint-Front" required>
+        </div>
+        <div class="field">
+          <label>Le <span class="req">*</span></label>
+          <input type="date" id="fait-le" required>
+        </div>
+        <div class="field">
+          <label>Nombre d'exemplaires</label>
+          <select id="nb-exemplaires">
+            <option value="2" selected>2 exemplaires originaux</option>
+            <option value="1">1 exemplaire</option>
+            <option value="3">3 exemplaires</option>
+          </select>
+        </div>
+      </div>
+      <div class="sig-zone">
+        <div class="sig-box">
+          <span class="sig-label">Le Gardien</span>
+          <span class="sig-name">🐾 CATHY PETS SAS<br><small style="font-weight:normal; font-size:11px">Cathy Delorme</small></span>
+          <span class="sig-stamp">Signature &amp; cachet à l'original</span>
+        </div>
+        <div class="sig-box">
+          <span class="sig-label">Le Client</span>
+          <span id="sig-client-name" class="sig-name">—</span>
+          <span class="sig-stamp">Signature précédée de "Lu et approuvé"<br>à l'original</span>
+        </div>
+      </div>
+      <p class="sig-read" style="margin-top:12px;">ℹ️ En validant ce formulaire, vous confirmez avoir lu le contrat. La signature manuscrite sera apposée lors de la remise de l'exemplaire papier.</p>
+    </div>
+  </div>
+
+  <!-- ── BOUTONS ── -->
+  <div class="btn-bar">
+    <button class="btn btn-ghost" type="button" onclick="window.print()">🖨️ &nbsp;Imprimer / PDF</button>
+    <button class="btn btn-secondary" type="button" onclick="resetForm()">🔄 &nbsp;Réinitialiser</button>
+    <button class="btn btn-primary" type="button" onclick="sendEmail()">📧 &nbsp;Envoyer à Cathy Pets</button>
+  </div>
+
+  <div class="warn-box">
+    ⚠️ <strong>Important :</strong> Ce formulaire prépare un email pré-rempli qui s'ouvre dans votre messagerie. Vérifiez le destinataire (<strong>cathydelormepets@gmail.com</strong>) avant d'envoyer. Un exemplaire papier signé sera remis lors de la prise en charge.
+  </div>
+
+</div><!-- /container -->
+
+<!-- SUCCESS OVERLAY -->
+<div id="success-overlay">
+  <div class="success-card">
+    <div class="success-icon">✅</div>
+    <h2>Prêt à envoyer !</h2>
+    <p>Gmail s'est ouvert avec le contrat.<br>Le corps du message est aussi <strong>copié dans le presse-papiers</strong>.</p>
+    <div style="display:flex;flex-direction:column;gap:10px;margin:16px 0;">
+      <button class="btn btn-primary" onclick="openGmailFromOverlay()" style="font-size:13px;">📧 &nbsp;Rouvrir Gmail</button>
+      <button class="btn" onclick="openSMSFromOverlay()" style="background:#00897b;color:white;font-size:13px;">📱 &nbsp;Envoyer par SMS</button>
+      <button class="btn" onclick="copyLinkFromOverlay()" style="background:#6a1b9a;color:white;font-size:13px;">🔗 &nbsp;Copier le lien client</button>
+    </div>
+    <button class="btn btn-ghost" onclick="closeOverlay()" style="font-size:12px;">Fermer</button>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<div class="footer">
+  <strong>CATHY PETS SAS</strong> — 6 Chemin Du Lavoir, 02470 Neuilly-Saint-Front &nbsp;|&nbsp; SIRET 928 564 269 &nbsp;|&nbsp; TVA FR65928564269<br>
+  RC Pro Hiscox HSXIN320028640M &nbsp;|&nbsp; <a href="https://cathypetsitter.com">cathypetsitter.com</a> &nbsp;|&nbsp; <a href="mailto:cathydelormepets@gmail.com">cathydelormepets@gmail.com</a>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+// ── ONGLET ADMIN ──
+let adminTabOpen = true;
+
+function toggleAdminTab() {
+  adminTabOpen = !adminTabOpen;
+  const body = document.getElementById('admin-tab-body');
+  const arrow = document.getElementById('admin-tab-arrow');
+  body.style.display = adminTabOpen ? 'block' : 'none';
+  arrow.style.transform = adminTabOpen ? 'rotate(0deg)' : 'rotate(-90deg)';
+}
+
+function saveAdminNotes() {
+  // Sauvegarde locale dans sessionStorage
+  const data = {
+    dossier: document.getElementById('admin-dossier').value,
+    statut: document.getElementById('admin-statut').value,
+    acompteRecu: document.getElementById('admin-acompte-recu').value,
+    acompteDate: document.getElementById('admin-acompte-date').value,
+    acompteMode: document.getElementById('admin-acompte-mode').value,
+    alerte: document.getElementById('admin-alerte').value,
+    notes: document.getElementById('admin-notes').value,
+    vehicule: document.getElementById('admin-vehicule').value,
+    responsable: document.getElementById('admin-responsable').value,
+  };
+  sessionStorage.setItem('cathypets_admin', JSON.stringify(data));
+  const msg = document.getElementById('admin-save-msg');
+  msg.style.display = 'inline';
+  setTimeout(() => msg.style.display = 'none', 2500);
+}
+
+// ── MODE ADMIN ──
+let adminUnlocked = true; // Cathy commence en mode saisie
+
+const ADMIN_FIELDS = [
+  'prestation-type','adresse-garde',
+  'date-debut','heure-depot','date-fin','heure-reprise',
+  't-jours','t-prix-jour',
+  't-feries','t-prix-feries',
+  't-taxi-nb','t-taxi-prix',
+  't-taxi2-nb','t-taxi2-prix',
+  't-compl-nb','t-compl-prix',
+  'paiement','obs-tarif'
+];
+
+const ADMIN_CHECKS = ['services'];
+
+function setAdminFields(locked) {
+  ADMIN_FIELDS.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (locked) {
+      el.setAttribute('readonly', true);
+      el.setAttribute('disabled', true);
+      el.style.pointerEvents = 'none';
+    } else {
+      el.removeAttribute('readonly');
+      el.removeAttribute('disabled');
+      el.style.pointerEvents = '';
+    }
+  });
+  // Services checkboxes
+  document.querySelectorAll('#services input').forEach(cb => {
+    cb.disabled = locked;
+  });
+  // Badges
+  ['badge-periode','badge-tarif'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = locked ? 'inline-flex' : 'none';
+  });
+  // Sections visuelles
+  ['section-periode','section-tarif'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      if (locked) el.classList.add('locked');
+      else el.classList.remove('locked');
+    }
+  });
+}
+
+function toggleAdmin() {
+  adminUnlocked = true;
+  setAdminFields(false);
+  document.getElementById('btn-unlock').classList.add('active');
+  document.getElementById('admin-bar').style.background = 'linear-gradient(135deg, #1a237e 0%, #283593 100%)';
+  // Réafficher l'onglet admin
+  const adminTab = document.getElementById('admin-tab');
+  if (adminTab) adminTab.style.display = 'block';
+  // Masquer boutons envoi
+  const sendBtns = document.getElementById('send-buttons');
+  if (sendBtns) sendBtns.style.display = 'none';
+  alert('✏️ Mode saisie activé. Modifiez puis re-verrouillez.');
+}
+
+function lockAndSend() {
+  // Vérifier que les champs clés sont remplis
+  const missing = [];
+  if (!document.getElementById('date-debut').value) missing.push('Date de début');
+  if (!document.getElementById('date-fin').value) missing.push('Date de fin');
+  if (!document.getElementById('prestation-type').value) missing.push('Type de prestation');
+  if (missing.length) {
+    alert('⚠️ Champs obligatoires manquants :\n• ' + missing.join('\n• '));
+    return;
+  }
+  adminUnlocked = false;
+  setAdminFields(true);
+  document.getElementById('btn-unlock').classList.remove('active');
+  document.getElementById('admin-bar').style.background = 'linear-gradient(135deg, #2e7d32 0%, #388e3c 100%)';
+  document.getElementById('btn-unlock').textContent = '✏️ Modifier';
+  // Masquer l'onglet admin
+  const adminTab = document.getElementById('admin-tab');
+  if (adminTab) adminTab.style.display = 'none';
+  // Afficher les boutons d'envoi
+  const sendBtns = document.getElementById('send-buttons');
+  if (sendBtns) sendBtns.style.display = 'flex';
+  alert('✅ Verrouillé ! Choisissez :\n📄 Générer PDF → à envoyer par email\n📱 SMS → lien direct au client\n🔗 Copier lien → à coller où vous voulez');
+}
+
+// Au chargement : mode saisie Cathy actif (champs déverrouillés)
+window.addEventListener('load', function() {
+  setAdminFields(false); // déverrouillé par défaut pour Cathy
+});
+
+// ── ANIMAL COUNTER ──
+let animalCount = 0;
+
+function addAnimal() {
+  animalCount++;
+  const n = animalCount;
+  const div = document.createElement('div');
+  div.className = 'animal-card';
+  div.id = 'animal-' + n;
+  div.innerHTML = `
+    <span class="animal-number">Animal n°${n}</span>
+    ${n > 1 ? `<button onclick="removeAnimal(${n})" style="position:absolute;top:8px;right:10px;background:#c62828;color:white;border:none;border-radius:4px;padding:3px 10px;cursor:pointer;font-size:12px">✕ Supprimer</button>` : ''}
+    <div class="grid-4" style="margin-top:14px; margin-bottom:12px">
+      <div class="field">
+        <label>Nom de l'animal <span class="req">*</span></label>
+        <input type="text" id="a${n}-nom" placeholder="Médor" required>
+      </div>
+      <div class="field">
+        <label>Espèce <span class="req">*</span></label>
+        <select id="a${n}-espece">
+          <option value="">—</option>
+          <option>Chien</option>
+          <option>Chat</option>
+          <option>Lapin</option>
+          <option>Oiseau</option>
+          <option>Reptile</option>
+          <option>Rongeur</option>
+          <option>Autre</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Race</label>
+        <input type="text" id="a${n}-race" placeholder="Labrador...">
+      </div>
+      <div class="field">
+        <label>Date de naissance</label>
+        <input type="date" id="a${n}-naissance">
+      </div>
+      <div class="field">
+        <label>N° puce / tatouage</label>
+        <input type="text" id="a${n}-puce" placeholder="250268501234567">
+      </div>
+      <div class="field">
+        <label>Sexe</label>
+        <select id="a${n}-sexe">
+          <option value="">—</option>
+          <option>Mâle</option>
+          <option>Femelle</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Stérilisé(e) ?</label>
+        <select id="a${n}-steril">
+          <option value="">—</option>
+          <option>Oui</option>
+          <option>Non</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Poids (kg)</label>
+        <input type="number" id="a${n}-poids" placeholder="12" step="0.1" min="0">
+      </div>
+    </div>
+    <div class="grid-2" style="margin-bottom:12px">
+      <div class="field">
+        <label>Alimentation (marque, quantité, fréquence)</label>
+        <textarea id="a${n}-alim" placeholder="Ex. : Royal Canin Adult — 200g matin et soir" style="min-height:56px"></textarea>
+      </div>
+      <div class="field">
+        <label>Allergies / Régime particulier</label>
+        <textarea id="a${n}-allergies" placeholder="Ex. : Intolérant au poulet, sans gluten..." style="min-height:56px"></textarea>
+      </div>
+      <div class="field">
+        <label>Traitements en cours (médicament, posologie)</label>
+        <textarea id="a${n}-traitement" placeholder="Ex. : Vetmedin 1,25mg — 1 cp matin à jeun..." style="min-height:56px"></textarea>
+      </div>
+      <div class="field">
+        <label>Comportement / Caractère particulier</label>
+        <textarea id="a${n}-comportement" placeholder="Ex. : Craintif avec les inconnus, ne supporte pas les chats..." style="min-height:56px"></textarea>
+      </div>
+    </div>
+    <div class="field">
+      <label>Vaccins à jour</label>
+      <div class="check-group">
+        <label class="check-item"><input type="checkbox" id="a${n}-vx-rage"> Antirabique</label>
+        <label class="check-item"><input type="checkbox" id="a${n}-vx-chenil"> Toux du chenil</label>
+        <label class="check-item"><input type="checkbox" id="a${n}-vx-parvo"> Parvovirose</label>
+        <label class="check-item"><input type="checkbox" id="a${n}-vx-carre"> Maladie de Carré</label>
+        <label class="check-item"><input type="checkbox" id="a${n}-vx-lepto"> Leptospirose</label>
+        <label class="check-item"><input type="checkbox" id="a${n}-vx-leuco"> Leucémie féline</label>
+        <label class="check-item"><input type="checkbox" id="a${n}-antipara"> Antiparasitaire à jour</label>
+      </div>
+    </div>
+    <div class="field" style="margin-top:10px">
+      <label>Date du dernier rappel vaccinal</label>
+      <input type="date" id="a${n}-vx-date" style="max-width:200px">
+    </div>
+    <div class="field" style="margin-top:10px">
+      <label>Observations complémentaires</label>
+      <textarea id="a${n}-obs" placeholder="Toute autre information utile au bien-être de l'animal..."></textarea>
+    </div>
+  `;
+  document.getElementById('animaux-container').appendChild(div);
+  updateSigName();
+}
+
+function removeAnimal(n) {
+  const el = document.getElementById('animal-' + n);
+  if (el) el.remove();
+}
+
+// ── INIT ──
+window.onload = function() {
+  // Set today's date
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('fait-le').value = today;
+  addAnimal();
+  // Live update sig name
+  document.getElementById('client-nom').addEventListener('input', updateSigName);
+};
+
+function updateSigName() {
+  const nom = document.getElementById('client-nom').value.trim();
+  document.getElementById('sig-client-name').textContent = nom || '—';
+}
+
+// ── DURÉE ──
+function calcDuree() {
+  const d1 = document.getElementById('date-debut').value;
+  const d2 = document.getElementById('date-fin').value;
+  const box = document.getElementById('duree-info');
+  const txt = document.getElementById('duree-text');
+  if (d1 && d2) {
+    const diff = (new Date(d2) - new Date(d1)) / (1000*60*60*24);
+    if (diff >= 0) {
+      const nuits = diff;
+      const jours = diff + 1;
+      txt.innerHTML = `<strong>${jours} jour(s)</strong> — ${nuits} nuit(s) — du ${fmtDate(d1)} au ${fmtDate(d2)}`;
+      box.style.display = 'flex';
+      // Auto-fill days
+      const tj = document.getElementById('t-jours');
+      if (!tj.value) { tj.value = jours; calcTotal(); }
+    } else {
+      txt.textContent = '⚠️ La date de fin doit être postérieure à la date de début.';
+      box.style.display = 'flex';
+    }
+  } else {
+    box.style.display = 'none';
+  }
+}
+
+function fmtDate(d) {
+  if (!d) return '';
+  const parts = d.split('-');
+  return parts[2] + '/' + parts[1] + '/' + parts[0];
+}
+
+// ── CALCUL TOTAL ──
+function calcTotal() {
+  const rows = [
+    ['t-jours','t-prix-jour','t-mont-1'],
+    ['t-feries','t-prix-feries','t-mont-2'],
+    ['t-taxi-nb','t-taxi-prix','t-mont-3'],
+    ['t-taxi2-nb','t-taxi2-prix','t-mont-4'],
+    ['t-compl-nb','t-compl-prix','t-mont-5'],
+  ];
+  let total = 0;
+  rows.forEach(([qId, pId, mId]) => {
+    const q = parseFloat(document.getElementById(qId).value) || 0;
+    const p = parseFloat(document.getElementById(pId).value) || 0;
+    const m = q * p;
+    total += m;
+    document.getElementById(mId).textContent = fmtMoney(m);
+  });
+  document.getElementById('t-total').textContent = fmtMoney(total);
+  document.getElementById('t-acompte').textContent = fmtMoney(total * 0.4);
+  document.getElementById('t-solde').textContent = fmtMoney(total * 0.6);
+}
+
+function fmtMoney(v) {
+  return v.toFixed(2).replace('.', ',') + ' €';
+}
+
+function updatePrestation() {
+  // nothing special needed
+}
+
+// ── VALIDATION ──
+function validate() {
+  let ok = true;
+  const required = ['client-nom','client-tel','client-email','client-adresse','cohab-nom','cohab-tel','date-debut','date-fin','vet-nom','vet-tel','fait-a','fait-le'];
+  required.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el.value.trim()) { el.classList.add('error'); ok = false; }
+    else el.classList.remove('error');
+  });
+  if (!document.getElementById('cg-accept').checked) { alert('Veuillez accepter les conditions générales.'); ok = false; }
+  if (!document.getElementById('soins-accept').checked) { alert('Veuillez cocher l\'autorisation de soins vétérinaires.'); ok = false; }
+  if (!document.getElementById('rgpd-accept').checked) { alert('Veuillez accepter la politique de données (RGPD).'); ok = false; }
+  if (!document.getElementById('cohab-accept').checked) { alert('Veuillez cocher la déclaration de comportement / cohabitation (Art. 6bis).'); ok = false; }
+  if (!ok) alert('⚠️ Veuillez remplir tous les champs obligatoires (marqués en rouge).');
+  return ok;
+}
+
+// ── COLLECTE DONNÉES ──
+function getAnimalData() {
+  let txt = '';
+  for (let n = 1; n <= animalCount; n++) {
+    const el = id => { const e = document.getElementById(id); return e ? e.value : ''; };
+    const chk = id => { const e = document.getElementById(id); return (e && e.checked) ? '✅' : '—'; };
+    if (!document.getElementById('animal-'+n)) continue;
+    txt += `\n--- ANIMAL N°${n} ---\n`;
+    txt += `Nom        : ${el('a'+n+'-nom')}\n`;
+    txt += `Espèce     : ${el('a'+n+'-espece')} | Race : ${el('a'+n+'-race')}\n`;
+    txt += `Naissance  : ${fmtDate(el('a'+n+'-naissance'))} | Sexe : ${el('a'+n+'-sexe')} | Stérilisé : ${el('a'+n+'-steril')}\n`;
+    txt += `Puce/Tatou : ${el('a'+n+'-puce')} | Poids : ${el('a'+n+'-poids')} kg\n`;
+    txt += `Alimentation    : ${el('a'+n+'-alim')}\n`;
+    txt += `Allergies       : ${el('a'+n+'-allergies')}\n`;
+    txt += `Traitements     : ${el('a'+n+'-traitement')}\n`;
+    txt += `Comportement    : ${el('a'+n+'-comportement')}\n`;
+    txt += `Vaccins   : Antirabique ${chk('a'+n+'-vx-rage')} | Chenil ${chk('a'+n+'-vx-chenil')} | Parvo ${chk('a'+n+'-vx-parvo')} | Carré ${chk('a'+n+'-vx-carre')} | Lepto ${chk('a'+n+'-vx-lepto')} | Leucémie féline ${chk('a'+n+'-vx-leuco')}\n`;
+    txt += `Antiparasitaire à jour : ${chk('a'+n+'-antipara')}\n`;
+    txt += `Dernier rappel vaccinal : ${fmtDate(el('a'+n+'-vx-date'))}\n`;
+    txt += `Observations : ${el('a'+n+'-obs')}\n`;
+    txt += `-- Cohabitation --\n`;
+    txt += `Avec autres chiens : ${el('a'+n+'-cohab-chiens')} | Avec chats : ${el('a'+n+'-cohab-chats')} | Avec enfants : ${el('a'+n+'-cohab-enfants')}\n`;
+    txt += `A déjà mordu : ${el('a'+n+'-morsure')}\n`;
+    txt += `Détails comportement : ${el('a'+n+'-cohab-detail') || '—'}\n`;
+  }
+  return txt;
+}
+
+function getServicesChecked() {
+  const checkboxes = document.querySelectorAll('#services input:checked');
+  return Array.from(checkboxes).map(c => c.value).join(', ');
+}
+
+// ── EMAIL ──
+async function sendEmail() {
+  if (!validate()) return;
+  const v = id => document.getElementById(id).value;
+
+  // ── Construire un résumé compact ──
+  const nom    = v('client-nom') || '—';
+  const tel    = v('client-tel') || '—';
+  const email  = v('client-email') || '';
+  const d1     = fmtDate(v('date-debut'));
+  const d2     = fmtDate(v('date-fin'));
+  const total  = document.getElementById('t-total').textContent;
+  const type   = v('prestation-type') || '—';
+  const anim   = getAnimalSummary();
+
+  // ── Lien URL vers le contrat pré-rempli (données encodées) ──
+  const lien = await buildClientURL();
+
+  // ── Corps email court ──
+  const subj = `[Contrat Garde] ${nom} — Du ${d1} au ${d2}`;
+  const body =
+`Bonjour ${nom.split(' ')[0]},
+
+Veuillez trouver ci-dessous votre contrat de garde Cathy Pets 2026.
+
+📅 Période  : du ${d1} au ${d2}
+🐾 Prestation : ${type}
+🐶 Animal(aux) : ${anim}
+💶 Total TTC  : ${total}
+
+👉 Cliquez sur ce lien pour consulter, compléter et signer votre contrat :
+${lien}
+
+Une fois le formulaire complété, cliquez sur "Envoyer à Cathy Pets".
+
+N'hésitez pas à nous contacter pour toute question.
+
+Cathy Pets — 07.83.43.63.06 | 07.81.30.41.10
+cathydelormepets@gmail.com | cathypetsitter.com`;
+
+  // ── Copier le corps dans le presse-papiers ──
+  try { navigator.clipboard.writeText(body); } catch(e) {}
+
+  // ── Ouvrir Gmail web (comme le reste de l'app) ──
+  const dest = email || '';
+  const gmailUrl = 'https://mail.google.com/mail/?view=cm&fs=1'
+    + '&to=' + encodeURIComponent(dest)
+    + '&su=' + encodeURIComponent(subj)
+    + '&body=' + encodeURIComponent(body);
+  window.open(gmailUrl, '_blank');
+
+  // ── Aussi préparer le SMS ──
+  window._lastSMSMsg = `Bonjour ${nom.split(' ')[0]} 🐾\n\nVotre contrat Cathy Pets :\n📅 ${d1} → ${d2}\n💶 ${total}\n\n👉 ${lien}\n\nCathy Pets — 07.83.43.63.06`;
+
+  document.getElementById('success-overlay').classList.add('show');
+}
+
+function getAnimalSummary() {
+  let parts = [];
+  for (let n = 1; n <= animalCount; n++) {
+    const el = document.getElementById('a'+n+'-nom');
+    const esp = document.getElementById('a'+n+'-espece');
+    if (el && el.value) parts.push(el.value + (esp && esp.value ? ' ('+esp.value+')' : ''));
+  }
+  return parts.join(', ') || '—';
+}
+
+
+async function loadFromCode(code) {
+  // Afficher loading
+  document.body.style.opacity = '0.6';
+  const msg = document.createElement('div');
+  msg.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#e65c00;color:white;padding:20px 32px;border-radius:12px;font-size:16px;font-weight:700;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,0.4);';
+  msg.textContent = '🐾 Chargement de votre contrat...';
+  document.body.appendChild(msg);
+
+  try {
+    // Récupérer config Firebase
+    let fbApiKey = '', fbUrl = '';
+    try {
+      const stored = localStorage.getItem('cathypets_v20');
+      if (stored) {
+        const p = JSON.parse(stored);
+        fbApiKey = p.settings?.fbApiKey || '';
+        fbUrl = p.settings?.fbDatabaseUrl || '';
+      }
+    } catch(e) {}
+
+    if (!fbApiKey || !fbUrl) throw new Error('Firebase non configuré');
+
+    const db = initContratFB({ apiKey: fbApiKey, databaseURL: fbUrl });
+    if (!db) throw new Error('Connexion Firebase impossible');
+
+    const snap = await db.ref('contrats_clients/' + code).get();
+    if (!snap.exists()) throw new Error('Contrat introuvable ou expiré');
+
+    const data = snap.val();
+
+    // Appliquer les données
+    Object.entries(data).forEach(([key, val]) => {
+      if (['mode','locked','ts','expires','services'].includes(key)) return;
+      const el = document.getElementById(key);
+      if (el) {
+        el.value = val;
+        el.dispatchEvent(new Event('change'));
+        el.dispatchEvent(new Event('input'));
+      }
+    });
+
+    if (data.services) {
+      const svcs = data.services.split(',');
+      document.querySelectorAll('#services input').forEach(cb => {
+        cb.checked = svcs.includes(cb.value);
+      });
+    }
+
+    // Simuler mode client
+    applyClientMode();
+
+  } catch(e) {
+    console.error('loadFromCode:', e);
+    msg.style.background = '#c62828';
+    msg.textContent = '⚠️ ' + e.message + ' — Contactez Cathy Pets : 07.83.43.63.06';
+    setTimeout(() => msg.remove(), 5000);
+  } finally {
+    document.body.style.opacity = '1';
+    msg.remove();
+  }
+}
+
+function applyClientMode() {
+  setTimeout(() => {
+    setAdminFields(true);
+    const adminBar = document.getElementById('admin-bar');
+    if (adminBar) adminBar.style.display = 'none';
+    const adminTab = document.getElementById('admin-tab');
+    if (adminTab) adminTab.style.display = 'none';
+    const sendBtns = document.getElementById('send-buttons');
+    if (sendBtns) sendBtns.style.display = 'none';
+    calcDuree();
+    calcTotal();
+
+    // Bandeau bienvenue
+    const banner = document.createElement('div');
+    banner.style.cssText = 'position:sticky;top:0;z-index:999;background:linear-gradient(135deg,#2e7d32,#43a047);color:white;padding:12px 20px;text-align:center;font-size:13px;font-weight:600;box-shadow:0 2px 8px rgba(0,0,0,0.3);';
+    banner.innerHTML = '🐾 <strong>Cathy Pets</strong> — Votre contrat est prêt ! Remplissez vos informations personnelles et cliquez sur <strong>"Envoyer à Cathy Pets"</strong> &nbsp;<button onclick="this.parentElement.remove()" style="background:rgba(255,255,255,0.2);border:none;color:white;border-radius:4px;padding:2px 8px;cursor:pointer;margin-left:8px;">✕</button>';
+    document.body.prepend(banner);
+
+    const btnEnvoyer = document.querySelector('.btn-bar .btn-primary');
+    if (btnEnvoyer) {
+      btnEnvoyer.innerHTML = '📧 &nbsp;Envoyer mes informations à Cathy Pets';
+      btnEnvoyer.style.width = '100%';
+    }
+  }, 300);
+}
+
+function openGmailFromOverlay() {
+  // Relancer Gmail avec le lien
+  const lien = buildClientURL();
+  const nom = (document.getElementById('client-nom').value || '').split(' ')[0];
+  const d1 = fmtDate(document.getElementById('date-debut').value);
+  const d2 = fmtDate(document.getElementById('date-fin').value);
+  const total = document.getElementById('t-total').textContent;
+  const email = document.getElementById('client-email').value || '';
+  const subj = `[Contrat Garde] ${document.getElementById('client-nom').value || ''} — Du ${d1} au ${d2}`;
+  const body = window._lastSMSMsg ? 
+    `Bonjour ${nom} 🐾\n\nVotre contrat de garde est prêt :\n📅 ${d1} → ${d2} | 💶 ${total}\n\n👉 ${lien}\n\nCathy Pets — 07.83.43.63.06` :
+    `Lien contrat : ${lien}`;
+  const gmailUrl = 'https://mail.google.com/mail/?view=cm&fs=1&to='+encodeURIComponent(email)+'&su='+encodeURIComponent(subj)+'&body='+encodeURIComponent(body);
+  window.open(gmailUrl, '_blank');
+}
+
+function openSMSFromOverlay() {
+  const msg = window._lastSMSMsg || buildClientURL();
+  window.location.href = 'sms:?body=' + encodeURIComponent(msg);
+}
+
+function copyLinkFromOverlay() {
+  const url = buildClientURL();
+  navigator.clipboard.writeText(url).then(() => {
+    alert('✅ Lien copié !\nCollez-le dans SMS, WhatsApp ou email.\n\n' + url.substring(0,80) + '...');
+  }).catch(() => {
+    prompt('Copiez ce lien :', url);
+  });
+}
+
+function closeOverlay() {
+  document.getElementById('success-overlay').classList.remove('show');
+}
+
+// ── CONFIG ──
+const CONTRACT_URL = 'https://cathydelormepets-source.github.io/TaxiCathyPets/contrat.html';
+const FB_CONFIG = {
+  apiKey: "AIzaSyDummyKeyWillBeOverridden",
+  databaseURL: ""
+};
+
+// ── Firebase init (lecture/écriture contrats clients) ──
+let _fbApp = null, _fbDb = null;
+
+function initContratFB(config) {
+  try {
+    if (!config || !config.apiKey || !config.databaseURL) return null;
+    if (_fbDb) return _fbDb;
+    _fbApp = firebase.initializeApp(config, 'contrat-app');
+    _fbDb = _fbApp.database();
+    return _fbDb;
+  } catch(e) {
+    console.warn('FB contrat init:', e);
+    return null;
+  }
+}
+
+// ── Générer un code court 6 chars ──
+function genCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = '';
+  for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  return code;
+}
+
+// ── Collecter données Cathy à sauver ──
+function collectCathyData() {
+  const fields = [
+    'prestation-type','adresse-garde',
+    'date-debut','heure-depot','date-fin','heure-reprise',
+    't-jours','t-prix-jour',
+    't-feries','t-prix-feries',
+    't-taxi-nb','t-taxi-prix',
+    't-taxi2-nb','t-taxi2-prix',
+    't-compl-nb','t-compl-prix',
+    'paiement','obs-tarif','fait-a'
+  ];
+  const data = { mode: 'client', locked: '1', ts: Date.now() };
+  fields.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const val = el.value.trim();
+    if (!val || val === '0' || val === '0.00') return;
+    data[id] = val;
+  });
+  const checked = Array.from(document.querySelectorAll('#services input:checked')).map(c=>c.value);
+  if (checked.length) data['services'] = checked.join(',');
+  return data;
+}
+
+// ── Générer lien court via Firebase ──
+async function buildClientURL() {
+  const data = collectCathyData();
+
+  // Récupérer config Firebase depuis l'app parente (iframe) ou localStorage
+  let fbApiKey = '', fbUrl = '', fbRoom = 'cathypets-default';
+  try {
+    // Lire depuis localStorage (l'app principale les y stocke)
+    const stored = localStorage.getItem('cathypets_v20');
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      fbApiKey = parsed.settings?.fbApiKey || '';
+      fbUrl = parsed.settings?.fbDatabaseUrl || '';
+      fbRoom = parsed.settings?.fbRoom || 'cathypets-default';
+    }
+  } catch(e) {}
+
+  // Si Firebase dispo → lien court
+  if (fbApiKey && fbUrl) {
+    try {
+      const db = initContratFB({ apiKey: fbApiKey, databaseURL: fbUrl });
+      if (db) {
+        const code = genCode();
+        await db.ref('contrats_clients/' + code).set(data);
+        // Expire dans 30 jours
+        await db.ref('contrats_clients/' + code + '/expires').set(Date.now() + 30*24*3600*1000);
+        return CONTRACT_URL + '?code=' + code;
+      }
+    } catch(e) {
+      console.warn('Firebase contrat write:', e);
+    }
+  }
+
+  // Fallback : URL avec paramètres (si pas de Firebase)
+  const params = new URLSearchParams(data);
+  return CONTRACT_URL + '?' + params.toString();
+}
+
+// ── GÉNÉRATION PDF ──
+async function generatePDF() {
+  const btn = event.target;
+  btn.textContent = '⏳ Génération...';
+  btn.disabled = true;
+  try {
+    // Masquer les éléments admin pour le PDF
+    const adminBar = document.getElementById('admin-bar');
+    const adminTab = document.getElementById('admin-tab');
+    const oldBarDisplay = adminBar.style.display;
+    adminBar.style.display = 'none';
+    if (adminTab) adminTab.style.display = 'none';
+
+    // Capture de la page
+    const canvas = await html2canvas(document.body, {
+      scale: 1.5,
+      useCORS: true,
+      backgroundColor: '#fdf6ee',
+      ignoreElements: el => el.id === 'admin-bar' || el.id === 'admin-tab' || el.id === 'success-overlay'
+    });
+
+    // Restaurer
+    adminBar.style.display = oldBarDisplay;
+
+    // Créer PDF A4
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const pageW = pdf.internal.pageSize.getWidth();
+    const pageH = pdf.internal.pageSize.getHeight();
+    const imgW = pageW;
+    const imgH = (canvas.height * pageW) / canvas.width;
+    let posY = 0;
+    let remaining = imgH;
+
+    // Découper en pages
+    while (remaining > 0) {
+      const sliceH = Math.min(pageH, remaining);
+      const sliceCanvas = document.createElement('canvas');
+      sliceCanvas.width = canvas.width;
+      sliceCanvas.height = (sliceH * canvas.width) / pageW;
+      const ctx = sliceCanvas.getContext('2d');
+      ctx.drawImage(canvas, 0, posY * canvas.width / pageW, canvas.width, sliceCanvas.height, 0, 0, sliceCanvas.width, sliceCanvas.height);
+      const imgData = sliceCanvas.toDataURL('image/jpeg', 0.92);
+      if (posY > 0) pdf.addPage();
+      pdf.addImage(imgData, 'JPEG', 0, 0, pageW, sliceH);
+      posY += sliceH;
+      remaining -= sliceH;
+    }
+
+    // Nom du fichier avec client + dates
+    const nom = document.getElementById('client-nom').value || 'Client';
+    const d1 = document.getElementById('date-debut').value || '';
+    const d2 = document.getElementById('date-fin').value || '';
+    const fname = `Contrat_CathyPets_${nom.replace(/\s+/g,'_')}_${d1}_${d2}.pdf`;
+    pdf.save(fname);
+
+    btn.textContent = '✅ PDF téléchargé !';
+    setTimeout(() => { btn.textContent = '📄 Générer PDF client'; btn.disabled = false; }, 3000);
+  } catch(e) {
+    console.error(e);
+    btn.textContent = '📄 Générer PDF client';
+    btn.disabled = false;
+    alert('Erreur génération PDF : ' + e.message);
+  }
+}
+
+// ── ENVOI PAR SMS ──
+async function sendSMS() {
+  const url = await buildClientURL();
+  const nom = document.getElementById('client-nom').value || '';
+  const d1 = document.getElementById('date-debut').value ? fmtDate(document.getElementById('date-debut').value) : '?';
+  const d2 = document.getElementById('date-fin').value ? fmtDate(document.getElementById('date-fin').value) : '?';
+  const total = document.getElementById('t-total').textContent;
+  const msg = `Bonjour${nom ? ' '+nom.split(' ')[0] : ''} 🐾
+
+Voici votre contrat de garde Cathy Pets :
+📅 Du ${d1} au ${d2}
+💶 Total : ${total}
+
+👉 Cliquez pour remplir et signer :
+${url}
+
+Cathy Pets — 07.83.43.63.06`;
+
+  // Ouvrir SMS natif
+  const smsLink = 'sms:?body=' + encodeURIComponent(msg);
+  window.location.href = smsLink;
+}
+
+// ── COPIER LE LIEN ──
+async function copyLink() {
+  const url = await buildClientURL();
+  navigator.clipboard.writeText(url).then(() => {
+    alert('✅ Lien copié !\nCollez-le dans un SMS, WhatsApp ou email.\n\n' + url.substring(0,80) + '...');
+  }).catch(() => {
+    prompt('Copiez ce lien manuellement :', url);
+  });
+}
+
+function resetForm() {
+  if (!confirm('Êtes-vous sûr de vouloir tout réinitialiser ?')) return;
+  document.querySelectorAll('input:not([type=checkbox]):not([type=radio])').forEach(el => el.value = '');
+  document.querySelectorAll('select').forEach(el => el.selectedIndex = 0);
+  document.querySelectorAll('textarea').forEach(el => el.value = '');
+  document.querySelectorAll('input[type=checkbox]').forEach(el => el.checked = false);
+  document.getElementById('animaux-container').innerHTML = '';
+  animalCount = 0;
+  addAnimal();
+  document.getElementById('fait-le').value = new Date().toISOString().split('T')[0];
+  document.getElementById('duree-info').style.display = 'none';
+  calcTotal();
+}
+
+// ── LECTURE PARAMÈTRES URL (mode client pré-rempli) ──
+function loadFromURL() {
+  const params = new URLSearchParams(window.location.search);
+
+  // ── Mode code court : charger depuis Firebase ──
+  if (params.has('code')) {
+    const code = params.get('code').toUpperCase();
+    loadFromCode(code);
+    return;
+  }
+
+  if (!params.has('mode')) return; // mode normal Cathy — rien à faire
+
+  // ── Remplir tous les champs depuis l'URL ──
+  params.forEach((val, key) => {
+    if (['mode','locked','services'].includes(key)) return;
+    const el = document.getElementById(key);
+    if (!el) return;
+    el.value = val;
+    el.dispatchEvent(new Event('change'));
+    el.dispatchEvent(new Event('input'));
+  });
+
+  // ── Cocher les services ──
+  if (params.has('services')) {
+    const svcs = params.get('services').split(',');
+    document.querySelectorAll('#services input').forEach(cb => {
+      cb.checked = svcs.includes(cb.value);
+    });
+  }
+
+  // ── Mode client : verrouiller + masquer espace Cathy + afficher message accueil ──
+  if (params.get('mode') === 'client') {
+    setTimeout(() => {
+      // Verrouiller champs Cathy
+      applyClientMode();
+
+    }, 400);
+  }
+}
+
+// Appel au chargement
+window.addEventListener('load', function() {
+  loadFromURL();
+});
+</script>
+</body>
+</html>
