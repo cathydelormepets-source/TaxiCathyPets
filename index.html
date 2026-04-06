@@ -6979,7 +6979,7 @@ function addDev(){
   if(pecCb&&pecCb.checked){
     var cl2=db.clients.find(function(x){return x.id===q.clientId});
     var code2=(Math.random().toString(36).substr(2,6));
-    var pecUrl='https://cathypetsitter.com/contrat-transport?code='+code2;
+    var pecUrl='https://cathydelormepets-source.github.io/TaxiCathyPets/contrat-transport.html?code='+code2;
     if(cl2){
       pecUrl+='&nom='+encodeURIComponent(cl2.nom||'');
       pecUrl+='&prenom='+encodeURIComponent(cl2.prenom||'');
@@ -17166,12 +17166,12 @@ function ctenvCalcTransport(){
 function ctenvBuildURL(){
   var t=V('ctenv_type')||'';
   var baseMap={
-    'transport':'https://cathypetsitter.com/contrat-transport',
-    'pension':'https://cathypetsitter.com/contrat-pension',
-    'promenade':'https://cathypetsitter.com/contrat-promenade',
-    'veterinaire':'https://cathypetsitter.com/contrat-veterinaire'
+    'transport':'https://cathydelormepets-source.github.io/TaxiCathyPets/contrat-transport.html',
+    'pension':'https://cathydelormepets-source.github.io/TaxiCathyPets/contrat-pension.html',
+    'promenade':'https://cathydelormepets-source.github.io/TaxiCathyPets/contrat-promenade.html',
+    'veterinaire':'https://cathydelormepets-source.github.io/TaxiCathyPets/contrat-veterinaire.html'
   };
-  var base=baseMap[t]||'https://cathypetsitter.com/contrat';
+  var base=baseMap[t]||'https://cathydelormepets-source.github.io/TaxiCathyPets/contrat.html';
   var isTransport=t==='transport';
   var p=['mode=client'];
   if(t)p.push('type='+encodeURIComponent(t));
