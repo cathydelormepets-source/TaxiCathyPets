@@ -11049,21 +11049,9 @@ function printDevisPro(id) {
     var mnt = brut * (1 - remLigne/100);
     var tvaLigne = lg.noTva ? 0 : (mnt * tva / 100);
     totalHTLignes += mnt;
-    var fullDesc = lg.desc || 'Article';
-    var articleName = fullDesc;
-    var descDetail = '';
-    var sepIdx = fullDesc.indexOf(' — ');
-    if(sepIdx<0) sepIdx = fullDesc.indexOf(' - ');
-    if(sepIdx>0 && sepIdx<60){
-      articleName = fullDesc.substring(0,sepIdx).trim();
-      descDetail = fullDesc.substring(sepIdx+3).trim();
-    } else if(fullDesc.length > 40){
-      var cutAt = fullDesc.indexOf(' ', 25);
-      if(cutAt>0 && cutAt<50){
-        articleName = fullDesc.substring(0,cutAt).trim();
-        descDetail = fullDesc.substring(cutAt).trim();
-      }
-    }
+    // V30 : utiliser article et desc directement (plus de découpage)
+    var articleName = lg.article || lg.desc || 'Article';
+    var descDetail = lg.article ? (lg.desc || '') : '';
     html += '<tr>';
     html += '<td style="border:1px solid #999;padding:8px;text-align:center;vertical-align:top">' + qtyVal + '</td>';
     html += '<td style="border:1px solid #999;padding:8px;vertical-align:top;font-weight:bold">' + esc(articleName) + '</td>';
@@ -11189,29 +11177,9 @@ function printFacturePro(id) {
     var mnt = brut * (1 - remLigne/100);
     var tvaLigne = lg.noTva ? 0 : (mnt * tva / 100);
     facTotalHT += mnt;
-    // V30 : utiliser lg.article si présent, sinon séparer intelligemment lg.desc
-    var articleName = '';
-    var descDetail = '';
-    if(lg.article && lg.article.length > 0){
-      articleName = lg.article;
-      descDetail = lg.desc || '';
-    } else {
-      var fullDesc = lg.desc || 'Article';
-      articleName = fullDesc;
-      descDetail = '';
-      var sepIdx = fullDesc.indexOf(' — ');
-      if(sepIdx<0) sepIdx = fullDesc.indexOf(' - ');
-      if(sepIdx>0 && sepIdx<60){
-        articleName = fullDesc.substring(0,sepIdx).trim();
-        descDetail = fullDesc.substring(sepIdx+3).trim();
-      } else if(fullDesc.length > 40){
-        var cutAt = fullDesc.indexOf(' ', 25);
-        if(cutAt>0 && cutAt<50){
-          articleName = fullDesc.substring(0,cutAt).trim();
-          descDetail = fullDesc.substring(cutAt).trim();
-        }
-      }
-    }
+    // V30 : utiliser article et desc directement
+    var articleName = lg.article || lg.desc || 'Article';
+    var descDetail = lg.article ? (lg.desc || '') : '';
     html += '<tr>';
     html += '<td style="border:1px solid #999;padding:8px;text-align:center;vertical-align:top">' + qtyVal + '</td>';
     html += '<td style="border:1px solid #999;padding:8px;vertical-align:top;font-weight:bold">' + esc(articleName) + '</td>';
