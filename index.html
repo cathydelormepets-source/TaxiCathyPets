@@ -8532,20 +8532,121 @@ function eGrd(id){var g=db.gardes.find(function(x){return x.id===id});if(!g)retu
 function sGrd(id){var g=db.gardes.find(function(x){return x.id===id});if(!g)return;stamp(g);g.start=V('eg_s');g.end=V('eg_e');g.price=E(V('eg_p'));g.cost=E(V('eg_c'));g.extra=E(V('eg_x'));g.notes=V('eg_no');
   g.animalIds=getPickerAniIds('egd');g.animalId=g.animalIds[0]||'';g.accompagnants=getAccList('egd');
   lH('edit','Garde: '+g.ref);sav();cMo()}
+var _eqLigneCount=0;
 function eDev(id){var q=db.devis.find(function(x){return x.id===id});if(!q)return;
-  _editModalCliId=q.clientId;
+  _editModalCliId=q.clientId;_eqLigneCount=0;
   var wps=q.waypoints||[];
   var whtml='';if(wps.length){wps.forEach(function(w,i){whtml+='<div class="row" style="margin-bottom:4px"><div class="c4 fd" style="margin:0"><input id="eqw_l_'+i+'" value="'+esc(w.label)+'" style="font-size:11px;padding:6px"></div><div class="c8 fd" style="margin:0"><input id="eqw_a_'+i+'" value="'+esc(w.address)+'" list="addrList" style="padding:6px"></div></div>'})}
+  var ist='background:#080f1a;border:1px solid #1e3a58;color:#fff;border-radius:10px;padding:10px 12px;font-size:13px;font-family:inherit;width:100%';
   var aniPickerHtml=renderMultiAniPicker('edv',q.clientId);
   var accBlockHtml=renderAccBlock('edv');
-  oMo('✏️ '+q.ref+(wps.length?' ('+wps.length+' étapes)':''),'<div class="row"><div class="c6 fd"><label>Statut</label><select id="eq_s"><option '+(q.status==='brouillon'?'selected':'')+'>brouillon</option><option '+(q.status==='envoyé'?'selected':'')+'>envoyé</option><option '+(q.status==='accepté'?'selected':'')+'>accepté</option><option '+(q.status==='refusé'?'selected':'')+'>refusé</option><option '+(q.status==='facturé'?'selected':'')+'>facturé</option></select></div><div class="c6 fd"><label>Total €</label><input id="eq_t" type="number" step="0.01" value="'+(q.total||0)+'"></div></div><div class="fd"><label>Objet / titre</label><input id="eq_obj" value="'+esc(q.objet||'')+'" placeholder="Ex: Transport canin Paris → Lyon" style="font-weight:700"></div>'+aniPickerHtml+accBlockHtml+(wps.length?'<div class="fd"><label>Étapes ('+wps.length+')</label></div><div id="eq_wps">'+whtml+'</div><input type="hidden" id="eq_wpc" value="'+wps.length+'">':'')+'<div class="fd"><label>Description détaillée</label><textarea id="eq_no" rows="5">'+esc(q.notes)+'</textarea></div><div class="fd"><label>Conditions particulières</label><textarea id="eq_cond" rows="3">'+esc(q.conditions||'')+'</textarea></div>','<button class="btn rd" onclick="delRec(\'devis\',\''+id+'\',\''+esc(q.ref)+'\')">🗑️</button> '+(q.status!=='facturé'?'<button class="btn at" onclick="devToTr(\''+id+'\')">🚗 → Transport</button> ':'')+' <button class="btn og" onclick="printDevisPro(\''+id+'\')">🖨️ PDF</button> <button class="btn bu" onclick="quickMail(\'conf_dev\',\''+q.clientId+'\',\''+id+'\');cMo()">📧 Email</button> <button class="btn" style="background:#1a2030;border-color:#2a3a50;color:#aab" onclick="dupDev(\''+id+'\')">📋 Dupliquer</button> <button class="btn gn" onclick="sDev(\''+id+'\')">💾 Sauver</button>');
+  var tvaVal=(q.tva!==undefined&&q.tva!==null?q.tva:20);
+  var typeOpts='';
+  [{v:'transport',l:'🚗 Transport animalier'},{v:'garde',l:'🏡 Garde / Pension'},{v:'colis',l:'📦 Transport colis'},{v:'veterinaire',l:'🩺 Transport vétérinaire'},{v:'promenade',l:'🐕 Promenade'},{v:'nutrica',l:'🦴 Vente produits'},{v:'combine',l:'🚗🏡 Combiné'},{v:'autre',l:'📋 Autre'}].forEach(function(o){typeOpts+='<option value="'+o.v+'"'+(q.mode===o.v?' selected':'')+'>'+o.l+'</option>'});
+  var body='<div class="row">';
+  body+='<div class="c4 fd"><label>Statut</label><select id="eq_s" style="'+ist+'"><option value="brouillon"'+(q.status==='brouillon'?' selected':'')+'>brouillon</option><option value="envoyé"'+(q.status==='envoyé'?' selected':'')+'>envoyé</option><option value="accepté"'+(q.status==='accepté'?' selected':'')+'>accepté</option><option value="refusé"'+(q.status==='refusé'?' selected':'')+'>refusé</option><option value="facturé"'+(q.status==='facturé'?' selected':'')+'>facturé</option></select></div>';
+  body+='<div class="c4 fd"><label>Référence</label><input id="eq_ref" value="'+esc(q.ref)+'" style="'+ist+';font-weight:700"></div>';
+  body+='<div class="c4 fd"><label>Type prestation</label><select id="eq_mode" style="'+ist+'">'+typeOpts+'</select></div>';
+  body+='</div>';
+  body+='<div class="fd"><label>Objet / titre</label><input id="eq_obj" value="'+esc(q.objet||'')+'" style="'+ist+';font-weight:700" placeholder="Ex: Transport canin Paris → Lyon"></div>';
+  body+=aniPickerHtml+accBlockHtml;
+  if(wps.length) body+='<div class="fd"><label>Étapes ('+wps.length+')</label></div><div id="eq_wps">'+whtml+'</div><input type="hidden" id="eq_wpc" value="'+wps.length+'">';
+  body+='<div class="fd"><label>Description détaillée</label><textarea id="eq_no" rows="4" style="'+ist+';line-height:1.5">'+esc(q.notes||'')+'</textarea></div>';
+  body+='<div class="fd"><label>Conditions particulières</label><textarea id="eq_cond" rows="3" style="'+ist+'">'+esc(q.conditions||'')+'</textarea></div>';
+  // Bloc lignes éditables
+  body+='<div style="margin-top:12px;padding-top:10px;border-top:1px solid #1e3a58"><label style="font-size:12px;font-weight:700;color:#8ac">📋 Lignes du devis</label>';
+  body+='<div id="eq_lignes" style="margin:8px 0"></div>';
+  body+='<button class="btn sm bu" onclick="eqAddLigne()" style="margin-bottom:8px">➕ Ajouter une ligne</button></div>';
+  // TVA + Remise + Total
+  body+='<div class="row"><div class="c3 fd"><label>TVA %</label><input id="eq_tva" type="number" value="'+tvaVal+'" oninput="eqCalcTotal()" style="'+ist+'"></div>';
+  body+='<div class="c3 fd"><label>Remise globale %</label><input id="eq_remise" type="number" value="'+(q.remise||0)+'" oninput="eqCalcTotal()" style="'+ist+'"></div>';
+  body+='<div class="c3 fd"><label>Total TTC €</label><input id="eq_t" type="number" step="0.01" value="'+(q.total||0)+'" style="'+ist+';font-weight:700;color:#22a693"></div>';
+  body+='<div class="c3 fd"><label>Acompte €</label><input id="eq_ac" type="number" step="0.01" value="'+(q.acompte||0)+'" style="'+ist+'"></div></div>';
+  body+='<div id="eq_recap" style="display:none;padding:8px;background:rgba(0,0,0,.2);border-radius:8px;font-size:11px;margin-top:6px"></div>';
+
+  var footer='<button class="btn rd" onclick="delRec(\'devis\',\''+id+'\',\''+esc(q.ref)+'\')">🗑️</button> ';
+  footer+=(q.status!=='facturé'?'<button class="btn at" onclick="devToTr(\''+id+'\')">🚗 → Transport</button> ':'');
+  footer+='<button class="btn og" onclick="printDevisPro(\''+id+'\')">🖨️ PDF</button> ';
+  footer+='<button class="btn bu" onclick="quickMail(\'conf_dev\',\''+q.clientId+'\',\''+id+'\');cMo()">📧</button> ';
+  footer+='<button class="btn" style="background:#1a2030;border-color:#2a3a50;color:#aab" onclick="dupDev(\''+id+'\')">📋</button> ';
+  footer+='<button class="btn gn" onclick="sDev(\''+id+'\')">💾 Sauver</button>';
+
+  oMo('✏️ Modifier '+q.ref, body, footer);
+  // Charger les lignes existantes
+  var lignes=q.lignes||[];
+  if(lignes.length){lignes.forEach(function(lg){eqAddLigne(lg.article||'',lg.desc||'',lg.qty||1,lg.pu||0,lg.remise||0,lg.noTva||false)})}
+  else{eqAddLigne()}
+  eqCalcTotal();
   setTimeout(function(){
     setPickerAniIds('edv',getAniIds(q));setAccList('edv',q.accompagnants||[]);
     var mBd=$('mBd');if(mBd){var sigDiv=document.createElement('div');sigDiv.innerHTML=renderSigBlock('edv');mBd.appendChild(sigDiv);initSigBlock('edv');if(q.sigPec||q.sigDep)sigSetData('edv',{sigPec:q.sigPec,sigDep:q.sigDep})}
   },50);
 }
+function eqAddLigne(article,desc,qty,pu,remise,noTva){
+  var i=_eqLigneCount++;
+  var box=document.getElementById('eq_lignes');if(!box)return;
+  var row=document.createElement('div');
+  row.id='eq_lg_'+i;
+  row.style.cssText='background:rgba(0,0,0,.15);border:1px solid #1e3a58;border-radius:8px;padding:6px;margin-bottom:4px';
+  row.innerHTML='<div style="display:grid;grid-template-columns:2fr 3fr 0.6fr 1fr 0.6fr 26px;gap:4px;align-items:center">'
+    +'<input id="eq_lg_a_'+i+'" placeholder="Article" value="'+esc(article||'')+'" style="background:#080f1a;border:1px solid #1e3a58;color:#fff;border-radius:6px;padding:6px;font:inherit;font-size:11px;font-weight:700">'
+    +'<input id="eq_lg_d_'+i+'" placeholder="Description" value="'+esc(desc||'')+'" style="background:#080f1a;border:1px solid #1e3a58;color:#fff;border-radius:6px;padding:6px;font:inherit;font-size:11px">'
+    +'<input id="eq_lg_q_'+i+'" type="number" min="0.5" step="0.5" value="'+(qty||1)+'" oninput="eqCalcTotal()" placeholder="Qté" style="background:#080f1a;border:1px solid #1e3a58;color:#fff;border-radius:6px;padding:6px;font:inherit;font-size:11px;text-align:center">'
+    +'<input id="eq_lg_p_'+i+'" type="number" step="0.01" min="0" value="'+(pu||'')+'" oninput="eqCalcTotal()" placeholder="PU TTC" style="background:#080f1a;border:1px solid #1e3a58;color:#fff;border-radius:6px;padding:6px;font:inherit;font-size:11px">'
+    +'<input id="eq_lg_r_'+i+'" type="number" step="1" min="0" max="100" value="'+(remise||0)+'" oninput="eqCalcTotal()" placeholder="%" title="Remise %" style="background:#080f1a;border:1px solid #1e3a58;color:#f59e0b;border-radius:6px;padding:6px;font:inherit;font-size:11px;text-align:center">'
+    +'<button onclick="document.getElementById(\'eq_lg_'+i+'\').remove();eqCalcTotal()" style="background:none;border:none;color:#f55;font-size:14px;cursor:pointer">✕</button>'
+    +'</div>'
+    +'<label style="display:flex;align-items:center;gap:3px;font-size:9px;color:#f59e0b;margin-top:3px;cursor:pointer"><input type="checkbox" id="eq_lg_nt_'+i+'" '+(noTva?'checked':'')+' onchange="eqCalcTotal()"> Exo TVA (avance frais)</label>';
+  box.appendChild(row);
+}
+function eqGetLignes(){
+  var lignes=[];
+  for(var i=0;i<_eqLigneCount+5;i++){
+    var a=document.getElementById('eq_lg_a_'+i);
+    var d=document.getElementById('eq_lg_d_'+i);
+    var q=document.getElementById('eq_lg_q_'+i);
+    var p=document.getElementById('eq_lg_p_'+i);
+    var r=document.getElementById('eq_lg_r_'+i);
+    var nt=document.getElementById('eq_lg_nt_'+i);
+    if(!d)continue;
+    var article=a?a.value.trim():'';
+    var desc=d?d.value.trim():'';
+    var qty=parseFloat(q?q.value:1)||1;
+    var pu=parseFloat(p?p.value:0)||0;
+    var rem=parseFloat(r?r.value:0)||0;
+    var noTva=nt?nt.checked:false;
+    var brut=qty*pu;
+    var net=brut*(1-rem/100);
+    if(desc||article||pu>0)lignes.push({article:article,desc:desc,qty:qty,pu:pu,remise:rem,noTva:noTva,montant:net});
+  }
+  return lignes;
+}
+function eqCalcTotal(){
+  var lignes=eqGetLignes();
+  var totalHT=0;
+  lignes.forEach(function(lg){totalHT+=lg.montant});
+  var remise=parseFloat((document.getElementById('eq_remise')||{}).value)||0;
+  var htApresRemise=totalHT*(1-remise/100);
+  var tva=parseFloat((document.getElementById('eq_tva')||{}).value);
+  if(isNaN(tva))tva=20;
+  var ttc=htApresRemise*(1+tva/100);
+  var el=document.getElementById('eq_t');
+  if(el)el.value=Math.round(ttc*100)/100;
+  var recap=document.getElementById('eq_recap');
+  if(recap&&lignes.length){
+    recap.style.display='block';
+    recap.innerHTML='💰 HT : <b>'+euro(totalHT)+'</b>'+(remise>0?' — Remise '+remise+'% : -<b>'+euro(totalHT*remise/100)+'</b> → HT net <b>'+euro(htApresRemise)+'</b>':'')+' · TVA '+tva+'% : <b>'+euro(htApresRemise*tva/100)+'</b> · <b style="color:#22a693">TTC : '+euro(ttc)+'</b>';
+  }
+}
 
-function sDev(id){var q=db.devis.find(function(x){return x.id===id});if(!q)return;stamp(q);q.status=V('eq_s');q.total=E(V('eq_t'));q.objet=V('eq_obj')||q.objet;q.notes=V('eq_no');q.conditions=V('eq_cond')||'';
+function sDev(id){var q=db.devis.find(function(x){return x.id===id});if(!q)return;stamp(q);
+  q.status=V('eq_s');q.ref=V('eq_ref')||q.ref;q.mode=V('eq_mode')||q.mode;
+  q.objet=V('eq_obj')||'';q.notes=V('eq_no')||'';q.conditions=V('eq_cond')||'';
+  q.tva=parseFloat((document.getElementById('eq_tva')||{}).value);if(isNaN(q.tva))q.tva=20;
+  q.remise=parseFloat((document.getElementById('eq_remise')||{}).value)||0;
+  q.acompte=parseFloat((document.getElementById('eq_ac')||{}).value)||0;
+  q.total=E(V('eq_t'));
+  q.lignes=eqGetLignes();
   var cnt=E(V('eq_wpc'));if(cnt){var wps=[];for(var i=0;i<cnt;i++){var a=$('eqw_a_'+i),l=$('eqw_l_'+i);if(a&&a.value.trim())wps.push({label:l?l.value.trim():'Étape '+(i+1),address:a.value.trim()})}q.waypoints=wps}
   q.animalIds=getPickerAniIds('edv');q.animalId=q.animalIds[0]||'';q.accompagnants=getAccList('edv');q.bienEtre=getBeData('edv');q.segments=getSegs('edseg');
   var sigs={};try{sigs=sigGetData('edv')}catch(e){}q.sigPec=sigs.sigPec||q.sigPec||'';q.sigDep=sigs.sigDep||q.sigDep||'';
