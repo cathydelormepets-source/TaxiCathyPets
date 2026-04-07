@@ -4257,6 +4257,8 @@ document.getElementById('q_contrat_pec').addEventListener('change',function(){
       <button class="btn sm rd" onclick="fbDisconnect()">⛔ Déco</button>
       <button class="btn sm og" onclick="fbPush()">⬆️ Envoyer</button>
       <button class="btn sm bu" onclick="fbPull()">⬇️ Récupérer</button>
+      <button class="btn sm" onclick="fbForceCloud()" style="background:#2a1040;border-color:#5a2080;color:#c8a">🔄 Forcer cloud</button>
+      <button class="btn sm" onclick="showBackups()" style="background:#1a2a3a;border-color:#2a4a6a;color:#8ac">💾 Backups locaux</button>
     </div>
     <div id="fbStatus" class="nt" style="margin-top:8px;font-size:11px">⚪ Non connecté</div>
     <div id="fbAuthStatus" class="nt" style="margin-top:4px;font-size:10px;color:var(--mt)"></div>
@@ -5715,8 +5717,25 @@ function fbPush(silent){
       var remote=snap.val();
       var dataToSend=db;
       if(remote&&typeof remote==='object'){
-        try{dataToSend=mergeData(db,remote);db=dataToSend;localStorage.setItem(SK,JSON.stringify(db))}catch(e){console.warn('merge before push err',e)}
+        try{
+          // PROTECTION : vérifier qu'on ne perd pas de données
+          var localDevis=act(db.devis||[]).length;
+          var remoteDevis=_toArr(remote.devis).filter(function(d){return d&&!d._deleted}).length;
+          var localFac=act(db.factures||[]).length;
+          var remoteFac=_toArr(remote.factures).filter(function(f){return f&&!f._deleted}).length;
+          var localCli=act(db.clients||[]).length;
+          var remoteCli=_toArr(remote.clients).filter(function(c){return c&&!c._deleted}).length;
+          // Si le cloud a significativement plus de données que le local, alerter
+          if(!silent && (remoteDevis > localDevis + 3 || remoteFac > localFac + 3 || remoteCli > localCli + 3)){
+            console.warn('⚠️ Cloud a plus de données — cloud: '+remoteDevis+'dev/'+remoteFac+'fac/'+remoteCli+'cli vs local: '+localDevis+'dev/'+localFac+'fac/'+localCli+'cli');
+          }
+          dataToSend=mergeData(db,remote);
+          db=dataToSend;
+          localStorage.setItem(SK,JSON.stringify(db));
+        }catch(e){console.warn('merge before push err',e)}
       }
+      // Backup auto dans localStorage avant push
+      try{localStorage.setItem('cathypets_backup_'+new Date().toISOString().slice(0,10),JSON.stringify(db))}catch(e){}
       return fbRef.set(JSON.parse(JSON.stringify(dataToSend)));
     }).then(function(){
       syncUI('on','Sync ✓ '+new Date().toLocaleTimeString('fr-FR'));
@@ -5740,6 +5759,66 @@ function fbPull(){
     // Re-pousser le résultat mergé pour que tous les postes soient synchro
     setTimeout(function(){fbPush(true)},1000);
   }).catch(function(e){syncUI('err','Erreur: '+e.message)});
+}
+// === FORCER CLOUD : écrase le local avec le cloud (récupération d'urgence) ===
+function fbForceCloud(){
+  if(!fbRef){alert('Firebase non connecté');return}
+  if(!confirm('⚠️ ATTENTION : Cela va REMPLACER toutes tes données locales par celles du cloud.\n\nUtilise ça uniquement si des données ont disparu en local.\n\nContinuer ?'))return;
+  syncUI('syncing','Récupération forcée...');
+  fbRef.once('value').then(function(snap){
+    var remote=snap.val();
+    if(!remote){alert('Aucune donnée dans le cloud');return}
+    // Backup local avant écrasement
+    try{localStorage.setItem('cathypets_pre_force_'+Date.now(),JSON.stringify(db))}catch(e){}
+    db=Object.assign({},JSON.parse(JSON.stringify(DD)),remote);
+    localStorage.setItem(SK,JSON.stringify(db));
+    rAll();
+    var nbDev=act(db.devis||[]).length;
+    var nbFac=act(db.factures||[]).length;
+    var nbCli=act(db.clients||[]).length;
+    syncUI('on','Cloud forcé ✓');
+    showToast('🔄 Données cloud chargées : '+nbCli+' clients, '+nbDev+' devis, '+nbFac+' factures');
+    alert('✅ Récupération terminée !\n\n'+nbCli+' clients\n'+nbDev+' devis\n'+nbFac+' factures\n\nVérifie que tes données sont bien là.');
+  }).catch(function(e){syncUI('err','Erreur: '+e.message)});
+}
+// === BACKUPS LOCAUX : afficher et restaurer ===
+function showBackups(){
+  var keys=[];
+  for(var i=0;i<localStorage.length;i++){
+    var k=localStorage.key(i);
+    if(k&&(k.startsWith('cathypets_backup_')||k.startsWith('cathypets_pre_force_')||k==='cathypets_v20'))keys.push(k);
+  }
+  keys.sort().reverse();
+  var h='<div style="max-height:60vh;overflow:auto">';
+  h+='<div style="font-size:11px;color:var(--mt);margin-bottom:10px">Backups trouvés dans le navigateur :</div>';
+  if(!keys.length){h+='<div style="color:var(--mt)">Aucun backup trouvé</div>'}
+  keys.forEach(function(k){
+    var data=localStorage.getItem(k);
+    var size=data?Math.round(data.length/1024):0;
+    var parsed=null;try{parsed=JSON.parse(data)}catch(e){}
+    var nbDev=parsed&&parsed.devis?parsed.devis.filter(function(d){return d&&!d._deleted}).length:0;
+    var nbFac=parsed&&parsed.factures?parsed.factures.filter(function(f){return f&&!f._deleted}).length:0;
+    var nbCli=parsed&&parsed.clients?parsed.clients.filter(function(c){return c&&!c._deleted}).length:0;
+    var label=k.replace('cathypets_','').replace('backup_','📅 ').replace('pre_force_','🔄 Avant force ').replace('v20','💾 Données actuelles');
+    h+='<div style="display:flex;justify-content:space-between;align-items:center;padding:8px;border:1px solid var(--ln);border-radius:8px;margin-bottom:4px">';
+    h+='<div><b style="font-size:12px">'+label+'</b><br><span style="font-size:10px;color:var(--mt)">'+nbCli+' cli · '+nbDev+' dev · '+nbFac+' fac · '+size+' Ko</span></div>';
+    h+='<button class="btn sm og" onclick="restoreBackup(\''+k+'\')" style="white-space:nowrap">♻️ Restaurer</button>';
+    h+='</div>';
+  });
+  h+='</div>';
+  oMo('💾 Backups locaux',h,'<button class="btn" onclick="cMo()">Fermer</button>');
+}
+function restoreBackup(key){
+  if(!confirm('Restaurer ce backup ? Les données actuelles seront remplacées.'))return;
+  var data=localStorage.getItem(key);
+  if(!data){alert('Backup introuvable');return}
+  try{
+    localStorage.setItem('cathypets_pre_restore_'+Date.now(),JSON.stringify(db));
+    db=Object.assign({},JSON.parse(JSON.stringify(DD)),JSON.parse(data));
+    localStorage.setItem(SK,JSON.stringify(db));
+    rAll();cMo();
+    showToast('♻️ Backup restauré — '+act(db.devis||[]).length+' devis, '+act(db.factures||[]).length+' factures');
+  }catch(e){alert('Erreur restauration: '+e.message)}
 }
 // Merge: union of records by id, most recently modified wins, deletions respected
 // V29: robuste aux conversions Firebase (objets au lieu de tableaux)
