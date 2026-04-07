@@ -6746,28 +6746,28 @@ function selectDevRoute(mode,kmA,kmR,tot,clearTolls){
   // Auto-create article lines from route
   devClearLignes();
   var pA=Math.max(kmA*db.settings.kmPrice,db.settings.minFee);
-  devAddLigne('Transport aller ('+kmA+' km, '+label+')',1,pA.toFixed(2));
+  devAddLigne(label+' — '+kmA+' km',1,pA.toFixed(2),'Transport aller');
   if(kmR>0){
     var pR=Math.max(kmR*((db.grilleTarif||{}).retour||0.80),db.settings.minFee);
-    devAddLigne('Retour à vide ('+kmR+' km)',1,pR.toFixed(2));
+    devAddLigne(kmR+' km retour',1,pR.toFixed(2),'Retour à vide');
   }
   // Péages refacturés au client si > 0
   var peagesAller=E(V('qd_pa'));
   var peagesRetour=E(V('qd_pr'));
   var peagesTotal=peagesAller+peagesRetour;
   if(peagesTotal>0){
-    devAddLigne('Péages autoroutiers'+(peagesAller>0&&peagesRetour>0?' (aller '+euro(peagesAller)+' + retour '+euro(peagesRetour)+')':''),1,peagesTotal.toFixed(2));
+    devAddLigne((peagesAller>0&&peagesRetour>0?'Aller '+euro(peagesAller)+' + retour '+euro(peagesRetour):'Forfait péages'),1,peagesTotal.toFixed(2),'Péages autoroutiers',0,true);
   }
   // Add hotel if filled
   var htNuits=E(V('q_htn')),htCost=E(V('q_htc'));
   if(htNuits>0&&htCost>0){
-    devAddLigne('Hébergement: '+(V('q_htl')||'Hôtel')+' ('+htNuits+' nuit'+(htNuits>1?'s':'')+')',1,htCost.toFixed(2));
+    devAddLigne((V('q_htl')||'Hôtel')+' — '+htNuits+' nuit'+(htNuits>1?'s':''),1,htCost.toFixed(2),'Hébergement',0,true);
   }
   // Add multi-modal if filled
   var mmMode=V('q_mm'),mmCost=E(V('q_mmx'));
   if(mmMode&&mmCost>0){
     var mmLabels={ferry:'Ferry',train:'Train',avion:'Avion',bateau:'Bateau'};
-    devAddLigne((mmLabels[mmMode]||mmMode)+': '+(V('q_mmc')||'')+' '+(V('q_mmr')||''),1,mmCost.toFixed(2));
+    devAddLigne((V('q_mmc')||'')+' '+(V('q_mmr')||''),1,mmCost.toFixed(2),(mmLabels[mmMode]||mmMode),0,true);
   }
   devCalcTotal();
   showToast('✅ Devis '+label+' : '+tot+' € — '+(_devLigneCount)+' article(s) créé(s)');
@@ -6783,13 +6783,13 @@ function devInjectOptions(){
   var added=0;
   var htNuits=E(V('q_htn')),htCost=E(V('q_htc'));
   if(htNuits>0&&htCost>0){
-    devAddLigne('Hébergement: '+(V('q_htl')||'Hôtel')+' ('+htNuits+' nuit'+(htNuits>1?'s':'')+')',1,htCost.toFixed(2));
+    devAddLigne((V('q_htl')||'Hôtel')+' — '+htNuits+' nuit'+(htNuits>1?'s':''),1,htCost.toFixed(2),'Hébergement',0,true);
     added++;
   }
   var mmMode=V('q_mm'),mmCost=E(V('q_mmx'));
   if(mmMode&&mmCost>0){
     var mmLabels={ferry:'Ferry',train:'Train',avion:'Avion',bateau:'Bateau'};
-    devAddLigne((mmLabels[mmMode]||mmMode)+': '+(V('q_mmc')||'')+' '+(V('q_mmr')||''),1,mmCost.toFixed(2));
+    devAddLigne((V('q_mmc')||'')+' '+(V('q_mmr')||''),1,mmCost.toFixed(2),(mmLabels[mmMode]||mmMode),0,true);
     added++;
   }
   if(added>0){devCalcTotal();showToast('✅ '+added+' ligne(s) ajoutée(s) aux articles');devSTab('devT4')}
@@ -8538,14 +8538,14 @@ function eDev(id){var q=db.devis.find(function(x){return x.id===id});if(!q)retur
   var whtml='';if(wps.length){wps.forEach(function(w,i){whtml+='<div class="row" style="margin-bottom:4px"><div class="c4 fd" style="margin:0"><input id="eqw_l_'+i+'" value="'+esc(w.label)+'" style="font-size:11px;padding:6px"></div><div class="c8 fd" style="margin:0"><input id="eqw_a_'+i+'" value="'+esc(w.address)+'" list="addrList" style="padding:6px"></div></div>'})}
   var aniPickerHtml=renderMultiAniPicker('edv',q.clientId);
   var accBlockHtml=renderAccBlock('edv');
-  oMo('✏️ '+q.ref+(wps.length?' ('+wps.length+' étapes)':''),'<div class="row"><div class="c6 fd"><label>Statut</label><select id="eq_s"><option '+(q.status==='brouillon'?'selected':'')+'>brouillon</option><option '+(q.status==='envoyé'?'selected':'')+'>envoyé</option><option '+(q.status==='accepté'?'selected':'')+'>accepté</option><option '+(q.status==='refusé'?'selected':'')+'>refusé</option><option '+(q.status==='facturé'?'selected':'')+'>facturé</option></select></div><div class="c6 fd"><label>Total €</label><input id="eq_t" type="number" step="0.01" value="'+(q.total||0)+'"></div></div>'+aniPickerHtml+accBlockHtml+(wps.length?'<div class="fd"><label>Étapes ('+wps.length+')</label></div><div id="eq_wps">'+whtml+'</div><input type="hidden" id="eq_wpc" value="'+wps.length+'">':'')+'<div class="fd"><label>Notes</label><textarea id="eq_no">'+esc(q.notes)+'</textarea></div>','<button class="btn rd" onclick="delRec(\'devis\',\''+id+'\',\''+esc(q.ref)+'\')">🗑️</button> '+(q.status!=='facturé'?'<button class="btn at" onclick="devToTr(\''+id+'\')">🚗 → Transport</button> ':'')+' <button class="btn og" onclick="printDevisPro(\''+id+'\')">🖨️ PDF</button> <button class="btn bu" onclick="quickMail(\'conf_dev\',\''+q.clientId+'\',\''+id+'\');cMo()">📧 Email</button> <button class="btn" style="background:#1a2030;border-color:#2a3a50;color:#aab" onclick="dupDev(\''+id+'\')">📋 Dupliquer</button> <button class="btn gn" onclick="sDev(\''+id+'\')">💾 Sauver</button>');
+  oMo('✏️ '+q.ref+(wps.length?' ('+wps.length+' étapes)':''),'<div class="row"><div class="c6 fd"><label>Statut</label><select id="eq_s"><option '+(q.status==='brouillon'?'selected':'')+'>brouillon</option><option '+(q.status==='envoyé'?'selected':'')+'>envoyé</option><option '+(q.status==='accepté'?'selected':'')+'>accepté</option><option '+(q.status==='refusé'?'selected':'')+'>refusé</option><option '+(q.status==='facturé'?'selected':'')+'>facturé</option></select></div><div class="c6 fd"><label>Total €</label><input id="eq_t" type="number" step="0.01" value="'+(q.total||0)+'"></div></div><div class="fd"><label>Objet / titre</label><input id="eq_obj" value="'+esc(q.objet||'')+'" placeholder="Ex: Transport canin Paris → Lyon" style="font-weight:700"></div>'+aniPickerHtml+accBlockHtml+(wps.length?'<div class="fd"><label>Étapes ('+wps.length+')</label></div><div id="eq_wps">'+whtml+'</div><input type="hidden" id="eq_wpc" value="'+wps.length+'">':'')+'<div class="fd"><label>Description détaillée</label><textarea id="eq_no" rows="5">'+esc(q.notes)+'</textarea></div><div class="fd"><label>Conditions particulières</label><textarea id="eq_cond" rows="3">'+esc(q.conditions||'')+'</textarea></div>','<button class="btn rd" onclick="delRec(\'devis\',\''+id+'\',\''+esc(q.ref)+'\')">🗑️</button> '+(q.status!=='facturé'?'<button class="btn at" onclick="devToTr(\''+id+'\')">🚗 → Transport</button> ':'')+' <button class="btn og" onclick="printDevisPro(\''+id+'\')">🖨️ PDF</button> <button class="btn bu" onclick="quickMail(\'conf_dev\',\''+q.clientId+'\',\''+id+'\');cMo()">📧 Email</button> <button class="btn" style="background:#1a2030;border-color:#2a3a50;color:#aab" onclick="dupDev(\''+id+'\')">📋 Dupliquer</button> <button class="btn gn" onclick="sDev(\''+id+'\')">💾 Sauver</button>');
   setTimeout(function(){
     setPickerAniIds('edv',getAniIds(q));setAccList('edv',q.accompagnants||[]);
     var mBd=$('mBd');if(mBd){var sigDiv=document.createElement('div');sigDiv.innerHTML=renderSigBlock('edv');mBd.appendChild(sigDiv);initSigBlock('edv');if(q.sigPec||q.sigDep)sigSetData('edv',{sigPec:q.sigPec,sigDep:q.sigDep})}
   },50);
 }
 
-function sDev(id){var q=db.devis.find(function(x){return x.id===id});if(!q)return;stamp(q);q.status=V('eq_s');q.total=E(V('eq_t'));q.notes=V('eq_no');
+function sDev(id){var q=db.devis.find(function(x){return x.id===id});if(!q)return;stamp(q);q.status=V('eq_s');q.total=E(V('eq_t'));q.objet=V('eq_obj')||q.objet;q.notes=V('eq_no');q.conditions=V('eq_cond')||'';
   var cnt=E(V('eq_wpc'));if(cnt){var wps=[];for(var i=0;i<cnt;i++){var a=$('eqw_a_'+i),l=$('eqw_l_'+i);if(a&&a.value.trim())wps.push({label:l?l.value.trim():'Étape '+(i+1),address:a.value.trim()})}q.waypoints=wps}
   q.animalIds=getPickerAniIds('edv');q.animalId=q.animalIds[0]||'';q.accompagnants=getAccList('edv');q.bienEtre=getBeData('edv');q.segments=getSegs('edseg');
   var sigs={};try{sigs=sigGetData('edv')}catch(e){}q.sigPec=sigs.sigPec||q.sigPec||'';q.sigDep=sigs.sigDep||q.sigDep||'';
@@ -11023,11 +11023,13 @@ function printDevisPro(id) {
   }
   html += '</div></div>';
   html += '<div style="margin-bottom:20px;border-bottom:1px solid #ddd;padding-bottom:12px"><table style="width:100%;font-size:11px">';
-  html += '<tr><td style="width:150px"><strong>Reference:</strong></td><td>' + q.ref + '</td></tr>';
+  html += '<tr><td style="width:120px"><strong>Référence:</strong></td><td>' + q.ref + '</td></tr>';
   html += '<tr><td><strong>Type:</strong></td><td>' + (function(){var tl={transport:'Transport animalier',garde:'Garde / Pension',colis:'Transport colis',nutrica:'Vente produits',veterinaire:'Transport vétérinaire',promenade:'Promenade',autre:'Prestation de services'};return tl[q.mode||'autre']||'Prestation de services'}()) + '</td></tr>';
-  html += '<tr><td><strong>Titre:</strong></td><td>' + (q.notes || '') + '</td></tr>';
+  if(q.objet) html += '<tr><td><strong>Objet:</strong></td><td style="font-weight:bold">' + esc(q.objet) + '</td></tr>';
   html += '<tr><td><strong>Date:</strong></td><td>' + dateStr + '</td></tr>';
-  html += '<tr><td><strong>Validite:</strong></td><td>' + validiteStr + '</td></tr></table></div>';
+  html += '<tr><td><strong>Validité:</strong></td><td>' + validiteStr + '</td></tr></table></div>';
+  if(q.notes){ html += '<div style="margin-bottom:14px;padding:10px 12px;background:#f8f9fa;border-left:3px solid #1a7a6e;border-radius:4px;font-size:11px;line-height:1.6"><strong style="color:#1a7a6e">Description:</strong><br>' + esc(q.notes).replace(/\n/g,'<br>') + '</div>'; }
+  if(q.conditions){ html += '<div style="margin-bottom:14px;padding:10px 12px;background:#fff8f0;border-left:3px solid #e67e22;border-radius:4px;font-size:11px;line-height:1.6"><strong style="color:#e67e22">Conditions particulières:</strong><br>' + esc(q.conditions).replace(/\n/g,'<br>') + '</div>'; }
   // V30 : Tableau articles pro devis (Qté | Article | Description | PU | Remise | TVA | Total)
   html += '<div style="margin:20px 0;border:1px solid #999;width:100%"><table style="width:100%;border-collapse:collapse;font-size:11px">';
   html += '<tr style="background:#ddd"><th style="border:1px solid #999;padding:6px;width:30px;text-align:center;font-size:10px">Qté</th>';
