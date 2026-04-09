@@ -5886,17 +5886,24 @@ function mergeData(local,remote){
       else if(local[key]){m[key]=local[key]}
     }catch(e){console.warn('merge cfg err: '+key,e)}
   });
-  // Settings: prefer local for seq numbers (nextQuote, nextInvoice), take max
+  // Settings: merge intelligent — le plus récent gagne
   try{
     if(remote.settings&&typeof remote.settings==='object'){
       var ls=local.settings||{};
-      m.settings=Object.assign({},m.settings,remote.settings);
-      m.settings.nextQuote=Math.max(E(ls.nextQuote),E(remote.settings.nextQuote));
-      m.settings.nextInvoice=Math.max(E(ls.nextInvoice),E(remote.settings.nextInvoice));
-      // Keep local Firebase config
+      var rs=remote.settings;
+      // D'abord le remote comme base, puis le local par-dessus (le local gagne)
+      m.settings=Object.assign({},m.settings,rs,ls);
+      // Séquences : toujours le max
+      m.settings.nextQuote=Math.max(E(ls.nextQuote),E(rs.nextQuote));
+      m.settings.nextInvoice=Math.max(E(ls.nextInvoice),E(rs.nextInvoice));
+      // Firebase config : toujours le local
       m.settings.fbApiKey=ls.fbApiKey;m.settings.fbProjectId=ls.fbProjectId;
       m.settings.fbDatabaseUrl=ls.fbDatabaseUrl;m.settings.fbRoom=ls.fbRoom;
       m.settings.fbEmail=ls.fbEmail;m.settings.fbPass=ls.fbPass;
+      // Solde banque : le plus récent (comparaison par date)
+      var lsd=ls.bankSoldeDate||'';var rsd=rs.bankSoldeDate||'';
+      if(rsd>lsd){m.settings.bankSolde=rs.bankSolde;m.settings.bankSoldeDate=rsd}
+      else{m.settings.bankSolde=ls.bankSolde;m.settings.bankSoldeDate=lsd}
     }
   }catch(e){console.warn('merge settings err',e)}
   // Sort history by date desc, trim
@@ -10310,10 +10317,13 @@ function rSet(){
   }
   sv('s_asl', s.autoSaveLocal?'1':'0');
   sv('s_asc', s.autoSaveCloud?'1':'0');
-  // Solde banque + objectif dans dashboard
-  sv('bk_solde', s.bankSolde!==undefined?E(s.bankSolde).toFixed(2):'');
-  sv('bk_seuil', s.bankSeuil||'');
-  sv('bk_obj',   s.objectifMois||'');
+  // Solde banque + objectif dans dashboard (ne pas écraser si l'utilisateur tape)
+  var bkEl=document.getElementById('bk_solde');
+  if(bkEl && document.activeElement!==bkEl) sv('bk_solde', s.bankSolde!==undefined?E(s.bankSolde).toFixed(2):'');
+  var bkSe=document.getElementById('bk_seuil');
+  if(bkSe && document.activeElement!==bkSe) sv('bk_seuil', s.bankSeuil||'');
+  var bkOb=document.getElementById('bk_obj');
+  if(bkOb && document.activeElement!==bkOb) sv('bk_obj', s.objectifMois||'');
   // PIN statut
   var pinSt=document.getElementById('pinStatus');
   if(pinSt){var haPin=!!localStorage.getItem('cathypets_pin');pinSt.textContent=haPin?'✅ PIN actif — protection activée':'🔓 Aucun PIN configuré';pinSt.style.color=haPin?'var(--a2)':'var(--mt)';}
