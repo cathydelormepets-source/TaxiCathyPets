@@ -14943,7 +14943,7 @@ function savBankQuick(){
   if(!isNaN(seuil)) db.settings.bankSeuil = seuil;
   if(!isNaN(obj)&&obj>0) db.settings.objectifMois = obj;
   if(!isNaN(solde)) db.settings.bankSoldeDate = new Date().toISOString();
-  localStorage.setItem(SK, JSON.stringify(db));
+  sav();
   rFinancierTempsReel();
 }
 
