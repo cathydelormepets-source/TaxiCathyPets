@@ -626,11 +626,11 @@ body.nuit .card{border-color:#0a1520}
 <div class="card" style="margin-bottom:12px;border-left:4px solid var(--gd)">
   <div class="bd" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
     <div style="font-size:13px;font-weight:800;color:var(--gd);white-space:nowrap">🏦 Solde banque</div>
-    <input id="bk_solde" type="number" step="0.01" placeholder="Solde actuel €" style="background:#080f1a;border:1px solid var(--ln);color:var(--tx);border-radius:8px;padding:7px 10px;font:inherit;font-size:13px;width:140px" oninput="savBankQuick()">
+    <input id="bk_solde" type="number" step="0.01" placeholder="Solde actuel €" style="background:#080f1a;border:1px solid var(--ln);color:var(--tx);border-radius:8px;padding:7px 10px;font:inherit;font-size:13px;width:140px" onchange="savBankQuick()" onkeyup="debounceBk()">
     <div style="font-size:11px;color:var(--mt)">Seuil d'alerte :</div>
-    <input id="bk_seuil" type="number" step="100" placeholder="Ex: 1000" style="background:#080f1a;border:1px solid var(--ln);color:var(--tx);border-radius:8px;padding:7px 10px;font:inherit;font-size:13px;width:120px" oninput="savBankQuick()">
+    <input id="bk_seuil" type="number" step="100" placeholder="Ex: 1000" style="background:#080f1a;border:1px solid var(--ln);color:var(--tx);border-radius:8px;padding:7px 10px;font:inherit;font-size:13px;width:120px" onchange="savBankQuick()" onkeyup="debounceBk()">
     <div style="font-size:11px;color:var(--mt)">Objectif CA/mois :</div>
-    <input id="bk_obj" type="number" step="100" placeholder="Ex: 5000" style="background:#080f1a;border:1px solid var(--ln);color:var(--tx);border-radius:8px;padding:7px 10px;font:inherit;font-size:13px;width:120px" oninput="savBankQuick()">
+    <input id="bk_obj" type="number" step="100" placeholder="Ex: 5000" style="background:#080f1a;border:1px solid var(--ln);color:var(--tx);border-radius:8px;padding:7px 10px;font:inherit;font-size:13px;width:120px" onchange="savBankQuick()" onkeyup="debounceBk()">
     <div id="bk_status" style="font-size:12px;font-weight:700;color:var(--a2)">—</div>
     <div style="margin-left:auto;font-size:10px;color:var(--mt)" id="bk_lastupd"></div>
   </div>
@@ -14945,7 +14945,10 @@ function ttMailClient(){
 // =================== FIN TERRAIN ENRICHI ===================
 var _bankNotifSent = false;
 
+var _bkTmr=null;
+function debounceBk(){clearTimeout(_bkTmr);_bkTmr=setTimeout(savBankQuick,1500)}
 function savBankQuick(){
+  clearTimeout(_bkTmr);
   var solde = parseFloat((document.getElementById('bk_solde')||{}).value||'');
   var seuil = parseFloat((document.getElementById('bk_seuil')||{}).value||'');
   var obj   = parseFloat((document.getElementById('bk_obj')||{}).value||'');
@@ -14953,8 +14956,12 @@ function savBankQuick(){
   if(!isNaN(seuil)) db.settings.bankSeuil = seuil;
   if(!isNaN(obj)&&obj>0) db.settings.objectifMois = obj;
   if(!isNaN(solde)) db.settings.bankSoldeDate = new Date().toISOString();
-  sav();
-  rFinancierTempsReel();
+  // Sauvegarder sans re-render complet (évite de bloquer la saisie)
+  db._lastSaved=new Date().toISOString();
+  localStorage.setItem(SK,JSON.stringify(db));
+  if(fbConnected)fbPush(true);
+  try{rFinancierTempsReel()}catch(e){}
+  showToast('💾 Solde sauvegardé');
 }
 
 function rFinancierTempsReel(){
