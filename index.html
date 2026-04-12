@@ -1,10 +1,12 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" translate="no">
 <head>
 <meta charset="UTF-8"/>
+<meta name="google" content="notranslate">
+<meta http-equiv="Content-Language" content="fr">
 <script>
 /* ═══ MODE OFFLINE — Cache direct (compatible GitHub Pages single-file) ═══ */
-var CP_CACHE_VERSION='cathypets-v28';
+var CP_CACHE_VERSION='cathypets-v31';
 (function(){
   // Cache la page actuelle pour accès offline
   if(typeof caches!=='undefined'){
@@ -44,7 +46,7 @@ var CP_CACHE_VERSION='cathypets-v28';
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <meta name="apple-mobile-web-app-title" content="Cathy Pets"/>
 <meta name="theme-color" content="#060e18"/>
-<title>Cathy Pets V30</title>
+<title>CathyPets Pro V31</title>
 <link id="pwa-manifest" rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" sizes="192x192" href="icon-192.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -535,7 +537,7 @@ body.nuit .card{border-color:#0a1520}
 <div class="mo" id="mOv" onclick="if(event.target===this)cMo()"><div class="mdl"><div class="mh"><h3 id="mTi">Édition</h3><button class="xb" onclick="cMo()">✕</button></div><div class="mb" id="mBd"></div><div class="mf" id="mFt"></div></div></div>
 <div class="app">
 <aside class="sidebar" id="sb">
-<div class="brand" style="padding:6px 10px"><img src="" id="brandLogo" style="width:100%;max-width:180px;height:auto;border-radius:8px;display:block;margin:0 auto 4px"><small style="display:block;text-align:center;color:#f59e0b;font-size:10px;font-weight:700">V30</small></div>
+<div class="brand" style="padding:6px 10px"><img src="" id="brandLogo" style="width:100%;max-width:180px;height:auto;border-radius:8px;display:block;margin:0 auto 4px"><small style="display:block;text-align:center;color:#f59e0b;font-size:10px;font-weight:700">V31</small></div>
 <div class="ng" data-role="admin">Pilotage</div><div class="nv">
 <button class="nb active" data-t="dash" data-role="admin">🏠 Dashboard</button>
 <button class="nb" data-t="plan" data-role="admin">📅 Planning</button>
@@ -778,6 +780,26 @@ body.nuit .card{border-color:#0a1520}
 </div>
 
 <div class="sp" style="margin-top:0">
+
+<!-- BRIEFING DU MATIN -->
+<div class="card" style="border-top:3px solid var(--a2);margin-bottom:14px" id="briefingCard">
+  <div class="hd"><h3>☀️ Briefing du jour</h3><span style="font-size:10px;color:var(--mt)" id="briefDate"></span></div>
+  <div class="bd" id="briefContent" style="font-size:12px"></div>
+</div>
+
+<!-- PLANNING VISUEL SEMAINE -->
+<div class="card" style="margin-bottom:14px">
+  <div class="hd">
+    <h3>📅 Planning semaine</h3>
+    <div style="display:flex;gap:6px">
+      <button class="btn sm" onclick="planWeekNav(-1)" style="padding:4px 10px">◀</button>
+      <button class="btn sm at" onclick="planWeekNav(0)" style="padding:4px 10px">Auj.</button>
+      <button class="btn sm" onclick="planWeekNav(1)" style="padding:4px 10px">▶</button>
+    </div>
+  </div>
+  <div class="bd" id="planWeekView" style="overflow-x:auto"></div>
+</div>
+
 <div style="display:flex;flex-direction:column;gap:14px">
 <div class="card"><div class="hd"><h3 id="dTodH">📍 Aujourd'hui</h3></div><div class="bd"><div id="dTod" class="lst"></div></div></div>
 <div class="card"><div class="hd"><h3>📅 À venir</h3></div><div class="bd"><div id="dN7" class="lst"></div></div></div>
@@ -5965,18 +5987,18 @@ var _adminPin = null; // PIN géré par localStorage chiffré
 var _chauffeurPin = null;
 
 function loginAs(role){
-  // PIN dynamique depuis localStorage (pas en dur dans le code)
-  var storedPin=localStorage.getItem('cathypets_pin');
-  if(storedPin){_adminPin=null}// Forcer vérification via localStorage
   var pin=$('loginPin')?$('loginPin').value:'';
   var err=$('loginError');
   if(role==='cathypets'){
-    var adminCode=db&&db.settings&&db.settings.adminPin?db.settings.adminPin:_adminPin;
+    // PIN admin : priorité settings > localStorage > défaut premier usage
+    var adminCode=db&&db.settings&&db.settings.adminPin?db.settings.adminPin:null;
+    if(!adminCode){var sp=localStorage.getItem('cathypets_pin');if(sp){try{adminCode=atob(sp)}catch(e){adminCode=sp}}}
+    if(!adminCode)adminCode='2470'; // Défaut premier lancement — à changer dans Paramètres
     if(pin!==adminCode){if(err)err.textContent='❌ Code incorrect';return}
     _appMode='admin';
   } else {
-    var chauffCode=db&&db.settings&&db.settings.chauffeurPin?db.settings.chauffeurPin:_chauffeurPin;
-    if(!chauffCode){chauffCode='0000'}if(pin!==chauffCode){if(err)err.textContent='❌ Code chauffeur incorrect';return}
+    var chauffCode=db&&db.settings&&db.settings.chauffeurPin?db.settings.chauffeurPin:'0000';
+    if(pin!==chauffCode){if(err)err.textContent='❌ Code chauffeur incorrect';return}
     _appMode='chauffeur';
   }
   localStorage.setItem('cpMode',_appMode);
@@ -5988,8 +6010,10 @@ function loginAs(role){
 
 function loginCheck(){
   var pin=$('loginPin')?$('loginPin').value:'';
-  var adminCode=db&&db.settings&&db.settings.adminPin?db.settings.adminPin:_adminPin;
-  var chauffCode=db&&db.settings&&db.settings.chauffeurPin?db.settings.chauffeurPin:_chauffeurPin;
+  var adminCode=db&&db.settings&&db.settings.adminPin?db.settings.adminPin:null;
+  if(!adminCode){var sp=localStorage.getItem('cathypets_pin');if(sp){try{adminCode=atob(sp)}catch(e){adminCode=sp}}}
+  if(!adminCode)adminCode='2470';
+  var chauffCode=db&&db.settings&&db.settings.chauffeurPin?db.settings.chauffeurPin:'0000';
   if(pin===adminCode)loginAs('cathypets');
   else if(pin===chauffCode)loginAs('chauffeur');
 }
@@ -6003,7 +6027,9 @@ setTimeout(function(){
 function switchMode(mode){
   if(mode==='admin'){
     var pin=prompt('🔐 Code Cathy Pets :');
-    var adminCode=db&&db.settings&&db.settings.adminPin?db.settings.adminPin:_adminPin;
+    var adminCode=db&&db.settings&&db.settings.adminPin?db.settings.adminPin:null;
+    if(!adminCode){var sp=localStorage.getItem('cathypets_pin');if(sp){try{adminCode=atob(sp)}catch(e){adminCode=sp}}}
+    if(!adminCode)adminCode='2470';
     if(pin!==adminCode){showToast('❌ Code incorrect');return}
   }
   _appMode=mode;
@@ -9594,6 +9620,135 @@ function rDash(){
   $('dLa').innerHTML=db.history.slice(0,10).map(function(x){return '<div class="itm"><span class="sm-t">'+fD(x.date)+'</span> · '+x.type+' · '+x.text+'</div>'}).join('')||'<div class="itm" style="color:var(--mt)">—</div>';
   // Données financières temps réel
   try{rFinancierTempsReel()}catch(e){console.error("rFinancier error:",e)}
+  try{rBriefing()}catch(e){console.error("rBriefing error:",e)}
+  try{rPlanWeek()}catch(e){console.error("rPlanWeek error:",e)}
+}
+
+// ═══ BRIEFING DU MATIN ═══
+function rBriefing(){
+  var d=tdy();
+  var el=document.getElementById('briefContent');
+  var dt=document.getElementById('briefDate');
+  if(!el)return;
+  if(dt)dt.textContent=new Date().toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  var h='';
+  // 1. Missions du jour
+  var todayTr=act(db.transports).filter(function(t){return t.date===d});
+  var todayGrd=act(db.gardes).filter(function(g){return g.start&&g.start.slice(0,10)<=d&&g.end&&g.end.slice(0,10)>=d});
+  var todayGrdIn=act(db.gardes).filter(function(g){return g.start&&g.start.slice(0,10)===d});
+  var todayGrdOut=act(db.gardes).filter(function(g){return g.end&&g.end.slice(0,10)===d});
+  if(todayTr.length||todayGrdIn.length||todayGrdOut.length){
+    h+='<div style="padding:8px 10px;background:rgba(26,122,110,.1);border-radius:8px;margin-bottom:8px">';
+    h+='<b style="color:var(--a2)">🚗 '+todayTr.length+' transport(s)</b>';
+    if(todayGrdIn.length) h+=' · <b style="color:var(--gd)">🏡 '+todayGrdIn.length+' entrée(s) garde</b>';
+    if(todayGrdOut.length) h+=' · <b style="color:var(--or)">🏡 '+todayGrdOut.length+' sortie(s) garde</b>';
+    h+='<div style="margin-top:6px">';
+    todayTr.forEach(function(t){
+      var l=tLegs(t);
+      h+='<div style="padding:4px 0;border-bottom:1px solid rgba(255,255,255,.05)">🚗 <b>'+t.ref+'</b> '+cN(t.clientId)+' — '+(l.length<=3?l.join(' → '):(l[0]+' → '+l[l.length-1]))+' · <b>'+euro(t.price)+'</b>'+(t.heurePEC?' · 🕐 '+t.heurePEC:'')+'</div>';
+    });
+    todayGrdIn.forEach(function(g){h+='<div style="padding:4px 0">🏡 <b>ENTRÉE '+g.ref+'</b> '+aNs(g)+' — '+cN(g.clientId)+'</div>'});
+    todayGrdOut.forEach(function(g){h+='<div style="padding:4px 0">🏡 <b>SORTIE '+g.ref+'</b> '+aNs(g)+' — '+cN(g.clientId)+'</div>'});
+    h+='</div></div>';
+  } else {
+    h+='<div style="padding:8px 10px;background:rgba(255,255,255,.03);border-radius:8px;margin-bottom:8px;color:var(--mt)">📋 Pas de mission prévue aujourd\'hui</div>';
+  }
+  // 2. Factures impayées
+  var impayees=act(db.factures).filter(function(f){return f.status==='emise'});
+  var totalImp=impayees.reduce(function(s,f){return s+E(f.total)-E(f.acompte)},0);
+  if(impayees.length){
+    h+='<div style="padding:8px 10px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:8px;margin-bottom:8px">';
+    h+='<b style="color:var(--rd)">💶 '+impayees.length+' facture(s) en attente de paiement — '+euro(totalImp)+'</b>';
+    impayees.forEach(function(f){
+      var jours=Math.floor((Date.now()-new Date(f.date))/864e5);
+      var urgence=jours>=30?'var(--rd)':jours>=15?'var(--or)':'var(--mt)';
+      h+='<div style="padding:3px 0;font-size:11px;display:flex;justify-content:space-between"><span>'+f.ref+' — '+cN(f.clientId)+'</span><span style="color:'+urgence+'"><b>'+euro(E(f.total)-E(f.acompte))+'</b> · '+jours+'j</span></div>';
+    });
+    h+='</div>';
+  }
+  // 3. Devis en attente
+  var devisEnv=act(db.devis).filter(function(q){return q.status==='envoyé'});
+  var devisBrouillon=act(db.devis).filter(function(q){return q.status==='brouillon'});
+  var devisAcceptes=act(db.devis).filter(function(q){return q.status==='accepté'});
+  if(devisEnv.length||devisBrouillon.length||devisAcceptes.length){
+    h+='<div style="padding:8px 10px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:8px;margin-bottom:8px">';
+    if(devisAcceptes.length) h+='<div style="margin-bottom:4px"><b style="color:var(--a2)">✅ '+devisAcceptes.length+' devis accepté(s) à facturer</b></div>';
+    devisAcceptes.forEach(function(q){
+      h+='<div style="padding:2px 0;font-size:11px">'+q.ref+' — '+cN(q.clientId)+' · <b>'+euro(q.total)+'</b> <button class="btn sm gn" onclick="sTab(\'fac\');setTimeout(function(){addFacFromDevis(\''+q.id+'\')},300)" style="font-size:9px;padding:2px 6px">💶 Facturer</button></div>';
+    });
+    if(devisEnv.length){
+      h+='<div style="margin-bottom:4px;margin-top:4px"><b style="color:var(--or)">📨 '+devisEnv.length+' devis envoyé(s) en attente de réponse</b></div>';
+      devisEnv.forEach(function(q){
+        var jours=Math.floor((Date.now()-new Date(q.date))/864e5);
+        h+='<div style="padding:2px 0;font-size:11px">'+q.ref+' — '+cN(q.clientId)+' · '+euro(q.total)+' · <span style="color:'+(jours>7?'var(--rd)':'var(--or)')+'">'+jours+'j</span>'+(jours>3?' <button class="btn sm" onclick="quickMail(\'relance_dev\',\''+q.clientId+'\',\''+q.id+'\')" style="font-size:9px;padding:2px 6px;background:#2a1a10;border-color:#6a3a10;color:#fa6">📨 Relancer</button>':'')+'</div>';
+      });
+    }
+    if(devisBrouillon.length) h+='<div style="margin-top:4px"><b style="color:var(--mt)">📝 '+devisBrouillon.length+' brouillon(s) à finaliser</b></div>';
+    h+='</div>';
+  }
+  // 4. CA du mois en cours
+  var moisActuel=new Date().toISOString().slice(0,7);
+  var caMois=act(db.factures).filter(function(f){return f.date&&f.date.slice(0,7)===moisActuel}).reduce(function(s,f){return s+E(f.total)},0);
+  var payeMois=act(db.factures).filter(function(f){return f.status==='payée'&&f.datePaiement&&f.datePaiement.slice(0,7)===moisActuel}).reduce(function(s,f){return s+E(f.total)},0);
+  var obj=db.settings.objectifMois||0;
+  h+='<div style="padding:6px 10px;background:rgba(59,130,246,.06);border-radius:8px;font-size:11px">';
+  h+='💰 <b>CA du mois</b> : '+euro(caMois)+' facturé · '+euro(payeMois)+' encaissé';
+  if(obj>0){
+    var pct=Math.round(caMois/obj*100);
+    h+=' · Objectif : <b style="color:'+(pct>=100?'var(--a2)':pct>=60?'var(--or)':'var(--rd)')+'">'+pct+'%</b>';
+  }
+  h+='</div>';
+  el.innerHTML=h;
+}
+
+// ═══ PLANNING VISUEL SEMAINE ═══
+var _planWeekOff=0;
+function planWeekNav(dir){if(dir===0)_planWeekOff=0;else _planWeekOff+=dir;rPlanWeek()}
+function rPlanWeek(){
+  var el=document.getElementById('planWeekView');
+  if(!el)return;
+  var today=new Date();
+  var monday=new Date(today);
+  monday.setDate(today.getDate()-today.getDay()+1+(_planWeekOff*7));
+  var days=[];
+  for(var i=0;i<7;i++){
+    var day=new Date(monday);day.setDate(monday.getDate()+i);
+    days.push(day);
+  }
+  var colors={tr:'#1a7a6e',gi:'#22a693',go:'#e67e22',fac:'#ef4444',dev:'#3b82f6'};
+  var h='<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;min-width:700px">';
+  // Headers
+  var jourNoms=['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
+  days.forEach(function(day,i){
+    var isToday=day.toISOString().slice(0,10)===tdy();
+    h+='<div style="text-align:center;font-size:10px;font-weight:800;padding:6px 4px;background:'+(isToday?'var(--a2)':'rgba(255,255,255,.05)')+';color:'+(isToday?'#000':'var(--mt)')+';border-radius:6px 6px 0 0">'+jourNoms[i]+'<br><span style="font-size:13px">'+day.getDate()+'</span></div>';
+  });
+  h+='</div><div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;min-width:700px">';
+  // Contenu par jour
+  days.forEach(function(day){
+    var ds=day.toISOString().slice(0,10);
+    var isToday=ds===tdy();
+    var evts=[];
+    act(db.transports).forEach(function(t){
+      if(t.date===ds)evts.push({c:colors.tr,icon:'🚗',txt:cN(t.clientId),sub:euro(t.price)});
+    });
+    act(db.gardes).forEach(function(g){
+      if(g.start&&g.start.slice(0,10)===ds)evts.push({c:colors.gi,icon:'🏡↓',txt:aNs(g),sub:'Entrée'});
+      if(g.end&&g.end.slice(0,10)===ds)evts.push({c:colors.go,icon:'🏡↑',txt:aNs(g),sub:'Sortie'});
+      if(g.start&&g.start.slice(0,10)<ds&&g.end&&g.end.slice(0,10)>ds)evts.push({c:'#16a34a',icon:'🏡',txt:aNs(g),sub:'En cours'});
+    });
+    h+='<div style="min-height:80px;padding:4px;background:'+(isToday?'rgba(26,122,110,.08)':'rgba(255,255,255,.02)')+';border:1px solid '+(isToday?'var(--a2)':'var(--ln)')+';border-radius:0 0 6px 6px;font-size:10px">';
+    if(!evts.length)h+='<span style="color:var(--mt)">—</span>';
+    evts.forEach(function(e){
+      h+='<div style="padding:3px 4px;margin-bottom:2px;border-left:2px solid '+e.c+';border-radius:3px;background:rgba(0,0,0,.2)">'+e.icon+' '+e.txt+'<br><span style="color:var(--mt)">'+e.sub+'</span></div>';
+    });
+    h+='</div>';
+  });
+  h+='</div>';
+  // Mois affiché
+  var moisLabel=days[3].toLocaleDateString('fr-FR',{month:'long',year:'numeric'});
+  h='<div style="text-align:center;font-weight:800;font-size:13px;margin-bottom:8px;color:var(--mt)">'+moisLabel+'</div>'+h;
+  el.innerHTML=h;
 }
 
 // PLANNING
@@ -18264,7 +18419,7 @@ function genLivreFactures(){
   h+='<b>'+ENT('entNom')+'</b> — '+ENT('entAdresse')+' — SIRET: '+ENT('entSiret')+' — RCS: '+ENT('entRcs')+'<br>';
   h+='TVA: '+ENT('entTva')+' — APE: '+ENT('entApe')+' — RC Pro: '+ENT('entRcpro')+'<br>';
   h+='Tél: '+ENT('entTel1')+' / '+ENT('entTel2')+' — '+ENT('entEmail')+' — '+ENT('entWeb')+'<br>';
-  h+='Document généré automatiquement par CathyPets V30 — Livre des factures conforme Art. L123-12 du Code de Commerce</div>';
+  h+='Document généré automatiquement par CathyPets Pro V31 — Livre des factures conforme Art. L123-12 du Code de Commerce</div>';
   h+='</div></body></html>';
 
   openHtmlBlob(h,'Livre_Factures_'+annee+'_CathyPets.html');
@@ -19416,7 +19571,7 @@ window.sTab=function(t){
   else if(t==='whatsapp')loadWhatsApp();
 };
 
-console.log('[CathyPets V25] ✅ Impact CA modules loaded');
+console.log('[CathyPets V31] ✅ Impact CA modules loaded');
 })();
 </script>
 
