@@ -1,0 +1,142 @@
+<!--
+================================================================
+TRAJETS DISPONIBLES — AUTO-SYNC FIREBASE
+================================================================
+Ce code se connecte à Firebase et affiche automatiquement
+les trajets que tu publies depuis l'app CathyPets.
+
+INSTALLATION :
+1. Remplace les 3 valeurs Firebase ci-dessous par les tiennes
+   (celles que tu as dans Paramètres > Firebase de l'app)
+2. Colle ce code dans un bloc HTML sur ta page Webnode
+3. Dans Firebase Console > Realtime Database > Rules, ajoute :
+   "site_public": { ".read": true }
+
+IMPORTANT : Si Firebase n'est pas configuré, le code affiche
+les trajets en dur (fallback) que tu peux modifier manuellement.
+================================================================
+-->
+
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+.cp-trajets{font-family:'DM Sans',sans-serif;background:linear-gradient(170deg,#0B1D3A 0%,#132B52 50%,#1A3A6A 100%);padding:70px 20px;color:#fff;width:100vw;position:relative;left:50%;right:50%;margin-left:-50vw;margin-right:-50vw}
+.cp-trajets *{box-sizing:border-box}
+.cp-trajets-inner{max-width:1100px;margin:0 auto}
+.cp-trajets-badge{display:inline-block;border:1px solid #E8650A;color:#E8650A;font-size:11px;letter-spacing:3px;text-transform:uppercase;padding:7px 22px;border-radius:30px;margin-bottom:22px}
+.cp-trajets h2{font-family:'Playfair Display',serif;font-size:38px;color:#fff;margin:0 0 8px;line-height:1.15}
+.cp-trajets h2 em{color:#E8650A;font-style:italic}
+.cp-trajets-sub{color:rgba(255,255,255,.65);font-size:16px;margin:0 0 40px;line-height:1.6}
+.cp-trajets-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px;margin-bottom:40px}
+.cp-route{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:28px;transition:transform .3s,border-color .3s}
+.cp-route:hover{transform:translateY(-4px);border-color:#E8650A}
+.cp-route-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.cp-route-tag{background:#E8650A;color:#fff;font-size:11px;font-weight:700;padding:4px 12px;border-radius:20px;letter-spacing:.5px;text-transform:uppercase}
+.cp-route-tag.cp-complet{background:#546e7a}
+.cp-route-tag.cp-dispo{background:#2e7d32}
+.cp-route-date{color:rgba(255,255,255,.5);font-size:13px}
+.cp-route-cities{font-family:'Playfair Display',serif;font-size:22px;color:#fff;margin:0 0 12px;line-height:1.3}
+.cp-route-cities .cp-arrow{color:#E8650A;margin:0 8px}
+.cp-route-details{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:14px}
+.cp-route-detail{display:flex;align-items:center;gap:6px;color:rgba(255,255,255,.6);font-size:13px}
+.cp-route-detail strong{color:#fff}
+.cp-route-stops{color:rgba(255,255,255,.45);font-size:12px;border-top:1px solid rgba(255,255,255,.08);padding-top:12px;margin-top:4px}
+.cp-trajets-cta{text-align:center;padding-top:10px}
+.cp-trajets-cta a{display:inline-block;padding:14px 40px;border-radius:50px;font-weight:600;font-size:16px;text-decoration:none;background:#E8650A;color:#fff;transition:background .2s}
+.cp-trajets-cta a:hover{background:#C85A08}
+.cp-trajets-cta p{color:rgba(255,255,255,.45);font-size:13px;margin:12px 0 0}
+.cp-trajets-pulse{display:inline-block;width:8px;height:8px;background:#4caf50;border-radius:50%;margin-right:6px;animation:cp-pulse 2s infinite}
+@keyframes cp-pulse{0%,100%{opacity:1}50%{opacity:.3}}
+@media(max-width:700px){.cp-trajets h2{font-size:28px}.cp-trajets-grid{grid-template-columns:1fr}.cp-route-cities{font-size:18px}}
+</style>
+
+<div class="cp-trajets">
+  <div class="cp-trajets-inner" style="text-align:center">
+    <div class="cp-trajets-badge">Tournées mensuelles</div>
+    <h2>Trajets <em>disponibles</em></h2>
+    <p class="cp-trajets-sub"><span class="cp-trajets-pulse"></span> Mis à jour régulièrement — Réservez votre place à tarif préférentiel</p>
+  </div>
+  <div class="cp-trajets-inner">
+    <div class="cp-trajets-grid" id="cpTrajetsGrid">
+      <p style="color:rgba(255,255,255,.5);text-align:center;grid-column:1/-1">Chargement des trajets...</p>
+    </div>
+    <div class="cp-trajets-cta">
+      <a href="tel:+33781304110">📞 Réserver ma place — 07 81 30 41 10</a>
+      <p>Devis gratuit · Tarif préférentiel tournée · Transport agréé type 2</p>
+    </div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script>
+(function(){
+  // ══════════════════════════════════════════
+  // REMPLACE CES 3 VALEURS PAR LES TIENNES
+  // (Paramètres > Firebase dans l'app CathyPets)
+  // ══════════════════════════════════════════
+  var FIREBASE_API_KEY = 'REMPLACER_PAR_TA_CLE';
+  var FIREBASE_PROJECT_ID = 'REMPLACER_PAR_TON_PROJET';
+  var FIREBASE_DB_URL = 'REMPLACER_PAR_TON_URL';
+  var FIREBASE_ROOM = 'cathypets-default'; // même room que dans l'app
+  // ══════════════════════════════════════════
+
+  var grid = document.getElementById('cpTrajetsGrid');
+
+  function renderTrajets(trajets) {
+    if (!trajets || !trajets.length) {
+      grid.innerHTML = '<p style="color:rgba(255,255,255,.5);text-align:center;grid-column:1/-1">Aucun trajet disponible pour le moment. Appelez-nous !</p>';
+      return;
+    }
+    trajets.sort(function(a,b){return (a.ordre||0)-(b.ordre||0)});
+    var stCls = {dispo:' cp-dispo', complet:' cp-complet', demande:''};
+    var stLbl = {dispo:'Places dispo', complet:'Complet', demande:'Sur demande'};
+    var h = '';
+    trajets.forEach(function(t) {
+      var st = t.statut || 'dispo';
+      h += '<div class="cp-route">';
+      h += '<div class="cp-route-header">';
+      h += '<span class="cp-route-tag' + (stCls[st]||'') + '">' + (stLbl[st]||'Sur demande') + '</span>';
+      h += '<span class="cp-route-date">' + (t.date||'') + '</span>';
+      h += '</div>';
+      h += '<h3 class="cp-route-cities">' + (t.depart||'') + ' <span class="cp-arrow">→</span> ' + (t.arrivee||'') + '</h3>';
+      h += '<div class="cp-route-details">';
+      h += '<div class="cp-route-detail">🚗 <strong>' + (t.km||'') + '</strong></div>';
+      h += '<div class="cp-route-detail">⏱ <strong>' + (t.duree||'') + '</strong></div>';
+      h += '<div class="cp-route-detail">🔄 <strong>Aller + retour</strong></div>';
+      h += '<div class="cp-route-detail">🐾 <strong>' + (t.animaux||'Tous animaux') + '</strong></div>';
+      h += '</div>';
+      if (t.arrets) h += '<div class="cp-route-stops">' + t.arrets + '</div>';
+      h += '</div>';
+    });
+    grid.innerHTML = h;
+  }
+
+  // Tenter Firebase
+  if (FIREBASE_API_KEY !== 'REMPLACER_PAR_TA_CLE') {
+    try {
+      var app = firebase.initializeApp({
+        apiKey: FIREBASE_API_KEY,
+        projectId: FIREBASE_PROJECT_ID,
+        databaseURL: FIREBASE_DB_URL
+      }, 'cpSite');
+      var db = app.database();
+      var ref = db.ref('site_public/' + FIREBASE_ROOM + '/trajets');
+      ref.on('value', function(snap) {
+        var data = snap.val();
+        if (data && data.trajets) {
+          renderTrajets(data.trajets);
+        }
+      }, function(err) {
+        console.warn('Firebase read error:', err);
+        grid.innerHTML = '<p style="color:rgba(255,255,255,.5);text-align:center;grid-column:1/-1">Contactez-nous pour connaître nos prochaines tournées !</p>';
+      });
+    } catch(e) {
+      console.warn('Firebase init error:', e);
+    }
+  } else {
+    // Pas de Firebase — afficher un message
+    grid.innerHTML = '<p style="color:rgba(255,255,255,.5);text-align:center;grid-column:1/-1">Contactez-nous pour connaître nos prochaines tournées !</p>';
+  }
+})();
+</script>
