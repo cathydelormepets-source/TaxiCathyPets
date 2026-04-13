@@ -21952,36 +21952,49 @@ function rTrajetsPub(){
   var list=$('tpList');if(!list)return;
   if(!db.trajetsPublics)db.trajetsPublics=[];
   var traj=act(db.trajetsPublics);
-  if(!traj.length){list.innerHTML='<p style="color:var(--mt);text-align:center;padding:30px">Aucun trajet. Clique ➕ Ajouter pour commencer.</p>';return}
-  var h='';
+  if(!traj.length){list.innerHTML='<p style="color:var(--mt);text-align:center;padding:30px">Aucun trajet. Clique \u2795 Ajouter pour commencer.</p>';return}
   traj.sort(function(a,b){return(a.ordre||0)-(b.ordre||0)});
+  var h='';
   traj.forEach(function(t,i){
     var stColors={dispo:'#2e7d32',complet:'#546e7a',demande:'#E8650A'};
     var stLabels={dispo:'Places dispo',complet:'Complet',demande:'Sur demande'};
     var st=t.statut||'dispo';
+    var tid=t.id;
     h+='<div style="background:var(--pn);border:1px solid var(--ln);border-radius:12px;padding:16px;margin-bottom:10px">';
     h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">';
     h+='<div style="display:flex;align-items:center;gap:10px">';
     h+='<span style="background:'+stColors[st]+';color:#fff;font-size:10px;font-weight:700;padding:3px 10px;border-radius:12px">'+stLabels[st]+'</span>';
-    h+='<strong style="font-size:16px">'+esc(t.depart||'')+' → '+esc(t.arrivee||'')+'</strong>';
+    h+='<strong style="font-size:16px">'+esc(t.depart||'')+' \u2192 '+esc(t.arrivee||'')+'</strong>';
     h+='<span style="color:var(--mt);font-size:12px">'+esc(t.date||'')+'</span>';
     h+='</div>';
-    h+='<div style="display:flex;gap:4px">';
-    if(i>0)h+='<button class="btn sm" onclick="moveTrajet(''+t.id+'','up')" style="padding:4px 8px">▲</button>';
-    if(i<traj.length-1)h+='<button class="btn sm" onclick="moveTrajet(''+t.id+'','down')" style="padding:4px 8px">▼</button>';
-    h+='<button class="btn sm" onclick="editTrajetPub(''+t.id+'')" style="padding:4px 8px">✏️</button>';
-    h+='<button class="btn sm rd" onclick="delTrajetPub(''+t.id+'')" style="padding:4px 8px;background:#ef4444;border-color:#ef4444">🗑️</button>';
+    h+='<div style="display:flex;gap:4px" data-tid="'+tid+'">';
+    if(i>0)h+='<button class="btn sm" data-act="up" style="padding:4px 8px">\u25b2</button>';
+    if(i<traj.length-1)h+='<button class="btn sm" data-act="down" style="padding:4px 8px">\u25bc</button>';
+    h+='<button class="btn sm" data-act="edit" style="padding:4px 8px">\u270f\ufe0f</button>';
+    h+='<button class="btn sm" data-act="del" style="padding:4px 8px;background:#ef4444;border-color:#ef4444">\ud83d\uddd1\ufe0f</button>';
     h+='</div></div>';
     h+='<div style="display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--mt)">';
-    h+='<span>🚗 <strong style="color:var(--tx)">'+esc(t.km||'')+'</strong></span>';
-    h+='<span>⏱ <strong style="color:var(--tx)">'+esc(t.duree||'')+'</strong></span>';
-    h+='<span>🔄 <strong style="color:var(--tx)">Aller + retour</strong></span>';
-    h+='<span>🐾 <strong style="color:var(--tx)">'+esc(t.animaux||'Tous animaux')+'</strong></span>';
+    h+='<span>\ud83d\ude97 <strong style="color:var(--tx)">'+esc(t.km||'')+'</strong></span>';
+    h+='<span>\u23f1 <strong style="color:var(--tx)">'+esc(t.duree||'')+'</strong></span>';
+    h+='<span>\ud83d\udd04 <strong style="color:var(--tx)">Aller + retour</strong></span>';
+    h+='<span>\ud83d\udc3e <strong style="color:var(--tx)">'+esc(t.animaux||'Tous animaux')+'</strong></span>';
     h+='</div>';
     if(t.arrets)h+='<div style="color:var(--mt);font-size:11px;margin-top:8px;border-top:1px solid var(--ln);padding-top:8px">'+esc(t.arrets)+'</div>';
     h+='</div>';
   });
   list.innerHTML=h;
+  // Attach event listeners via delegation
+  list.querySelectorAll('[data-tid]').forEach(function(el){
+    var tid=el.dataset.tid;
+    el.querySelectorAll('[data-act]').forEach(function(btn){
+      btn.addEventListener('click',function(){
+        var a=btn.dataset.act;
+        if(a==='up'||a==='down')moveTrajet(tid,a);
+        else if(a==='edit')editTrajetPub(tid);
+        else if(a==='del')delTrajetPub(tid);
+      });
+    });
+  });
 }
 
 function addTrajetPub(){
@@ -21999,28 +22012,50 @@ function editTrajetPub(id){
   var d=document.createElement('div');
   d.style.cssText='position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;padding:20px';
   d.id='tpModal';
-  d.innerHTML='<div style="background:var(--pn);border:1px solid var(--ln);border-radius:16px;padding:24px;max-width:550px;width:100%;max-height:90vh;overflow-y:auto">'+
-    '<h3 style="margin-bottom:16px">✏️ Modifier le trajet</h3>'+
-    '<div class="il" style="margin-bottom:10px"><div class="fd" style="flex:1"><label>Ville départ</label><input id="tp_dep" value="'+esc(t.depart||'')+'"></div>'+
-    '<div class="fd" style="flex:1"><label>Ville arrivée</label><input id="tp_arr" value="'+esc(t.arrivee||'')+'"></div></div>'+
-    '<div class="il" style="margin-bottom:10px"><div class="fd" style="flex:1"><label>Distance</label><input id="tp_km" value="'+esc(t.km||'')+'" placeholder="~775 km"></div>'+
-    '<div class="fd" style="flex:1"><label>Durée</label><input id="tp_dur" value="'+esc(t.duree||'')+'" placeholder="~7h30"></div></div>'+
-    '<div class="il" style="margin-bottom:10px"><div class="fd" style="flex:1"><label>Animaux</label><input id="tp_ani" value="'+esc(t.animaux||'Tous animaux')+'"></div>'+
-    '<div class="fd" style="flex:1"><label>Date / Mois</label><input id="tp_dat" value="'+esc(t.date||'')+'" placeholder="Mai 2026"></div></div>'+
-    '<div class="fd" style="margin-bottom:10px"><label>Arrêts possibles</label><input id="tp_arr2" value="'+esc(t.arrets||'')+'" placeholder="Dijon · Lyon · Valence · Avignon"></div>'+
-    '<div class="fd" style="margin-bottom:16px"><label>Statut</label><div style="display:flex;gap:8px">'+
-    '<button class="btn '+(t.statut==='dispo'?'gn':'')+'" onclick="document.getElementById('tp_st').value='dispo';this.parentElement.querySelectorAll('button').forEach(function(b){b.className='btn'});this.className='btn gn'" style="flex:1;font-size:11px;'+(t.statut==='dispo'?'background:#2e7d32;border-color:#2e7d32':'')+'">Places dispo</button>'+
-    '<button class="btn '+(t.statut==='complet'?'':'':'')+'" onclick="document.getElementById('tp_st').value='complet';this.parentElement.querySelectorAll('button').forEach(function(b){b.className='btn'});this.className='btn';this.style.background='#546e7a'" style="flex:1;font-size:11px;'+(t.statut==='complet'?'background:#546e7a;border-color:#546e7a':'')+'">Complet</button>'+
-    '<button class="btn '+(t.statut==='demande'?'':'':'')+'" onclick="document.getElementById('tp_st').value='demande';this.parentElement.querySelectorAll('button').forEach(function(b){b.className='btn'});this.className='btn';this.style.background='#E8650A'" style="flex:1;font-size:11px;'+(t.statut==='demande'?'background:#E8650A;border-color:#E8650A':'')+'">Sur demande</button>'+
-    '<input type="hidden" id="tp_st" value="'+(t.statut||'dispo')+'">'+
-    '</div></div>'+
-    '<div style="display:flex;gap:8px;justify-content:flex-end">'+
-    '<button class="btn" onclick="document.getElementById('tpModal').remove()">Annuler</button>'+
-    '<button class="btn gn" onclick="saveTrajetPub(''+id+'')">✅ Enregistrer</button>'+
-    '</div></div>';
+  var box=document.createElement('div');
+  box.style.cssText='background:#0c1926;border:1px solid #1e3350;border-radius:16px;padding:24px;max-width:550px;width:100%;max-height:90vh;overflow-y:auto;color:#e4edf6;font-family:var(--f)';
+  box.innerHTML='<h3 style="margin-bottom:16px">✏️ Modifier le trajet</h3>'+
+    '<div style="display:flex;gap:8px;margin-bottom:10px"><div class="fd" style="flex:1"><label>Ville départ</label><input id="tp_dep"></div>'+
+    '<div class="fd" style="flex:1"><label>Ville arrivée</label><input id="tp_arr"></div></div>'+
+    '<div style="display:flex;gap:8px;margin-bottom:10px"><div class="fd" style="flex:1"><label>Distance</label><input id="tp_km" placeholder="~775 km"></div>'+
+    '<div class="fd" style="flex:1"><label>Durée</label><input id="tp_dur" placeholder="~7h30"></div></div>'+
+    '<div style="display:flex;gap:8px;margin-bottom:10px"><div class="fd" style="flex:1"><label>Animaux</label><input id="tp_ani"></div>'+
+    '<div class="fd" style="flex:1"><label>Date / Mois</label><input id="tp_dat" placeholder="Mai 2026"></div></div>'+
+    '<div class="fd" style="margin-bottom:10px"><label>Arrêts possibles</label><input id="tp_arr2" placeholder="Dijon · Lyon · Valence · Avignon"></div>'+
+    '<div class="fd" style="margin-bottom:16px"><label>Statut</label><div id="tp_st_btns" style="display:flex;gap:8px"></div><input type="hidden" id="tp_st"></div>'+
+    '<div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn" id="tp_cancel">Annuler</button>'+
+    '<button class="btn gn" id="tp_save">✅ Enregistrer</button></div>';
+  d.appendChild(box);
   document.body.appendChild(d);
+  // Fill values
+  $('tp_dep').value=t.depart||'';
+  $('tp_arr').value=t.arrivee||'';
+  $('tp_km').value=t.km||'';
+  $('tp_dur').value=t.duree||'';
+  $('tp_ani').value=t.animaux||'Tous animaux';
+  $('tp_dat').value=t.date||'';
+  $('tp_arr2').value=t.arrets||'';
+  $('tp_st').value=t.statut||'dispo';
+  // Statut buttons
+  var stOpts=[{k:'dispo',l:'Places dispo',c:'#2e7d32'},{k:'complet',l:'Complet',c:'#546e7a'},{k:'demande',l:'Sur demande',c:'#E8650A'}];
+  var stDiv=$('tp_st_btns');
+  stOpts.forEach(function(s){
+    var b=document.createElement('button');
+    b.className='btn';b.textContent=s.l;
+    b.style.cssText='flex:1;font-size:11px;'+(t.statut===s.k?'background:'+s.c+';border-color:'+s.c+';color:#fff':'');
+    b.addEventListener('click',function(){
+      $('tp_st').value=s.k;
+      stDiv.querySelectorAll('button').forEach(function(x){x.style.background='';x.style.borderColor='';x.style.color=''});
+      b.style.background=s.c;b.style.borderColor=s.c;b.style.color='#fff';
+    });
+    stDiv.appendChild(b);
+  });
+  // Events
+  $('tp_cancel').addEventListener('click',function(){d.remove()});
+  $('tp_save').addEventListener('click',function(){saveTrajetPub(id)});
   d.addEventListener('click',function(e){if(e.target===d)d.remove()});
 }
+
 
 function saveTrajetPub(id){
   var t=(db.trajetsPublics||[]).find(function(x){return x.id===id});
