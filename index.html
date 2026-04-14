@@ -5595,7 +5595,7 @@ function sav(manual){
   clearTimeout(_asTmr);
   var now=new Date().toISOString();
   // V29: Stamp _updatedAt sur TOUS les records modifiés (détection via _dirty flag)
-  var cols=['clients','animaux','transports','gardes','devis','factures','colis','nutrica','tresorerie','carburant','depenses','contrats','vehicules','carnet','tournees','depots','articlesCatalogue','missionsEnCours'];
+  var cols=['clients','animaux','transports','gardes','devis','factures','colis','nutrica','tresorerie','carburant','depenses','contrats','vehicules','carnet','tournees','depots','articlesCatalogue','missionsEnCours','trajetsPublics'];
   cols.forEach(function(col){
     if(!db[col]||!Array.isArray(db[col]))return;
     db[col].forEach(function(r){
