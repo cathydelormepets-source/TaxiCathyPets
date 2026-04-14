@@ -21964,7 +21964,7 @@ function rTrajetsPub(){
     h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">';
     h+='<div style="display:flex;align-items:center;gap:10px">';
     h+='<span style="background:'+stColors[st]+';color:#fff;font-size:10px;font-weight:700;padding:3px 10px;border-radius:12px">'+stLabels[st]+'</span>';
-    h+='<strong style="font-size:16px">'+esc(t.depart||'')+' \u2192 '+esc(t.arrivee||'')+'</strong>';
+    h+='<strong style="font-size:16px">'+(function(){var all=[t.depart||''];if(t.stops&&t.stops.length)all=all.concat(t.stops);all.push(t.arrivee||'');return all.filter(function(v){return v}).map(function(v){return esc(v)}).join(' \u2192 ')})()+'</strong>';
     h+='<span style="color:var(--mt);font-size:12px">'+esc(t.date||'')+'</span>';
     h+='</div>';
     h+='<div style="display:flex;gap:4px" data-tid="'+tid+'">';
@@ -22009,69 +22009,109 @@ function addTrajetPub(){
 function editTrajetPub(id){
   var t=(db.trajetsPublics||[]).find(function(x){return x.id===id});
   if(!t)return;
+  if(!t.stops)t.stops=[];
+  // Migration ancien format
+  if(!t.stops.length&&t.arrets){
+    t.arrets.split(/[·,]/).forEach(function(a){var v=a.trim();if(v)t.stops.push(v)});
+  }
   var d=document.createElement('div');
   d.style.cssText='position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;padding:20px';
   d.id='tpModal';
   var box=document.createElement('div');
   box.style.cssText='background:#0c1926;border:1px solid #1e3350;border-radius:16px;padding:24px;max-width:550px;width:100%;max-height:90vh;overflow-y:auto;color:#e4edf6;font-family:var(--f)';
-  box.innerHTML='<h3 style="margin-bottom:16px">✏️ Modifier le trajet</h3>'+
-    '<div style="display:flex;gap:8px;margin-bottom:10px"><div class="fd" style="flex:1"><label>Ville départ</label><input id="tp_dep"></div>'+
-    '<div class="fd" style="flex:1"><label>Ville arrivée</label><input id="tp_arr"></div></div>'+
-    '<div style="display:flex;gap:8px;margin-bottom:10px"><div class="fd" style="flex:1"><label>Distance</label><input id="tp_km" placeholder="~775 km"></div>'+
-    '<div class="fd" style="flex:1"><label>Durée</label><input id="tp_dur" placeholder="~7h30"></div></div>'+
-    '<div style="display:flex;gap:8px;margin-bottom:10px"><div class="fd" style="flex:1"><label>Animaux</label><input id="tp_ani"></div>'+
-    '<div class="fd" style="flex:1"><label>Date / Mois</label><input id="tp_dat" placeholder="Mai 2026"></div></div>'+
-    '<div class="fd" style="margin-bottom:10px"><label>Arrêts possibles</label><input id="tp_arr2" placeholder="Dijon · Lyon · Valence · Avignon"></div>'+
-    '<div class="fd" style="margin-bottom:16px"><label>Statut</label><div id="tp_st_btns" style="display:flex;gap:8px"></div><input type="hidden" id="tp_st"></div>'+
-    '<div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn" id="tp_cancel">Annuler</button>'+
-    '<button class="btn gn" id="tp_save">✅ Enregistrer</button></div>';
   d.appendChild(box);
   document.body.appendChild(d);
-  // Fill values
-  $('tp_dep').value=t.depart||'';
-  $('tp_arr').value=t.arrivee||'';
-  $('tp_km').value=t.km||'';
-  $('tp_dur').value=t.duree||'';
-  $('tp_ani').value=t.animaux||'Tous animaux';
-  $('tp_dat').value=t.date||'';
-  $('tp_arr2').value=t.arrets||'';
-  $('tp_st').value=t.statut||'dispo';
-  // Statut buttons
-  var stOpts=[{k:'dispo',l:'Places dispo',c:'#2e7d32'},{k:'complet',l:'Complet',c:'#546e7a'},{k:'demande',l:'Sur demande',c:'#E8650A'}];
-  var stDiv=$('tp_st_btns');
-  stOpts.forEach(function(s){
-    var b=document.createElement('button');
-    b.className='btn';b.textContent=s.l;
-    b.style.cssText='flex:1;font-size:11px;'+(t.statut===s.k?'background:'+s.c+';border-color:'+s.c+';color:#fff':'');
-    b.addEventListener('click',function(){
-      $('tp_st').value=s.k;
-      stDiv.querySelectorAll('button').forEach(function(x){x.style.background='';x.style.borderColor='';x.style.color=''});
-      b.style.background=s.c;b.style.borderColor=s.c;b.style.color='#fff';
+
+  var _stops=t.stops.slice();
+
+  function renderModal(){
+    var h='<h3 style="margin-bottom:16px">\u270f\ufe0f Modifier le trajet</h3>';
+    // Depart
+    h+='<div class="fd" style="margin-bottom:10px"><label>\ud83d\udfe2 D\u00e9part</label><input id="tp_dep" value="'+(t.depart||'').replace(/"/g,'&quot;')+'" placeholder="Paris" style="background:#080f1a;border:1px solid #1e3350;color:#e4edf6;border-radius:8px;padding:10px 12px;font-size:13px;width:100%"></div>';
+    // Stops dynamiques
+    h+='<div id="tp_stops_zone" style="margin-bottom:10px">';
+    _stops.forEach(function(s,i){
+      h+='<div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">';
+      h+='<span style="color:#3b82f6;font-size:11px;font-weight:700;min-width:50px">\ud83d\udd35 Arr\u00eat '+(i+1)+'</span>';
+      h+='<input class="tp_stop_input" data-idx="'+i+'" value="'+s.replace(/"/g,'&quot;')+'" placeholder="Ville..." style="flex:1;background:#080f1a;border:1px solid #1e3350;color:#e4edf6;border-radius:8px;padding:8px 10px;font-size:13px;font-family:var(--f)">';
+      h+='<button class="tp_del_stop" data-idx="'+i+'" style="background:#ef4444;border:none;color:#fff;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:13px">\u2715</button>';
+      h+='</div>';
     });
-    stDiv.appendChild(b);
-  });
-  // Events
-  $('tp_cancel').addEventListener('click',function(){d.remove()});
-  $('tp_save').addEventListener('click',function(){saveTrajetPub(id)});
+    h+='<button id="tp_add_stop" style="background:#12253a;border:1px solid #1e3a58;color:#3b82f6;padding:6px 14px;border-radius:8px;cursor:pointer;font-weight:700;font-size:11px;width:100%;margin-top:4px">+ Ajouter un arr\u00eat</button>';
+    h+='</div>';
+    // Arrivee
+    h+='<div class="fd" style="margin-bottom:14px"><label>\ud83d\udd34 Arriv\u00e9e</label><input id="tp_arr" value="'+(t.arrivee||'').replace(/"/g,'&quot;')+'" placeholder="Marseille" style="background:#080f1a;border:1px solid #1e3350;color:#e4edf6;border-radius:8px;padding:10px 12px;font-size:13px;width:100%"></div>';
+    // Reste
+    h+='<div style="display:flex;gap:8px;margin-bottom:10px"><div class="fd" style="flex:1"><label>Distance</label><input id="tp_km" value="'+(t.km||'').replace(/"/g,'&quot;')+'" placeholder="~775 km" style="background:#080f1a;border:1px solid #1e3350;color:#e4edf6;border-radius:8px;padding:8px 10px;font-size:13px"></div>';
+    h+='<div class="fd" style="flex:1"><label>Dur\u00e9e</label><input id="tp_dur" value="'+(t.duree||'').replace(/"/g,'&quot;')+'" placeholder="~7h30" style="background:#080f1a;border:1px solid #1e3350;color:#e4edf6;border-radius:8px;padding:8px 10px;font-size:13px"></div></div>';
+    h+='<div style="display:flex;gap:8px;margin-bottom:10px"><div class="fd" style="flex:1"><label>Animaux</label><input id="tp_ani" value="'+(t.animaux||'Tous animaux').replace(/"/g,'&quot;')+'" style="background:#080f1a;border:1px solid #1e3350;color:#e4edf6;border-radius:8px;padding:8px 10px;font-size:13px"></div>';
+    h+='<div class="fd" style="flex:1"><label>Date / Mois</label><input id="tp_dat" value="'+(t.date||'').replace(/"/g,'&quot;')+'" placeholder="Mai 2026" style="background:#080f1a;border:1px solid #1e3350;color:#e4edf6;border-radius:8px;padding:8px 10px;font-size:13px"></div></div>';
+    h+='<div class="fd" style="margin-bottom:16px"><label>Statut</label><div id="tp_st_btns" style="display:flex;gap:8px"></div><input type="hidden" id="tp_st" value="'+(t.statut||'dispo')+'"></div>';
+    h+='<div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn" id="tp_cancel">Annuler</button>';
+    h+='<button class="btn gn" id="tp_save">\u2705 Enregistrer</button></div>';
+    box.innerHTML=h;
+    // Statut buttons
+    var stOpts=[{k:'dispo',l:'Places dispo',c:'#2e7d32'},{k:'complet',l:'Complet',c:'#546e7a'},{k:'demande',l:'Sur demande',c:'#E8650A'}];
+    var stDiv=$('tp_st_btns');
+    stOpts.forEach(function(s){
+      var b=document.createElement('button');
+      b.className='btn';b.textContent=s.l;
+      b.style.cssText='flex:1;font-size:11px;'+(t.statut===s.k?'background:'+s.c+';border-color:'+s.c+';color:#fff':'');
+      b.addEventListener('click',function(){
+        $('tp_st').value=s.k;t.statut=s.k;
+        stDiv.querySelectorAll('button').forEach(function(x){x.style.background='';x.style.borderColor='';x.style.color=''});
+        b.style.background=s.c;b.style.borderColor=s.c;b.style.color='#fff';
+      });
+      stDiv.appendChild(b);
+    });
+    // Add stop
+    $('tp_add_stop').addEventListener('click',function(){
+      readStops();
+      _stops.push('');
+      renderModal();
+      // Focus le dernier input
+      setTimeout(function(){
+        var inputs=box.querySelectorAll('.tp_stop_input');
+        if(inputs.length)inputs[inputs.length-1].focus();
+      },50);
+    });
+    // Delete stops
+    box.querySelectorAll('.tp_del_stop').forEach(function(btn){
+      btn.addEventListener('click',function(){
+        readStops();
+        _stops.splice(parseInt(btn.dataset.idx),1);
+        renderModal();
+      });
+    });
+    // Cancel / Save
+    $('tp_cancel').addEventListener('click',function(){d.remove()});
+    $('tp_save').addEventListener('click',function(){
+      readStops();
+      t.depart=$('tp_dep').value.trim();
+      t.arrivee=$('tp_arr').value.trim();
+      t.stops=_stops.filter(function(s){return s});
+      t.km=$('tp_km').value.trim();
+      t.duree=$('tp_dur').value.trim();
+      t.animaux=$('tp_ani').value.trim()||'Tous animaux';
+      t.date=$('tp_dat').value.trim();
+      t.statut=$('tp_st').value||'dispo';
+      // Build arrets string for display & backward compat
+      var all=[t.depart].concat(t.stops).concat([t.arrivee]).filter(function(v){return v});
+      t.arrets=all.join(' \u00b7 ');
+      t._updatedAt=Date.now();
+      d.remove();
+      sav();rTrajetsPub();
+      showToast('\u2705 Trajet enregistr\u00e9');
+    });
+  }
+  function readStops(){
+    _stops=[];
+    box.querySelectorAll('.tp_stop_input').forEach(function(inp){
+      _stops.push(inp.value.trim());
+    });
+  }
+  renderModal();
   d.addEventListener('click',function(e){if(e.target===d)d.remove()});
-}
-
-
-function saveTrajetPub(id){
-  var t=(db.trajetsPublics||[]).find(function(x){return x.id===id});
-  if(!t)return;
-  t.depart=$('tp_dep').value.trim();
-  t.arrivee=$('tp_arr').value.trim();
-  t.km=$('tp_km').value.trim();
-  t.duree=$('tp_dur').value.trim();
-  t.animaux=$('tp_ani').value.trim()||'Tous animaux';
-  t.date=$('tp_dat').value.trim();
-  t.arrets=$('tp_arr2').value.trim();
-  t.statut=$('tp_st').value||'dispo';
-  t._updatedAt=Date.now();
-  var m=$('tpModal');if(m)m.remove();
-  sav();rTrajetsPub();
-  showToast('✅ Trajet enregistré');
 }
 
 function delTrajetPub(id){
@@ -22125,7 +22165,7 @@ function copyTrajetHTML(){
 
 function publishTrajetsFirebase(){
   if(!fbDb||!db.settings.fbApiKey){showToast('⚠️ Firebase non connecté');return}
-  var traj=act(db.trajetsPublics||[]).map(function(t){return{depart:t.depart,arrivee:t.arrivee,km:t.km,duree:t.duree,animaux:t.animaux,date:t.date,statut:t.statut,arrets:t.arrets,ordre:t.ordre}});
+  var traj=act(db.trajetsPublics||[]).map(function(t){return{depart:t.depart,arrivee:t.arrivee,stops:t.stops||[],km:t.km,duree:t.duree,animaux:t.animaux,date:t.date,statut:t.statut,arrets:t.arrets,ordre:t.ordre}});
   var room=db.settings.fbRoom||'cathypets-default';
   var ref=fbDb.ref('site_public/'+room+'/trajets');
   ref.set({trajets:traj,updatedAt:Date.now()}).then(function(){
