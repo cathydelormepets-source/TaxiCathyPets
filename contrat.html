@@ -616,7 +616,7 @@
 <div id="lockedPageGarde" style="display:none;max-width:500px;margin:100px auto;text-align:center;padding:40px;background:white;border-radius:16px;box-shadow:0 2px 8px rgba(0,0,0,0.1)">
   <h2 style="color:#c0392b;margin-bottom:12px">🔒 Accès restreint</h2>
   <p style="color:#546e7a">Ce contrat nécessite un lien d'accès valide.<br>Veuillez contacter Cathy Pets pour obtenir votre lien personnalisé.</p>
-  <p style="margin-top:16px;font-size:12px;color:#aaa">📞 07.83.43.63.06 · cathydelormepets@gmail.com</p>
+  <p style="margin-top:16px;font-size:12px;color:#aaa">📞 07.83.43.63.06 · <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="6c0f0d180415080900031e01091c09181f2c0b010d0500420f0301">[email&#160;protected]</a></p>
 </div>
 
 <!-- MAIN -->
@@ -1183,7 +1183,7 @@
     <div style="font-size:12px;color:#333;line-height:1.8;">
       <strong>Étape 1 :</strong> Cliquez sur <strong>"Envoyer à Cathy Pets"</strong> → votre contrat sera <strong>téléchargé en PDF</strong> automatiquement + un email pré-rempli s'ouvrira.<br>
       <strong>Étape 2 :</strong> Dans votre email, <strong>attachez le PDF téléchargé</strong> (fichier "Contrat_CathyPets_votrenom.pdf" dans vos téléchargements) puis envoyez.<br><br>
-      ✉️ Destinataire : <strong>cathydelormepets@gmail.com</strong> — Vérifiez avant d'envoyer.
+      ✉️ Destinataire : <strong><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="2b484a5f43524f4e474459464e5b4e5f586b4c464a424705484446">[email&#160;protected]</a></strong> — Vérifiez avant d'envoyer.
     </div>
   </div>
 
@@ -1210,7 +1210,7 @@
   RC Pro Hiscox HSXIN320028640M &nbsp;|&nbsp; <a href="https://cathypetsitter.com">cathypetsitter.com</a> &nbsp;|&nbsp; <a href="/cdn-cgi/l/email-protection#e38082978b9a87868f8c918e8693869790a3848e828a8fcd808c8e"><span class="__cf_email__" data-cfemail="0f6c6e7b67766b6a63607d626a7f6a7b7c4f68626e6663216c6062">[email&#160;protected]</span></a>
 </div>
 
-<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -1977,7 +1977,7 @@ function applyURLParams() {
     } catch(e) { console.error('Erreur décodage:', e); }
   }
 
-  // Si mode client → verrouiller les champs admin et calculer
+  // Si mode client → verrouiller les champs admin et tarifs
   var isClient = params.get('mode') === 'client' || params.has('code');
   if (isClient) {
     // Verrouiller les sections admin
@@ -1987,6 +1987,11 @@ function applyURLParams() {
     if (adminBar) adminBar.style.display = 'none';
     var adminTab = document.getElementById('admin-tab');
     if (adminTab) adminTab.style.display = 'none';
+    // Verrouiller TOUS les tarifs — le client ne peut pas modifier les prix
+    ['t-jours','t-prix-jour','t-feries','t-prix-feries','t-taxi-nb','t-taxi-prix','t-taxi2-nb','t-taxi2-prix','t-compl-nb','t-compl-prix'].forEach(function(id){
+      var el=document.getElementById(id);
+      if(el){el.readOnly=true;el.style.background='#e8e8e8';el.style.color='#333';el.style.fontWeight='700'}
+    });
     // Calculer durée et total
     setTimeout(function() {
       calcDuree();
@@ -2054,15 +2059,36 @@ document.addEventListener('DOMContentLoaded', function() {
   var params = new URLSearchParams(window.location.search);
   var hasCode = params.has('code') || params.has('nom') || params.has('mode');
   if (!hasCode) {
-    document.getElementById('lockedPageGarde').style.display = 'block';
-    document.getElementById('gardeContainer').style.display = 'none';
-    return;
+    // Pas de code : afficher la page verrouillée
+    var lp = document.getElementById('lockedPageGarde');
+    if (lp) lp.style.display = 'block';
+    var cf = document.getElementById('contractForm');
+    if (cf) cf.style.display = 'none';
+  } else {
+    // Code présent : afficher le formulaire
+    var lp = document.getElementById('lockedPageGarde');
+    if (lp) lp.style.display = 'none';
+    var cf = document.getElementById('contractForm');
+    if (cf) cf.style.display = 'block';
+    // Appliquer les données URL
+    setTimeout(function() { applyURLParams(); }, 200);
   }
-  document.getElementById('lockedPageGarde').style.display = 'none';
-  document.getElementById('gardeContainer').style.display = 'block';
-  setTimeout(applyURLParams, 300);
-});
 
+  // Si mode client → verrouiller les champs admin et tarifs
+  var isClient = params.get('mode') === 'client' || params.has('code');
+  if (isClient) {
+    setAdminFields(true);
+    var adminBar = document.getElementById('admin-bar');
+    if (adminBar) adminBar.style.display = 'none';
+    var adminTab = document.getElementById('admin-tab');
+    if (adminTab) adminTab.style.display = 'none';
+    ['t-jours','t-prix-jour','t-feries','t-prix-feries','t-taxi-nb','t-taxi-prix','t-taxi2-nb','t-taxi2-prix','t-compl-nb','t-compl-prix'].forEach(function(id){
+      var el=document.getElementById(id);
+      if(el){el.readOnly=true;el.style.background='#e8e8e8';el.style.color='#333';el.style.fontWeight='700'}
+    });
+    setTimeout(function() { calcDuree(); calcTotal(); }, 200);
+  }
+});
 </script>
 </body>
 </html>
