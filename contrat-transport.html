@@ -96,7 +96,7 @@ data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAA4KCw0LCQ4NDA0QDw4RFiQXF
   <div class="header-contact">
     <strong>Cathy Pets SAS</strong><br>
     <a href="tel:0781304110">📞 07.81.30.41.10</a><br>
-    <a href="mailto:cathydelormepets@gmail.com">📧 cathydelormepets@gmail.com</a><br>
+    <a href="/cdn-cgi/l/email-protection#d2b1b3a6baabb6b7bebda0bfb7a2b7a6a192b5bfb3bbbefcb1bdbf">📧 <span class="__cf_email__" data-cfemail="e78486938f9e83828b88958a8297829394a7808a868e8bc984888a">[email&#160;protected]</span></a><br>
     <a href="https://cathypetsitter.com">🌐 cathypetsitter.com</a>
   </div>
 </div>
@@ -106,7 +106,7 @@ data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAA4KCw0LCQ4NDA0QDw4RFiQXF
 <div class="locked-msg" id="lockedPage">
   <h2>🔒 Accès restreint</h2>
   <p>Ce contrat nécessite un lien d'accès valide.<br>Veuillez contacter Cathy Pets pour obtenir votre lien personnalisé.</p>
-  <p style="margin-top:16px;font-size:12px;color:#aaa">📞 07.81.30.41.10 · cathydelormepets@gmail.com</p>
+  <p style="margin-top:16px;font-size:12px;color:#aaa">📞 07.81.30.41.10 · <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="2c4f4d584455484940435e41495c49585f6c4b414d4540024f4341">[email&#160;protected]</a></p>
 </div>
 
 <!-- FORMULAIRE (caché par défaut) -->
@@ -190,7 +190,7 @@ data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAA4KCw0LCQ4NDA0QDw4RFiQXF
       <div class="article"><b>Art. 2 — Droit de refus :</b> Cathy Pets SAS se réserve le droit de <strong>refuser la prise en charge</strong> de l'animal si son état physique ou comportemental ne correspond pas à la déclaration faite dans ce contrat.</div>
       <div class="article"><b>Art. 3 — Urgence vétérinaire :</b> En cas de problème de santé survenant pendant le transport, Cathy Pets SAS est autorisé à consulter un vétérinaire d'urgence. <strong>Les frais vétérinaires seront intégralement à la charge du propriétaire.</strong></div>
       <div class="article"><b>Art. 4 — Documentation photographique :</b> Le propriétaire autorise Cathy Pets SAS à photographier l'animal à la prise en charge et à la dépose, à des fins de documentation de son état.</div>
-      <div class="article"><b>Art. 5 — Conditions de paiement :</b> Un acompte de 40% du montant total est exigible à la signature du présent contrat. Le solde (60%) est dû le jour de la prise en charge ou à la dépose, sauf accord écrit préalable de Cathy Pets SAS.</div>
+      <div class="article"><b>Art. 5 — Conditions de paiement :</b> Un acompte de 40% du montant total est exigible à la signature du présent contrat. Le solde (60%) est exigible avant le départ du transport, sauf accord écrit préalable de Cathy Pets SAS.</div>
       <div class="article"><b>Art. 6 — Annulation :</b> En cas de transport groupé, aucun remboursement ne sera effectué, le tarif étant calculé sur la base du nombre initial de participants. Pour un transport individuel : annulation gratuite si prévenue plus de 48h avant, 50% entre 24h et 48h, aucun remboursement sous 24h.</div>
     </div>
   </div>
@@ -233,12 +233,12 @@ data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAA4KCw0LCQ4NDA0QDw4RFiQXF
   <div class="success-msg" id="successMsg">
     <h2>✅ Contrat envoyé avec succès !</h2>
     <p>Merci ! Votre contrat de prise en charge a été transmis à Cathy Pets.<br>Vous recevrez une confirmation par email.</p>
-    <p style="margin-top:16px;color:var(--grey)">📞 07.81.30.41.10 · cathydelormepets@gmail.com</p>
+    <p style="margin-top:16px;color:var(--grey)">📞 07.81.30.41.10 · <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="0c6f6d786475686960637e61697c69787f4c6b616d6560226f6361">[email&#160;protected]</a></p>
   </div>
 
 </div>
 
-<script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
 // ═══ VARIABLES ═══
 var animalCount = 0;
 var sigDrawing = false;
@@ -487,16 +487,47 @@ function sendContratEmail(data) {
   body += 'Départ: ' + data.trajet.depart + '\n';
   body += 'Arrivée: ' + data.trajet.arrivee + '\n';
   body += 'Date: ' + data.trajet.date + '\n';
-  body += 'Heure: ' + (data.trajet.heure || 'Non précisée') + '\n';
-  body += 'Contact dépose: ' + (data.trajet.contact || 'Non précisé') + '\n\n';
+  body += 'Heure: ' + (data.trajet.heure || '') + '\n';
+  body += 'Instructions: ' + (data.trajet.instructions || '') + '\n\n';
   
-  body += '✅ CONTRAT SIGNÉ ET APPROUVÉ PAR LE CLIENT\n';
+  body += '--- SIGNATURE ---\n';
+  body += 'Signé le ' + new Date().toLocaleDateString('fr-FR') + '\n';
   
-  window.location.href = 'mailto:cathydelormepets@gmail.com?subject=' + subject + '&body=' + encodeURIComponent(body);
+  return body;
 }
 
-// ═══ INITIALISATION ═══
-window.addEventListener('DOMContentLoaded', checkAccess);
+function submitContrat(){
+  if(!document.getElementById('accept_cgu').checked){alert('Veuillez accepter les conditions');return}
+  var canvas = document.getElementById('sig_canvas');
+  if(!canvas){alert('Erreur signature');return}
+  var sigData=canvas.toDataURL();
+  var blank=document.createElement('canvas');blank.width=canvas.width;blank.height=canvas.height;
+  if(sigData===blank.toDataURL()){alert('Veuillez signer le contrat');return}
+  
+  var data = collectData();
+  var body = buildEmailBody(data);
+  var subject = 'Contrat transport ' + (data.proprietaire.nom || '') + ' - ' + (data.trajet.date || '');
+  
+  window.location.href = 'mailto:cathydelormepets@gmail.com?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+  
+  alert('\u2705 Contrat de transport validé !\n\nLe contrat va s\'ouvrir dans votre messagerie.\nEnvoyez-le à cathydelormepets@gmail.com\n\nMerci de votre confiance ! \ud83d\udc3e');
+}
+
+// URL params
+var params = new URLSearchParams(window.location.search);
+if(params.get('mode')==='client') document.title = 'Contrat Transport — Cathy Pets';
+
+function applyURLParams(){
+  var p = new URLSearchParams(window.location.search);
+  if(p.get('nom')){var el=document.getElementById('prop_nom');if(el)el.value=p.get('nom')}
+  if(p.get('tel')){var el=document.getElementById('prop_tel');if(el)el.value=p.get('tel')}
+  if(p.get('email')){var el=document.getElementById('prop_email');if(el)el.value=p.get('email')}
+  if(p.get('depart')){var el=document.getElementById('trajet_depart');if(el)el.value=p.get('depart')}
+  if(p.get('arrivee')){var el=document.getElementById('trajet_arrivee');if(el)el.value=p.get('arrivee')}
+  if(p.get('date')){var el=document.getElementById('trajet_date');if(el)el.value=p.get('date')}
+  if(p.get('heure')){var el=document.getElementById('trajet_heure');if(el)el.value=p.get('heure')}
+}
+setTimeout(applyURLParams, 200);
 </script>
 </body>
 </html>
