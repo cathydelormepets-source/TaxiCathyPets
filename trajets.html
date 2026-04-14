@@ -94,7 +94,13 @@ body{font-family:'DM Sans',sans-serif;background:#0B1D3A;color:#fff;min-height:1
       h += '<span class="cp-route-tag'+(stCls[st]||'')+'">'+(stLbl[st]||'Sur demande')+'</span>';
       h += '<span class="cp-route-date">'+e(t.date)+'</span>';
       h += '</div>';
-      h += '<h3 class="cp-route-cities">'+e(t.depart)+' <span class="cp-arrow">\u2192</span> '+e(t.arrivee)+'</h3>';
+      h += '<h3 class="cp-route-cities">';
+      var allCities=[t.depart||''];
+      if(t.stops&&t.stops.length)allCities=allCities.concat(t.stops);
+      allCities.push(t.arrivee||'');
+      allCities=allCities.filter(function(v){return v});
+      h += allCities.map(function(v){return e(v)}).join(' <span class="cp-arrow">\u2192</span> ');
+      h += '</h3>';
       h += '<div class="cp-route-details">';
       h += '<div class="cp-route-detail">\ud83d\ude97 <strong>'+e(t.km)+'</strong></div>';
       h += '<div class="cp-route-detail">\u23f1 <strong>'+e(t.duree)+'</strong></div>';
