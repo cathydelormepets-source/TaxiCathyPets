@@ -50,7 +50,7 @@
   <div>
     <h1>🐕 Contrat de Promenade & Visite à Domicile</h1>
     <p>Cathy Pets SAS — SIRET 928 564 269 — RC Pro Hiscox HSXIN320028640M</p>
-    <p>📞 07.83.43.63.06 · ✉️ cathydelormepets@gmail.com · 🌐 cathypetsitter.com</p>
+    <p>📞 07.83.43.63.06 · ✉️ <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="3d5e5c495544595851524f50584d58494e7d5a505c5451135e5250">[email&#160;protected]</a> · 🌐 cathypetsitter.com</p>
   </div>
   <div style="text-align:right;font-size:12px">
     <div style="font-size:18px;font-weight:900" id="contractRef">CP-PROM-2026</div>
@@ -136,8 +136,8 @@
     <div class="section-header orange">💶 &nbsp;4. Tarification</div>
     <div class="section-body">
       <div class="row">
-        <div class="field"><label>Tarif unitaire TTC</label><input id="tar_unit" type="number" step="0.01" placeholder="0.00"> €</div>
-        <div class="field"><label>Nombre de séances</label><input id="tar_nb" type="number" min="1" value="1"></div>
+        <div class="field"><label>Tarif unitaire TTC</label><input id="tar_unit" type="number" readonly style="background:#e8e8e8;font-weight:700" step="0.01" placeholder="0.00"> €</div>
+        <div class="field"><label>Nombre de séances</label><input id="tar_nb" type="number" readonly style="background:#e8e8e8;font-weight:700" min="1" value="1"></div>
         <div class="field"><label>Total TTC</label><div id="tar_total" style="font-size:18px;font-weight:900;color:#1a7a6e;padding:8px 0">0,00 €</div></div>
       </div>
       <div class="row" style="margin-top:10px">
@@ -154,6 +154,7 @@
       <div class="article"><h4>Art. 2 — Sécurité</h4><p>L'animal sera tenu en laisse pendant toute la durée de la promenade sauf accord écrit du propriétaire pour un lâcher dans une zone sécurisée. Le prestataire ne pourra être tenu responsable en cas de fugue d'un animal non tenu en laisse sur accord du client.</p></div>
       <div class="article"><h4>Art. 3 — Clés & Accès</h4><p>Si des clés sont remises au prestataire, elles seront conservées en lieu sûr et restituées à la fin du contrat. Le prestataire s'engage à la plus stricte confidentialité concernant les accès au domicile.</p></div>
       <div class="article"><h4>Art. 4 — Annulation</h4><p>Annulation gratuite à plus de 24h. Moins de 24h : la séance est due. En cas d'absence récurrente sans prévenance, le contrat pourra être résilié.</p></div>
+      <div class="article"><h4>Art. 5 — Paiement</h4><p>Le règlement intégral est exigible avant la prestation. En cas de forfait, l'acompte est dû à la signature et le solde avant la première séance. Tout retard entraîne une majoration de 10% et 40€ forfaitaire (Art. D.441-5 C.Com).</p></div>
       <div class="article"><h4>Art. 5 — Responsabilité</h4><p>Cathy Pets SAS est couvert par une RC Professionnelle (Hiscox). Les dommages causés par l'animal à des tiers relèvent de la responsabilité civile du propriétaire. Le client doit signaler tout comportement agressif ou dangereux.</p></div>
       <div class="article"><h4>Art. 6 — Urgence</h4><p>En cas de blessure ou malaise de l'animal, le prestataire contactera immédiatement le client puis, si nécessaire, un vétérinaire. Les frais vétérinaires seront à la charge du client.</p></div>
     </div>
@@ -185,7 +186,7 @@
   </div>
 </div>
 
-<script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
 // Vérification code accès
 var params=new URLSearchParams(window.location.search);
 var hasCode=params.has('code')||params.has('mode')||params.has('nom');
@@ -207,8 +208,11 @@ document.getElementById('contractDate').textContent=new Date().toLocaleDateStrin
   document.getElementById('tar_total').textContent=(u*n).toFixed(2).replace('.',',')+' €';
 })});
 function submitContrat(){
-  if(!document.getElementById('accept_cgu').checked){alert('Veuillez accepter les CGV');return}
-  alert('✅ Contrat de promenade validé !\n\nCathy Pets vous recontactera.\nMerci ! 🐾');
+  if(!document.getElementById('accept_cgu').checked){alert('Veuillez accepter les conditions');return}
+  var sigData=canvas.toDataURL();
+  var blank=document.createElement('canvas');blank.width=canvas.width;blank.height=canvas.height;
+  if(sigData===blank.toDataURL()){alert('Veuillez signer le contrat');return}
+  alert('\u2705 Contrat de promenade validé !\n\nCathy Pets vous recontactera.\n\nMerci de votre confiance ! \ud83d\udc3e');
 }
 </script>
 </div><!-- /contractForm -->
