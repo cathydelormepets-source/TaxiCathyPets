@@ -276,7 +276,53 @@ function submitContrat(){
   var sigData=canvas.toDataURL();
   var blank=document.createElement('canvas');blank.width=canvas.width;blank.height=canvas.height;
   if(sigData===blank.toDataURL()){alert('Veuillez signer le contrat');return}
-  alert('\u2705 Contrat de pension valid\u00e9 !\n\nCathy Pets vous recontactera.\n\nMerci ! \ud83d\udc3e');
+  // Collecter les données
+  var nom=document.getElementById('cli_nom').value||'';
+  var tel=document.getElementById('cli_tel').value||'';
+  var email=document.getElementById('cli_email').value||'';
+  var adresse=document.getElementById('cli_adresse').value||'';
+  var debut=document.getElementById('pen_debut').value||'';
+  var fin=document.getElementById('pen_fin').value||'';
+  var duree=document.getElementById('pen_duree').value||'';
+  var joursFact=document.getElementById('pen_jours_fact').value||'';
+  var total=document.getElementById('tar_total').textContent||'';
+  var acompte=document.getElementById('tar_acompte').textContent||'';
+  var solde=document.getElementById('tar_solde').textContent||'';
+  var mode=_tarifMode==='vip'?'FORFAIT VIP':'Standard';
+  var paiement=document.getElementById('pen_paiement').value||'';
+  // Animaux
+  var aniNoms=document.querySelectorAll('.ani_nom');
+  var animaux='';aniNoms.forEach(function(el){if(el.value)animaux+=el.value+', '});
+  // Services
+  var svcs=[];document.querySelectorAll('.pen_svc:checked').forEach(function(cb){svcs.push(cb.value)});
+  var obs=document.getElementById('pen_obs').value||'';
+  // Coupures
+  var coup=getCoupureJours();
+  // Construire le mail
+  var body='=== CONTRAT DE PENSION SIGNE ===\n\n';
+  body+='CLIENT\n';
+  body+='Nom: '+nom+'\n';
+  body+='Tel: '+tel+'\n';
+  body+='Email: '+email+'\n';
+  body+='Adresse: '+adresse+'\n\n';
+  body+='ANIMAL(AUX)\n';
+  body+=animaux+'\n\n';
+  body+='PERIODE\n';
+  body+='Du '+debut+' au '+fin+'\n';
+  body+='Duree: '+duree+'\n';
+  if(coup.total>0)body+='Coupures: '+coup.details.join(', ')+' = '+coup.total+'j deduits\n';
+  body+='Jours factures: '+joursFact+'\n\n';
+  body+='TARIFICATION ('+mode+')\n';
+  body+='Total: '+total+'\n';
+  body+='Acompte 40%: '+acompte+'\n';
+  body+='Solde 60%: '+solde+'\n';
+  body+='Paiement: '+paiement+'\n\n';
+  body+='SERVICES: '+svcs.join(', ')+'\n';
+  if(obs)body+='Observations: '+obs+'\n';
+  body+='\n--- Signe le '+new Date().toLocaleDateString('fr-FR')+' ---\n';
+  var subject='\u2705 Contrat Pension SIGNE - '+nom+' - du '+debut+' au '+fin;
+  window.location.href='mailto:cathydelormepets@gmail.com?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
+  alert('\u2705 Contrat de pension valid\u00e9 !\n\nLe contrat va s\'ouvrir dans votre messagerie.\nEnvoyez-le \u00e0 cathydelormepets@gmail.com\n\nMerci de votre confiance ! \ud83d\udc3e');
 }
 </script>
 </body>
