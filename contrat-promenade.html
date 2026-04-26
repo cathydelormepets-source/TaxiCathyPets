@@ -212,7 +212,19 @@ function submitContrat(){
   var sigData=canvas.toDataURL();
   var blank=document.createElement('canvas');blank.width=canvas.width;blank.height=canvas.height;
   if(sigData===blank.toDataURL()){alert('Veuillez signer le contrat');return}
-  alert('\u2705 Contrat de promenade validé !\n\nCathy Pets vous recontactera.\n\nMerci de votre confiance ! \ud83d\udc3e');
+  var nom=(document.getElementById('cli_nom')||{}).value||'';
+  var tel=(document.getElementById('cli_tel')||{}).value||'';
+  var email=(document.getElementById('cli_email')||{}).value||'';
+  var tarUnit=(document.getElementById('tar_unit')||{}).value||'0';
+  var tarNb=(document.getElementById('tar_nb')||{}).value||'0';
+  var tarTotal=(document.getElementById('tar_total')||{}).textContent||'';
+  var body='=== CONTRAT DE PROMENADE SIGNE ===\n\n';
+  body+='CLIENT: '+nom+' | Tel: '+tel+' | Email: '+email+'\n\n';
+  body+='TARIF: '+tarUnit+' \u20ac/seance x '+tarNb+' seances = '+tarTotal+'\n';
+  body+='\n--- Signe le '+new Date().toLocaleDateString('fr-FR')+' ---\n';
+  var subject='\u2705 Contrat Promenade SIGNE - '+nom;
+  window.location.href='mailto:cathydelormepets@gmail.com?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
+  alert('\u2705 Contrat de promenade valid\u00e9 !\n\nLe contrat va s\'ouvrir dans votre messagerie.\nEnvoyez-le \u00e0 cathydelormepets@gmail.com\n\nMerci ! \ud83d\udc3e');
 }
 </script>
 </div><!-- /contractForm -->
