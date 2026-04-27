@@ -377,14 +377,20 @@ function submitContrat(){
   var types='';document.querySelectorAll('.ani_type').forEach(function(el){types+=el.value+', '});
   var svcs=[];document.querySelectorAll('.pen_svc:checked').forEach(function(cb){svcs.push(cb.value)});
   var body='=== CONTRAT PENSION SIGNE ===\n\n';
+  body+='ANIMAUX: '+animaux+'\nTYPES: '+types+'\n\n';
   body+='CLIENT: '+nom+' | '+tel+' | '+email+'\n';
-  body+='ANIMAUX: '+animaux+'\nTYPES: '+types+'\n';
   body+='PERIODE: '+d1+' au '+d2+' ('+jf+' jours factur\u00e9s)\n';
   body+='MODE: '+(_mode==='vip'?'FORFAIT VIP':'Standard')+'\n';
   body+='TOTAL: '+total+' | Acompte: '+acompte+'\n';
   body+='SERVICES: '+svcs.join(', ')+'\n';
   body+='\n--- Sign\u00e9 le '+new Date().toLocaleDateString('fr-FR')+' ---';
-  var subject='\u2705 Contrat Pension SIGNE - '+nom+' - '+d1+' au '+d2;
+  // Construire la liste des animaux pour l'objet
+  var aniSub='';
+  document.querySelectorAll('.ani-card').forEach(function(card){
+    var n=card.querySelector('.ani_nom');var t=card.querySelector('.ani_type');
+    if(n&&n.value){aniSub+=(aniSub?', ':'')+n.value+(t?' ('+t.value+')':'');}
+  });
+  var subject='\u2705 Contrat Pension SIGNE - '+(aniSub||'Animal')+' - '+nom+' - du '+d1+' au '+d2;
   window.location.href='mailto:cathydelormepets@gmail.com?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
   alert('\u2705 Contrat valid\u00e9 !\n\nEnvoyez l\'email \u00e0 cathydelormepets@gmail.com\n\nMerci ! \ud83d\udc3e');
 }
