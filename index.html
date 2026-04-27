@@ -1422,6 +1422,14 @@ Tel : 06 12 34 56 78
     </div>
   </div>
 
+  <!-- ══════ ANIMAUX ══════ -->
+  <div class="card" style="border:1px solid var(--a2);margin-top:10px"><div class="hd" style="background:rgba(26,122,110,.06)">
+    <h3 style="font-size:13px;color:var(--a2)">🐾 Animaux confiés</h3>
+    <button class="btn sm gn" onclick="ctenvAddAnimal()" style="font-size:10px;padding:3px 8px">+ Ajouter un animal</button>
+  </div><div class="bd">
+    <div id="ctenv_ani_zone"></div>
+  </div></div>
+
   <!-- ══════ BLOC GARDE (garde_domicile, garde_famille, pension, promenade, combine) ══════ -->
   <div id="ctenv_bloc_garde">
     <div class="card" style="border:1px solid var(--a2);margin-top:10px"><div class="hd" style="background:rgba(26,122,110,.06)"><h3 style="font-size:13px;color:var(--a2)">📅 Période de garde & prestation</h3><span style="font-size:10px;color:var(--mt)">🔒 Défini par Cathy Pets</span></div><div class="bd">
@@ -1440,6 +1448,15 @@ Tel : 06 12 34 56 78
         </div>
         <div id="ctenv_coupures_list" style="font-size:11px"></div>
         <div id="ctenv_coupures_recap" style="font-size:11px;color:var(--mt);margin-top:4px"></div>
+      </div>
+      <!-- JOURS FÉRIÉS -->
+      <div style="background:rgba(124,58,237,.06);border:1px solid rgba(124,58,237,.2);border-radius:10px;padding:10px;margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <label style="font-size:11px;font-weight:800;color:#7c3aed">🎄 Jours fériés dans la période</label>
+          <label style="font-size:11px;display:flex;align-items:center;gap:4px;color:var(--mt)"><input type="checkbox" id="ctenv_ferie_maj" onchange="ctenvCalcDuree()" checked> Majoration fériés</label>
+        </div>
+        <div id="ctenv_ferie_zone" style="font-size:11px;color:var(--mt)">Sélectionnez les dates</div>
+        <div id="ctenv_ferie_info" style="font-size:12px;font-weight:700;color:#7c3aed;margin-top:4px"></div>
       </div>
       <div class="fd"><label>Services inclus</label>
         <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px">
@@ -7984,6 +8001,61 @@ function devToTr(id){
   showToast('✅ '+q.ref+' → '+t.ref+' créé !');
 }
 
+// ═══ CONTRAT VALIDÉ — WORKFLOW COMPLET ═══
+// Quand un contrat signé revient par email :
+// 1. Devis → accepté
+// 2. Création garde OU transport
+// 3. Export Google Agenda
+// 4. Toast confirmation
+function contratValide(devId){
+  var q=db.devis.find(function(x){return x.id===devId});
+  if(!q){alert('Devis introuvable');return}
+  var mode=q.mode||'transport';
+  var isGarde=mode==='garde_pension'||mode==='garde_domicile'||mode==='pension'||mode==='garde';
+  var isProm=mode==='promenade';
+  var isVet=mode==='veterinaire';
+  var typeTxt=isGarde?'Garde/Pension':isProm?'Promenade':isVet?'Transport vétérinaire':'Transport';
+  if(!confirm('📋 Contrat signé reçu pour :\n\n'+q.ref+' — '+cN(q.clientId)+'\nType: '+typeTxt+'\nTotal: '+euro(q.total)+'\n\n→ Passer en ACCEPTÉ\n→ Créer la mission\n→ Ajouter au calendrier\n\nConfirmer ?'))return;
+  // 1. Devis → accepté
+  q.status='accepté';
+  q.dateContrat=tdy();
+  // 2. Créer la mission selon le type
+  var created=null;
+  if(isGarde||isProm){
+    // Créer une garde
+    var g={id:uid('g'),ref:'GA-'+(act(db.gardes).length+1).toString().padStart(4,'0'),
+      clientId:q.clientId,animalIds:getAniIds(q),animalId:q.animalId||'',
+      accompagnants:q.accompagnants||[],
+      type:isProm?'promenade':(mode||'garde_domicile'),
+      start:q.dateDebut||q.date||tdy(),end:q.dateFin||q.date||tdy(),
+      price:E(q.total),notes:'Contrat signé — Devis '+q.ref+'\n'+(q.notes||''),
+      devisId:q.id,contratSigne:true};
+    stamp(g);db.gardes.push(g);
+    if(_gcToken)try{gcAutoExportGarde(g)}catch(e){}
+    created=g;
+    lH('contrat','Contrat signé → Garde '+g.ref+' (devis '+q.ref+')');
+  } else {
+    // Créer un transport
+    var t={id:uid('t'),ref:'TR-'+(act(db.transports).length+1).toString().padStart(4,'0'),
+      clientId:q.clientId,animalIds:getAniIds(q),animalId:q.animalId||'',
+      accompagnants:q.accompagnants||[],bienEtre:q.bienEtre||[],segments:q.segments||[],
+      type:mode||'animal',date:q.dateDebut||q.date||tdy(),
+      waypoints:q.waypoints||[],participants:1,
+      price:E(q.total),notes:'Contrat signé — Devis '+q.ref+'\n'+(q.notes||''),
+      devisId:q.id,contratSigne:true};
+    if(t.waypoints.length>=1){t.pickupAddress=t.waypoints[0].address;t.pickupCity=t.waypoints[0].address}
+    if(t.waypoints.length>=2){t.arriveeAddress=t.waypoints[t.waypoints.length-1].address;t.arriveeCity=t.waypoints[t.waypoints.length-1].address}
+    stamp(t);db.transports.push(t);
+    if(_gcToken)try{gcAutoExportTransport(t)}catch(e){}
+    created=t;
+    lH('contrat','Contrat signé → Transport '+t.ref+' (devis '+q.ref+')');
+  }
+  // 3. Sauvegarder et rafraîchir
+  sav();cMo();rDash();
+  // 4. Toast
+  showToast('📋 Contrat validé !\n'+q.ref+' → '+(created?created.ref:'')+'\n'+(_gcToken?'📅 Ajouté au calendrier':''));
+}
+
 // DUPLICATE
 // ═══ FACTURATION EXPRESS ═══
 // Crée une facture en 1 clic depuis un transport ou une garde
@@ -8746,6 +8818,7 @@ function eDev(id){var q=db.devis.find(function(x){return x.id===id});if(!q)retur
 
   var footer='<button class="btn rd" onclick="delRec(\'devis\',\''+id+'\',\''+esc(q.ref)+'\')">🗑️</button> ';
   footer+=(q.status!=='facturé'?'<button class="btn at" onclick="devToTr(\''+id+'\')">🚗 → Transport</button> ':'');
+  footer+=(q.status==='envoyé'?'<button class="btn gn" onclick="contratValide(\''+id+'\');cMo()">📋 Contrat reçu</button> ':'');
   footer+='<button class="btn og" onclick="printDevisPro(\''+id+'\')">🖨️ PDF</button> ';
   footer+='<button class="btn bu" onclick="quickMail(\'conf_dev\',\''+q.clientId+'\',\''+id+'\');cMo()">📧</button> ';
   footer+='<button class="btn" style="background:#1a2030;border-color:#2a3a50;color:#aab" onclick="dupDev(\''+id+'\')">📋</button> ';
@@ -9321,6 +9394,7 @@ function rDev2(){rTbl('dvTbl',['Réf','Client','Mode','Trajet','Total','Statut',
   '<button class="btn sm at" onclick="quickMail(\'conf_dev\',\''+q.clientId+'\',\''+q.id+'\')" title="Envoyer par mail">📧</button>'+
   '<button class="btn sm" style="background:#1a3a2a;border-color:#2a6040;color:#7bf0b0" onclick="genLienAcompte(\''+q.id+'\')" title="Lien acompte en ligne">💳</button>'+
   (q.status!=='facturé'?'<button class="btn sm" style="background:#1a2a3a;border-color:#2a4060;color:#9bc" onclick="devToTr(\''+q.id+'\')" title="→ Transport">🚗</button>':'')+
+  (q.status==='envoyé'?'<button class="btn sm" style="background:#1a3020;border-color:#2a6030;color:#7bf0a0;font-size:10px" onclick="contratValide(\''+q.id+'\')" title="Contrat signé reçu → accepter + créer mission + calendrier">📋 Contrat reçu</button>':'')+
   (q.status==='accepté'?'<button class="btn sm gn" onclick="devToFacDirect(\''+q.id+'\')" title="→ Facture en 1 clic" style="font-size:10px">💶 Facturer</button>':'')+
   '<button class="btn sm" style="background:#1a2030;border-color:#2a3a50;color:#aab" onclick="dupDev(\''+q.id+'\')" title="Dupliquer">📋</button>'+
   '<button class="btn sm rd" onclick="hardDelDev(\''+q.id+'\')" title="Supprimer">🗑️</button>'+
@@ -9705,7 +9779,7 @@ function rBriefing(){
       h+='<div style="margin-bottom:4px;margin-top:4px"><b style="color:var(--or)">📨 '+devisEnv.length+' devis envoyé(s) en attente de réponse</b></div>';
       devisEnv.forEach(function(q){
         var jours=Math.floor((Date.now()-new Date(q.date))/864e5);
-        h+='<div style="padding:2px 0;font-size:11px">'+q.ref+' — '+cN(q.clientId)+' · '+euro(q.total)+' · <span style="color:'+(jours>7?'var(--rd)':'var(--or)')+'">'+jours+'j</span>'+(jours>3?' <button class="btn sm" onclick="quickMail(\'relance_dev\',\''+q.clientId+'\',\''+q.id+'\')" style="font-size:9px;padding:2px 6px;background:#2a1a10;border-color:#6a3a10;color:#fa6">📨 Relancer</button>':'')+'</div>';
+        h+='<div style="padding:2px 0;font-size:11px">'+q.ref+' — '+cN(q.clientId)+' · '+euro(q.total)+' · <span style="color:'+(jours>7?'var(--rd)':'var(--or)')+'">'+jours+'j</span>'+(jours>3?' <button class="btn sm" onclick="quickMail(\'relance_dev\',\''+q.clientId+'\',\''+q.id+'\')" style="font-size:9px;padding:2px 6px;background:#2a1a10;border-color:#6a3a10;color:#fa6">📨 Relancer</button>':'')+' <button class="btn sm gn" onclick="contratValide(\''+q.id+'\')" style="font-size:9px;padding:2px 6px">📋 Contrat reçu</button></div>';
       });
     }
     if(devisBrouillon.length) h+='<div style="margin-top:4px"><b style="color:var(--mt)">📝 '+devisBrouillon.length+' brouillon(s) à finaliser</b></div>';
@@ -17514,6 +17588,72 @@ function ctenvClChange(){
     ctenvCalcTarif();
   }
 }
+// ═══ CONTRAT — ANIMAUX ═══
+var _ctenvAniCount=0;
+function ctenvAddAnimal(){
+  var i=_ctenvAniCount++;
+  var z=$('ctenv_ani_zone');if(!z)return;
+  var row=document.createElement('div');row.id='ctenv_ani_'+i;
+  row.style.cssText='display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:6px;padding:8px;background:rgba(26,122,110,.04);border:1px solid var(--ln);border-radius:8px';
+  row.innerHTML='<select id="ctenv_ani_type_'+i+'" style="padding:5px;font-size:11px;background:#0a1520;border:1px solid var(--ln);color:var(--tx);border-radius:6px;width:100px">'
+    +'<option value="chien">🐶 Chien</option><option value="chat">🐱 Chat</option><option value="nac">🐸 NAC</option>'
+    +'<option value="oiseau">🐦 Oiseau</option><option value="reptile">🦎 Reptile</option><option value="autre">🐾 Autre</option></select>'
+    +'<input id="ctenv_ani_nom_'+i+'" placeholder="Nom" style="flex:1;min-width:80px;padding:5px;font-size:11px;background:#0a1520;border:1px solid var(--ln);color:var(--tx);border-radius:6px">'
+    +'<input id="ctenv_ani_race_'+i+'" placeholder="Race" style="flex:1;min-width:80px;padding:5px;font-size:11px;background:#0a1520;border:1px solid var(--ln);color:var(--tx);border-radius:6px">'
+    +'<input id="ctenv_ani_age_'+i+'" placeholder="Âge" style="width:50px;padding:5px;font-size:11px;background:#0a1520;border:1px solid var(--ln);color:var(--tx);border-radius:6px">'
+    +(i>0?'<button onclick="$(\'ctenv_ani_'+i+'\').remove()" class="btn sm rd" style="padding:3px 6px;font-size:10px">✕</button>':'');
+  z.appendChild(row);
+}
+ctenvAddAnimal(); // 1er animal par défaut
+function ctenvGetAnimaux(){
+  var list=[];
+  for(var i=0;i<_ctenvAniCount+5;i++){
+    var nom=$('ctenv_ani_nom_'+i);if(!nom)continue;
+    var type=$('ctenv_ani_type_'+i);var race=$('ctenv_ani_race_'+i);var age=$('ctenv_ani_age_'+i);
+    if(nom.value||type)list.push({type:type?type.value:'',nom:nom.value,race:race?race.value:'',age:age?age.value:''});
+  }
+  return list;
+}
+
+// ═══ CONTRAT — JOURS FÉRIÉS ═══
+function ctenvGetFeries(year){
+  var f=[];
+  f.push(year+'-01-01',year+'-05-01',year+'-05-08',year+'-07-14',year+'-08-15',year+'-11-01',year+'-11-11',year+'-12-25');
+  var a=year%19,b=Math.floor(year/100),c2=year%100,d=Math.floor(b/4),e=b%4;
+  var f2=Math.floor((b+8)/25),g=Math.floor((b-f2+1)/3),h=(19*a+b-d-g+15)%30;
+  var ii=Math.floor(c2/4),k=c2%4,l=(32+2*e+2*ii-h-k)%7;
+  var m=Math.floor((a+11*h+22*l)/451),month=Math.floor((h+l-7*m+114)/31),day=(h+l-7*m+114)%31+1;
+  var easter=new Date(year,month-1,day);
+  var lundi=new Date(easter);lundi.setDate(easter.getDate()+1);
+  var asc=new Date(easter);asc.setDate(easter.getDate()+39);
+  var pent=new Date(easter);pent.setDate(easter.getDate()+50);
+  [lundi,asc,pent].forEach(function(dt){f.push(dt.toISOString().slice(0,10))});
+  return f;
+}
+var FERIES_NOM={'01-01':'Jour de l\'an','05-01':'Fête du Travail','05-08':'Victoire 1945','07-14':'Fête nationale','08-15':'Assomption','11-01':'Toussaint','11-11':'Armistice','12-25':'Noël'};
+function ctenvDetectFeries(){
+  var d1=V('ctenv_d1'),d2=V('ctenv_d2');
+  var fz=$('ctenv_ferie_zone'),fi=$('ctenv_ferie_info');
+  if(!d1||!d2){if(fz)fz.innerHTML='Sélectionnez les dates';if(fi)fi.textContent='';return 0}
+  var feries=[];
+  var y1=parseInt(d1.slice(0,4)),y2=parseInt(d2.slice(0,4));
+  for(var y=y1;y<=y2;y++)feries=feries.concat(ctenvGetFeries(y));
+  var nb=0,html='';
+  var cur=new Date(d1),end=new Date(d2);
+  while(cur<end){
+    var ds=cur.toISOString().slice(0,10);
+    if(feries.indexOf(ds)>=0){
+      nb++;
+      var nm=FERIES_NOM[ds.slice(5)]||'Férié';
+      html+='<span style="display:inline-block;padding:2px 8px;margin:2px;background:rgba(124,58,237,.1);border:1px solid rgba(124,58,237,.2);border-radius:4px;font-size:10px">'+new Date(ds).toLocaleDateString('fr-FR',{weekday:'short',day:'numeric',month:'short'})+' — '+nm+'</span>';
+    }
+    cur.setDate(cur.getDate()+1);
+  }
+  if(fz)fz.innerHTML=nb?html:'<span style="color:var(--mt)">Aucun jour férié</span>';
+  if(fi)fi.textContent=nb?'🎄 '+nb+' jour(s) férié(s) détecté(s)':'';
+  return nb;
+}
+
 // ═══ CONTRAT — COUPURES ═══
 var _ctenvCoupCount=0;
 function ctenvAddCoupure(){
@@ -17578,12 +17718,17 @@ function ctenvCalcDuree(){
     if(days<0)days=0;
     var coup=ctenvGetCoupures();
     var joursFact=Math.max(days-coup.total,0);
+    var nbFeries=ctenvDetectFeries();
+    var majFeries=$('ctenv_ferie_maj')&&$('ctenv_ferie_maj').checked;
     var txt='📅 '+days+' jour(s) — du '+new Date(d1).toLocaleDateString('fr-FR')+' au '+new Date(d2).toLocaleDateString('fr-FR');
     if(coup.total>0) txt+=' · ✂️ -'+coup.total+'j coupure = '+joursFact+'j facturés';
+    if(nbFeries>0&&majFeries) txt+=' · 🎄 '+nbFeries+'j fériés (majorés)';
     if(info)info.textContent=txt;
     var recap=$('ctenv_coupures_recap');
     if(recap){recap.innerHTML=coup.details.length?'✂️ '+coup.details.join(' · '):''}
     var el=$('ctenv_t1q');if(el&&(!el.value||el.dataset.auto==='1')){el.value=joursFact;el.dataset.auto='1'}
+    // Auto-remplir le nombre de fériés dans t2q si majoration cochée
+    var t2q=$('ctenv_t2q');if(t2q&&majFeries){t2q.value=nbFeries}
     ctenvCalcTarif();
   }
 }
@@ -17656,6 +17801,15 @@ function ctenvBuildURL(){
     // Coupures
     var coup=ctenvGetCoupures();
     if(coup.pairs.length)p.push('coupures='+encodeURIComponent(coup.pairs.join(',')));
+    // Fériés
+    var majF=$('ctenv_ferie_maj')&&$('ctenv_ferie_maj').checked?'1':'0';
+    p.push('ferie_maj='+majF);
+    // Animaux
+    var anis=ctenvGetAnimaux();
+    if(anis.length){
+      var aniStr=anis.map(function(a){return a.type+'|'+a.nom+'|'+a.race+'|'+a.age}).join(';;');
+      p.push('animaux='+encodeURIComponent(aniStr));
+    }
     var mp2=V('ctenv_paiement');if(mp2)p.push('paiement='+encodeURIComponent(mp2));
     var obs=V('ctenv_obs_tarif');if(obs)p.push('obs_tarif='+encodeURIComponent(obs));
   }
