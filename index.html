@@ -7193,7 +7193,23 @@ function addDev(){
     // Proposer d'envoyer
     var pecMsg='📋 Contrat PEC — '+q.ref+'\n\nBonjour,\n\nVeuillez remplir et signer votre contrat de prise en charge :\n'+pecUrl+'\n\nCordialement,\nCathy Pets\n07.81.30.41.10';
     if(confirm('✅ Devis créé !\n\n📋 Lien contrat PEC généré.\nEnvoyer par email au client ?')){
-      window.location.href='mailto:'+(cl2?cl2.email||'':'')+'?subject='+encodeURIComponent('Contrat PEC Transport — '+q.ref)+'&body='+encodeURIComponent(pecMsg);
+      // Copier le lien dans le presse-papier
+      try{navigator.clipboard.writeText(pecUrl)}catch(e){}
+      // Proposer plusieurs options d'envoi
+      var clEmail=(cl2?cl2.email||'':'');
+      var clTel=(cl2?cl2.tel||'':'');
+      var subj='Contrat PEC Transport — '+q.ref;
+      // Envoi par email
+      if(clEmail){
+        window.open('https://mail.google.com/mail/?view=cm&fs=1&to='+encodeURIComponent(clEmail)+'&su='+encodeURIComponent(subj)+'&body='+encodeURIComponent(pecMsg),'_blank');
+      }
+      // Proposer aussi WhatsApp si numéro dispo
+      if(clTel){
+        var waTel=clTel.replace(/[^0-9+]/g,'');
+        if(waTel.startsWith('0'))waTel='+33'+waTel.substr(1);
+        var waUrl='https://wa.me/'+waTel+'?text='+encodeURIComponent(pecMsg);
+        if(confirm('📱 Envoyer aussi par WhatsApp ?')){window.open(waUrl,'_blank')}
+      }
     }
     showToast('✅ Devis '+q.ref+' + contrat PEC créé');
   } else {
