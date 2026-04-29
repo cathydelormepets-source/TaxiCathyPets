@@ -2184,6 +2184,7 @@ document.getElementById('q_contrat_pec').addEventListener('change',function(){
 <div class="fd"><label>Type de mail</label>
 <select id="mTp" onchange="updateMailRef();genMail()">
 <option value="">— Choisir un type —</option>
+<option value="envoi_dev">📧 Envoi devis au client</option>
 <option value="conf_dev">✅ Confirmation réception devis</option>
 <option value="relance_dev">🔔 Relance devis sans réponse</option>
 <option value="conf_tr">🚗 Confirmation transport</option>
@@ -11260,7 +11261,7 @@ function updateMailRef(){
   var tp=V('mTp'),cl=V('mCl'),el=$('mRef');
   if(!el)return;
   var h='<option value="">—</option>';
-  if(tp==='conf_dev'||tp==='relance_dev'){
+  if(tp==='conf_dev'||tp==='relance_dev'||tp==='envoi_dev'){
     act(db.devis).filter(function(q){return !cl||q.clientId===cl}).forEach(function(q){
       h+='<option value="'+q.id+'">'+q.ref+' — '+cN(q.clientId)+' — '+euro(q.total)+'</option>';
     });
@@ -11286,7 +11287,14 @@ function genMail(){
   var prenom = client?(client.prenom||client.nom):'[Prénom]';
   var subj='',body='';
 
-  if(tp==='conf_dev'){
+  if(tp==='envoi_dev'){
+    var q=db.devis.find(function(x){return x.id===ref});
+    var wps=q&&q.waypoints?q.waypoints:[];
+    var trajet=wps.length>=2?(wps[0].address+' → '+wps[wps.length-1].address):'';
+    var anis=q&&q.animalIds?q.animalIds.map(function(aid){var a=db.animaux.find(function(x){return x.id===aid});return a?a.nom:''}).filter(function(n){return n}).join(', '):'';
+    subj='Votre devis '+(q?q.ref:'[Réf]')+' — Cathy Pets';
+    body='Bonjour '+prenom+',\n\nSuite à notre échange, veuillez trouver ci-joint votre devis'+(q?' '+q.ref:'')+' pour la prestation suivante :\n\n'+(anis?'🐾 Animal(aux) : '+anis+'\n':'')+'📋 Prestation : '+(q&&q.mode?q.mode:'transport')+'\n'+(trajet?'🗺️ Trajet : '+trajet+'\n':'')+(q&&q.date?'📅 Date prévue : '+q.date+'\n':'')+'\n💰 Montant TTC : '+(q?euro(q.total):'[montant]')+'\n\nCe devis est valable 30 jours à compter de ce jour.\n\nPour confirmer, merci de nous retourner le devis signé ou de nous le confirmer par retour de mail.\n\nN\'hésitez pas à nous contacter pour toute question.'+SIGN;
+  } else if(tp==='conf_dev'){
     var q=db.devis.find(function(x){return x.id===ref});
     var wps=q&&q.waypoints?q.waypoints:[];
     var trajet=wps.length>=2?(wps[0].address+' → '+wps[wps.length-1].address):'';
@@ -11403,7 +11411,7 @@ function openGmailWithPDF(){
   if(tp==='envoi_fac'||tp==='relance_fac'){
     var f=db.factures.find(function(x){return x.id===ref});
     if(f){printFacturePro(f.id);pdfGenerated=true}
-  } else if(tp==='conf_dev'||tp==='relance_dev'){
+  } else if(tp==='envoi_dev'||tp==='conf_dev'||tp==='relance_dev'){
     var q=db.devis.find(function(x){return x.id===ref});
     if(q){printDevisPro(q.id);pdfGenerated=true}
   }
