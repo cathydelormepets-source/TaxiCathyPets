@@ -391,8 +391,25 @@ function submitContrat(){
     if(n&&n.value){aniSub+=(aniSub?', ':'')+n.value+(t?' ('+t.value+')':'');}
   });
   var subject='\u2705 Contrat Pension SIGNE - '+(aniSub||'Animal')+' - '+nom+' - du '+d1+' au '+d2;
-  window.location.href='mailto:cathydelormepets@gmail.com?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
-  alert('\u2705 Contrat valid\u00e9 !\n\nEnvoyez l\'email \u00e0 cathydelormepets@gmail.com\n\nMerci ! \ud83d\udc3e');
+  // Envoi automatique via FormSubmit (le client n'a PAS besoin d'ouvrir sa messagerie)
+  var submitBtn=document.querySelector('.btn-p');
+  if(submitBtn){submitBtn.textContent='\u23f3 Envoi en cours...';submitBtn.disabled=true}
+  fetch('https://formsubmit.co/ajax/cathydelormepets@gmail.com',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Accept':'application/json'},
+    body:JSON.stringify({_subject:subject,message:body,_replyto:email,name:nom,_template:'table'})
+  }).then(function(r){return r.json()}).then(function(data){
+    if(data.success){
+      document.getElementById('contractForm').innerHTML='<div style="text-align:center;padding:60px 20px"><div style="font-size:60px;margin-bottom:20px">\u2705</div><h2 style="color:#1a7a6e;margin-bottom:10px">Contrat sign\u00e9 et envoy\u00e9 !</h2><p style="color:#546e7a;font-size:14px">Cathy Pets a bien re\u00e7u votre contrat sign\u00e9.<br>Nous vous recontacterons pour confirmer la r\u00e9servation.</p><p style="margin-top:20px;font-size:16px">Merci de votre confiance ! \ud83d\udc3e</p></div>';
+    } else {
+      // Fallback mailto si FormSubmit échoue
+      window.location.href='mailto:cathydelormepets@gmail.com?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
+      alert('\u2705 Contrat valid\u00e9 ! Envoyez l\'email \u00e0 cathydelormepets@gmail.com');
+    }
+  }).catch(function(){
+    window.location.href='mailto:cathydelormepets@gmail.com?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
+    alert('\u2705 Contrat valid\u00e9 ! Envoyez l\'email \u00e0 cathydelormepets@gmail.com');
+  });
 }
 </script>
 </body>
