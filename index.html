@@ -17852,12 +17852,13 @@ function ctenvSyncTarifFromAnimaux(){
     var desc='Pension '+emoji+' '+(a.nom||a.type);
     ctenvAddTarifLine(desc,joursFact,'',0);
   });
-  // Ajouter lignes fériés + taxi
+  // Ajouter les lignes standards
   var nbFeries=ctenvDetectFeries();
   var majF=$('ctenv_ferie_maj')&&$('ctenv_ferie_maj').checked;
-  if(nbFeries>0&&majF)ctenvAddTarifLine('Majoration jours fériés',nbFeries,'',0);
+  if(nbFeries>0&&majF)ctenvAddTarifLine('Supplément jours fériés',nbFeries,'',0);
   ctenvAddTarifLine('Taxi aller',1,'',0);
   ctenvAddTarifLine('Taxi retour',1,'',0);
+  ctenvAddTarifLine('Frais complémentaires (toilettage, etc.)','','',0);
   showToast('🔄 '+anis.length+' animal(aux) synchronisé(s)');
 }
 
