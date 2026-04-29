@@ -535,6 +535,7 @@ function applyURLParams(){
   if(p.get('date')){var el=document.getElementById('trajet_date');if(el)el.value=p.get('date')}
   if(p.get('heure')){var el=document.getElementById('trajet_heure');if(el)el.value=p.get('heure')}
 }
+checkAccess(); // Vérifier le code d'accès et afficher le formulaire
 setTimeout(applyURLParams, 200);
 </script>
 </body>
