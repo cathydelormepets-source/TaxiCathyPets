@@ -375,26 +375,21 @@ function applyURL(){
   if(p.get('fin')){document.getElementById('pen_fin').value=p.get('fin')}
   if(p.get('h_arrivee'))document.getElementById('pen_h_arrivee').value=p.get('h_arrivee');
   if(p.get('h_depart'))document.getElementById('pen_h_depart').value=p.get('h_depart');
-  // Tarifs — créer des lignes dynamiques
-  var tarifDescs=['Pension journalière','Majoration jours fériés','Taxi aller','Taxi retour','Frais complémentaires'];
-  for(var ti=1;ti<=5;ti++){
-    var tq=p.get('t'+ti+'q');
-    var tp2=p.get('t'+ti+'p');
-    var tr2=p.get('t'+ti+'r');
-    if(tp2&&parseFloat(tp2)>0){
-      ajouterLigneTarif(tarifDescs[ti-1]||'Ligne '+ti, tq||1, tp2, tr2||0);
+  // Tarifs — lignes dynamiques liées aux animaux
+  // Format URL: tarif_animaux=desc|qty|pu|rem;;desc|qty|pu|rem
+  if(p.get('tarif_animaux')){
+    p.get('tarif_animaux').split(';;').forEach(function(lt){
+      var parts=lt.split('|');
+      if(parts.length>=3)ajouterLigneTarif(decodeURIComponent(parts[0]),parts[1],parts[2],parts[3]||0);
+    });
+  } else {
+    // Fallback ancien format t1p/t2p...
+    var tarifDescs=['Pension journali\u00e8re','Majoration jours f\u00e9ri\u00e9s','Taxi aller','Taxi retour','Frais compl\u00e9mentaires'];
+    for(var ti=1;ti<=5;ti++){
+      var tq=p.get('t'+ti+'q');var tp2=p.get('t'+ti+'p');var tr2=p.get('t'+ti+'r');
+      if(tp2&&parseFloat(tp2)>0)ajouterLigneTarif(tarifDescs[ti-1],tq||1,tp2,tr2||0);
     }
   }
-  // Lignes tarif supplémentaires (format: lignes=desc|qty|pu;;desc|qty|pu)
-  if(p.get('lignes_tarif')){
-    p.get('lignes_tarif').split(';;').forEach(function(lt){
-      var parts=lt.split('|');
-      if(parts.length>=3)ajouterLigneTarif(parts[0],parts[1],parts[2]);
-    });
-  }
-  // Remise
-  if(p.get('remise')){document.getElementById('tar_remise_val').value=p.get('remise')}
-  if(p.get('remise_type')){var rts=document.querySelectorAll('input[name=remise_type]');rts.forEach(function(r){if(r.value===p.get('remise_type'))r.checked=true})}
   if(p.get('vip')){document.getElementById('tar_vip').value=p.get('vip');switchMode('vip')}
   if(p.get('paiement'))document.getElementById('pen_paiement').value=p.get('paiement');
   if(p.get('services')){p.get('services').split(',').forEach(function(s){var cb=document.querySelector('.pen_svc[value="'+s+'"]');if(cb)cb.checked=true})}
