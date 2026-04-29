@@ -17834,32 +17834,33 @@ function ctenvAddTarifLine(desc,qty,pu,rem){
 }
 
 var _emojiTypes={chien:'🐶',chat:'🐱',nac:'🐸',oiseau:'🐦',reptile:'🦎',autre:'🐾'};
+var _tarifDefaut={chien:28,chat:15,nac:25,oiseau:20,reptile:20,autre:25};
+var _typeLabels={chien:'canine',chat:'féline',nac:'NAC',oiseau:'aviaire',reptile:'reptile',autre:'animalière'};
 function ctenvSyncTarifFromAnimaux(){
-  // Récupérer les animaux
   var anis=ctenvGetAnimaux();
   if(!anis.length){showToast('⚠️ Ajoute d\'abord des animaux');return}
-  // Récupérer le nombre de jours
   var d1=V('ctenv_d1'),d2=V('ctenv_d2');
   var jours=d1&&d2?Math.max(Math.round((new Date(d2)-new Date(d1))/864e5),1):0;
   var coup=ctenvGetCoupures();
   var joursFact=Math.max(jours-coup.total,0);
-  // Vider les lignes existantes
   var tbody=$('ctenv_tarif_body');if(tbody)tbody.innerHTML='';
   _ctenvTarifLineN=0;
-  // Créer une ligne par animal
+  // Ligne par animal
   anis.forEach(function(a){
-    var emoji=_emojiTypes[a.type]||'🐾';
-    var desc='Pension '+emoji+' '+(a.nom||a.type);
-    ctenvAddTarifLine(desc,joursFact,'',0);
+    var label=_typeLabels[a.type]||'animalière';
+    var desc='Pension '+label+' \u2014 '+(a.nom||'Animal')+(a.race?' ('+a.race+')':'');
+    var defPrix=_tarifDefaut[a.type]||25;
+    ctenvAddTarifLine(desc,joursFact,defPrix,0);
   });
-  // Ajouter les lignes standards
+  // Lignes standards
   var nbFeries=ctenvDetectFeries();
   var majF=$('ctenv_ferie_maj')&&$('ctenv_ferie_maj').checked;
-  if(nbFeries>0&&majF)ctenvAddTarifLine('Supplément jours fériés',nbFeries,'',0);
-  ctenvAddTarifLine('Taxi aller',1,'',0);
-  ctenvAddTarifLine('Taxi retour',1,'',0);
-  ctenvAddTarifLine('Frais complémentaires (toilettage, etc.)','','',0);
-  showToast('🔄 '+anis.length+' animal(aux) synchronisé(s)');
+  if(nbFeries>0&&majF)ctenvAddTarifLine('Supplément jours fériés',nbFeries,10,0);
+  ctenvAddTarifLine('Transport aller \u2014 prise en charge \u00e0 domicile',1,150,0);
+  ctenvAddTarifLine('Transport retour \u2014 restitution \u00e0 domicile',1,150,0);
+  ctenvAddTarifLine('Frais complémentaires (toilettage, soins, etc.)','',0,0);
+  ctenvCalcTarif();
+  showToast('\u2705 Tarification générée \u2014 '+anis.length+' animal(aux)');
 }
 
 function ctenvCalcTarif(){
