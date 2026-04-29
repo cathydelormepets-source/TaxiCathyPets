@@ -6150,7 +6150,7 @@ function sTab(t){
   else if(t==='avis'){try{rAvisTab();}catch(e){}}
   else if(t==='urgvet'){try{var us=document.getElementById('urg_an');if(us){us.innerHTML='<option value="">—</option>'+act(db.animaux).map(function(a){return'<option value="'+a.id+'">'+a.nom+' · '+a.espece+' · '+cN(a.clientId)+'</option>';}).join('');}rVetosPerso();}catch(e){}}
   else if(t==='tres'){try{rTres()}catch(e){}}
-  else if(t==='tournees'){try{rTourDevis();setTimeout(rTourMap,300)}catch(e){}}
+  else if(t==='tournees'){try{setTimeout(initTourMap,100);if(typeof loadQQConfig==='function')loadQQConfig();rTourDevis();setTimeout(rTourMap,400)}catch(e){}}
   else if(t==='cerfrance'){try{rCerfrance()}catch(e){}}
   else if(t==='param'){try{rSet()}catch(e){}}
   else if(t==='stat'){try{if(!$('stDt').value)$('stDt').value=tdy();rStat()}catch(e){}}
@@ -6158,7 +6158,6 @@ function sTab(t){
   else if(t==='rapport'){try{if(!$('rjDt').value)$('rjDt').value=tdy();rRapport()}catch(e){}}
   else if(t==='compare'){try{loadComparison()}catch(e){}}
   else if(t==='mapE'){setTimeout(initMap,80)}
-  else if(t==='tournees'){setTimeout(initTourMap,100);if(typeof loadQQConfig==='function')loadQQConfig();}
   else if(t==='terrain'){
     setTimeout(function(){
       try{
@@ -12563,16 +12562,16 @@ function msUpdateNav(t){
 }
 
 // ═══ CARTE DES DEVIS ═══
-var _tourMap=null,_tourMarkers=null;
+var _devMap=null,_devMarkers=null;
 function rTourMap(){
   var mapEl=$('tourDevMap');if(!mapEl)return;
   if(typeof L==='undefined')return;
-  if(!_tourMap){
-    _tourMap=L.map('tourDevMap').setView([49.1,3.4],8);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18,attribution:'© OSM'}).addTo(_tourMap);
-    _tourMarkers=L.layerGroup().addTo(_tourMap);
+  if(!_devMap){
+    _devMap=L.map('tourDevMap').setView([49.1,3.4],8);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18,attribution:'© OSM'}).addTo(_devMap);
+    _devMarkers=L.layerGroup().addTo(_devMap);
   }
-  _tourMarkers.clearLayers();
+  _devMarkers.clearLayers();
   var devs=act(db.devis).filter(function(q){return q.status==='envoyé'||q.status==='accepté'||q.status==='brouillon'});
   var bounds=[];
   var nbGeo=0;
@@ -12598,13 +12597,13 @@ function rTourMap(){
           item.w.lat=parseFloat(data[0].lat);item.w.lng=parseFloat(data[0].lon);
           addTourMarker(item.q,item.w,item.wi);
           bounds.push([item.w.lat,item.w.lng]);
-          if(bounds.length>1)_tourMap.fitBounds(bounds,{padding:[30,30]});
+          if(bounds.length>1)_devMap.fitBounds(bounds,{padding:[30,30]});
         }
       }).catch(function(){});
     },idx*300);
   });
-  if(bounds.length>1)_tourMap.fitBounds(bounds,{padding:[30,30]});
-  else if(bounds.length===1)_tourMap.setView(bounds[0],10);
+  if(bounds.length>1)_devMap.fitBounds(bounds,{padding:[30,30]});
+  else if(bounds.length===1)_devMap.setView(bounds[0],10);
   var info=$('tourMapInfo');
   if(info)info.textContent=devs.length+' devis · '+(nbGeo+toGeocode.length)+' points sur la carte';
 }
@@ -12628,7 +12627,7 @@ function addTourMarker(q,w,wi){
   if(q.date)popup+='📅 '+q.date;
   popup+='<br><button onclick="eDev(\''+q.id+'\')" style="margin-top:4px;padding:3px 8px;background:'+col+';color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:10px">✏️ Éditer</button>';
   popup+='</div>';
-  L.marker([w.lat,w.lng],{icon:icon}).addTo(_tourMarkers).bindPopup(popup);
+  L.marker([w.lat,w.lng],{icon:icon}).addTo(_devMarkers).bindPopup(popup);
 }
 
 // ═══ PLANNING DEVIS VUE TOURNÉE ═══
