@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bon de livraison — Cathy Pets</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',Arial,sans-serif;background:#fdf6ee;color:#263238;font-size:14px}
+  .hdr{background:linear-gradient(135deg,#1a7a6e,#22a693);color:#fff;padding:16px 20px}
+  .hdr h1{font-size:18px;font-weight:800}
+  .ct{max-width:600px;margin:0 auto;padding:12px}
+  .sec{background:#fff;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.1);margin-bottom:12px;padding:14px}
+  .sh{font-weight:700;font-size:13px;margin-bottom:8px;color:#1a7a6e}
+  .row{display:flex;gap:8px;flex-wrap:wrap}
+  .fd{flex:1;min-width:140px}
+  .fd label{display:block;font-size:10px;font-weight:700;color:#546e7a;margin-bottom:3px}
+  .fd input,.fd select,.fd textarea{width:100%;padding:8px;border:1px solid #cfd8dc;border-radius:6px;font:inherit;font-size:13px}
+  .photo-zone{border:2px dashed #cfd8dc;border-radius:8px;padding:16px;text-align:center;cursor:pointer;background:#fafafa}
+  .photo-zone img{max-width:100%;max-height:200px;border-radius:6px;margin-top:8px}
+  .sig{border:2px dashed #cfd8dc;border-radius:8px;padding:8px;text-align:center}
+  .sig canvas{border:1px solid #ccc;border-radius:6px;cursor:crosshair;touch-action:none}
+  .btn{display:inline-block;padding:12px 30px;border:none;border-radius:8px;font:inherit;font-weight:700;cursor:pointer;font-size:15px;width:100%}
+  .btn-pec{background:linear-gradient(135deg,#1a7a6e,#22a693);color:#fff}
+  .btn-dep{background:linear-gradient(135deg,#c45400,#e65c00);color:#fff}
+  .check label{display:flex;align-items:center;gap:8px;font-size:12px;padding:6px 0}
+  @media print{body{background:#fff}.sec{box-shadow:none;border:1px solid #ddd}}
+</style>
+</head>
+<body>
+<div class="hdr">
+  <h1 id="bonTitle">&#128203; Bon de prise en charge</h1>
+  <p style="font-size:11px;opacity:.8">Cathy Pets SAS — 07.83.43.63.06</p>
+</div>
+<div class="ct" id="bonForm">
+  <!-- TYPE -->
+  <div class="sec">
+    <div style="display:flex;gap:8px">
+      <button onclick="setType('pec')" id="btn_pec" class="btn btn-pec" style="flex:1;padding:10px;font-size:13px">&#128229; Prise en charge</button>
+      <button onclick="setType('dep')" id="btn_dep" class="btn" style="flex:1;padding:10px;font-size:13px;background:#fff;color:#c45400;border:2px solid #c45400">&#128230; D&#233;pose / Restitution</button>
+    </div>
+  </div>
+
+  <!-- INFOS -->
+  <div class="sec">
+    <div class="sh">&#128100; Informations</div>
+    <div class="row"><div class="fd"><label>R&#233;f&#233;rence mission</label><input id="bl_ref" readonly style="background:#e8e8e8;font-weight:700"></div><div class="fd"><label>Date / Heure</label><input id="bl_date" readonly style="background:#e8e8e8"></div></div>
+    <div class="row" style="margin-top:8px"><div class="fd"><label>Client</label><input id="bl_client" readonly style="background:#e8e8e8"></div><div class="fd"><label>T&#233;l&#233;phone</label><input id="bl_tel"></div></div>
+    <div class="row" style="margin-top:8px"><div class="fd"><label>Lieu</label><input id="bl_lieu" placeholder="Adresse de PEC / d&#233;pose"></div></div>
+  </div>
+
+  <!-- ANIMAL -->
+  <div class="sec">
+    <div class="sh">&#128062; Animal</div>
+    <div class="row"><div class="fd"><label>Nom</label><input id="bl_ani_nom"></div><div class="fd"><label>Type / Race</label><input id="bl_ani_race"></div></div>
+    <div class="row" style="margin-top:8px"><div class="fd"><label>N&#176; puce</label><input id="bl_ani_puce"></div><div class="fd"><label>&#201;tat g&#233;n&#233;ral</label><select id="bl_etat"><option value="bon">&#9989; Bon &#233;tat</option><option value="stress&#233;">&#128528; Stress&#233;</option><option value="bless&#233;">&#9888;&#65039; Bless&#233; / marques</option></select></div></div>
+    <div class="fd" style="margin-top:8px"><label>Observations &#233;tat de l'animal</label><textarea id="bl_obs" rows="2" placeholder="Marques, blessures, comportement..."></textarea></div>
+  </div>
+
+  <!-- CHECKLIST -->
+  <div class="sec">
+    <div class="sh" id="checkTitle">&#9989; Check-list prise en charge</div>
+    <div class="check">
+      <label><input type="checkbox" class="bl_check" value="carnet"> Carnet de sant&#233; / vaccins remis</label>
+      <label><input type="checkbox" class="bl_check" value="cage"> Cage / caisse de transport</label>
+      <label><input type="checkbox" class="bl_check" value="laisse"> Laisse / harnais</label>
+      <label><input type="checkbox" class="bl_check" value="alimentation"> Alimentation fournie</label>
+      <label><input type="checkbox" class="bl_check" value="medicaments"> M&#233;dicaments / ordonnance</label>
+      <label><input type="checkbox" class="bl_check" value="jouets"> Jouets / doudou</label>
+      <label><input type="checkbox" class="bl_check" value="couchage"> Couchage</label>
+    </div>
+  </div>
+
+  <!-- PHOTO -->
+  <div class="sec">
+    <div class="sh">&#128247; Photo de l'animal</div>
+    <div class="photo-zone" id="photoZone" onclick="document.getElementById('photoInput').click()">
+      <div id="photoPlaceholder">&#128247; Appuyez pour prendre une photo</div>
+      <img id="photoPreview" style="display:none">
+      <input type="file" id="photoInput" accept="image/*" capture="environment" style="display:none" onchange="loadPhoto(this)">
+    </div>
+  </div>
+
+  <!-- SIGNATURE -->
+  <div class="sec">
+    <div class="sh">&#9997;&#65039; Signature du client</div>
+    <div class="sig">
+      <canvas id="sig_canvas" width="320" height="130" style="width:100%;max-width:320px;height:130px;background:#fafafa"></canvas>
+      <div style="margin-top:4px"><button onclick="clearSig()" style="background:#ef4444;color:#fff;border:none;border-radius:4px;padding:5px 12px;cursor:pointer;font-size:11px">Effacer</button></div>
+    </div>
+    <p style="font-size:10px;color:#888;margin-top:6px">En signant, le client confirme <span id="sigText">la remise de l'animal &#224; Cathy Pets en bon &#233;tat apparent</span>.</p>
+  </div>
+
+  <!-- VALIDER -->
+  <div class="sec" style="text-align:center">
+    <button class="btn btn-pec" onclick="submitBon()" id="submitBtn" style="font-size:16px">&#9989; Valider le bon</button>
+  </div>
+</div>
+
+<script>
+var _type='pec';
+function setType(t){
+  _type=t;
+  document.getElementById('bonTitle').innerHTML=t==='pec'?'&#128229; Bon de prise en charge':'&#128230; Bon de restitution';
+  document.getElementById('checkTitle').innerHTML=t==='pec'?'&#9989; Check-list prise en charge':'&#9989; Check-list restitution';
+  document.getElementById('sigText').textContent=t==='pec'?'la remise de l\'animal \u00e0 Cathy Pets en bon \u00e9tat apparent':'la restitution de l\'animal par Cathy Pets en bon \u00e9tat';
+  document.getElementById('submitBtn').className='btn '+(t==='pec'?'btn-pec':'btn-dep');
+  var bp=document.getElementById('btn_pec'),bd=document.getElementById('btn_dep');
+  if(t==='pec'){bp.style.background='';bp.style.color='';bp.className='btn btn-pec';bd.style.background='#fff';bd.style.color='#c45400';bd.style.border='2px solid #c45400'}
+  else{bd.style.background='';bd.style.color='';bd.className='btn btn-dep';bp.style.background='#fff';bp.style.color='#1a7a6e';bp.style.border='2px solid #1a7a6e'}
+}
+// Signature
+var cv=document.getElementById('sig_canvas'),cx=cv.getContext('2d'),dr=false;
+function gP(e){var r=cv.getBoundingClientRect();var t=e.touches?e.touches[0]:e;return{x:(t.clientX-r.left)*(cv.width/r.width),y:(t.clientY-r.top)*(cv.height/r.height)}}
+cv.onmousedown=function(e){dr=true;cx.beginPath();var p=gP(e);cx.moveTo(p.x,p.y)};
+cv.onmousemove=function(e){if(!dr)return;var p=gP(e);cx.lineTo(p.x,p.y);cx.strokeStyle='#222';cx.lineWidth=2;cx.stroke()};
+cv.onmouseup=function(){dr=false};
+cv.addEventListener('touchstart',function(e){e.preventDefault();dr=true;cx.beginPath();var p=gP(e);cx.moveTo(p.x,p.y)},{passive:false});
+cv.addEventListener('touchmove',function(e){e.preventDefault();if(!dr)return;var p=gP(e);cx.lineTo(p.x,p.y);cx.strokeStyle='#222';cx.lineWidth=2;cx.stroke()},{passive:false});
+cv.addEventListener('touchend',function(){dr=false});
+function clearSig(){cx.clearRect(0,0,cv.width,cv.height)}
+// Photo
+function loadPhoto(input){
+  if(input.files&&input.files[0]){
+    var reader=new FileReader();
+    reader.onload=function(e){
+      document.getElementById('photoPreview').src=e.target.result;
+      document.getElementById('photoPreview').style.display='block';
+      document.getElementById('photoPlaceholder').style.display='none';
+    };
+    reader.readAsDataURL(input.files[0]);
+  }
+}
+// Date auto
+document.getElementById('bl_date').value=new Date().toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+// URL params
+var p=new URLSearchParams(window.location.search);
+if(p.get('ref'))document.getElementById('bl_ref').value=p.get('ref');
+if(p.get('client'))document.getElementById('bl_client').value=p.get('client');
+if(p.get('tel'))document.getElementById('bl_tel').value=p.get('tel');
+if(p.get('animal'))document.getElementById('bl_ani_nom').value=p.get('animal');
+if(p.get('race'))document.getElementById('bl_ani_race').value=p.get('race');
+if(p.get('puce'))document.getElementById('bl_ani_puce').value=p.get('puce');
+if(p.get('lieu'))document.getElementById('bl_lieu').value=p.get('lieu');
+if(p.get('type')==='dep')setType('dep');
+// Submit
+function submitBon(){
+  var sd=cv.toDataURL(),bl2=document.createElement('canvas');bl2.width=cv.width;bl2.height=cv.height;
+  if(sd===bl2.toDataURL()){alert('Signature requise');return}
+  var checks=[];document.querySelectorAll('.bl_check:checked').forEach(function(cb){checks.push(cb.value)});
+  var body='=== BON DE '+(_type==='pec'?'PRISE EN CHARGE':'RESTITUTION')+' ===\n\n';
+  body+='R\u00e9f: '+(document.getElementById('bl_ref').value||'')+'\n';
+  body+='Date: '+(document.getElementById('bl_date').value||'')+'\n';
+  body+='Client: '+(document.getElementById('bl_client').value||'')+'\n';
+  body+='Lieu: '+(document.getElementById('bl_lieu').value||'')+'\n\n';
+  body+='ANIMAL: '+(document.getElementById('bl_ani_nom').value||'')+' | '+(document.getElementById('bl_ani_race').value||'')+'\n';
+  body+='Puce: '+(document.getElementById('bl_ani_puce').value||'')+'\n';
+  body+='\u00c9tat: '+(document.getElementById('bl_etat').value||'')+'\n';
+  body+='Obs: '+(document.getElementById('bl_obs').value||'')+'\n\n';
+  body+='CHECK-LIST: '+checks.join(', ')+'\n';
+  body+='\n--- Sign\u00e9 le '+new Date().toLocaleDateString('fr-FR')+' ---';
+  var subject=(_type==='pec'?'\u2705 PEC':'\\ud83d\\udce6 RESTITUTION')+' \u2014 '+(document.getElementById('bl_ani_nom').value||'Animal')+' \u2014 '+(document.getElementById('bl_client').value||'');
+  var btn=document.getElementById('submitBtn');btn.textContent='\u23f3 Envoi...';btn.disabled=true;
+  fetch('https://formsubmit.co/ajax/cathydelormepets@gmail.com',{
+    method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},
+    body:JSON.stringify({_subject:subject,message:body,name:document.getElementById('bl_client').value||'',_template:'table'})
+  }).then(function(r){return r.json()}).then(function(data){
+    if(data.success){document.getElementById('bonForm').innerHTML='<div style="text-align:center;padding:60px 20px"><div style="font-size:60px;margin-bottom:20px">\u2705</div><h2 style="color:#1a7a6e">Bon enregistr\u00e9 !</h2><p style="color:#546e7a">Le bon de '+(_type==='pec'?'prise en charge':'restitution')+' a \u00e9t\u00e9 envoy\u00e9.</p></div>'}
+    else{alert('Erreur \u2014 r\u00e9essayez');btn.textContent='\u2705 Valider';btn.disabled=false}
+  }).catch(function(){alert('Erreur r\u00e9seau');btn.textContent='\u2705 Valider';btn.disabled=false});
+}
+</script>
+</body>
+</html>
