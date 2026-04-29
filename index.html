@@ -1049,6 +1049,39 @@ body.nuit .card{border-color:#0a1520}
     </div>
   </div>
 </div>
+
+<!-- ═══ PLANNING DEVIS / TOURNÉE ═══ -->
+<div style="margin-top:14px">
+  <!-- CARTE DES DEVIS -->
+  <div class="card" style="border-top:3px solid #3b82f6;margin-bottom:14px"><div class="hd">
+    <h3 style="font-size:14px">🗺️ Carte des devis</h3>
+    <div style="display:flex;gap:4px;align-items:center">
+      <span style="display:flex;align-items:center;gap:3px;font-size:10px"><span style="width:10px;height:10px;border-radius:50%;background:#f59e0b;display:inline-block"></span> Envoyé</span>
+      <span style="display:flex;align-items:center;gap:3px;font-size:10px"><span style="width:10px;height:10px;border-radius:50%;background:#22c55e;display:inline-block"></span> Accepté</span>
+      <span style="display:flex;align-items:center;gap:3px;font-size:10px"><span style="width:10px;height:10px;border-radius:50%;background:#94a3b8;display:inline-block"></span> Brouillon</span>
+      <button class="btn sm" onclick="rTourMap()" style="font-size:10px;padding:3px 6px;background:#1a2a3a;border-color:#3b82f6;color:#60a5fa">🔄</button>
+    </div>
+  </div><div class="bd">
+    <div id="tourDevMap" style="height:350px;border-radius:8px;background:#0a1520"></div>
+    <div id="tourMapInfo" style="font-size:11px;color:var(--mt);margin-top:6px"></div>
+  </div></div>
+
+  <!-- LISTE DES DEVIS -->
+  <div class="card" style="border-top:3px solid #f472b6"><div class="hd">
+    <h3 style="font-size:14px">📋 Planning devis — Vue tournée</h3>
+    <div style="display:flex;gap:4px">
+      <select id="tourDevFilter" onchange="rTourDevis()" style="padding:4px 8px;font-size:11px;background:#080f1a;border:1px solid var(--ln);color:var(--tx);border-radius:6px">
+        <option value="all">Tous</option>
+        <option value="envoyé">📨 Envoyés</option>
+        <option value="accepté">✅ Acceptés</option>
+        <option value="brouillon">📝 Brouillons</option>
+      </select>
+      <button class="btn sm" onclick="rTourDevis()" style="font-size:10px;padding:4px 8px;background:#1a2a3a;border-color:#2a4a6f;color:#8ec8ff">🔄</button>
+    </div>
+  </div><div class="bd">
+    <div id="tourDevContent" style="font-size:12px"></div>
+  </div></div>
+</div>
 </section>
 
 <!-- CHAUFFEUR -->
@@ -6117,6 +6150,7 @@ function sTab(t){
   else if(t==='avis'){try{rAvisTab();}catch(e){}}
   else if(t==='urgvet'){try{var us=document.getElementById('urg_an');if(us){us.innerHTML='<option value="">—</option>'+act(db.animaux).map(function(a){return'<option value="'+a.id+'">'+a.nom+' · '+a.espece+' · '+cN(a.clientId)+'</option>';}).join('');}rVetosPerso();}catch(e){}}
   else if(t==='tres'){try{rTres()}catch(e){}}
+  else if(t==='tournees'){try{rTourDevis();setTimeout(rTourMap,300)}catch(e){}}
   else if(t==='cerfrance'){try{rCerfrance()}catch(e){}}
   else if(t==='param'){try{rSet()}catch(e){}}
   else if(t==='stat'){try{if(!$('stDt').value)$('stDt').value=tdy();rStat()}catch(e){}}
@@ -12526,6 +12560,164 @@ function msUpdateNav(t){
   var legs = tLegs(t);
   if(!legs.length){ nav.innerHTML='<div class="nt">Aucun trajet renseigné.</div>'; return; }
   nav.innerHTML = navLkAll(legs[0], legs[legs.length-1], legs);
+}
+
+// ═══ CARTE DES DEVIS ═══
+var _tourMap=null,_tourMarkers=null;
+function rTourMap(){
+  var mapEl=$('tourDevMap');if(!mapEl)return;
+  if(typeof L==='undefined')return;
+  if(!_tourMap){
+    _tourMap=L.map('tourDevMap').setView([49.1,3.4],8);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18,attribution:'© OSM'}).addTo(_tourMap);
+    _tourMarkers=L.layerGroup().addTo(_tourMap);
+  }
+  _tourMarkers.clearLayers();
+  var devs=act(db.devis).filter(function(q){return q.status==='envoyé'||q.status==='accepté'||q.status==='brouillon'});
+  var bounds=[];
+  var nbGeo=0;
+  var toGeocode=[];
+  devs.forEach(function(q){
+    if(!q.waypoints||!q.waypoints.length)return;
+    q.waypoints.forEach(function(w,wi){
+      if(w.lat&&w.lng){
+        addTourMarker(q,w,wi);
+        bounds.push([w.lat,w.lng]);
+        nbGeo++;
+      } else if(w.address){
+        toGeocode.push({q:q,w:w,wi:wi});
+      }
+    });
+  });
+  // Géocoder les adresses sans coordonnées
+  toGeocode.forEach(function(item,idx){
+    setTimeout(function(){
+      fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q='+encodeURIComponent(item.w.address),{headers:{'Accept-Language':'fr'}})
+      .then(function(r){return r.json()}).then(function(data){
+        if(data&&data[0]){
+          item.w.lat=parseFloat(data[0].lat);item.w.lng=parseFloat(data[0].lon);
+          addTourMarker(item.q,item.w,item.wi);
+          bounds.push([item.w.lat,item.w.lng]);
+          if(bounds.length>1)_tourMap.fitBounds(bounds,{padding:[30,30]});
+        }
+      }).catch(function(){});
+    },idx*300);
+  });
+  if(bounds.length>1)_tourMap.fitBounds(bounds,{padding:[30,30]});
+  else if(bounds.length===1)_tourMap.setView(bounds[0],10);
+  var info=$('tourMapInfo');
+  if(info)info.textContent=devs.length+' devis · '+(nbGeo+toGeocode.length)+' points sur la carte';
+}
+function addTourMarker(q,w,wi){
+  if(!w.lat||!w.lng)return;
+  var colors={envoyé:'#f59e0b',accepté:'#22c55e',brouillon:'#94a3b8'};
+  var col=colors[q.status]||'#f59e0b';
+  var isStart=wi===0;
+  var icon=L.divIcon({
+    className:'',
+    html:'<div style="width:14px;height:14px;border-radius:50%;background:'+col+';border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;font-size:7px;color:#fff;font-weight:900">'+(isStart?'A':'B')+'</div>',
+    iconSize:[14,14],iconAnchor:[7,7]
+  });
+  var anis=q.animalIds?q.animalIds.map(function(aid){var a=db.animaux.find(function(x){return x.id===aid});return a?a.nom:''}).filter(Boolean).join(', '):'';
+  var popup='<div style="font-size:12px;min-width:160px">';
+  popup+='<b style="color:'+col+'">'+q.ref+'</b> <span style="font-size:10px">'+q.status+'</span><br>';
+  popup+='<b>'+cN(q.clientId)+'</b><br>';
+  if(anis)popup+='🐾 '+anis+'<br>';
+  popup+='📍 '+(w.label||w.address||'')+'<br>';
+  popup+='💰 <b>'+euro(q.total)+'</b><br>';
+  if(q.date)popup+='📅 '+q.date;
+  popup+='<br><button onclick="eDev(\''+q.id+'\')" style="margin-top:4px;padding:3px 8px;background:'+col+';color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:10px">✏️ Éditer</button>';
+  popup+='</div>';
+  L.marker([w.lat,w.lng],{icon:icon}).addTo(_tourMarkers).bindPopup(popup);
+}
+
+// ═══ PLANNING DEVIS VUE TOURNÉE ═══
+function rTourDevis(){
+  var el=$('tourDevContent');if(!el)return;
+  var filter=V('tourDevFilter')||'all';
+  var devs=act(db.devis).filter(function(q){
+    if(filter!=='all'&&q.status!==filter)return false;
+    return q.status==='envoyé'||q.status==='accepté'||q.status==='brouillon';
+  });
+  if(!devs.length){el.innerHTML='<div style="padding:20px;text-align:center;color:var(--mt)">Aucun devis en cours</div>';return}
+  // Grouper par date
+  var byDate={};
+  devs.forEach(function(q){
+    var d=q.dateDebut||q.date||'Sans date';
+    if(!byDate[d])byDate[d]=[];
+    byDate[d].push(q);
+  });
+  // Trier les dates
+  var dates=Object.keys(byDate).sort();
+  var h='';
+  var totalGlobal=0;
+  dates.forEach(function(d){
+    var qs=byDate[d];
+    var totalJour=qs.reduce(function(s,q){return s+E(q.total)},0);
+    totalGlobal+=totalJour;
+    var nbAcc=qs.filter(function(q){return q.status==='accepté'}).length;
+    var nbEnv=qs.filter(function(q){return q.status==='envoyé'}).length;
+    // Détecter les trajets similaires (même direction)
+    var wpsAll=qs.filter(function(q){return q.waypoints&&q.waypoints.length>=2}).map(function(q){
+      return{ref:q.ref,from:q.waypoints[0].address||'',to:q.waypoints[q.waypoints.length-1].address||''};
+    });
+    var dateLabel=d==='Sans date'?'📅 Sans date':'📅 '+new Date(d).toLocaleDateString('fr-FR',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
+    h+='<div style="margin-bottom:12px">';
+    h+='<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;background:rgba(244,114,182,.08);border:1px solid rgba(244,114,182,.2);border-radius:8px 8px 0 0">';
+    h+='<div><b style="color:#f472b6">'+dateLabel+'</b> <span style="font-size:10px;color:var(--mt)">'+qs.length+' devis</span>';
+    if(nbAcc)h+=' · <span style="color:var(--a2);font-size:10px">'+nbAcc+' accepté(s)</span>';
+    if(nbEnv)h+=' · <span style="color:var(--or);font-size:10px">'+nbEnv+' en attente</span>';
+    h+='</div>';
+    h+='<b style="color:var(--a2)">'+euro(totalJour)+'</b>';
+    h+='</div>';
+    // Lignes devis
+    qs.forEach(function(q){
+      var legs=q.waypoints?q.waypoints.map(function(w){return w.label||w.address||''}).filter(Boolean):[];
+      var trajet=legs.length>=2?legs[0]+' → '+legs[legs.length-1]:'';
+      var anis=q.animalIds?q.animalIds.map(function(aid){var a=db.animaux.find(function(x){return x.id===aid});return a?a.nom:''}).filter(Boolean).join(', '):'';
+      var statusBadge=q.status==='accepté'?'<span style="padding:2px 6px;border-radius:10px;background:rgba(26,122,110,.15);color:var(--a2);font-size:9px;font-weight:700">✅ Accepté</span>':'<span style="padding:2px 6px;border-radius:10px;background:rgba(245,158,11,.15);color:var(--or);font-size:9px;font-weight:700">📨 Envoyé</span>';
+      if(q.status==='brouillon')statusBadge='<span style="padding:2px 6px;border-radius:10px;background:rgba(255,255,255,.06);color:var(--mt);font-size:9px;font-weight:700">📝 Brouillon</span>';
+      h+='<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;border:1px solid var(--ln);border-top:none;background:rgba(255,255,255,.02)" id="td_'+q.id+'">';
+      h+='<div style="flex:1;min-width:0">';
+      h+='<div style="display:flex;align-items:center;gap:6px"><b style="color:var(--tx)">'+q.ref+'</b> '+statusBadge+' <span style="color:var(--mt);font-size:10px">'+cN(q.clientId)+'</span></div>';
+      if(anis)h+='<div style="font-size:10px;color:var(--mt)">🐾 '+anis+'</div>';
+      if(trajet)h+='<div style="font-size:10px;color:var(--mt)">🗺️ '+trajet+'</div>';
+      h+='</div>';
+      // Prix éditable
+      h+='<div style="display:flex;align-items:center;gap:4px">';
+      h+='<input id="td_p_'+q.id+'" type="number" step="0.01" value="'+E(q.total).toFixed(2)+'" style="width:80px;text-align:right;font-weight:800;font-size:13px;color:var(--a2);background:#0a1520;border:1px solid var(--a2);border-radius:6px;padding:5px" onchange="tourDevUpdatePrix(\''+q.id+'\')">';
+      h+='<span style="font-size:11px;color:var(--mt)">€</span>';
+      h+='</div>';
+      // Actions rapides
+      h+='<div style="display:flex;gap:3px">';
+      h+='<button class="btn sm bu" onclick="eDev(\''+q.id+'\')" title="Éditer" style="font-size:10px;padding:3px 5px">✏️</button>';
+      if(q.status==='envoyé')h+='<button class="btn sm gn" onclick="contratValide(\''+q.id+'\')" title="Contrat reçu" style="font-size:10px;padding:3px 5px">📋</button>';
+      if(q.status==='accepté')h+='<button class="btn sm gn" onclick="addFacFromDevis(\''+q.id+'\')" title="Facturer" style="font-size:10px;padding:3px 5px">💶</button>';
+      h+='</div>';
+      h+='</div>';
+    });
+    // Alerte trajet similaire
+    if(wpsAll.length>=2){
+      h+='<div style="padding:4px 10px;background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.15);border-top:none;border-radius:0 0 8px 8px;font-size:10px;color:#3b82f6">💡 '+wpsAll.length+' trajets ce jour — possibilité de tournée groupée</div>';
+    } else {
+      h+='<div style="border-radius:0 0 8px 8px"></div>';
+    }
+    h+='</div>';
+  });
+  // Résumé global
+  h+='<div style="display:flex;justify-content:space-between;padding:10px;background:rgba(26,122,110,.08);border:2px solid var(--a2);border-radius:8px;margin-top:8px">';
+  h+='<div><b>'+devs.length+' devis</b> sur <b>'+dates.length+' jour(s)</b></div>';
+  h+='<div><b style="font-size:15px;color:var(--a2)">'+euro(totalGlobal)+'</b> <span style="font-size:10px;color:var(--mt)">CA potentiel</span></div>';
+  h+='</div>';
+  el.innerHTML=h;
+}
+function tourDevUpdatePrix(id){
+  var q=db.devis.find(function(x){return x.id===id});if(!q)return;
+  var newPrix=E(V('td_p_'+id));
+  if(newPrix<=0)return;
+  q.total=newPrix;stamp(q);sav(false);
+  rTourDevis();
+  showToast('💰 '+q.ref+' → '+euro(newPrix));
 }
 
 function openBonLivraison(type){
