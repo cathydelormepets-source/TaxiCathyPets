@@ -17524,7 +17524,8 @@ function rContrats(){
     
     var btns='';
     if(c.status==='envoyé'){
-      btns+='<button class="btn sm '+(needRelance?'rd':'yl')+'" onclick="ctRelance(\''+c.id+'\')" title="Relancer le client">'+(needRelance?'⚠️':'📧')+' Relancer</button> ';
+      btns+='<button class="btn sm gn" onclick="ctSetStatus(\''+c.id+'\',\'signé\')" title="Marquer signé">✍️ Signé</button> ';
+      btns+='<button class="btn sm '+(needRelance?'rd':'yl')+'" onclick="ctRelance(\''+c.id+'\')" title="Relancer">'+(needRelance?'⚠️':'📧')+' Relancer</button> ';
     }
     if(c.status==='signé'){
       btns+='<button class="btn sm gn" onclick="ctSetStatus(\''+c.id+'\',\'payé\')" title="Marquer payé">💰 Payé</button> ';
@@ -17532,6 +17533,7 @@ function rContrats(){
     if(c.status==='payé'){
       btns+='<span style="color:var(--a2);font-size:11px">✅</span> ';
     }
+    btns+='<button class="btn sm" style="background:#1a2a3a;border-color:#2a4a6f;color:#8ec8ff" onclick="editContrat(\''+c.id+'\')" title="Modifier">✏️</button> ';
     btns+='<button class="btn sm og" onclick="printContrat(\''+c.id+'\')" title="Imprimer">🖨️</button>';
     btns+=' <button class="btn sm rd" onclick="delContrat(\''+c.id+'\')" title="Supprimer">✕</button>';
     
@@ -17596,6 +17598,46 @@ function ctRelance(id){
 }
 
 function delContrat(id){if(!confirm('Supprimer ce contrat ?'))return;var ct2=(db.contrats||[]).find(function(c){return c.id===id});if(ct2){ct2._deleted=true;ct2._deletedAt=new Date().toISOString()}sav(false);rContrats();}
+
+function editContrat(id){
+  var ct=(db.contrats||[]).find(function(c){return c.id===id});
+  if(!ct)return;
+  var h='<div style="max-width:600px"><h3 style="margin-bottom:12px">✏️ Modifier contrat '+ct.ref+'</h3>';
+  h+='<div class="row"><div class="c6 fd"><label>Référence</label><input id="ec_ref" value="'+(ct.ref||'')+'"></div>';
+  h+='<div class="c6 fd"><label>Statut</label><select id="ec_status"><option value="envoyé"'+(ct.status==='envoyé'?' selected':'')+'>📨 Envoyé</option><option value="signé"'+(ct.status==='signé'?' selected':'')+'>✍️ Signé</option><option value="payé"'+(ct.status==='payé'?' selected':'')+'>💰 Payé</option><option value="impayé"'+(ct.status==='impayé'?' selected':'')+'>⚠️ Impayé</option><option value="annulé"'+(ct.status==='annulé'?' selected':'')+'>❌ Annulé</option></select></div></div>';
+  h+='<div class="row"><div class="c6 fd"><label>Client</label><select id="ec_client">';
+  act(db.clients).forEach(function(c2){h+='<option value="'+c2.id+'"'+(c2.id===ct.clientId?' selected':'')+'>'+cN(c2.id)+'</option>'});
+  h+='</select></div>';
+  h+='<div class="c6 fd"><label>Type</label><select id="ec_type"><option value="transport"'+(ct.type==='transport'?' selected':'')+'>🚗 Transport</option><option value="garde"'+(ct.type==='garde'?' selected':'')+'>🏡 Garde</option><option value="pension"'+(ct.type==='pension'?' selected':'')+'>🏠 Pension</option><option value="promenade"'+(ct.type==='promenade'?' selected':'')+'>🐕 Promenade</option><option value="veterinaire"'+(ct.type==='veterinaire'?' selected':'')+'>🩺 Vétérinaire</option><option value="combine"'+(ct.type==='combine'?' selected':'')+'>🚗🏡 Combiné</option></select></div></div>';
+  h+='<div class="row"><div class="c4 fd"><label>Date début</label><input id="ec_d1" type="date" value="'+(ct.dateDebut||ct.date||'')+'"></div>';
+  h+='<div class="c4 fd"><label>Date fin</label><input id="ec_d2" type="date" value="'+(ct.dateFin||'')+'"></div>';
+  h+='<div class="c4 fd"><label>Montant € TTC</label><input id="ec_mt" type="number" step="0.01" value="'+(ct.montant||0)+'"></div></div>';
+  h+='<div class="fd"><label>Trajet / Prestation</label><input id="ec_trajet" value="'+(ct.trajet||ct.description||'')+'"></div>';
+  h+='<div class="fd"><label>Notes</label><textarea id="ec_notes" rows="3">'+(ct.notes||'')+'</textarea></div>';
+  h+='<div class="il" style="gap:8px;margin-top:12px">';
+  h+='<button class="btn gn" onclick="saveContratEdit(\''+id+'\')">💾 Sauvegarder</button>';
+  h+='<button class="btn rd" onclick="if(confirm(\'Supprimer ce contrat ?\')){delContrat(\''+id+'\');cMo()}">🗑️ Supprimer</button>';
+  h+='<button class="btn" onclick="cMo()">Annuler</button>';
+  h+='</div></div>';
+  oMo(h);
+}
+
+function saveContratEdit(id){
+  var ct=(db.contrats||[]).find(function(c){return c.id===id});
+  if(!ct)return;
+  ct.ref=V('ec_ref')||ct.ref;
+  ct.status=V('ec_status')||ct.status;
+  ct.clientId=V('ec_client')||ct.clientId;
+  ct.type=V('ec_type')||ct.type;
+  ct.dateDebut=V('ec_d1')||ct.dateDebut;
+  ct.dateFin=V('ec_d2')||ct.dateFin;
+  ct.montant=E(V('ec_mt'));
+  ct.trajet=V('ec_trajet')||'';
+  ct.notes=V('ec_notes')||'';
+  ct.modifiedAt=new Date().toISOString();
+  stamp(ct);sav();rContrats();cMo();
+  showToast('✅ Contrat '+ct.ref+' modifié');
+}
 
 // ═══ ENVOI CONTRAT PRO AU CLIENT ═══
 function ctenvInit(){
