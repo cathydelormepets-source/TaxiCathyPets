@@ -2898,6 +2898,8 @@ document.getElementById('q_contrat_pec').addEventListener('change',function(){
 <input type="file" id="ms_inp_drop" accept="image/*" capture="camera" style="position:fixed;top:-9999px;left:-9999px;width:1px;height:1px" onchange="msPhoto(this,'drop')">
 <button class="btn bu" onclick="document.getElementById('ms_inp_pickup').click()" style="text-align:center;padding:12px;flex:1">📷 Prise en charge</button>
 <button class="btn og" onclick="document.getElementById('ms_inp_drop').click()" style="text-align:center;padding:12px;flex:1">📷 Dépose</button>
+<button class="btn" onclick="openBonLivraison('pec')" style="text-align:center;padding:12px;flex:1;background:#1a3a30;border-color:#1a7a6e;color:#22a693">📋 Bon PEC</button>
+<button class="btn" onclick="openBonLivraison('dep')" style="text-align:center;padding:12px;flex:1;background:#2a1a10;border-color:#c45400;color:#e67e22">📋 Bon Dépose</button>
 </div>
 <div id="ms_photos" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"></div>
 </div></div>
@@ -9146,6 +9148,19 @@ function sFac(id){
   cMo();rFac2();showToast('💾 '+f.ref+' sauvegardée — '+euro(f.total));
 }
 // ═══ MARQUER PAYÉE ═══
+function marquerAcompte(id){
+  var f=db.factures.find(function(x){return x.id===id});if(!f)return;
+  var montant=Math.round(E(f.total)*40)/100;
+  if(!confirm('💰 Marquer acompte reçu ?\n\n'+f.ref+' — '+cN(f.clientId)+'\nAcompte 40% : '+euro(montant)))return;
+  f.acompteRecu=true;
+  f.acompteDate=tdy();
+  f.acompteMontant=montant;
+  f.acompte=montant;
+  stamp(f);sav();rAll();
+  showToast('💰 Acompte '+euro(montant)+' enregistré pour '+f.ref);
+  lH('facture','Acompte reçu: '+f.ref+' — '+euro(montant));
+}
+
 function marquerPayeeModal(id){
   var f=db.factures.find(function(x){return x.id===id;});
   if(!f)return;
@@ -9566,7 +9581,7 @@ function rFac2(){
         +'<button class="btn sm og" onclick="printFacturePro(\''+fid+'\')" title="PDF">🖨️</button>'
         +'<button class="btn sm at" onclick="quickMail(\'envoi_fac\',\''+cid+'\',\''+fid+'\')" title="Mail">📧</button>'
         +(f.status==='emise'?'<button class="btn sm" onclick="quickMail(\'relance_fac\',\''+cid+'\',\''+fid+'\')" title="Relance impayée" style="background:#2a1010;border-color:#6a2020;color:#ff8a8a;font-size:10px">📨</button>':'')
-        +(f.status!=='payée'?'<button class="btn sm gn" onclick="marquerPayeeModal(\''+fid+'\')" title="Marquer payée" style="font-size:10px">✅</button>':'')
+        +(f.status!=='payée'&&!f.acompteRecu?'<button class="btn sm" onclick="marquerAcompte(\''+fid+'\')" title="Acompte reçu" style="font-size:10px;background:#1a2a10;border-color:#3a6a10;color:#9d6">💰 Ac.</button>':'')+(f.acompteRecu?'<span style="font-size:9px;color:#9d6" title="Acompte reçu le '+((f.acompteDate||''))+'">[Ac✅]</span>':'')+(f.status!=='payée'?'<button class="btn sm gn" onclick="marquerPayeeModal(\''+fid+'\')" title="Marquer payée" style="font-size:10px">✅</button>':'')
         +(f.status==='emise'?'<button class="btn sm" onclick="marquerImpayee(\''+fid+'\')" title="Marquer impayée" style="background:#3a1010;border-color:#6a2020;color:#ff6666;font-size:10px">❌</button>':'')
         +(f.activityType!=='avoir'?'<button class="btn sm" onclick="creerAvoir(\''+fid+'\')" title="Créer un avoir" style="background:#4a1040;border-color:#8a2080;color:#e0a0d8;font-size:10px">📄 Avoir</button>':'')
         +'<button class="btn sm rd" onclick="hardDelFac(\''+fid+'\')" title="Supprimer" style="font-size:10px">🗑️</button>'
@@ -9801,7 +9816,8 @@ function rBriefing(){
     impayees.forEach(function(f){
       var jours=Math.floor((Date.now()-new Date(f.date))/864e5);
       var urgence=jours>=30?'var(--rd)':jours>=15?'var(--or)':'var(--mt)';
-      h+='<div style="padding:3px 0;font-size:11px;display:flex;justify-content:space-between"><span>'+f.ref+' — '+cN(f.clientId)+'</span><span style="color:'+urgence+'"><b>'+euro(E(f.total)-E(f.acompte))+'</b> · '+jours+'j</span></div>';
+      var penalite=jours>=30?Math.round((E(f.total)-E(f.acompte))*0.0786*100)/100+40:0;
+      h+='<div style="padding:3px 0;font-size:11px;display:flex;justify-content:space-between"><span>'+f.ref+' — '+cN(f.clientId)+(f.acompteRecu?' <span style="color:#9d6;font-size:9px">[Ac✅]</span>':'')+'</span><span style="color:'+urgence+'"><b>'+euro(E(f.total)-E(f.acompte))+'</b> · '+jours+'j'+(penalite>0?' · <span style="color:var(--rd);font-weight:800">+'+euro(penalite)+' pénalités</span>':'')+'</span></div>';
     });
     h+='</div>';
   }
@@ -11329,10 +11345,26 @@ function genMail(){
   if(tp==='envoi_dev'){
     var q=db.devis.find(function(x){return x.id===ref});
     var wps=q&&q.waypoints?q.waypoints:[];
-    var trajet=wps.length>=2?(wps[0].address+' → '+wps[wps.length-1].address):'';
+    var trajet=wps.length>=2?(wps[0].address+' \u2192 '+wps[wps.length-1].address):'';
     var anis=q&&q.animalIds?q.animalIds.map(function(aid){var a=db.animaux.find(function(x){return x.id===aid});return a?a.nom:''}).filter(function(n){return n}).join(', '):'';
-    subj='Votre devis '+(q?q.ref:'[Réf]')+' — Cathy Pets';
-    body='Bonjour '+prenom+',\n\nSuite à notre échange, veuillez trouver ci-joint votre devis'+(q?' '+q.ref:'')+' pour la prestation suivante :\n\n'+(anis?'🐾 Animal(aux) : '+anis+'\n':'')+'📋 Prestation : '+(q&&q.mode?q.mode:'transport')+'\n'+(trajet?'🗺️ Trajet : '+trajet+'\n':'')+(q&&q.date?'📅 Date prévue : '+q.date+'\n':'')+'\n💰 Montant TTC : '+(q?euro(q.total):'[montant]')+'\n\nCe devis est valable 30 jours à compter de ce jour.\n\nPour confirmer, merci de nous retourner le devis signé ou de nous le confirmer par retour de mail.\n\nN\'hésitez pas à nous contacter pour toute question.'+SIGN;
+    // Construire le lien devis signable
+    var devUrl='https://cathydelormepets-source.github.io/TaxiCathyPets/devis-client.html?ref='+encodeURIComponent(q?q.ref:'');
+    devUrl+='&nom='+encodeURIComponent(cN(cl.id));
+    devUrl+='&email='+encodeURIComponent(cl.email||'');
+    devUrl+='&tel='+encodeURIComponent(cl.tel||'');
+    devUrl+='&type='+encodeURIComponent(q&&q.mode?q.mode:'transport');
+    if(q&&q.date)devUrl+='&periode='+encodeURIComponent(q.date);
+    if(trajet)devUrl+='&desc='+encodeURIComponent(trajet);
+    // Lignes tarif
+    if(q&&q.lignes&&q.lignes.length){
+      var lParts=q.lignes.map(function(l){return encodeURIComponent(l.article||l.desc||'')+'\|'+(l.qty||1)+'\|'+(l.pu||0)+'\|'+(l.remise||0)});
+      devUrl+='&lignes='+encodeURIComponent(lParts.join(';;'));
+    }
+    // PEC si dispo
+    var pecLink='';
+    if(q&&q.contratPecUrl)pecLink=q.contratPecUrl;
+    subj='Votre devis '+(q?q.ref:'[R\u00e9f]')+' \u2014 Cathy Pets';
+    body='Bonjour '+prenom+',\n\nSuite \u00e0 notre \u00e9change, voici votre devis'+(q?' '+q.ref:'')+' pour la prestation suivante :\n\n'+(anis?'\ud83d\udc3e Animal(aux) : '+anis+'\n':'')+'\ud83d\udccb Prestation : '+(q&&q.mode?q.mode:'transport')+'\n'+(trajet?'\ud83d\uddfa\ufe0f Trajet : '+trajet+'\n':'')+(q&&q.date?'\ud83d\udcc5 Date pr\u00e9vue : '+q.date+'\n':'')+'\n\ud83d\udcb0 Montant TTC : '+(q?euro(q.total):'[montant]')+'\n\n\ud83d\udc49 Consultez et signez votre devis en ligne :\n'+devUrl+'\n'+(pecLink?'\n\ud83d\udccb Votre contrat de prise en charge :\n'+pecLink+'\n':'')+'\nCe devis est valable 30 jours.\n\nN\'h\u00e9sitez pas \u00e0 nous contacter pour toute question.'+SIGN;
   } else if(tp==='conf_dev'){
     var q=db.devis.find(function(x){return x.id===ref});
     var wps=q&&q.waypoints?q.waypoints:[];
@@ -12494,6 +12526,22 @@ function msUpdateNav(t){
   var legs = tLegs(t);
   if(!legs.length){ nav.innerHTML='<div class="nt">Aucun trajet renseigné.</div>'; return; }
   nav.innerHTML = navLkAll(legs[0], legs[legs.length-1], legs);
+}
+
+function openBonLivraison(type){
+  var tId=V('tt_sel');var t=tId?db.transports.find(function(x){return x.id===tId}):null;
+  var url='https://cathydelormepets-source.github.io/TaxiCathyPets/bon-livraison.html?type='+type;
+  if(t){
+    url+='&ref='+encodeURIComponent(t.ref||'');
+    var cl=db.clients.find(function(x){return x.id===t.clientId});
+    if(cl){url+='&client='+encodeURIComponent((cl.nom||'')+' '+(cl.prenom||''));url+='&tel='+encodeURIComponent(cl.tel||'')}
+    var anis=t.animalIds?t.animalIds.map(function(aid){return db.animaux.find(function(a){return a.id===aid})}).filter(Boolean):[];
+    if(anis.length){url+='&animal='+encodeURIComponent(anis[0].nom||'');url+='&race='+encodeURIComponent((anis[0].espece||'')+' '+(anis[0].race||''));url+='&puce='+encodeURIComponent(anis[0].ident||'')}
+    var wps=t.waypoints||[];
+    if(type==='pec'&&wps.length)url+='&lieu='+encodeURIComponent(wps[0].address||'');
+    if(type==='dep'&&wps.length>=2)url+='&lieu='+encodeURIComponent(wps[wps.length-1].address||'');
+  }
+  window.open(url,'_blank');
 }
 
 function msStart(){
