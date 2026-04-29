@@ -6994,14 +6994,51 @@ function devInjectOptions(){
   else{showToast('⚠️ Remplis hébergement ou multi-modal d\'abord')}
 }
 function preFill(){
-  var t=db.transports.find(function(x){return x.id===V('q_tr')});
-  if(!t)return;
-  $('q_to').value=t.price.toFixed(2);
-  // Load waypoints from transport
+  var tid=V('q_tr');
+  var t=db.transports.find(function(x){return x.id===tid});
+  if(!t){alert('Sélectionne d\'abord un transport à lier');return}
+  // Client
+  var clSel=$('q_cl');if(clSel&&t.clientId){clSel.value=t.clientId;try{qClChange();forceRefreshDevAniSelect()}catch(e){}}
+  // Type
+  var moSel=$('q_mo');if(moSel)moSel.value='transport';
+  // Total
+  var toEl=$('q_to');if(toEl)toEl.value=(E(t.price)).toFixed(2);
+  // Waypoints
   if(t.waypoints&&t.waypoints.length){
     $('dwpBox').innerHTML='';_dwpCount=0;
     t.waypoints.forEach(function(w){addDWP(w.label,w.address)});
   }
+  // Animaux
+  if(t.animalIds&&t.animalIds.length){
+    setTimeout(function(){
+      var aniCbs=document.querySelectorAll('.q_ani_cb');
+      aniCbs.forEach(function(cb){
+        if(t.animalIds.indexOf(cb.value)>=0)cb.checked=true;
+      });
+    },200);
+  }
+  // Créer les lignes articles depuis le transport
+  var box=$('q_lignes');if(box)box.innerHTML='';_devLigneCount=0;
+  var legs=tLegs(t);
+  var trajet=legs.length>=2?legs[0]+' → '+legs[legs.length-1]:'Transport';
+  var km=E(t.kmAuto)||E(t.kmManual)||0;
+  // Ligne aller
+  if(km>0){
+    var prixAllerKm=0.90;
+    devAddLigne(trajet+(km?' — '+km+'km':''),1,E(t.price),'Transport aller',0,false);
+  } else {
+    devAddLigne(trajet,1,E(t.price),'Transport',0,false);
+  }
+  // Péages si présents
+  if(E(t.tolls)>0){
+    devAddLigne('Péages '+trajet,1,E(t.tolls),'Péages',0,true);
+  }
+  // Hébergement si présent
+  if(E(t.hotelCost)>0){
+    devAddLigne((t.hotel||'Hébergement')+' ('+E(t.hotelNuits)+' nuit(s))',E(t.hotelNuits)||1,E(t.hotelCost)/(E(t.hotelNuits)||1),'Hébergement',0,true);
+  }
+  devCalcTotal();
+  showToast('✅ Devis pré-rempli depuis '+t.ref);
 }
 // ---- V28 : LIGNES ARTICLES DEVIS ----
 var _devLigneCount = 0;
@@ -17602,24 +17639,21 @@ function delContrat(id){if(!confirm('Supprimer ce contrat ?'))return;var ct2=(db
 function editContrat(id){
   var ct=(db.contrats||[]).find(function(c){return c.id===id});
   if(!ct)return;
-  var h='<div style="max-width:600px"><h3 style="margin-bottom:12px">✏️ Modifier contrat '+ct.ref+'</h3>';
-  h+='<div class="row"><div class="c6 fd"><label>Référence</label><input id="ec_ref" value="'+(ct.ref||'')+'"></div>';
-  h+='<div class="c6 fd"><label>Statut</label><select id="ec_status"><option value="envoyé"'+(ct.status==='envoyé'?' selected':'')+'>📨 Envoyé</option><option value="signé"'+(ct.status==='signé'?' selected':'')+'>✍️ Signé</option><option value="payé"'+(ct.status==='payé'?' selected':'')+'>💰 Payé</option><option value="impayé"'+(ct.status==='impayé'?' selected':'')+'>⚠️ Impayé</option><option value="annulé"'+(ct.status==='annulé'?' selected':'')+'>❌ Annulé</option></select></div></div>';
-  h+='<div class="row"><div class="c6 fd"><label>Client</label><select id="ec_client">';
-  act(db.clients).forEach(function(c2){h+='<option value="'+c2.id+'"'+(c2.id===ct.clientId?' selected':'')+'>'+cN(c2.id)+'</option>'});
-  h+='</select></div>';
-  h+='<div class="c6 fd"><label>Type</label><select id="ec_type"><option value="transport"'+(ct.type==='transport'?' selected':'')+'>🚗 Transport</option><option value="garde"'+(ct.type==='garde'?' selected':'')+'>🏡 Garde</option><option value="pension"'+(ct.type==='pension'?' selected':'')+'>🏠 Pension</option><option value="promenade"'+(ct.type==='promenade'?' selected':'')+'>🐕 Promenade</option><option value="veterinaire"'+(ct.type==='veterinaire'?' selected':'')+'>🩺 Vétérinaire</option><option value="combine"'+(ct.type==='combine'?' selected':'')+'>🚗🏡 Combiné</option></select></div></div>';
-  h+='<div class="row"><div class="c4 fd"><label>Date début</label><input id="ec_d1" type="date" value="'+(ct.dateDebut||ct.date||'')+'"></div>';
-  h+='<div class="c4 fd"><label>Date fin</label><input id="ec_d2" type="date" value="'+(ct.dateFin||'')+'"></div>';
-  h+='<div class="c4 fd"><label>Montant € TTC</label><input id="ec_mt" type="number" step="0.01" value="'+(ct.montant||0)+'"></div></div>';
-  h+='<div class="fd"><label>Trajet / Prestation</label><input id="ec_trajet" value="'+(ct.trajet||ct.description||'')+'"></div>';
-  h+='<div class="fd"><label>Notes</label><textarea id="ec_notes" rows="3">'+(ct.notes||'')+'</textarea></div>';
-  h+='<div class="il" style="gap:8px;margin-top:12px">';
-  h+='<button class="btn gn" onclick="saveContratEdit(\''+id+'\')">💾 Sauvegarder</button>';
-  h+='<button class="btn rd" onclick="if(confirm(\'Supprimer ce contrat ?\')){delContrat(\''+id+'\');cMo()}">🗑️ Supprimer</button>';
-  h+='<button class="btn" onclick="cMo()">Annuler</button>';
-  h+='</div></div>';
-  oMo(h);
+  var bd='<div class="row"><div class="c6 fd"><label>Référence</label><input id="ec_ref" value="'+(ct.ref||'')+'"></div>';
+  bd+='<div class="c6 fd"><label>Statut</label><select id="ec_status"><option value="envoyé"'+(ct.status==='envoyé'?' selected':'')+'>📨 Envoyé</option><option value="signé"'+(ct.status==='signé'?' selected':'')+'>✍️ Signé</option><option value="payé"'+(ct.status==='payé'?' selected':'')+'>💰 Payé</option><option value="impayé"'+(ct.status==='impayé'?' selected':'')+'>⚠️ Impayé</option><option value="annulé"'+(ct.status==='annulé'?' selected':'')+'>❌ Annulé</option></select></div></div>';
+  bd+='<div class="row"><div class="c6 fd"><label>Client</label><select id="ec_client">';
+  act(db.clients).forEach(function(c2){bd+='<option value="'+c2.id+'"'+(c2.id===ct.clientId?' selected':'')+'>'+cN(c2.id)+'</option>'});
+  bd+='</select></div>';
+  bd+='<div class="c6 fd"><label>Type</label><select id="ec_type"><option value="transport"'+(ct.type==='transport'?' selected':'')+'>🚗 Transport</option><option value="garde"'+(ct.type==='garde'?' selected':'')+'>🏡 Garde</option><option value="pension"'+(ct.type==='pension'?' selected':'')+'>🏠 Pension</option><option value="promenade"'+(ct.type==='promenade'?' selected':'')+'>🐕 Promenade</option><option value="veterinaire"'+(ct.type==='veterinaire'?' selected':'')+'>🩺 Vétérinaire</option><option value="combine"'+(ct.type==='combine'?' selected':'')+'>🚗🏡 Combiné</option></select></div></div>';
+  bd+='<div class="row"><div class="c4 fd"><label>Date début</label><input id="ec_d1" type="date" value="'+(ct.dateDebut||ct.date||'')+'"></div>';
+  bd+='<div class="c4 fd"><label>Date fin</label><input id="ec_d2" type="date" value="'+(ct.dateFin||'')+'"></div>';
+  bd+='<div class="c4 fd"><label>Montant € TTC</label><input id="ec_mt" type="number" step="0.01" value="'+(ct.montant||0)+'"></div></div>';
+  bd+='<div class="fd"><label>Trajet / Prestation</label><input id="ec_trajet" value="'+(ct.trajet||ct.description||'')+'"></div>';
+  bd+='<div class="fd"><label>Notes</label><textarea id="ec_notes" rows="3">'+(ct.notes||'')+'</textarea></div>';
+  var ft='<button class="btn gn" onclick="saveContratEdit(\''+id+'\')">💾 Sauvegarder</button> ';
+  ft+='<button class="btn rd" onclick="if(confirm(\'Supprimer ce contrat ?\')){delContrat(\''+id+'\');cMo()}">🗑️ Supprimer</button> ';
+  ft+='<button class="btn" onclick="cMo()">Annuler</button>';
+  oMo('✏️ Modifier contrat '+ct.ref, bd, ft);
 }
 
 function saveContratEdit(id){
