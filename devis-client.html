@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Devis — Cathy Pets</title>
+<style>
+  :root{--p:#c45400;--p2:#e65c00;--tl:#1a7a6e;--or:#b8860b;--gy:#546e7a;--gl:#eceff1;--gb:#cfd8dc;--tx:#263238;--bg:#fdf6ee;--sh:0 2px 8px rgba(0,0,0,.10);--rd:8px}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--tx);font-size:14px;line-height:1.6}
+  .hdr{background:linear-gradient(135deg,#b84700,#e65c00 60%,#ff8c00);color:#fff;padding:24px 30px 18px}
+  .hdr h1{font-size:20px;font-weight:800} .hdr p{font-size:11px;opacity:.85;margin-top:2px}
+  .ct{max-width:800px;margin:0 auto;padding:16px}
+  .sec{background:#fff;border-radius:var(--rd);box-shadow:var(--sh);margin-bottom:14px;overflow:hidden}
+  .sh{padding:10px 18px;font-weight:700;font-size:13px;color:#fff}
+  .sb{padding:14px 18px}
+  .row{display:flex;flex-wrap:wrap;gap:10px}
+  .fd{flex:1;min-width:170px}
+  .fd label{display:block;font-size:10px;font-weight:700;color:var(--gy);text-transform:uppercase;letter-spacing:.3px;margin-bottom:3px}
+  .fd input,.fd textarea{width:100%;padding:7px 10px;border:1px solid var(--gb);border-radius:6px;font:inherit;font-size:12px;background:var(--gl)}
+  .ro{background:#e8e8e8!important;font-weight:700!important;cursor:not-allowed}
+  .badge{display:inline-block;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700}
+  table{width:100%;border-collapse:collapse;font-size:12px}
+  th{padding:8px;text-align:left;border:1px solid var(--gb);background:var(--gl);font-size:11px}
+  td{padding:7px 8px;border:1px solid var(--gb)}
+  .sig{border:2px dashed var(--gb);border-radius:8px;padding:10px;text-align:center;margin:6px 0}
+  .btn{display:inline-block;padding:10px 24px;border:none;border-radius:6px;font:inherit;font-weight:700;cursor:pointer;font-size:14px}
+  .btn-p{background:var(--tl);color:#fff}
+  .btn-s{padding:5px 10px;font-size:10px}
+  .total-row td{font-weight:800;font-size:14px;background:#e8f5e9}
+  .rem{color:#16a34a;font-size:10px}
+  @media(max-width:600px){.row{flex-direction:column}.hdr{padding:14px 16px}}
+  @media print{.np{display:none!important}body{background:#fff}.sec{box-shadow:none;border:1px solid #ddd}}
+</style>
+</head>
+<body>
+<div class="hdr">
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
+    <div>
+      <h1>Devis — Cathy Pets</h1>
+      <p>Cathy Pets SAS — SIRET 928 564 269 — RC Pro Hiscox HSXIN320028640M</p>
+      <p>&#128222; 07.83.43.63.06 · &#9993;&#65039; cathydelormepets@gmail.com · &#127760; cathypetsitter.com</p>
+    </div>
+    <div style="text-align:right">
+      <div style="font-size:17px;font-weight:900" id="dRef">DEVIS</div>
+      <div id="dDate" style="font-size:11px;opacity:.8"></div>
+      <div id="dValid" style="font-size:10px;opacity:.7"></div>
+    </div>
+  </div>
+</div>
+<div class="ct" id="devisForm">
+
+  <!-- CLIENT -->
+  <div class="sec"><div class="sh" style="background:var(--p)">&#128100; Client</div><div class="sb">
+    <div class="row"><div class="fd"><label>Nom</label><input id="d_nom" class="ro" readonly></div><div class="fd"><label>Email</label><input id="d_email" class="ro" readonly></div><div class="fd"><label>Téléphone</label><input id="d_tel" class="ro" readonly></div></div>
+  </div></div>
+
+  <!-- PRESTATION -->
+  <div class="sec"><div class="sh" style="background:var(--gy)">&#128203; Prestation</div><div class="sb">
+    <div class="row"><div class="fd"><label>Type</label><input id="d_type" class="ro" readonly></div><div class="fd"><label>Période</label><input id="d_periode" class="ro" readonly></div></div>
+    <div id="d_description" style="margin-top:8px;font-size:12px;color:var(--gy)"></div>
+  </div></div>
+
+  <!-- TARIFICATION -->
+  <div class="sec"><div class="sh" style="background:var(--tl)">&#128182; Tarification détaillée</div><div class="sb">
+    <table>
+      <thead><tr><th>Désignation</th><th style="width:55px;text-align:center">Qté</th><th style="width:80px;text-align:right">PU &#8364;</th><th style="width:50px;text-align:center">Rem%</th><th style="width:90px;text-align:right">Montant TTC</th></tr></thead>
+      <tbody id="d_tarif_body"></tbody>
+      <tfoot>
+        <tr class="total-row"><td colspan="4" style="text-align:right">TOTAL TTC</td><td style="text-align:right;color:var(--tl)" id="d_total">0,00 &#8364;</td></tr>
+        <tr style="background:#fff3e0"><td colspan="4" style="text-align:right;font-size:11px;color:var(--p)">Acompte 40% à la signature</td><td style="text-align:right;font-weight:700;color:var(--p)" id="d_acompte">0,00 &#8364;</td></tr>
+        <tr><td colspan="4" style="text-align:right;font-size:11px">Solde à la prestation</td><td style="text-align:right;font-weight:700" id="d_solde">0,00 &#8364;</td></tr>
+      </tfoot>
+    </table>
+    <div style="margin-top:8px;font-size:11px;color:var(--gy)">Ce devis est valable 30 jours. TVA non applicable, art. 293B du CGI.</div>
+  </div></div>
+
+  <!-- CONDITIONS -->
+  <div class="sec"><div class="sh" style="background:var(--gy)">&#128220; Conditions</div><div class="sb" style="font-size:11px;color:var(--gy)">
+    <p><b>Paiement :</b> Acompte 40% à la signature du devis. Solde avant la prestation (garde) ou le jour de la dépose (transport).</p>
+    <p style="margin-top:6px"><b>Annulation :</b> Gratuite à plus de 48h. Entre 24-48h : 50% retenu. Moins de 24h : aucun remboursement.</p>
+    <p style="margin-top:6px"><b>Retard de paiement :</b> Pénalité de 7,86% par an + 40&#8364; forfaitaire (Art. D.441-5 C.Com).</p>
+    <p style="margin-top:6px"><b>Assurance :</b> RC Professionnelle Hiscox HSXIN320028640M.</p>
+    <div id="d_conditions" style="margin-top:8px"></div>
+  </div></div>
+
+  <!-- SIGNATURE -->
+  <div class="sec"><div class="sh" style="background:#7b3f00">&#9997;&#65039; Acceptation et signature</div><div class="sb">
+    <p style="font-size:12px;margin-bottom:10px">En signant ce devis, vous acceptez les conditions ci-dessus et confirmez votre réservation.</p>
+    <div class="row">
+      <div class="fd"><label>Signature Cathy Pets</label><div class="sig"><p style="font-size:10px;color:var(--gy)">Cathy DELORME — Cathy Pets SAS</p><p style="font-size:9px;color:#999">Signé électroniquement</p></div></div>
+      <div class="fd"><label>Signature du Client</label><div class="sig"><canvas id="sig_canvas" width="320" height="120" style="width:100%;max-width:320px;height:120px;background:#fafafa;cursor:crosshair;touch-action:none"></canvas><div style="margin-top:4px"><button class="btn-s" onclick="clearSig()" style="background:#ef4444;color:#fff;border:none;border-radius:4px;cursor:pointer">Effacer</button></div></div></div>
+    </div>
+    <div style="margin-top:10px"><label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700"><input type="checkbox" id="accept"> Bon pour accord — Devis accept&#233;, lu et approuv&#233;</label></div>
+    <div style="margin-top:14px;text-align:center" class="np"><button class="btn btn-p" onclick="submitDevis()" style="font-size:15px;padding:12px 36px" id="submitBtn">&#9989; Accepter et signer le devis</button></div>
+  </div></div>
+</div>
+
+<script>
+// Signature
+var cv=document.getElementById('sig_canvas'),cx=cv.getContext('2d'),dr=false;
+function gP(e){var r=cv.getBoundingClientRect();var t=e.touches?e.touches[0]:e;return{x:(t.clientX-r.left)*(cv.width/r.width),y:(t.clientY-r.top)*(cv.height/r.height)}}
+cv.onmousedown=function(e){dr=true;cx.beginPath();var p=gP(e);cx.moveTo(p.x,p.y)};
+cv.onmousemove=function(e){if(!dr)return;var p=gP(e);cx.lineTo(p.x,p.y);cx.strokeStyle='#222';cx.lineWidth=2;cx.stroke()};
+cv.onmouseup=function(){dr=false};
+cv.addEventListener('touchstart',function(e){e.preventDefault();dr=true;cx.beginPath();var p=gP(e);cx.moveTo(p.x,p.y)},{passive:false});
+cv.addEventListener('touchmove',function(e){e.preventDefault();if(!dr)return;var p=gP(e);cx.lineTo(p.x,p.y);cx.strokeStyle='#222';cx.lineWidth=2;cx.stroke()},{passive:false});
+cv.addEventListener('touchend',function(){dr=false});
+function clearSig(){cx.clearRect(0,0,cv.width,cv.height)}
+
+// Date
+var now=new Date();
+document.getElementById('dDate').textContent=now.toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'});
+var valid=new Date(now);valid.setDate(valid.getDate()+30);
+document.getElementById('dValid').textContent='Valable jusqu\'au '+valid.toLocaleDateString('fr-FR');
+
+// Charger depuis URL
+function applyParams(){
+  var p=new URLSearchParams(window.location.search);
+  if(p.get('ref'))document.getElementById('dRef').textContent='DEVIS '+p.get('ref');
+  if(p.get('nom'))document.getElementById('d_nom').value=p.get('nom');
+  if(p.get('email'))document.getElementById('d_email').value=p.get('email');
+  if(p.get('tel'))document.getElementById('d_tel').value=p.get('tel');
+  if(p.get('type'))document.getElementById('d_type').value=p.get('type');
+  if(p.get('periode'))document.getElementById('d_periode').value=p.get('periode');
+  if(p.get('desc'))document.getElementById('d_description').innerHTML=p.get('desc').replace(/\\n/g,'<br>');
+  if(p.get('conditions'))document.getElementById('d_conditions').innerHTML='<p style="color:var(--p);font-weight:700">'+p.get('conditions').replace(/\\n/g,'<br>')+'</p>';
+  // Lignes tarif
+  if(p.get('lignes')){
+    var tbody=document.getElementById('d_tarif_body');
+    var total=0;
+    p.get('lignes').split(';;').forEach(function(l){
+      var parts=l.split('|');if(parts.length<3)return;
+      var desc=decodeURIComponent(parts[0]),qty=parseFloat(parts[1])||0,pu=parseFloat(parts[2])||0,rem=parseFloat(parts[3])||0;
+      var mt=qty*pu;if(rem>0)mt=mt*(100-rem)/100;
+      total+=mt;
+      var tr=document.createElement('tr');
+      tr.innerHTML='<td>'+desc+'</td><td style="text-align:center">'+qty+'</td><td style="text-align:right">'+pu.toFixed(2)+' \u20ac</td><td style="text-align:center">'+(rem>0?'<span class="rem">-'+rem+'%</span>':'')+'</td><td style="text-align:right;font-weight:700">'+mt.toFixed(2).replace('.',',')+' \u20ac</td>';
+      tbody.appendChild(tr);
+    });
+    document.getElementById('d_total').textContent=total.toFixed(2).replace('.',',')+' \u20ac';
+    document.getElementById('d_acompte').textContent=(total*.4).toFixed(2).replace('.',',')+' \u20ac';
+    document.getElementById('d_solde').textContent=(total*.6).toFixed(2).replace('.',',')+' \u20ac';
+  }
+}
+setTimeout(applyParams,100);
+
+// Envoi
+function submitDevis(){
+  if(!document.getElementById('accept').checked){alert('Veuillez cocher "Bon pour accord"');return}
+  var sd=cv.toDataURL(),bl=document.createElement('canvas');bl.width=cv.width;bl.height=cv.height;
+  if(sd===bl.toDataURL()){alert('Veuillez signer le devis');return}
+  var p=new URLSearchParams(window.location.search);
+  var nom=document.getElementById('d_nom').value||'';
+  var email=document.getElementById('d_email').value||'';
+  var ref=p.get('ref')||'';
+  var total=document.getElementById('d_total').textContent||'';
+  var body='=== DEVIS ACCEPT\u00c9 ET SIGN\u00c9 ===\n\n';
+  body+='R\u00e9f\u00e9rence: '+ref+'\n';
+  body+='Client: '+nom+'\nEmail: '+email+'\nT\u00e9l: '+(document.getElementById('d_tel').value||'')+'\n';
+  body+='Type: '+(document.getElementById('d_type').value||'')+'\n';
+  body+='P\u00e9riode: '+(document.getElementById('d_periode').value||'')+'\n';
+  body+='Total TTC: '+total+'\n';
+  body+='\n--- Sign\u00e9 le '+new Date().toLocaleDateString('fr-FR')+' ---';
+  var subject='\u2705 DEVIS ACCEPT\u00c9 '+ref+' \u2014 '+nom+' \u2014 '+total;
+  var btn=document.getElementById('submitBtn');
+  if(btn){btn.textContent='\u23f3 Envoi...';btn.disabled=true}
+  fetch('https://formsubmit.co/ajax/cathydelormepets@gmail.com',{
+    method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},
+    body:JSON.stringify({_subject:subject,message:body,_replyto:email,name:nom,_template:'table'})
+  }).then(function(r){return r.json()}).then(function(data){
+    if(data.success){
+      document.getElementById('devisForm').innerHTML='<div style="text-align:center;padding:60px 20px"><div style="font-size:60px;margin-bottom:20px">\u2705</div><h2 style="color:var(--tl);margin-bottom:10px">Devis accept\u00e9 et sign\u00e9 !</h2><p style="color:var(--gy)">Cathy Pets a re\u00e7u votre acceptation.<br>Nous vous recontacterons pour organiser la prestation.</p><p style="margin-top:20px;font-size:16px">Merci de votre confiance ! \ud83d\udc3e</p></div>';
+    } else {
+      window.location.href='mailto:cathydelormepets@gmail.com?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
+    }
+  }).catch(function(){
+    window.location.href='mailto:cathydelormepets@gmail.com?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
+  });
+}
+</script>
+</body>
+</html>
