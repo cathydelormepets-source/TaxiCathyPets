@@ -493,31 +493,23 @@ function sendContratEmail(data) {
   body += '--- SIGNATURE ---\n';
   body += 'Signé le ' + new Date().toLocaleDateString('fr-FR') + '\n';
   
-  return body;
-}
-
-function submitContrat(){
-  if(!document.getElementById('accept_cgu').checked){alert('Veuillez accepter les conditions');return}
-  var canvas = document.getElementById('sig_canvas');
-  if(!canvas){alert('Erreur signature');return}
-  var sigData=canvas.toDataURL();
-  var blank=document.createElement('canvas');blank.width=canvas.width;blank.height=canvas.height;
-  if(sigData===blank.toDataURL()){alert('Veuillez signer le contrat');return}
-  
-  var data = collectData();
-  var body = buildEmailBody(data);
-  var subject = 'Contrat transport ' + (data.proprietaire.nom || '') + ' - ' + (data.trajet.date || '');
-  
-  // Envoi automatique
-  var btn=document.querySelector('button[onclick*=submitContrat]');if(btn){btn.textContent='\u23f3 Envoi...';btn.disabled=true}
+  // Envoi automatique via FormSubmit
+  var subjectEnc='\u2705 Contrat PEC SIGNE \u2014 '+data.client.nom+' '+data.client.prenom;
+  var submitBtn=document.getElementById('submitBtn');
+  if(submitBtn){submitBtn.textContent='\u23f3 Envoi en cours...';submitBtn.disabled=true}
   fetch('https://formsubmit.co/ajax/cathydelormepets@gmail.com',{
-    method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},
-    body:JSON.stringify({_subject:subject,message:body,_replyto:(document.getElementById('prop_email')||{}).value||'',name:(document.getElementById('prop_nom')||{}).value||'',_template:'table'})
-  }).then(function(r){return r.json()}).then(function(data){
-    if(data.success){document.body.innerHTML='<div style="text-align:center;padding:60px 20px;font-family:sans-serif"><div style="font-size:60px;margin-bottom:20px">\u2705</div><h2 style="color:#c45400">Contrat transport sign\u00e9 et envoy\u00e9 !</h2><p style="color:#546e7a">Cathy Pets a re\u00e7u votre contrat. Merci ! \ud83d\udc3e</p></div>'}
-    else{window.location.href='mailto:cathydelormepets@gmail.com?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);alert('Envoyez l\'email')}
+    method:'POST',
+    headers:{'Content-Type':'application/json','Accept':'application/json'},
+    body:JSON.stringify({_subject:subjectEnc,message:body,_replyto:data.client.email,name:data.client.nom+' '+data.client.prenom,_template:'table'})
+  }).then(function(r){return r.json()}).then(function(resp){
+    if(resp.success){
+      var sm=document.getElementById('successMsg');
+      if(sm){sm.style.display='block'}
+    } else {
+      window.location.href='mailto:cathydelormepets@gmail.com?subject='+encodeURIComponent(subjectEnc)+'&body='+encodeURIComponent(body);
+    }
   }).catch(function(){
-    window.location.href='mailto:cathydelormepets@gmail.com?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
+    window.location.href='mailto:cathydelormepets@gmail.com?subject='+encodeURIComponent(subjectEnc)+'&body='+encodeURIComponent(body);
   });
 }
 
