@@ -852,54 +852,24 @@
         <thead>
           <tr>
             <th>Désignation</th>
-            <th style="width:100px">Qté / Jours</th>
-            <th style="width:110px">Prix unitaire (€)</th>
-            <th style="width:110px">Montant (€)</th>
+            <th style="width:70px">Qté/J</th>
+            <th style="width:90px">PU (€)</th>
+            <th style="width:50px;color:#16a34a">Rem%</th>
+            <th style="width:100px">Montant (€)</th>
           </tr>
         </thead>
-        <tbody id="tarif-body">
-          <tr>
-            <td>Garde (tarif journalier)</td>
-            <td><input type="number" id="t-jours" placeholder="0" min="0" oninput="calcTotal()"></td>
-            <td><input type="number" id="t-prix-jour" placeholder="0.00" step="0.01" oninput="calcTotal()"></td>
-            <td id="t-mont-1" style="font-weight:600; color:var(--green)">0,00 €</td>
-          </tr>
-          <tr>
-            <td>Supplément jours fériés / week-end férié</td>
-            <td><input type="number" id="t-feries" placeholder="0" min="0" oninput="calcTotal()"></td>
-            <td><input type="number" id="t-prix-feries" placeholder="0.00" step="0.01" oninput="calcTotal()"></td>
-            <td id="t-mont-2" style="font-weight:600; color:var(--green)">0,00 €</td>
-          </tr>
-          <tr>
-            <td>Taxi animalier (aller) <small style="color:#888">— forfait 150 € TTC</small></td>
-            <td><input type="number" id="t-taxi-nb" placeholder="1" min="0" oninput="calcTotal()"></td>
-            <td><input type="number" id="t-taxi-prix" value="150" step="0.01" oninput="calcTotal()"></td>
-            <td id="t-mont-3" style="font-weight:600; color:var(--green)">0,00 €</td>
-          </tr>
-          <tr>
-            <td>Taxi animalier (retour) <small style="color:#888">— forfait 150 € TTC</small></td>
-            <td><input type="number" id="t-taxi2-nb" placeholder="1" min="0" oninput="calcTotal()"></td>
-            <td><input type="number" id="t-taxi2-prix" value="150" step="0.01" oninput="calcTotal()"></td>
-            <td id="t-mont-4" style="font-weight:600; color:var(--green)">0,00 €</td>
-          </tr>
-          <tr>
-            <td>Frais complémentaires (toilettage, etc.)</td>
-            <td><input type="number" id="t-compl-nb" placeholder="1" min="0" oninput="calcTotal()"></td>
-            <td><input type="number" id="t-compl-prix" placeholder="0.00" step="0.01" oninput="calcTotal()"></td>
-            <td id="t-mont-5" style="font-weight:600; color:var(--green)">0,00 €</td>
-          </tr>
-        </tbody>
+        <tbody id="tarif-body"></tbody>
         <tfoot>
           <tr class="total-row">
-            <td colspan="3" style="text-align:right; text-transform:uppercase; letter-spacing:0.5px">TOTAL TTC</td>
+            <td colspan="4" style="text-align:right; text-transform:uppercase; letter-spacing:0.5px">TOTAL TTC</td>
             <td id="t-total">0,00 €</td>
           </tr>
           <tr class="total-row" style="background:var(--green-pale)">
-            <td colspan="3" style="text-align:right; font-size:12px; color:#555; font-weight:normal">Acompte 40% (à la réservation)</td>
+            <td colspan="4" style="text-align:right; font-size:12px; color:#555; font-weight:normal">Acompte 40% (à la réservation)</td>
             <td id="t-acompte" style="color:#555; font-size:13px">0,00 €</td>
           </tr>
           <tr class="total-row" style="background:var(--green-pale)">
-            <td colspan="3" style="text-align:right; font-size:12px; color:#555; font-weight:normal">Solde le jour de la dépose de l'animal</td>
+            <td colspan="4" style="text-align:right; font-size:12px; color:#555; font-weight:normal">Solde le jour de la dépose de l'animal</td>
             <td id="t-solde" style="color:#555; font-size:13px">0,00 €</td>
           </tr>
         </tfoot>
@@ -1251,9 +1221,7 @@ let adminUnlocked = true; // Cathy commence en mode saisie
 const ADMIN_FIELDS = [
   'prestation-type','adresse-garde',
   'date-debut','heure-depot','date-fin','heure-reprise',
-  't-jours','t-prix-jour',
-  't-feries','t-prix-feries',
-  't-taxi-nb','t-taxi-prix',
+  'paiement','obs-tarif',
   't-taxi2-nb','t-taxi2-prix',
   't-compl-nb','t-compl-prix',
   'paiement','obs-tarif'
@@ -1477,8 +1445,10 @@ function calcDuree() {
       txt.innerHTML = `<strong>${jours} jour(s)</strong> — ${nuits} nuit(s) — du ${fmtDate(d1)} au ${fmtDate(d2)}`;
       box.style.display = 'flex';
       // Auto-fill days
-      const tj = document.getElementById('t-jours');
-      if (!tj.value) { tj.value = jours; calcTotal(); }
+      // Auto-ajouter ligne garde si pas encore de ligne
+      if(_ctTarifN===0){addTarifLine('Garde journali\u00e8re',jours,0,0)}
+      else{var q0=document.getElementById('ct_tl_q_0');if(q0&&(!q0.value||q0.value==='0'))q0.value=jours}
+      calcTotal();
     } else {
       txt.textContent = '⚠️ La date de fin doit être postérieure à la date de début.';
       box.style.display = 'flex';
@@ -1495,22 +1465,41 @@ function fmtDate(d) {
 }
 
 // ── CALCUL TOTAL ──
+// ═══ TARIF DYNAMIQUE MULTI-ANIMAUX ═══
+var _ctTarifN=0;
+function addTarifLine(desc, qty, pu, rem){
+  var i=_ctTarifN++;
+  var tbody=document.getElementById('tarif-body');if(!tbody)return;
+  var tr=document.createElement('tr');tr.id='ct_tl_'+i;
+  tr.innerHTML='<td><input id="ct_tl_d_'+i+'" value="'+(desc||'')+'" style="width:100%;border:1px solid #cfd8dc;border-radius:4px;padding:5px;font-size:12px" readonly></td>'
+    +'<td><input id="ct_tl_q_'+i+'" type="number" value="'+(qty||0)+'" style="width:100%;text-align:center;border:1px solid #cfd8dc;border-radius:4px;padding:5px;font-size:12px" readonly oninput="calcTotal()"></td>'
+    +'<td><input id="ct_tl_p_'+i+'" type="number" step="0.01" value="'+(pu||0)+'" style="width:100%;text-align:right;border:1px solid #cfd8dc;border-radius:4px;padding:5px;font-size:12px;font-weight:600" readonly oninput="calcTotal()"></td>'
+    +'<td><input id="ct_tl_r_'+i+'" type="number" step="1" min="0" max="100" value="'+(rem||0)+'" style="width:100%;text-align:center;border:1px solid #bbf7d0;border-radius:4px;padding:5px;font-size:12px;color:#16a34a;font-weight:700;background:#f0fdf4" readonly></td>'
+    +'<td id="ct_tl_t_'+i+'" style="font-weight:600;color:var(--green,#c45400)">0,00 €</td>';
+  tbody.appendChild(tr);
+  calcTotal();
+}
+
 function calcTotal() {
-  const rows = [
-    ['t-jours','t-prix-jour','t-mont-1'],
-    ['t-feries','t-prix-feries','t-mont-2'],
-    ['t-taxi-nb','t-taxi-prix','t-mont-3'],
-    ['t-taxi2-nb','t-taxi2-prix','t-mont-4'],
-    ['t-compl-nb','t-compl-prix','t-mont-5'],
-  ];
-  let total = 0;
-  rows.forEach(([qId, pId, mId]) => {
-    const q = parseFloat(document.getElementById(qId).value) || 0;
-    const p = parseFloat(document.getElementById(pId).value) || 0;
-    const m = q * p;
-    total += m;
-    document.getElementById(mId).textContent = fmtMoney(m);
-  });
+  var total = 0;
+  for(var i=0;i<_ctTarifN+5;i++){
+    var qEl=document.getElementById('ct_tl_q_'+i);
+    var pEl=document.getElementById('ct_tl_p_'+i);
+    var rEl=document.getElementById('ct_tl_r_'+i);
+    var tEl=document.getElementById('ct_tl_t_'+i);
+    if(!qEl)continue;
+    var q=parseFloat(qEl.value)||0;
+    var p=parseFloat(pEl.value)||0;
+    var r=parseFloat(rEl?rEl.value:0)||0;
+    var m=q*p;
+    if(r>0)m=m*(100-r)/100;
+    total+=m;
+    if(tEl){
+      var txt=fmtMoney(m);
+      if(r>0)txt+=' <small style="color:#16a34a">(-'+r+'%)</small>';
+      tEl.innerHTML=txt;
+    }
+  }
   document.getElementById('t-total').textContent = fmtMoney(total);
   document.getElementById('t-acompte').textContent = fmtMoney(total * 0.4);
   document.getElementById('t-solde').textContent = fmtMoney(total * 0.6);
@@ -1839,11 +1828,6 @@ function collectCathyData() {
   const fields = [
     'prestation-type','adresse-garde',
     'date-debut','heure-depot','date-fin','heure-reprise',
-    't-jours','t-prix-jour',
-    't-feries','t-prix-feries',
-    't-taxi-nb','t-taxi-prix',
-    't-taxi2-nb','t-taxi2-prix',
-    't-compl-nb','t-compl-prix',
     'paiement','obs-tarif','fait-a'
   ];
   const data = { mode: 'client', locked: '1', ts: Date.now() };
@@ -1854,6 +1838,16 @@ function collectCathyData() {
     if (!val || val === '0' || val === '0.00') return;
     data[id] = val;
   });
+  // Collecter les lignes tarif dynamiques
+  var tarifLines=[];
+  for(var ti=0;ti<_ctTarifN+5;ti++){
+    var d=document.getElementById('ct_tl_d_'+ti);if(!d)continue;
+    var q=document.getElementById('ct_tl_q_'+ti);
+    var p=document.getElementById('ct_tl_p_'+ti);
+    var r=document.getElementById('ct_tl_r_'+ti);
+    tarifLines.push({d:d.value,q:q?q.value:'0',p:p?p.value:'0',r:r?r.value:'0'});
+  }
+  if(tarifLines.length)data['tarif_lines']=JSON.stringify(tarifLines);
   const checked = Array.from(document.querySelectorAll('#services input:checked')).map(c=>c.value);
   if (checked.length) data['services'] = checked.join(',');
   return data;
@@ -1960,12 +1954,22 @@ function applyURLParams() {
     var el = document.getElementById('prestation-type');
     if (el) el.value = params.get('type');
   }
-  if (params.has('tarif')) {
-    var el = document.getElementById('t-prix-jour');
-    if (el) el.value = params.get('tarif');
-  }
-  if (params.has('total')) {
-    // Sera calculé automatiquement
+  // Tarif — créer les lignes dynamiques depuis URL
+  if (params.has('tarif_lines')) {
+    try{
+      var tlines=JSON.parse(params.get('tarif_lines'));
+      tlines.forEach(function(tl){addTarifLine(tl.d,tl.q,tl.p,tl.r)});
+    }catch(e){}
+  } else {
+    // Fallback ancien format
+    var tarifDescs=['Garde journalière','Supplément fériés','Taxi aller','Taxi retour','Frais complémentaires'];
+    for(var tii=1;tii<=5;tii++){
+      var tq=params.get('t'+tii+'q');
+      var tp=params.get('t'+tii+'p');
+      var tr=params.get('t'+tii+'r');
+      if(tp&&parseFloat(tp)>0){addTarifLine(tarifDescs[tii-1],tq||1,tp,tr||0)}
+    }
+    if(params.has('tarif')&&_ctTarifN===0){addTarifLine('Garde journalière',0,params.get('tarif'),0)}
   }
   if (params.has('services')) {
     var el = document.getElementById('adresse-garde');
@@ -2003,10 +2007,13 @@ function applyURLParams() {
     var adminTab = document.getElementById('admin-tab');
     if (adminTab) adminTab.style.display = 'none';
     // Verrouiller TOUS les tarifs — le client ne peut pas modifier les prix
-    ['t-jours','t-prix-jour','t-feries','t-prix-feries','t-taxi-nb','t-taxi-prix','t-taxi2-nb','t-taxi2-prix','t-compl-nb','t-compl-prix'].forEach(function(id){
-      var el=document.getElementById(id);
-      if(el){el.readOnly=true;el.style.background='#e8e8e8';el.style.color='#333';el.style.fontWeight='700'}
-    });
+    // Verrouiller les lignes tarif dynamiques
+    for(var lk=0;lk<_ctTarifN+5;lk++){
+      ['ct_tl_d_','ct_tl_q_','ct_tl_p_','ct_tl_r_'].forEach(function(prefix){
+        var el=document.getElementById(prefix+lk);
+        if(el){el.readOnly=true;el.style.background='#e8e8e8';el.style.color='#333';el.style.fontWeight='700'}
+      });
+    }
     // Calculer durée et total
     setTimeout(function() {
       calcDuree();
@@ -2097,10 +2104,13 @@ document.addEventListener('DOMContentLoaded', function() {
     if (adminBar) adminBar.style.display = 'none';
     var adminTab = document.getElementById('admin-tab');
     if (adminTab) adminTab.style.display = 'none';
-    ['t-jours','t-prix-jour','t-feries','t-prix-feries','t-taxi-nb','t-taxi-prix','t-taxi2-nb','t-taxi2-prix','t-compl-nb','t-compl-prix'].forEach(function(id){
-      var el=document.getElementById(id);
-      if(el){el.readOnly=true;el.style.background='#e8e8e8';el.style.color='#333';el.style.fontWeight='700'}
-    });
+    // Verrouiller les lignes tarif dynamiques
+    for(var lk=0;lk<_ctTarifN+5;lk++){
+      ['ct_tl_d_','ct_tl_q_','ct_tl_p_','ct_tl_r_'].forEach(function(prefix){
+        var el=document.getElementById(prefix+lk);
+        if(el){el.readOnly=true;el.style.background='#e8e8e8';el.style.color='#333';el.style.fontWeight='700'}
+      });
+    }
     setTimeout(function() { calcDuree(); calcTotal(); }, 200);
   }
 });
