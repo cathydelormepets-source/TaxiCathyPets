@@ -508,9 +508,17 @@ function submitContrat(){
   var body = buildEmailBody(data);
   var subject = 'Contrat transport ' + (data.proprietaire.nom || '') + ' - ' + (data.trajet.date || '');
   
-  window.location.href = 'mailto:cathydelormepets@gmail.com?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
-  
-  alert('\u2705 Contrat de transport validé !\n\nLe contrat va s\'ouvrir dans votre messagerie.\nEnvoyez-le à cathydelormepets@gmail.com\n\nMerci de votre confiance ! \ud83d\udc3e');
+  // Envoi automatique
+  var btn=document.querySelector('button[onclick*=submitContrat]');if(btn){btn.textContent='\u23f3 Envoi...';btn.disabled=true}
+  fetch('https://formsubmit.co/ajax/cathydelormepets@gmail.com',{
+    method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},
+    body:JSON.stringify({_subject:subject,message:body,_replyto:(document.getElementById('prop_email')||{}).value||'',name:(document.getElementById('prop_nom')||{}).value||'',_template:'table'})
+  }).then(function(r){return r.json()}).then(function(data){
+    if(data.success){document.body.innerHTML='<div style="text-align:center;padding:60px 20px;font-family:sans-serif"><div style="font-size:60px;margin-bottom:20px">\u2705</div><h2 style="color:#c45400">Contrat transport sign\u00e9 et envoy\u00e9 !</h2><p style="color:#546e7a">Cathy Pets a re\u00e7u votre contrat. Merci ! \ud83d\udc3e</p></div>'}
+    else{window.location.href='mailto:cathydelormepets@gmail.com?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);alert('Envoyez l\'email')}
+  }).catch(function(){
+    window.location.href='mailto:cathydelormepets@gmail.com?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
+  });
 }
 
 // URL params
