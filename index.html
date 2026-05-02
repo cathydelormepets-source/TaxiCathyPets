@@ -5623,22 +5623,82 @@ function stamp(r){if(r){r._updatedAt=new Date().toISOString();r._dirty=true}retu
 function safeSave(){
   // Tronquer les historiques lourds avant sauvegarde
   try{
-    if(db.gpsHistory&&db.gpsHistory.length>50)db.gpsHistory.length=50;
-    if(db.smsHistory&&db.smsHistory.length>100)db.smsHistory.length=100;
-    if(db.sosHistory&&db.sosHistory.length>50)db.sosHistory.length=50;
-    if(db.pauseHistory&&db.pauseHistory.length>50)db.pauseHistory.length=50;
-    if(db.gcalSyncLog&&db.gcalSyncLog.length>50)db.gcalSyncLog.length=50;
-    if(db.voiceNotes&&db.voiceNotes.length>30)db.voiceNotes.length=30;
+    if(db.gpsHistory&&db.gpsHistory.length>30)db.gpsHistory.length=30;
+    if(db.smsHistory&&db.smsHistory.length>50)db.smsHistory.length=50;
+    if(db.sosHistory&&db.sosHistory.length>30)db.sosHistory.length=30;
+    if(db.pauseHistory&&db.pauseHistory.length>30)db.pauseHistory.length=30;
+    if(db.gcalSyncLog&&db.gcalSyncLog.length>20)db.gcalSyncLog.length=20;
+    if(db.voiceNotes&&db.voiceNotes.length>20)db.voiceNotes.length=20;
+    if(db.history&&db.history.length>200)db.history.length=200;
+    if(db.gcEvents&&db.gcEvents.length>100)db.gcEvents.length=100;
+    // Nettoyer les anciens éléments supprimés (> 30 jours)
+    var cutoff=new Date();cutoff.setDate(cutoff.getDate()-30);var cutoffS=cutoff.toISOString();
+    ['clients','animaux','transports','gardes','devis','factures','carburant','contrats','vehicules','depenses'].forEach(function(col){
+      if(db[col]&&Array.isArray(db[col])){
+        db[col]=db[col].filter(function(r){return !r._deleted||!r._deletedAt||r._deletedAt>cutoffS});
+      }
+    });
   }catch(e){}
-  try{localStorage.setItem(SK,JSON.stringify(db))}
+  var json=JSON.stringify(db);
+  try{localStorage.setItem(SK,json)}
   catch(e){
-    // localStorage plein — nettoyage agressif
-    console.warn('localStorage plein, nettoyage...');
-    for(var i=localStorage.length-1;i>=0;i--){var k=localStorage.key(i);if(k&&k!==SK&&k.startsWith('cathypets'))localStorage.removeItem(k)}
-    // Tronquer encore plus
-    try{if(db.history&&db.history.length>50)db.history.length=50}catch(e3){}
-    try{localStorage.setItem(SK,JSON.stringify(db))}catch(e2){showToast('⚠️ Stockage plein — exporte tes données !')}
+    console.warn('localStorage plein ('+Math.round(json.length/1024)+'Ko), nettoyage...');
+    // 1. Supprimer tous les backups cathypets
+    for(var i=localStorage.length-1;i>=0;i--){var k=localStorage.key(i);if(k&&k!==SK&&(k.startsWith('cathypets')||k.startsWith('CP_')))localStorage.removeItem(k)}
+    // 2. Tronquer plus agressivement
+    try{
+      if(db.history&&db.history.length>30)db.history.length=30;
+      if(db.gcEvents)db.gcEvents=[];
+      if(db.gpsHistory)db.gpsHistory=[];
+      if(db.smsHistory)db.smsHistory=[];
+      if(db.voiceNotes)db.voiceNotes=[];
+      if(db.gcalSyncLog)db.gcalSyncLog=[];
+      // Supprimer les champs lourds inutiles (base64, etc.)
+      ['transports','gardes','devis','factures','contrats'].forEach(function(col){
+        if(db[col])db[col].forEach(function(r){
+          if(r.signatureData&&r.signatureData.length>1000)delete r.signatureData;
+          if(r.photoData&&r.photoData.length>1000)delete r.photoData;
+        });
+      });
+    }catch(e3){}
+    json=JSON.stringify(db);
+    try{localStorage.setItem(SK,json)}
+    catch(e2){
+      // 3. Dernier recours — proposer l'export
+      var used=0;for(var j=0;j<localStorage.length;j++){var kk=localStorage.key(j);used+=localStorage.getItem(kk).length}
+      var usedMo=(used/1048576).toFixed(1);
+      showToast('⚠️ Stockage plein ('+usedMo+' Mo) ! Exporte tes données et vide le cache.');
+      // Ouvrir le modal d'aide
+      oMo('⚠️ Stockage plein',
+        '<p style="margin-bottom:10px">Le stockage local de ton navigateur est saturé (<b>'+usedMo+' Mo</b>).</p>'+
+        '<p style="margin-bottom:10px"><b>Solutions :</b></p>'+
+        '<div style="margin-bottom:8px">1️⃣ <b>Exporter</b> tes données (JSON) pour les sauvegarder</div>'+
+        '<div style="margin-bottom:8px">2️⃣ <b>Pousser sur Firebase</b> (les données sont dans le cloud)</div>'+
+        '<div style="margin-bottom:8px">3️⃣ <b>Nettoyer</b> l\'historique et les vieux éléments supprimés</div>',
+        '<button class="btn gn" onclick="expJ();cMo()">💾 Exporter JSON</button> '+
+        '<button class="btn at" onclick="fbPush();cMo()">☁️ Push Firebase</button> '+
+        '<button class="btn og" onclick="forceCleanStorage();cMo()">🧹 Nettoyer</button> '+
+        '<button class="btn" onclick="cMo()">Fermer</button>'
+      );
+    }
   }
+}
+function forceCleanStorage(){
+  if(!confirm('🧹 Nettoyage agressif :\n\n- Historique actions → garder 30 dernières\n- GPS / SMS / notes vocales → vidé\n- Éléments supprimés > 7 jours → purgés\n- Google Calendar cache → vidé\n- Backups locaux → supprimés\n\nContinuer ?'))return;
+  try{
+    db.history=(db.history||[]).slice(0,30);
+    db.gcEvents=[];db.gpsHistory=[];db.smsHistory=[];db.voiceNotes=[];db.gcalSyncLog=[];db.sosHistory=[];db.pauseHistory=[];
+    // Purger les supprimés > 7 jours
+    var cut7=new Date();cut7.setDate(cut7.getDate()-7);var cut7S=cut7.toISOString();
+    ['clients','animaux','transports','gardes','devis','factures','carburant','contrats','vehicules','depenses'].forEach(function(col){
+      if(db[col])db[col]=db[col].filter(function(r){return !r._deleted||!r._deletedAt||r._deletedAt>cut7S});
+    });
+    // Supprimer les backups
+    for(var i=localStorage.length-1;i>=0;i--){var k=localStorage.key(i);if(k&&k!==SK)localStorage.removeItem(k)}
+  }catch(e){}
+  safeSave();
+  var used=0;for(var j=0;j<localStorage.length;j++){var kk=localStorage.key(j);used+=localStorage.getItem(kk).length}
+  showToast('✅ Nettoyé ! Utilisation : '+(used/1048576).toFixed(1)+' Mo');
 }
 function sav(manual){
   clearTimeout(_asTmr);
