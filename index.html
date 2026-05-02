@@ -9824,11 +9824,13 @@ function rBriefing(){
   var todayGrd=act(db.gardes).filter(function(g){return g.start&&g.start.slice(0,10)<=d&&g.end&&g.end.slice(0,10)>=d});
   var todayGrdIn=act(db.gardes).filter(function(g){return g.start&&g.start.slice(0,10)===d});
   var todayGrdOut=act(db.gardes).filter(function(g){return g.end&&g.end.slice(0,10)===d});
-  if(todayTr.length||todayGrdIn.length||todayGrdOut.length){
+  var todayGC=(db.gcEvents||[]).filter(function(ev){var evD=ev.date||(ev.start?ev.start.slice(0,10):'');return evD===d});
+  if(todayTr.length||todayGrdIn.length||todayGrdOut.length||todayGC.length){
     h+='<div style="padding:8px 10px;background:rgba(26,122,110,.1);border-radius:8px;margin-bottom:8px">';
     h+='<b style="color:var(--a2)">🚗 '+todayTr.length+' transport(s)</b>';
     if(todayGrdIn.length) h+=' · <b style="color:var(--gd)">🏡 '+todayGrdIn.length+' entrée(s) garde</b>';
     if(todayGrdOut.length) h+=' · <b style="color:var(--or)">🏡 '+todayGrdOut.length+' sortie(s) garde</b>';
+    if(todayGC.length) h+=' · <b style="color:#3b82f6">📅 '+todayGC.length+' événement(s) agenda</b>';
     h+='<div style="margin-top:6px">';
     todayTr.forEach(function(t){
       var l=tLegs(t);
@@ -9836,6 +9838,10 @@ function rBriefing(){
     });
     todayGrdIn.forEach(function(g){h+='<div style="padding:4px 0">🏡 <b>ENTRÉE '+g.ref+'</b> '+aNs(g)+' — '+cN(g.clientId)+'</div>'});
     todayGrdOut.forEach(function(g){h+='<div style="padding:4px 0">🏡 <b>SORTIE '+g.ref+'</b> '+aNs(g)+' — '+cN(g.clientId)+'</div>'});
+    todayGC.forEach(function(ev){
+      var heure=ev.start&&ev.start.length>10?ev.start.slice(11,16):'';
+      h+='<div style="padding:4px 0;border-left:2px solid #3b82f6;padding-left:8px">📅 <b>'+(ev.title||'Événement')+'</b>'+(heure?' · 🕐 '+heure:'')+(ev.location?' · 📍 '+ev.location:'')+'</div>';
+    });
     h+='</div></div>';
   } else {
     h+='<div style="padding:8px 10px;background:rgba(255,255,255,.03);border-radius:8px;margin-bottom:8px;color:var(--mt)">📋 Pas de mission prévue aujourd\'hui</div>';
@@ -9924,6 +9930,21 @@ function rPlanWeek(){
       if(g.start&&g.start.slice(0,10)===ds)evts.push({c:colors.gi,icon:'🏡↓',txt:aNs(g),sub:'Entrée'});
       if(g.end&&g.end.slice(0,10)===ds)evts.push({c:colors.go,icon:'🏡↑',txt:aNs(g),sub:'Sortie'});
       if(g.start&&g.start.slice(0,10)<ds&&g.end&&g.end.slice(0,10)>ds)evts.push({c:'#16a34a',icon:'🏡',txt:aNs(g),sub:'En cours'});
+    });
+    // Google Calendar
+    (db.gcEvents||[]).forEach(function(ev){
+      var evDate=ev.date||(ev.start?ev.start.slice(0,10):'');
+      if(evDate===ds){
+        var heure=ev.start&&ev.start.length>10?ev.start.slice(11,16):'';
+        evts.push({c:'#3b82f6',icon:'📅',txt:ev.title||'Événement',sub:(heure||'')+(ev.location?' · '+ev.location:'')});
+      }
+    });
+    // Devis en attente
+    act(db.devis).forEach(function(q){
+      var qDate=q.dateDebut||q.date||'';
+      if(qDate===ds&&(q.status==='envoyé'||q.status==='accepté')){
+        evts.push({c:q.status==='accepté'?'#22c55e':'#f59e0b',icon:q.status==='accepté'?'✅':'📨',txt:cN(q.clientId),sub:euro(q.total)});
+      }
     });
     h+='<div style="min-height:80px;padding:4px;background:'+(isToday?'rgba(26,122,110,.08)':'rgba(255,255,255,.02)')+';border:1px solid '+(isToday?'var(--a2)':'var(--ln)')+';border-radius:0 0 6px 6px;font-size:10px">';
     if(!evts.length)h+='<span style="color:var(--mt)">—</span>';
