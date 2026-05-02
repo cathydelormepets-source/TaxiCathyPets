@@ -13419,23 +13419,46 @@ function eVehicule(id){
   var ftOpts=['gazole','essence','bioethanol','electrique','hybride'];
   var ftLabels={'gazole':'⛽ Gazole / Diesel','essence':'🟢 Essence (SP95/SP98)','bioethanol':'🌿 Bioéthanol (E85)','electrique':'⚡ Électrique','hybride':'🔋 Hybride'};
   var ftSel='<select id="ev_ft" style="background:#080f1a;border:1px solid var(--ln);color:var(--tx);border-radius:10px;padding:10px 12px;font:inherit;font-size:13px;width:100%">'+ftOpts.map(function(o){return '<option value="'+o+'"'+(v.fuelType===o?' selected':'')+'>'+ftLabels[o]+'</option>';}).join('')+'</select>';
-  oMo('✏️ '+v.nom,
-    '<div class="row">'+
-    '<div class="c6 fd"><label>Nom</label><input id="ev_nm" value="'+esc(v.nom)+'"></div>'+
-    '<div class="c6 fd"><label>Plaque</label><input id="ev_pl" value="'+esc(v.plaque||'')+'"></div>'+
-    '<div class="c6 fd"><label>Conso moy. L/100km</label><input id="ev_co" type="number" step="0.1" value="'+(v.consoMoy||0)+'"></div>'+
-    '<div class="c6 fd"><label>Type de carburant</label>'+ftSel+'</div>'+
-    '<div class="c6 fd"><label>Prix carburant perso €/L</label><input id="ev_fp" type="number" step="0.01" value="'+(v.fuelPrix||0)+'" placeholder="0 = utilise le prix global"></div>'+
-    '</div>',
-    '<button class="btn rd" onclick="delVehicule(\''+id+'\');cMo()">🗑️</button> <button class="btn gn" onclick="sVehicule(\''+id+'\')">💾</button>');
+  // Dernier km compteur connu
+  var pleins=(db.carburant||[]).filter(function(f){return f.vehiculeId===id&&E(f.km)>0}).sort(function(a,b){return E(b.km)-E(a.km)});
+  var lastKm=pleins.length?pleins[0].km:0;
+  var totalKm=(db.carburant||[]).filter(function(f){return f.vehiculeId===id}).reduce(function(s,f){return s+E(f.dist)},0);
+  var bd='<div class="row">';
+  bd+='<div class="c6 fd"><label>Nom</label><input id="ev_nm" value="'+esc(v.nom)+'"></div>';
+  bd+='<div class="c6 fd"><label>Plaque</label><input id="ev_pl" value="'+esc(v.plaque||'')+'"></div>';
+  bd+='<div class="c4 fd"><label>Conso moy. L/100km</label><input id="ev_co" type="number" step="0.1" value="'+(v.consoMoy||0)+'"></div>';
+  bd+='<div class="c4 fd"><label>Type de carburant</label>'+ftSel+'</div>';
+  bd+='<div class="c4 fd"><label>Prix carburant perso €/L</label><input id="ev_fp" type="number" step="0.01" value="'+(v.fuelPrix||0)+'" placeholder="0 = prix global"></div>';
+  bd+='</div>';
+  bd+='<div style="margin-top:8px;padding:8px 12px;background:rgba(26,122,110,.06);border:1px solid rgba(26,122,110,.15);border-radius:8px">';
+  bd+='<div style="font-size:11px;font-weight:700;color:var(--a2);margin-bottom:6px">🛣️ Kilométrage</div>';
+  bd+='<div class="row">';
+  bd+='<div class="c4 fd"><label>Km compteur actuel</label><input id="ev_km" type="number" value="'+(v.kmCompteur||lastKm||0)+'"></div>';
+  bd+='<div class="c4 fd"><label>Total km parcourus</label><input readonly style="background:#e8e8e8;font-weight:700" value="'+totalKm+' km"></div>';
+  bd+='<div class="c4 fd"><label>Dernier relevé</label><input readonly style="background:#e8e8e8" value="'+(pleins.length?pleins[0].date+' — '+pleins[0].km+' km':'Aucun')+'"></div>';
+  bd+='</div></div>';
+  bd+='<div style="margin-top:8px;padding:8px 12px;background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.15);border-radius:8px">';
+  bd+='<div style="font-size:11px;font-weight:700;color:var(--or);margin-bottom:6px">🔧 Entretien</div>';
+  bd+='<div class="row">';
+  bd+='<div class="c4 fd"><label>Prochain entretien (km)</label><input id="ev_entKm" type="number" value="'+(v.prochainEntretienKm||0)+'"></div>';
+  bd+='<div class="c4 fd"><label>Prochain CT</label><input id="ev_ct" type="date" value="'+(v.prochainCT||'')+'"></div>';
+  bd+='<div class="c4 fd"><label>Assurance échéance</label><input id="ev_ass" type="date" value="'+(v.echeanceAssurance||'')+'"></div>';
+  bd+='</div></div>';
+  var ft='<button class="btn rd" onclick="delVehicule(\''+id+'\');cMo()">🗑️</button> <button class="btn gn" onclick="sVehicule(\''+id+'\')">💾</button>';
+  oMo('✏️ '+v.nom, bd, ft);
 }
 
 function sVehicule(id){
   var v=(db.vehicules||[]).find(function(x){return x.id===id});
   if(!v)return;
   v.nom=V('ev_nm');v.plaque=V('ev_pl');v.consoMoy=E(V('ev_co'));v.fuelType=V('ev_ft')||v.fuelType||'gazole';v.fuelPrix=parseFloat(V('ev_fp')||'0')||0;
+  v.kmCompteur=E(V('ev_km'));
+  v.prochainEntretienKm=E(V('ev_entKm'));
+  v.prochainCT=V('ev_ct')||'';
+  v.echeanceAssurance=V('ev_ass')||'';
   lH('vehicule','Véhicule modifié: '+v.nom);
   sav(false);cMo();rCarbu();
+  showToast('✅ '+v.nom+' mis à jour');
 }
 
 function rCarbu(){
@@ -13560,11 +13583,28 @@ function rCarbu(){
   var tbl=$('cbTbl');
   if(!tbl)return;
   if(!filtered.length){tbl.innerHTML='<div class="nt">Aucun plein enregistré.</div>';return;}
-  var rows=filtered.slice(0,30).map(function(f){
-    var conso=E(f.dist)>0&&E(f.litres)>0?((E(f.litres)/E(f.dist))*100).toFixed(1):'—';
-    return '<tr><td>'+f.date+'</td><td style="font-size:11px">'+vhName(f.vehiculeId)+'</td><td>'+f.litres+'L</td><td>'+euro(f.prix)+'</td><td>'+(f.prix&&f.litres?(E(f.prix)/E(f.litres)).toFixed(3)+' €':'—')+'</td><td>'+(f.km?f.km:'—')+'</td><td>'+(E(f.dist)?f.dist+' km':'—')+'</td><td style="font-weight:700;color:var(--or)">'+(conso!=='—'?conso:'—')+'</td><td>'+(f.station||'—')+'</td><td><button class="btn sm rd" onclick="delCarbu(\''+f.id+'\')">🗑️</button></td></tr>';
+  // Stats jour/semaine/mois
+  var aujourdS=tdy();
+  var sem=new Date();sem.setDate(sem.getDate()-7);var semS=sem.toISOString().slice(0,10);
+  var moisS=aujourdS.slice(0,7);
+  var statJour=filtered.filter(function(f){return f.date===aujourdS});
+  var statSem=filtered.filter(function(f){return f.date>=semS});
+  var statMois=filtered.filter(function(f){return f.date&&f.date.slice(0,7)===moisS});
+  var sumL=function(arr){return arr.reduce(function(s,f){return s+E(f.litres)},0)};
+  var sumE=function(arr){return arr.reduce(function(s,f){return s+E(f.prix)},0)};
+  var sumD=function(arr){return arr.reduce(function(s,f){return s+E(f.dist)},0)};
+  var consoCalc=function(arr){var l=sumL(arr),d=sumD(arr);return d>0?((l/d)*100).toFixed(1):'\u2014'};
+  var periodeHtml='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px">';
+  periodeHtml+='<div style="padding:8px;background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.15);border-radius:8px;text-align:center"><div style="font-size:10px;color:#60a5fa;font-weight:700">AUJOURD\'HUI</div><div style="font-size:14px;font-weight:800">'+sumL(statJour).toFixed(0)+' L</div><div style="font-size:11px;color:var(--mt)">'+euro(sumE(statJour))+' \u00b7 '+consoCalc(statJour)+' L/100</div></div>';
+  periodeHtml+='<div style="padding:8px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.15);border-radius:8px;text-align:center"><div style="font-size:10px;color:#f59e0b;font-weight:700">SEMAINE</div><div style="font-size:14px;font-weight:800">'+sumL(statSem).toFixed(0)+' L</div><div style="font-size:11px;color:var(--mt)">'+euro(sumE(statSem))+' \u00b7 '+consoCalc(statSem)+' L/100</div></div>';
+  periodeHtml+='<div style="padding:8px;background:rgba(26,122,110,.08);border:1px solid rgba(26,122,110,.15);border-radius:8px;text-align:center"><div style="font-size:10px;color:var(--a2);font-weight:700">CE MOIS</div><div style="font-size:14px;font-weight:800">'+sumL(statMois).toFixed(0)+' L</div><div style="font-size:11px;color:var(--mt)">'+euro(sumE(statMois))+' \u00b7 '+consoCalc(statMois)+' L/100</div></div>';
+  periodeHtml+='</div>';
+  // Historique avec bouton éditer
+  var rows=filtered.slice(0,50).map(function(f){
+    var conso=E(f.dist)>0&&E(f.litres)>0?((E(f.litres)/E(f.dist))*100).toFixed(1):'\u2014';
+    return '<tr><td>'+f.date+'</td><td style="font-size:11px">'+vhName(f.vehiculeId)+'</td><td>'+f.litres+'L</td><td>'+euro(f.prix)+'</td><td>'+(f.prix&&f.litres?(E(f.prix)/E(f.litres)).toFixed(3)+' \u20ac':'\u2014')+'</td><td>'+(f.km?f.km:'\u2014')+'</td><td>'+(E(f.dist)?f.dist+' km':'\u2014')+'</td><td style="font-weight:700;color:var(--or)">'+(conso!=='\u2014'?conso:'\u2014')+'</td><td>'+(f.station||'\u2014')+'</td><td style="white-space:nowrap"><button class="btn sm bu" onclick="eCarbu(\''+f.id+'\')">\u270f\ufe0f</button> <button class="btn sm rd" onclick="delCarbu(\''+f.id+'\')">\u2715</button></td></tr>';
   });
-  tbl.innerHTML='<table><thead><tr><th>Date</th><th>Véhicule</th><th>Litres</th><th>Total</th><th>€/L</th><th>Compteur</th><th>Km parcours</th><th>L/100</th><th>Station</th><th></th></tr></thead><tbody>'+rows.join('')+'</tbody></table>';
+  tbl.innerHTML=periodeHtml+'<table><thead><tr><th>Date</th><th>V\u00e9hicule</th><th>Litres</th><th>Total</th><th>\u20ac/L</th><th>Compteur</th><th>Km</th><th>L/100</th><th>Station</th><th></th></tr></thead><tbody>'+rows.join('')+'</tbody></table>';
 
   // NE PAS écraser db.settings.fuelPrice automatiquement — l'utilisateur le fixe manuellement dans Paramètres
 }
@@ -13573,6 +13613,39 @@ function delCarbu(id){
   if(!confirm('Supprimer ce plein ?'))return;
   var cb=(db.carburant||[]).find(function(f){return f.id===id});if(cb){cb._deleted=true;cb._deletedAt=new Date().toISOString()}
   sav(false);rCarbu();
+}
+
+function eCarbu(id){
+  var f=(db.carburant||[]).find(function(x){return x.id===id});
+  if(!f)return;
+  var vhOpts='';(db.vehicules||[]).forEach(function(v){vhOpts+='<option value="'+v.id+'"'+(v.id===f.vehiculeId?' selected':'')+'>'+v.nom+(v.plaque?' ('+v.plaque+')':'')+'</option>'});
+  var bd='<div class="row"><div class="c6 fd"><label>Date</label><input id="ecb_dt" type="date" value="'+(f.date||'')+'"></div>';
+  bd+='<div class="c6 fd"><label>Véhicule</label><select id="ecb_vh">'+vhOpts+'</select></div></div>';
+  bd+='<div class="row"><div class="c4 fd"><label>Litres</label><input id="ecb_lt" type="number" step="0.01" value="'+(f.litres||'')+'"></div>';
+  bd+='<div class="c4 fd"><label>Prix total €</label><input id="ecb_pr" type="number" step="0.01" value="'+(f.prix||'')+'"></div>';
+  bd+='<div class="c4 fd"><label>€/L</label><input readonly style="background:#e8e8e8;font-weight:700" value="'+(f.litres>0?(E(f.prix)/E(f.litres)).toFixed(3):'')+'"></div></div>';
+  bd+='<div class="row"><div class="c4 fd"><label>Compteur km</label><input id="ecb_km" type="number" value="'+(f.km||'')+'"></div>';
+  bd+='<div class="c4 fd"><label>Km parcourus</label><input id="ecb_dist" type="number" value="'+(f.dist||'')+'"></div>';
+  bd+='<div class="c4 fd"><label>Station</label><input id="ecb_st" value="'+(f.station||'')+'"></div></div>';
+  bd+='<div class="row"><div class="c6 fd"><label>Type carburant</label><select id="ecb_ft"><option value="gazole"'+(f.fuelType==='gazole'?' selected':'')+'>⛽ Gazole</option><option value="essence"'+(f.fuelType==='essence'?' selected':'')+'>🟢 Essence</option><option value="bioethanol"'+(f.fuelType==='bioethanol'?' selected':'')+'>🌿 E85</option><option value="electrique"'+(f.fuelType==='electrique'?' selected':'')+'>⚡ Électrique</option></select></div></div>';
+  var ft='<button class="btn gn" onclick="sCarbu(\''+id+'\')">💾 Sauvegarder</button> ';
+  ft+='<button class="btn rd" onclick="delCarbu(\''+id+'\');cMo()">🗑️</button> ';
+  ft+='<button class="btn" onclick="cMo()">Fermer</button>';
+  oMo('✏️ Modifier plein du '+(f.date||''), bd, ft);
+}
+
+function sCarbu(id){
+  var f=(db.carburant||[]).find(function(x){return x.id===id});if(!f)return;
+  f.date=V('ecb_dt')||f.date;
+  f.vehiculeId=V('ecb_vh')||f.vehiculeId;
+  f.litres=E(V('ecb_lt'));
+  f.prix=E(V('ecb_pr'));
+  f.km=E(V('ecb_km'));
+  f.dist=E(V('ecb_dist'));
+  f.station=V('ecb_st')||'';
+  f.fuelType=V('ecb_ft')||f.fuelType;
+  stamp(f);sav(false);rCarbu();cMo();
+  showToast('✅ Plein modifié — '+f.date);
 }
 
 // ---- INIT DATE RAPPORT ----
