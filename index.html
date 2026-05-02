@@ -13968,7 +13968,7 @@ function gcImport(){
       };
     });
 
-    localStorage.setItem(SK, JSON.stringify(db));
+    try{localStorage.setItem(SK, JSON.stringify(db))}catch(e){console.warn('gcImport: stockage plein, événements en mémoire uniquement')}
     document.getElementById('gcK2').textContent = items.length;
     document.getElementById('gcK3').textContent = new Date().toLocaleTimeString('fr-FR');
     document.getElementById('gcK1').textContent = '✅ Connecté';
@@ -13977,6 +13977,7 @@ function gcImport(){
     gcRenderEvents(db.gcEvents);
     rPlan(); // Refresh planning with Google events
     rDash(); // Refresh dashboard
+    try{rPlanWeek()}catch(e){} // Force refresh planning semaine
     _gcSyncing = false;
     showToast('📅 '+items.length+' événements Google importés');
   })
