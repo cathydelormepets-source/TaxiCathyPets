@@ -13599,6 +13599,37 @@ function rCarbu(){
   periodeHtml+='<div style="padding:8px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.15);border-radius:8px;text-align:center"><div style="font-size:10px;color:#f59e0b;font-weight:700">SEMAINE</div><div style="font-size:14px;font-weight:800">'+sumL(statSem).toFixed(0)+' L</div><div style="font-size:11px;color:var(--mt)">'+euro(sumE(statSem))+' \u00b7 '+consoCalc(statSem)+' L/100</div></div>';
   periodeHtml+='<div style="padding:8px;background:rgba(26,122,110,.08);border:1px solid rgba(26,122,110,.15);border-radius:8px;text-align:center"><div style="font-size:10px;color:var(--a2);font-weight:700">CE MOIS</div><div style="font-size:14px;font-weight:800">'+sumL(statMois).toFixed(0)+' L</div><div style="font-size:11px;color:var(--mt)">'+euro(sumE(statMois))+' \u00b7 '+consoCalc(statMois)+' L/100</div></div>';
   periodeHtml+='</div>';
+  // Historique par mois (12 derniers mois)
+  var allMonths={};
+  filtered.forEach(function(f){if(f.date){var m=f.date.slice(0,7);if(!allMonths[m])allMonths[m]={litres:0,prix:0,dist:0,nb:0};allMonths[m].litres+=E(f.litres);allMonths[m].prix+=E(f.prix);allMonths[m].dist+=E(f.dist);allMonths[m].nb++}});
+  var moisKeys=Object.keys(allMonths).sort().reverse().slice(0,12);
+  if(moisKeys.length>1){
+    var moisNoms={0:'Janv',1:'Fév',2:'Mars',3:'Avr',4:'Mai',5:'Juin',6:'Juil',7:'Août',8:'Sept',9:'Oct',10:'Nov',11:'Déc'};
+    periodeHtml+='<div style="margin-bottom:12px;padding:10px;background:rgba(124,58,237,.04);border:1px solid rgba(124,58,237,.12);border-radius:8px">';
+    periodeHtml+='<div style="font-size:11px;font-weight:700;color:#7c3aed;margin-bottom:6px">📊 Historique mensuel</div>';
+    periodeHtml+='<table style="width:100%;font-size:11px;border-collapse:collapse">';
+    periodeHtml+='<tr style="color:var(--mt)"><th style="text-align:left;padding:4px;border-bottom:1px solid var(--ln)">Mois</th><th style="text-align:center;padding:4px;border-bottom:1px solid var(--ln)">Pleins</th><th style="text-align:right;padding:4px;border-bottom:1px solid var(--ln)">Litres</th><th style="text-align:right;padding:4px;border-bottom:1px solid var(--ln)">Coût</th><th style="text-align:right;padding:4px;border-bottom:1px solid var(--ln)">€/L</th><th style="text-align:right;padding:4px;border-bottom:1px solid var(--ln)">Km</th><th style="text-align:right;padding:4px;border-bottom:1px solid var(--ln)">L/100</th></tr>';
+    // Barre max pour visualisation
+    var maxE=Math.max.apply(null,moisKeys.map(function(k){return allMonths[k].prix}));
+    moisKeys.forEach(function(k){
+      var m=allMonths[k];
+      var parts=k.split('-');var moisLabel=moisNoms[parseInt(parts[1])-1]+' '+parts[0];
+      var pctBar=maxE>0?Math.round(m.prix/maxE*100):0;
+      var avgL=m.litres>0?(m.prix/m.litres).toFixed(3):'—';
+      var conso=m.dist>0?((m.litres/m.dist)*100).toFixed(1):'—';
+      var isCurrent=k===moisS;
+      periodeHtml+='<tr style="'+(isCurrent?'background:rgba(26,122,110,.08);font-weight:700':'')+'">';
+      periodeHtml+='<td style="padding:4px;border-bottom:1px solid rgba(255,255,255,.03)"><div style="position:relative">'+moisLabel+'<div style="position:absolute;bottom:0;left:0;height:2px;width:'+pctBar+'%;background:'+(isCurrent?'var(--a2)':'#7c3aed')+';border-radius:2px;opacity:.5"></div></div></td>';
+      periodeHtml+='<td style="text-align:center;padding:4px;border-bottom:1px solid rgba(255,255,255,.03)">'+m.nb+'</td>';
+      periodeHtml+='<td style="text-align:right;padding:4px;border-bottom:1px solid rgba(255,255,255,.03)">'+m.litres.toFixed(0)+' L</td>';
+      periodeHtml+='<td style="text-align:right;padding:4px;border-bottom:1px solid rgba(255,255,255,.03);font-weight:700">'+euro(m.prix)+'</td>';
+      periodeHtml+='<td style="text-align:right;padding:4px;border-bottom:1px solid rgba(255,255,255,.03)">'+avgL+'</td>';
+      periodeHtml+='<td style="text-align:right;padding:4px;border-bottom:1px solid rgba(255,255,255,.03)">'+(m.dist>0?m.dist+' km':'—')+'</td>';
+      periodeHtml+='<td style="text-align:right;padding:4px;border-bottom:1px solid rgba(255,255,255,.03);color:var(--or);font-weight:700">'+conso+'</td>';
+      periodeHtml+='</tr>';
+    });
+    periodeHtml+='</table></div>';
+  }
   // Historique avec bouton éditer
   var rows=filtered.slice(0,50).map(function(f){
     var conso=E(f.dist)>0&&E(f.litres)>0?((E(f.litres)/E(f.dist))*100).toFixed(1):'\u2014';
