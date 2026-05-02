@@ -10030,7 +10030,7 @@ function rPlanWeek(){
         var heure=ev.start&&ev.start.length>10?ev.start.slice(11,16):'';
         var isFirst=ds===evStart;
         var isLast=ds===evEnd;
-        evts.push({c:'#3b82f6',icon:isFirst?'📅▶':isLast?'📅◀':'📅',txt:ev.title||'Événement',sub:(heure&&isFirst?heure+' ':'')+(ev.location?' '+ev.location:'')+((!isFirst&&!isLast)?'(en cours)':'')});
+        evts.push({c:'#3b82f6',icon:isFirst?'📅▶':isLast?'📅◀':'📅',txt:ev.title||'Événement',sub:(heure&&isFirst?heure+' ':'')+(ev.location?' '+ev.location:'')+((!isFirst&&!isLast)?'(en cours)':''),gcId:ev.id||ev.gcId||''});
       }
     });
     // Devis en attente
@@ -10043,8 +10043,10 @@ function rPlanWeek(){
     h+='<div style="min-height:80px;padding:4px;background:'+(isToday?'rgba(26,122,110,.08)':'rgba(255,255,255,.02)')+';border:1px solid '+(isToday?'var(--a2)':'var(--ln)')+';border-radius:0 0 6px 6px;font-size:10px">';
     if(!evts.length)h+='<span style="color:var(--mt)">—</span>';
     evts.forEach(function(e){
-      h+='<div style="padding:3px 4px;margin-bottom:2px;border-left:2px solid '+e.c+';border-radius:3px;background:rgba(0,0,0,.2)">'+e.icon+' '+e.txt+'<br><span style="color:var(--mt)">'+e.sub+'</span></div>';
+      h+='<div style="padding:3px 4px;margin-bottom:2px;border-left:2px solid '+e.c+';border-radius:3px;background:rgba(0,0,0,.2);cursor:'+(e.gcId?'pointer':'')+'"'+(e.gcId?' onclick="gcEditEvent(\''+e.gcId+'\')"':'')+'>'+e.icon+' '+e.txt+'<br><span style="color:var(--mt)">'+e.sub+'</span></div>';
     });
+    // Bouton + pour ajouter un événement ce jour
+    h+='<div style="text-align:center;margin-top:2px"><button onclick="gcNewEvent(\''+ds+'\')" style="background:none;border:none;color:var(--mt);cursor:pointer;font-size:12px;opacity:.4" title="Ajouter un événement">+</button></div>';
     h+='</div>';
   });
   h+='</div>';
@@ -19426,6 +19428,109 @@ function gcScheduleRappelJ1(t){
 }
 
 // =================== MODIFICATION RAPIDE EN ROUTE ===================
+
+// ═══ MODIFIER/CRÉER/SUPPRIMER ÉVÉNEMENTS GOOGLE CALENDAR ═══
+function gcEditEvent(eventId){
+  var ev=(db.gcEvents||[]).find(function(e){return e.id===eventId||e.gcId===eventId});
+  if(!ev){showToast('Événement introuvable');return}
+  var startDate=ev.start?ev.start.slice(0,10):'';
+  var startTime=ev.start&&ev.start.length>10?ev.start.slice(11,16):'08:00';
+  var endDate=ev.end?ev.end.slice(0,10):startDate;
+  var endTime=ev.end&&ev.end.length>10?ev.end.slice(11,16):'18:00';
+  var bd='<div class="row"><div class="fd"><label>Titre</label><input id="gce_title" value="'+esc(ev.title||ev.summary||'')+'"></div></div>';
+  bd+='<div class="row"><div class="c6 fd"><label>Date début</label><input id="gce_d1" type="date" value="'+startDate+'"></div>';
+  bd+='<div class="c6 fd"><label>Heure début</label><input id="gce_h1" type="time" value="'+startTime+'"></div></div>';
+  bd+='<div class="row"><div class="c6 fd"><label>Date fin</label><input id="gce_d2" type="date" value="'+endDate+'"></div>';
+  bd+='<div class="c6 fd"><label>Heure fin</label><input id="gce_h2" type="time" value="'+endTime+'"></div></div>';
+  bd+='<div class="row"><div class="fd"><label>Lieu</label><input id="gce_loc" value="'+esc(ev.location||'')+'"></div></div>';
+  bd+='<div class="row"><div class="fd"><label>Description</label><textarea id="gce_desc" rows="2">'+esc(ev.desc||ev.description||'')+'</textarea></div></div>';
+  var ft='<button class="btn gn" onclick="gcSaveEvent(\''+eventId+'\')">💾 Sauvegarder</button> ';
+  ft+='<button class="btn rd" onclick="gcDeleteEvent(\''+eventId+'\')">🗑️ Supprimer</button> ';
+  ft+='<button class="btn" onclick="cMo()">Fermer</button>';
+  oMo('📅 '+ev.title, bd, ft);
+}
+
+function gcSaveEvent(eventId){
+  var calId=encodeURIComponent(db.settings.gcCalendarId||'primary');
+  var d1=V('gce_d1'),h1=V('gce_h1')||'08:00',d2=V('gce_d2'),h2=V('gce_h2')||'18:00';
+  var evData={
+    summary:V('gce_title'),
+    location:V('gce_loc')||'',
+    description:V('gce_desc')||'',
+    start:{dateTime:d1+'T'+h1+':00',timeZone:'Europe/Paris'},
+    end:{dateTime:(d2||d1)+'T'+h2+':00',timeZone:'Europe/Paris'}
+  };
+  if(!_gcToken){showToast('⚠️ Connecte Google Agenda');cMo();return}
+  fetch('https://www.googleapis.com/calendar/v3/calendars/'+calId+'/events/'+eventId,{
+    method:'PATCH',
+    headers:{'Authorization':'Bearer '+_gcToken,'Content-Type':'application/json'},
+    body:JSON.stringify(evData)
+  }).then(function(r){return r.json()}).then(function(data){
+    if(data.id){
+      // Mettre à jour dans db.gcEvents local
+      var ev=(db.gcEvents||[]).find(function(e){return e.id===eventId});
+      if(ev){ev.title=evData.summary;ev.start=evData.start.dateTime;ev.end=evData.end.dateTime;ev.date=d1;ev.location=evData.location;ev.desc=evData.description}
+      try{safeSave()}catch(e){}
+      cMo();rDash();rPlan();
+      showToast('✅ Événement modifié dans Google Agenda');
+    } else {
+      showToast('❌ Erreur : '+(data.error?data.error.message:'inconnue'));
+    }
+  }).catch(function(e){showToast('❌ Erreur réseau');});
+}
+
+function gcDeleteEvent(eventId){
+  if(!confirm('Supprimer cet événement de Google Agenda ?'))return;
+  if(!_gcToken){showToast('⚠️ Connecte Google Agenda');return}
+  var calId=encodeURIComponent(db.settings.gcCalendarId||'primary');
+  fetch('https://www.googleapis.com/calendar/v3/calendars/'+calId+'/events/'+eventId,{
+    method:'DELETE',headers:{'Authorization':'Bearer '+_gcToken}
+  }).then(function(r){
+    if(r.status===204||r.ok){
+      db.gcEvents=(db.gcEvents||[]).filter(function(e){return e.id!==eventId&&e.gcId!==eventId});
+      try{safeSave()}catch(e){}
+      cMo();rDash();rPlan();
+      showToast('🗑️ Événement supprimé de Google Agenda');
+    } else {showToast('❌ Erreur suppression')}
+  }).catch(function(){showToast('❌ Erreur réseau')});
+}
+
+function gcNewEvent(date){
+  if(!_gcToken){showToast('⚠️ Connecte Google Agenda d\'abord');return}
+  var bd='<div class="row"><div class="fd"><label>Titre</label><input id="gce_title" placeholder="Ex: Garde Rex, Transport Lyon..."></div></div>';
+  bd+='<div class="row"><div class="c6 fd"><label>Date début</label><input id="gce_d1" type="date" value="'+(date||tdy())+'"></div>';
+  bd+='<div class="c6 fd"><label>Heure début</label><input id="gce_h1" type="time" value="08:00"></div></div>';
+  bd+='<div class="row"><div class="c6 fd"><label>Date fin</label><input id="gce_d2" type="date" value="'+(date||tdy())+'"></div>';
+  bd+='<div class="c6 fd"><label>Heure fin</label><input id="gce_h2" type="time" value="18:00"></div></div>';
+  bd+='<div class="row"><div class="fd"><label>Lieu</label><input id="gce_loc" placeholder="Adresse..."></div></div>';
+  bd+='<div class="row"><div class="fd"><label>Description</label><textarea id="gce_desc" rows="2" placeholder="Détails..."></textarea></div></div>';
+  var ft='<button class="btn gn" onclick="gcCreateEvent()">📅 Créer dans Google Agenda</button> <button class="btn" onclick="cMo()">Annuler</button>';
+  oMo('📅 Nouvel événement — '+(date||'Aujourd\'hui'), bd, ft);
+}
+
+function gcCreateEvent(){
+  var calId=encodeURIComponent(db.settings.gcCalendarId||'primary');
+  var d1=V('gce_d1')||tdy(),h1=V('gce_h1')||'08:00',d2=V('gce_d2')||d1,h2=V('gce_h2')||'18:00';
+  var title=V('gce_title');if(!title){alert('Titre requis');return}
+  var evData={
+    summary:title,location:V('gce_loc')||'',description:V('gce_desc')||'',
+    start:{dateTime:d1+'T'+h1+':00',timeZone:'Europe/Paris'},
+    end:{dateTime:d2+'T'+h2+':00',timeZone:'Europe/Paris'},
+    reminders:{useDefault:false,overrides:[{method:'popup',minutes:60}]}
+  };
+  fetch('https://www.googleapis.com/calendar/v3/calendars/'+calId+'/events',{
+    method:'POST',headers:{'Authorization':'Bearer '+_gcToken,'Content-Type':'application/json'},
+    body:JSON.stringify(evData)
+  }).then(function(r){return r.json()}).then(function(data){
+    if(data.id){
+      if(!db.gcEvents)db.gcEvents=[];
+      db.gcEvents.push({id:data.id,gcId:data.id,title:title,start:evData.start.dateTime,end:evData.end.dateTime,date:d1,location:evData.location,desc:evData.description});
+      try{safeSave()}catch(e){}
+      cMo();rDash();rPlan();
+      showToast('✅ '+title+' ajouté à Google Agenda');
+    } else {showToast('❌ Erreur : '+(data.error?data.error.message:''))}
+  }).catch(function(){showToast('❌ Erreur réseau')});
+}
 function quickEditTransport(trId){
   var t=db.transports.find(function(x){return x.id===trId;});
   if(!t) return;
