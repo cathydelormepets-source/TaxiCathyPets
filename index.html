@@ -4347,6 +4347,10 @@ document.getElementById('q_contrat_pec').addEventListener('change',function(){
       <button class="btn sm bu" onclick="fbPull()">⬇️ Récupérer</button>
       <button class="btn sm" onclick="fbForceCloud()" style="background:#2a1040;border-color:#5a2080;color:#c8a">🔄 Forcer cloud</button>
       <button class="btn sm" onclick="showBackups()" style="background:#1a2a3a;border-color:#2a4a6a;color:#8ac">💾 Backups locaux</button>
+      <button class="btn sm" onclick="forceCleanStorage()" style="background:#1a3020;border-color:#2a6030;color:#7bf0a0">🧹 Nettoyer stockage</button>
+      <button class="btn sm" onclick="showStorageInfo()" style="background:#1a2030;border-color:#2a3a50;color:#aab">📊 Espace utilisé</button>
+      <button class="btn sm" onclick="forceCleanStorage()" style="background:#1a2a10;border-color:#3a6a10;color:#9d6">🧹 Nettoyer stockage</button>
+      <button class="btn sm" onclick="showStorageInfo()" style="background:#1a1a2a;border-color:#3a3a6a;color:#aac">📊 Espace utilisé</button>
     </div>
     <div id="fbStatus" class="nt" style="margin-top:8px;font-size:11px">⚪ Non connecté</div>
     <div id="fbAuthStatus" class="nt" style="margin-top:4px;font-size:10px;color:var(--mt)"></div>
@@ -5688,17 +5692,43 @@ function forceCleanStorage(){
   try{
     db.history=(db.history||[]).slice(0,30);
     db.gcEvents=[];db.gpsHistory=[];db.smsHistory=[];db.voiceNotes=[];db.gcalSyncLog=[];db.sosHistory=[];db.pauseHistory=[];
-    // Purger les supprimés > 7 jours
     var cut7=new Date();cut7.setDate(cut7.getDate()-7);var cut7S=cut7.toISOString();
     ['clients','animaux','transports','gardes','devis','factures','carburant','contrats','vehicules','depenses'].forEach(function(col){
       if(db[col])db[col]=db[col].filter(function(r){return !r._deleted||!r._deletedAt||r._deletedAt>cut7S});
     });
-    // Supprimer les backups
     for(var i=localStorage.length-1;i>=0;i--){var k=localStorage.key(i);if(k&&k!==SK)localStorage.removeItem(k)}
   }catch(e){}
   safeSave();
   var used=0;for(var j=0;j<localStorage.length;j++){var kk=localStorage.key(j);used+=localStorage.getItem(kk).length}
   showToast('✅ Nettoyé ! Utilisation : '+(used/1048576).toFixed(1)+' Mo');
+}
+
+function showStorageInfo(){
+  var used=0;var details={};
+  for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);var s=localStorage.getItem(k).length;used+=s;details[k]=s}
+  var usedMo=(used/1048576).toFixed(2);
+  var maxMo=5;
+  var pct=Math.round(used/maxMo/1048576*100);
+  // Détail par collection
+  var colDetails='';
+  var cols=['clients','animaux','transports','gardes','devis','factures','carburant','contrats','vehicules','history','gcEvents','gpsHistory','depenses'];
+  cols.forEach(function(col){
+    var arr=db[col];if(!arr||!Array.isArray(arr))return;
+    var sz=JSON.stringify(arr).length;
+    var act2=arr.filter(function(r){return !r._deleted}).length;
+    var del=arr.length-act2;
+    colDetails+='<tr><td style="padding:3px 6px">'+col+'</td><td style="text-align:center;padding:3px">'+act2+'</td><td style="text-align:center;padding:3px;color:var(--rd)">'+(del>0?del:'')+'</td><td style="text-align:right;padding:3px">'+(sz/1024).toFixed(1)+' Ko</td></tr>';
+  });
+  var bd='<div style="text-align:center;margin-bottom:12px">';
+  bd+='<div style="font-size:28px;font-weight:900;color:'+(pct>80?'var(--rd)':pct>50?'var(--or)':'var(--a2)')+'">'+usedMo+' Mo</div>';
+  bd+='<div style="font-size:11px;color:var(--mt)">sur ~'+maxMo+' Mo disponibles ('+pct+'%)</div>';
+  bd+='<div style="margin:8px auto;width:200px;height:8px;background:var(--ln);border-radius:4px;overflow:hidden"><div style="height:100%;width:'+Math.min(pct,100)+'%;background:'+(pct>80?'var(--rd)':pct>50?'var(--or)':'var(--a2)')+';border-radius:4px"></div></div>';
+  bd+='</div>';
+  bd+='<table style="width:100%;font-size:11px;border-collapse:collapse">';
+  bd+='<tr style="color:var(--mt)"><th style="text-align:left;padding:3px">Collection</th><th style="padding:3px">Actifs</th><th style="padding:3px">Supprimés</th><th style="text-align:right;padding:3px">Taille</th></tr>';
+  bd+=colDetails;
+  bd+='</table>';
+  oMo('📊 Espace de stockage', bd, '<button class="btn gn" onclick="forceCleanStorage();cMo()">🧹 Nettoyer</button> <button class="btn at" onclick="fbPush();cMo()">☁️ Push Firebase</button> <button class="btn" onclick="cMo()">Fermer</button>');
 }
 function sav(manual){
   clearTimeout(_asTmr);
