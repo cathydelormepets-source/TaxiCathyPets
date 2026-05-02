@@ -9913,7 +9913,7 @@ function rBriefing(){
   var todayGrd=act(db.gardes).filter(function(g){return g.start&&g.start.slice(0,10)<=d&&g.end&&g.end.slice(0,10)>=d});
   var todayGrdIn=act(db.gardes).filter(function(g){return g.start&&g.start.slice(0,10)===d});
   var todayGrdOut=act(db.gardes).filter(function(g){return g.end&&g.end.slice(0,10)===d});
-  var todayGC=(db.gcEvents||[]).filter(function(ev){var evD=ev.date||(ev.start?ev.start.slice(0,10):'');return evD===d});
+  var todayGC=(db.gcEvents||[]).filter(function(ev){var evStart=ev.date||(ev.start?ev.start.slice(0,10):'');var evEnd=ev.end?ev.end.slice(0,10):evStart;return evStart&&d>=evStart&&d<=evEnd});
   if(todayTr.length||todayGrdIn.length||todayGrdOut.length||todayGC.length){
     h+='<div style="padding:8px 10px;background:rgba(26,122,110,.1);border-radius:8px;margin-bottom:8px">';
     h+='<b style="color:var(--a2)">🚗 '+todayTr.length+' transport(s)</b>';
@@ -10022,10 +10022,15 @@ function rPlanWeek(){
     });
     // Google Calendar
     (db.gcEvents||[]).forEach(function(ev){
-      var evDate=ev.date||(ev.start?ev.start.slice(0,10):'');
-      if(evDate===ds){
+      var evStart=ev.date||(ev.start?ev.start.slice(0,10):'');
+      var evEnd=ev.end?ev.end.slice(0,10):evStart;
+      if(!evStart)return;
+      // Afficher si le jour est dans la plage début-fin
+      if(ds>=evStart&&ds<=evEnd){
         var heure=ev.start&&ev.start.length>10?ev.start.slice(11,16):'';
-        evts.push({c:'#3b82f6',icon:'📅',txt:ev.title||'Événement',sub:(heure||'')+(ev.location?' · '+ev.location:'')});
+        var isFirst=ds===evStart;
+        var isLast=ds===evEnd;
+        evts.push({c:'#3b82f6',icon:isFirst?'📅▶':isLast?'📅◀':'📅',txt:ev.title||'Événement',sub:(heure&&isFirst?heure+' ':'')+(ev.location?' '+ev.location:'')+((!isFirst&&!isLast)?'(en cours)':'')});
       }
     });
     // Devis en attente
@@ -10070,10 +10075,21 @@ function rPlan(){
   // Google Agenda events
   if(fi==='all'||fi==='gc'){
     (db.gcEvents||[]).forEach(function(ev){
-      var dt=ev.date||(ev.start?ev.start.slice(0,10):'');
-      if(dt){
-        var heure=ev.start&&ev.start.length>10?ev.start.slice(11,16):'';
-        evts.push({d:dt,tp:'gc',lb:'📅 '+(ev.title||ev.summary||'Événement'),sub:(heure?heure+' ':'')+(ev.location?' · '+ev.location:''),id:ev.id||''});
+      var dtStart=ev.date||(ev.start?ev.start.slice(0,10):'');
+      var dtEnd=ev.end?ev.end.slice(0,10):dtStart;
+      if(!dtStart)return;
+      var heure=ev.start&&ev.start.length>10?ev.start.slice(11,16):'';
+      // Pour les événements multi-jours, créer une entrée par jour
+      var cur=new Date(dtStart);
+      var end=new Date(dtEnd);
+      while(cur<=end){
+        var ds2=cur.toISOString().slice(0,10);
+        var isFirst=ds2===dtStart;
+        evts.push({d:ds2,tp:'gc',lb:'📅 '+(ev.title||ev.summary||'Événement'),sub:(heure&&isFirst?heure+' ':'')+(ev.location?' · '+ev.location:''),id:ev.id||''});
+        cur.setDate(cur.getDate()+1);
+        if(cur>end)break;
+        // Limiter à 60 jours max pour éviter les boucles infinies
+        if(cur-new Date(dtStart)>60*864e5)break;
       }
     });
   }
