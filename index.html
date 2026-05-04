@@ -10111,9 +10111,10 @@ function plWeek(evts){
     de.forEach(function(e){
       var col=e.tp==='tr'?'var(--a2)':e.tp==='dv'?'var(--or)':e.tp==='gc'?'var(--bl)':'var(--gd)';
       var icon=e.tp==='tr'?'🚗':e.tp==='dv'?'🧾':e.tp==='gc'?'📅':'🏡';
-      var fn=e.tp==='tr'?"eTr('"+e.id+"')":e.tp==='dv'?"eDev('"+e.id+"')":e.tp==='gc'?'':"eGrd('"+e.id+"')";
+      var fn=e.tp==='tr'?"eTr('"+e.id+"')":e.tp==='dv'?"eDev('"+e.id+"')":e.tp==='gc'?"gcEditEvent('"+e.id+"')":"eGrd('"+e.id+"')";
       h+='<div onclick="'+fn+'" style="background:rgba(0,0,0,.2);border-left:3px solid '+col+';border-radius:6px;padding:4px 6px;margin-bottom:4px;cursor:pointer;font-size:10px">'+icon+' '+(e.lb.length>22?e.lb.slice(0,22)+'…':e.lb)+'</div>';
     });
+    h+='<div style="text-align:center;margin-top:2px"><button onclick="gcNewEvent(\''+ds+'\')" style="background:none;border:none;color:var(--mt);cursor:pointer;font-size:14px;opacity:.3" title="Ajouter">+</button></div>';
     h+='</div>';
   });
   h+='</div>';$('plCnt').innerHTML=h;
@@ -10155,8 +10156,8 @@ function plList(evts){
   var h='',last='';
   evts.forEach(function(e){
     if(e.d!==last){h+='<div style="font-weight:800;font-size:12px;color:var(--ac);margin:'+(last?'14px':'0')+' 0 6px">'+new Date(e.d).toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})+'</div>';last=e.d}
-    var fn=e.tp==='tr'?"eTr('"+e.id+"')":e.tp==='dv'?"eDev('"+e.id+"')":"eGrd('"+e.id+"')";
-    var icon=e.tp==='tr'?'🚗':e.tp==='dv'?'🧾':'🏡';
+    var fn=e.tp==='tr'?"eTr('"+e.id+"')":e.tp==='dv'?"eDev('"+e.id+"')":e.tp==='gc'?"gcEditEvent('"+e.id+"')":"eGrd('"+e.id+"')";
+    var icon=e.tp==='tr'?'🚗':e.tp==='dv'?'🧾':e.tp==='gc'?'📅':'🏡';
     var col=e.tp==='tr'?'var(--a2)':e.tp==='dv'?'var(--or)':'var(--gd)';
     h+='<div class="itm" style="border-left:3px solid '+col+';cursor:pointer" onclick="'+fn+'">'+icon+' <b>'+e.lb+'</b>'+(e.nonFac?'<span style="color:var(--or);font-size:10px;margin-left:4px">⚠️ Non facturé</span>':'')+'<br><span class="sm-t">'+e.sub+'</span></div>';
   });
@@ -13757,6 +13758,44 @@ function rCarbu(){
       periodeHtml+='</tr>';
     });
     periodeHtml+='</table></div>';
+  }
+  // Historique journalier (30 derniers jours)
+  var jourMap={};
+  filtered.forEach(function(f){
+    if(!f.date)return;
+    if(!jourMap[f.date])jourMap[f.date]={litres:0,prix:0,dist:0,nb:0,prixL:[]};
+    jourMap[f.date].litres+=E(f.litres);
+    jourMap[f.date].prix+=E(f.prix);
+    jourMap[f.date].dist+=E(f.dist);
+    jourMap[f.date].nb++;
+    if(E(f.litres)>0)jourMap[f.date].prixL.push(E(f.prix)/E(f.litres));
+  });
+  var jourKeys=Object.keys(jourMap).sort().reverse().slice(0,30);
+  if(jourKeys.length>0){
+    var jourNoms={0:'Dim',1:'Lun',2:'Mar',3:'Mer',4:'Jeu',5:'Ven',6:'Sam'};
+    periodeHtml+='<div style="margin-bottom:12px;padding:10px;background:rgba(59,130,246,.04);border:1px solid rgba(59,130,246,.12);border-radius:8px">';
+    periodeHtml+='<div style="font-size:11px;font-weight:700;color:#3b82f6;margin-bottom:6px">\ud83d\udcc5 Historique journalier (30 derniers jours)</div>';
+    periodeHtml+='<div style="max-height:300px;overflow-y:auto">';
+    periodeHtml+='<table style="width:100%;font-size:11px;border-collapse:collapse">';
+    periodeHtml+='<tr style="color:var(--mt);position:sticky;top:0;background:#0a1520"><th style="text-align:left;padding:4px;border-bottom:1px solid var(--ln)">Jour</th><th style="text-align:center;padding:4px;border-bottom:1px solid var(--ln)">Pleins</th><th style="text-align:right;padding:4px;border-bottom:1px solid var(--ln)">Litres</th><th style="text-align:right;padding:4px;border-bottom:1px solid var(--ln)">D\u00e9pense</th><th style="text-align:right;padding:4px;border-bottom:1px solid var(--ln)">\u20ac/L moy</th><th style="text-align:right;padding:4px;border-bottom:1px solid var(--ln)">Km</th><th style="text-align:right;padding:4px;border-bottom:1px solid var(--ln)">L/100</th></tr>';
+    jourKeys.forEach(function(k){
+      var j=jourMap[k];
+      var dt=new Date(k);
+      var jourLabel=jourNoms[dt.getDay()]+' '+dt.getDate()+'/'+(dt.getMonth()+1);
+      var avgPL=j.prixL.length?j.prixL.reduce(function(s,v){return s+v},0)/j.prixL.length:0;
+      var conso=j.dist>0?((j.litres/j.dist)*100).toFixed(1):'\u2014';
+      var isToday=k===aujourdS;
+      periodeHtml+='<tr style="'+(isToday?'background:rgba(26,122,110,.08);font-weight:700':'')+'">';
+      periodeHtml+='<td style="padding:4px;border-bottom:1px solid rgba(255,255,255,.03)">'+jourLabel+'</td>';
+      periodeHtml+='<td style="text-align:center;padding:4px;border-bottom:1px solid rgba(255,255,255,.03)">'+j.nb+'</td>';
+      periodeHtml+='<td style="text-align:right;padding:4px;border-bottom:1px solid rgba(255,255,255,.03)">'+j.litres.toFixed(1)+' L</td>';
+      periodeHtml+='<td style="text-align:right;padding:4px;border-bottom:1px solid rgba(255,255,255,.03);font-weight:700;color:var(--or)">'+euro(j.prix)+'</td>';
+      periodeHtml+='<td style="text-align:right;padding:4px;border-bottom:1px solid rgba(255,255,255,.03)">'+(avgPL>0?avgPL.toFixed(3)+' \u20ac':'\u2014')+'</td>';
+      periodeHtml+='<td style="text-align:right;padding:4px;border-bottom:1px solid rgba(255,255,255,.03)">'+(j.dist>0?j.dist+' km':'\u2014')+'</td>';
+      periodeHtml+='<td style="text-align:right;padding:4px;border-bottom:1px solid rgba(255,255,255,.03);color:var(--a2);font-weight:700">'+conso+'</td>';
+      periodeHtml+='</tr>';
+    });
+    periodeHtml+='</table></div></div>';
   }
   // Historique avec bouton éditer
   var rows=filtered.slice(0,50).map(function(f){
