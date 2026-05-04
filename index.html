@@ -3060,8 +3060,9 @@ document.getElementById('q_contrat_pec').addEventListener('change',function(){
 <div class="c6 fd"><label>Date</label><input id="cb_dt" type="date"></div>
 <div class="c4 fd"><label>Litres</label><input id="cb_lt" type="number" step="0.1" placeholder="50.5"></div>
 <div class="c4 fd"><label>Prix total €</label><input id="cb_pr" type="number" step="0.01" placeholder="89.90"></div>
-<div class="c4 fd"><label>Km compteur</label><input id="cb_km" type="number" placeholder="45231"></div>
-<div class="c6 fd"><label>Km parcourus depuis dernier plein</label><input id="cb_dist" type="number" placeholder="Ex: 620"></div>
+<div class="c4 fd"><label>Km compteur</label><input id="cb_km" type="number" placeholder="45231" oninput="cbAutoCalcDist()"></div>
+<div class="c4 fd"><label>🛣️ Km auto-calculés</label><input id="cb_dist" type="number" readonly style="background:#e8e8e8;font-weight:700;color:var(--a2)"></div>
+<div class="c2 fd" style="display:flex;align-items:flex-end"><button class="btn sm" onclick="recalcKmAll()" style="font-size:9px;padding:6px;background:#1a3020;border-color:#2a6030;color:#7bf0a0;width:100%">🛣️ Recalc</button></div>
 <div class="c6 fd"><label>Station</label><input id="cb_st" placeholder="Total, BP..."></div>
 <div class="c6 fd"><label>Type de carburant</label>
   <select id="cb_ft" style="background:#080f1a;border:1px solid var(--ln);color:var(--tx);border-radius:10px;padding:10px 12px;font:inherit;font-size:13px;width:100%">
@@ -13493,16 +13494,29 @@ function addCarbu(){
   var vObj=(db.vehicules||[]).find(function(x){return x.id===vh;});
   var ftAuto=vObj?vObj.fuelType:'gazole';
   var ftSel=document.getElementById('cb_ft');var ftVal=ftSel&&ftSel.value?ftSel.value:ftAuto;
-  var f={id:uid('cb'),vehiculeId:vh,date:$('cb_dt')?$('cb_dt').value:tdy(),litres:E($('cb_lt')?$('cb_lt').value:0),prix:E($('cb_pr')?$('cb_pr').value:0),station:$('cb_st')?$('cb_st').value:'',km:E($('cb_km')?$('cb_km').value:0),dist:E($('cb_dist')?$('cb_dist').value:0),fuelType:ftVal};
+  var km=E($('cb_km')?$('cb_km').value:0);
+  // Auto-calcul des km parcourus depuis le dernier plein du même véhicule
+  var dist=0;
+  if(km>0&&vh){
+    var prevPleins=(db.carburant||[]).filter(function(p){return p.vehiculeId===vh&&E(p.km)>0&&!p._deleted}).sort(function(a,b){return E(b.km)-E(a.km)});
+    if(prevPleins.length>0){
+      var lastKm=E(prevPleins[0].km);
+      if(km>lastKm)dist=km-lastKm;
+    }
+    // Mettre à jour le compteur du véhicule
+    if(vObj){vObj.kmCompteur=km}
+  }
+  var f={id:uid('cb'),vehiculeId:vh,date:$('cb_dt')?$('cb_dt').value:tdy(),litres:E($('cb_lt')?$('cb_lt').value:0),prix:E($('cb_pr')?$('cb_pr').value:0),station:$('cb_st')?$('cb_st').value:'',km:km,dist:dist,fuelType:ftVal};
   if(!f.litres||!f.prix){alert('Litres et prix requis');return;}
   if(!f.vehiculeId){alert('Sélectionne un véhicule');return;}
   if(!db.carburant) db.carburant=[];
   db.carburant.unshift(f);
   var vhNom=vhName(vh);
-  lH('carburant','Plein: '+f.litres+'L · '+euro(f.prix)+' · '+vhNom+' · '+f.station);
+  var consoTxt=dist>0?' · '+((f.litres/dist)*100).toFixed(1)+' L/100':'';
+  lH('carburant','Plein: '+f.litres+'L · '+euro(f.prix)+(dist>0?' · '+dist+'km':'')+(consoTxt)+' · '+vhNom);
   sav(false);
   rCarbu();
-  showToast('⛽ Plein enregistré — '+vhNom);
+  showToast('⛽ '+vhNom+' — '+f.litres+'L · '+euro(f.prix)+(dist>0?'\n🛣️ '+dist+' km depuis dernier plein'+consoTxt:''));
   if($('cb_lt'))$('cb_lt').value='';
   if($('cb_pr'))$('cb_pr').value='';
   if($('cb_st'))$('cb_st').value='';
@@ -13590,7 +13604,67 @@ function sVehicule(id){
   showToast('✅ '+v.nom+' mis à jour');
 }
 
+// Recalcul automatique des km entre les pleins
+function recalcKm(vhId){
+  var pleins=(db.carburant||[]).filter(function(p){return(!vhId||p.vehiculeId===vhId)&&!p._deleted&&E(p.km)>0}).sort(function(a,b){
+    // Trier par date puis par km
+    if(a.date!==b.date)return a.date.localeCompare(b.date);
+    return E(a.km)-E(b.km);
+  });
+  // Par véhicule
+  var byVh={};
+  pleins.forEach(function(p){if(!byVh[p.vehiculeId])byVh[p.vehiculeId]=[];byVh[p.vehiculeId].push(p)});
+  var updated=0;
+  Object.keys(byVh).forEach(function(vid){
+    var vPleins=byVh[vid];
+    for(var i=1;i<vPleins.length;i++){
+      var prev=E(vPleins[i-1].km);
+      var cur=E(vPleins[i].km);
+      if(cur>prev){
+        var newDist=cur-prev;
+        if(E(vPleins[i].dist)!==newDist){
+          vPleins[i].dist=newDist;
+          updated++;
+        }
+      }
+    }
+    // Mettre à jour le compteur du véhicule
+    if(vPleins.length){
+      var lastKm=E(vPleins[vPleins.length-1].km);
+      var vObj=(db.vehicules||[]).find(function(v){return v.id===vid});
+      if(vObj&&lastKm>0)vObj.kmCompteur=lastKm;
+    }
+  });
+  return updated;
+}
+
+function recalcKmAll(){
+  var nb=recalcKm();
+  if(nb>0){sav(false);rCarbu()}
+  showToast('🛣️ '+nb+' km recalculé(s) depuis les compteurs');
+}
+
+function cbAutoCalcDist(){
+  var vh=V('cb_vh');
+  var km=E(V('cb_km'));
+  var distEl=$('cb_dist');
+  if(!distEl||!km||!vh)return;
+  var prevPleins=(db.carburant||[]).filter(function(p){return p.vehiculeId===vh&&E(p.km)>0&&!p._deleted}).sort(function(a,b){return E(b.km)-E(a.km)});
+  if(prevPleins.length>0){
+    var lastKm=E(prevPleins[0].km);
+    if(km>lastKm){
+      distEl.value=km-lastKm;
+    } else {
+      distEl.value='';
+    }
+  } else {
+    distEl.value='';
+  }
+}
+
 function rCarbu(){
+  // Auto-recalculer les km à chaque affichage
+  try{recalcKm()}catch(e){}
   var data = act(db.carburant||[]);
   var vehs = db.vehicules||[];
   var filterVh = V('cb_filter');
