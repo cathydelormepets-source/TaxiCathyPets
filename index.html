@@ -7363,6 +7363,39 @@ function addDev(){
   } else {
     showToast('✅ Devis '+q.ref+' créé avec '+devLignes.length+' article(s)');
   }
+  // Reset formulaire pour en créer un autre
+  resetFormDevis();
+}
+
+function resetFormDevis(){
+  // Vider les champs principaux
+  ['q_to','q_ob','q_notes','q_conditions'].forEach(function(id){var el=$(id);if(el)el.value=''});
+  // Vider les lignes articles
+  var box=$('q_lignes');if(box)box.innerHTML='';
+  _devLigneCount=0;
+  // Décocher PEC
+  var pecCb=document.getElementById('q_contrat_pec');if(pecCb)pecCb.checked=false;
+  // Décocher les animaux
+  document.querySelectorAll('.q_ani_cb').forEach(function(cb){cb.checked=false});
+  // Vider les waypoints
+  var dwp=$('dwpBox');if(dwp)dwp.innerHTML='';
+  _dwpCount=0;
+  // Garder le client sélectionné (pratique si plusieurs devis pour le même client)
+  // Garder le type de prestation
+  // Incrémenter la référence auto
+  var refEl=$('q_ref');
+  if(refEl){
+    var parts=refEl.value.split('-');
+    if(parts.length>=2){
+      var num=parseInt(parts[parts.length-1])||0;
+      parts[parts.length-1]=String(num+1).padStart(3,'0');
+      refEl.value=parts.join('-');
+    }
+  }
+  // Scroll en haut du formulaire
+  var devForm=document.querySelector('[data-t="dev"]');
+  if(devForm)devForm.scrollTop=0;
+  window.scrollTo(0,0);
 }
 // ---- FACTURES ----
 var _fdLigneCount = 0;
