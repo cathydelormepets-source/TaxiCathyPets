@@ -2215,6 +2215,7 @@ document.getElementById('q_contrat_pec').addEventListener('change',function(){
 <select id="mTp" onchange="updateMailRef();genMail()">
 <option value="">— Choisir un type —</option>
 <option value="envoi_dev">📧 Envoi devis au client</option>
+<option value="rappel_vaccin">💉 Rappel vaccination</option>
 <option value="conf_dev">✅ Confirmation réception devis</option>
 <option value="relance_dev">🔔 Relance devis sans réponse</option>
 <option value="conf_tr">🚗 Confirmation transport</option>
@@ -5230,13 +5231,14 @@ function getAniIds(rec){if(rec.animalIds&&rec.animalIds.length)return rec.animal
 function aNs(rec){var ids=getAniIds(rec);if(!ids.length)return'—';return ids.map(function(id){return aN(id)}).join(', ')}
 function renderMultiAniPicker(prefix,cliId){
   var anis=act(db.animaux);if(cliId)anis=anis.filter(function(a){return a.clientId===cliId});
-  var opts=anis.map(function(a){return'<option value="'+a.id+'">'+a.nom+' · '+a.espece+'</option>'}).join('');
-  return '<div id="'+prefix+'_aniBox"><div class="nt" style="margin:6px 0 4px">🐾 <b>Animaux transportés</b></div>'
+  var opts=anis.map(function(a){return'<option value="'+a.id+'">'+a.nom+' · '+a.espece+(a.race?' ('+a.race+')':'')+'</option>'}).join('');
+  return '<div id="'+prefix+'_aniBox"><div class="nt" style="margin:6px 0 4px">🐾 <b>Animaux</b></div>'
     +'<div id="'+prefix+'_aniList"></div>'
     +'<div style="display:flex;gap:5px;align-items:center;margin-top:4px">'
-    +'<select id="'+prefix+'_aniSel" style="flex:1"><option value="">— Choisir animal —</option>'+opts+'</select>'
+    +'<div style="flex:1"><input placeholder="🔍 3 lettres..." oninput="filterAniSelect(\''+prefix+'_aniSel\',this.value)" style="width:100%;padding:5px 8px;font-size:10px;background:#0a1520;border:1px solid var(--ln);color:var(--tx);border-radius:6px 6px 0 0;margin-bottom:-1px">'
+    +'<select id="'+prefix+'_aniSel" style="width:100%;border-radius:0 0 6px 6px"><option value="">— Choisir animal —</option>'+opts+'</select></div>'
     +'<button class="btn sm bu" onclick="addAniToPicker(\''+prefix+'\')" type="button" title="Ajouter">➕</button>'
-    +'<button class="btn sm gn" onclick="openNewAniForPicker(\''+prefix+'\')" type="button" title="Créer un nouvel animal">🐾 Nouveau</button>'
+    +'<button class="btn sm gn" onclick="openNewAniForPicker(\''+prefix+'\')" type="button" title="Créer un nouvel animal">🐾+</button>'
     +'</div>'
     +'<button class="btn sm at" onclick="refreshBeForPrefix(\''+prefix+'\')" style="margin-top:6px;width:100%;font-size:11px" type="button">📋 Dossiers bien-être</button>'
     +'</div>';
@@ -7418,6 +7420,19 @@ function globalSearch(q){
   });
   if(results.length>15)h+='<div style="padding:8px;text-align:center;font-size:11px;color:var(--mt)">+'+(results.length-15)+' résultat(s)...</div>';
   box.innerHTML=h;box.style.display='block';
+}
+
+function filterAniSelect(selId,val){
+  var sel=$(selId);if(!sel)return;
+  var search=val.toLowerCase().trim();
+  var opts=sel.querySelectorAll('option');
+  if(search.length<3){opts.forEach(function(o){o.style.display=''});return}
+  opts.forEach(function(o){
+    if(!o.value){o.style.display='';return}
+    o.style.display=o.textContent.toLowerCase().indexOf(search)>=0?'':'none';
+  });
+  var visible=Array.from(opts).filter(function(o){return o.style.display!=='none'&&o.value});
+  if(visible.length===1)sel.value=visible[0].value;
 }
 
 function filterClientSelect(selId,val){
@@ -11618,7 +11633,7 @@ function updateMailRef(){
   var tp=V('mTp'),cl=V('mCl'),el=$('mRef');
   if(!el)return;
   var h='<option value="">—</option>';
-  if(tp==='conf_dev'||tp==='relance_dev'||tp==='envoi_dev'){
+  if(tp==='conf_dev'||tp==='relance_dev'||tp==='envoi_dev'||tp==='rappel_vaccin'){
     act(db.devis).filter(function(q){return !cl||q.clientId===cl}).forEach(function(q){
       h+='<option value="'+q.id+'">'+q.ref+' — '+cN(q.clientId)+' — '+euro(q.total)+'</option>';
     });
@@ -11667,6 +11682,17 @@ function genMail(){
     if(q&&q.contratPecUrl)pecLink=q.contratPecUrl;
     subj='Votre devis '+(q?q.ref:'[R\u00e9f]')+' \u2014 Cathy Pets';
     body='Bonjour '+prenom+',\n\nSuite \u00e0 notre \u00e9change, voici votre devis'+(q?' '+q.ref:'')+' pour la prestation suivante :\n\n'+(anis?'\ud83d\udc3e Animal(aux) : '+anis+'\n':'')+'\ud83d\udccb Prestation : '+(q&&q.mode?q.mode:'transport')+'\n'+(trajet?'\ud83d\uddfa\ufe0f Trajet : '+trajet+'\n':'')+(q&&q.date?'\ud83d\udcc5 Date pr\u00e9vue : '+q.date+'\n':'')+'\n\ud83d\udcb0 Montant TTC : '+(q?euro(q.total):'[montant]')+'\n\n\ud83d\udc49 Consultez et signez votre devis en ligne :\n'+devUrl+'\n'+(pecLink?'\n\ud83d\udccb Votre contrat de prise en charge :\n'+pecLink+'\n':'')+'\nCe devis est valable 30 jours.\n\nN\'h\u00e9sitez pas \u00e0 nous contacter pour toute question.'+SIGN;
+  } else if(tp==='rappel_vaccin'){
+    var anis=act(db.animaux).filter(function(a){return a.clientId===(cl?cl.id:'')});
+    var vaccInfo=anis.map(function(a){
+      var alerts=[];
+      if(a.vaccin1){var d=new Date(a.vaccin1);var diff=Math.floor((d-new Date())/864e5);if(diff<30)alerts.push('Rage : '+(diff<0?'EXPIRÉ':'expire dans '+diff+'j'))}
+      if(a.vaccin2){var d2=new Date(a.vaccin2);var diff2=Math.floor((d2-new Date())/864e5);if(diff2<30)alerts.push('Vaccin : '+(diff2<0?'EXPIRÉ':'expire dans '+diff2+'j'))}
+      if(a.touxChenil==='non')alerts.push('Toux du chenil : non vacciné');
+      return alerts.length?a.nom+' — '+alerts.join(', '):'';
+    }).filter(Boolean).join('\n  • ');
+    subj='Rappel vaccination — '+prenom+' — Cathy Pets';
+    body='Bonjour '+prenom+',\n\nNous vous contactons car certain(s) vaccin(s) de votre animal arrivent à échéance :\n\n  • '+vaccInfo+'\n\nPour la sécurité et le bien-être de votre compagnon, nous vous recommandons de prendre rendez-vous chez votre vétérinaire dans les meilleurs délais.\n\n⚠️ Rappel : la vaccination est obligatoire pour tout séjour en pension ou garde chez Cathy Pets (carnet de santé à jour exigé).\n\nN\'hésitez pas à nous contacter si vous avez des questions.'+SIGN;
   } else if(tp==='conf_dev'){
     var q=db.devis.find(function(x){return x.id===ref});
     var wps=q&&q.waypoints?q.waypoints:[];
