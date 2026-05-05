@@ -602,6 +602,11 @@ body.nuit .card{border-color:#0a1520}
 
 <!-- DASHBOARD -->
 <section class="tab active" id="dash">
+<!-- RECHERCHE GLOBALE -->
+<div style="margin-bottom:14px;position:relative">
+  <input id="globalSearchInput" type="text" placeholder="🔍 Recherche rapide — client, animal, devis, facture..." oninput="globalSearch(this.value)" style="width:100%;padding:12px 16px 12px 40px;font-size:14px;background:#0a1520;border:2px solid var(--ln);color:var(--tx);border-radius:12px;outline:none" onfocus="this.style.borderColor='var(--ac)'" onblur="this.style.borderColor='var(--ln)';setTimeout(function(){$('globalSearchResults').style.display='none'},200)">
+  <div id="globalSearchResults" style="display:none;position:absolute;top:48px;left:0;right:0;background:#0d1a2a;border:1px solid var(--ac);border-radius:10px;max-height:350px;overflow-y:auto;z-index:999;box-shadow:0 8px 24px rgba(0,0,0,.4)"></div>
+</div>
 
 <!-- BANDEAU ALERTE BANQUE -->
 <div id="bankAlert" style="display:none;padding:12px 18px;border-radius:12px;background:rgba(239,68,68,.18);border:2px solid #ef4444;color:#fca5a5;font-weight:800;font-size:13px;margin-bottom:12px;display:none;align-items:center;gap:10px">
@@ -1347,6 +1352,8 @@ body.nuit .card{border-color:#0a1520}
 <div class="c4 fd"><label>Rage (date rappel)</label><input id="a_v1" type="date"></div>
 <div class="c4 fd"><label>Polyvalent / autre vaccin</label><input id="a_v2" type="date"></div>
 <div class="c4 fd"><label>Toux du chenil</label><select id="a_tc"><option value="">— Choisir —</option><option value="oui">✅ Vacciné</option><option value="non">❌ Non vacciné</option><option value="inconnu">❓ Inconnu</option></select></div>
+<div class="c4 fd"><label>📷 Photo animal</label><input id="a_photo" type="file" accept="image/*" capture="environment" onchange="previewAniPhoto(this)" style="font-size:10px"></div>
+<div class="c4 fd" id="a_photo_prev" style="display:none"><img id="a_photo_img" style="max-height:60px;border-radius:6px;border:1px solid var(--ln)"></div>
 <div class="c4 fd"><label>Passeport / carnet N°</label><input id="a_pp"></div>
 <div class="c4 fd"><label>Traitement en cours</label><input id="a_tr" placeholder="Ex: Antibiotiques jusqu'au..."></div>
 <div class="c4 fd"><label>Allergie / contre-indication</label><input id="a_al" placeholder="Ex: Latex, certains produits..."></div>
@@ -7371,6 +7378,48 @@ function addDev(){
   resetFormDevis();
 }
 
+// ═══ RECHERCHE GLOBALE ═══
+function globalSearch(q){
+  var box=$('globalSearchResults');if(!box)return;
+  if(!q||q.length<2){box.style.display='none';return}
+  var s=q.toLowerCase();var results=[];
+  // Clients
+  act(db.clients).forEach(function(c){
+    var n=(c.nom||'')+' '+(c.prenom||'')+' '+(c.tel||'')+' '+(c.email||'');
+    if(n.toLowerCase().indexOf(s)>=0)results.push({type:'👤',label:cN(c.id),sub:c.tel||c.email||'',action:"eCli('"+c.id+"')",id:c.id});
+  });
+  // Animaux
+  act(db.animaux).forEach(function(a){
+    if((a.nom||'').toLowerCase().indexOf(s)>=0||(a.race||'').toLowerCase().indexOf(s)>=0)
+      results.push({type:'🐾',label:a.nom+' ('+a.espece+')',sub:cN(a.clientId),action:"eAni('"+a.id+"')"});
+  });
+  // Devis
+  act(db.devis).forEach(function(d){
+    var n=(d.ref||'')+' '+cN(d.clientId)+' '+(d.status||'');
+    if(n.toLowerCase().indexOf(s)>=0)results.push({type:'📝',label:d.ref+' — '+cN(d.clientId),sub:euro(d.total)+' · '+d.status,action:"eDev('"+d.id+"')"});
+  });
+  // Factures
+  act(db.factures).forEach(function(f){
+    var n=(f.ref||'')+' '+cN(f.clientId)+' '+(f.status||'');
+    if(n.toLowerCase().indexOf(s)>=0)results.push({type:'💶',label:f.ref+' — '+cN(f.clientId),sub:euro(f.total)+' · '+f.status,action:"eFac('"+f.id+"')"});
+  });
+  // Transports
+  act(db.transports).forEach(function(t){
+    var legs=tLegs(t);var n=(t.ref||'')+' '+cN(t.clientId)+' '+legs.join(' ');
+    if(n.toLowerCase().indexOf(s)>=0)results.push({type:'🚗',label:t.ref+' — '+cN(t.clientId),sub:legs.length>=2?legs[0]+' → '+legs[legs.length-1]:'',action:"eTr('"+t.id+"')"});
+  });
+  if(!results.length){box.innerHTML='<div style="padding:16px;text-align:center;color:var(--mt)">Aucun résultat pour "'+q+'"</div>';box.style.display='block';return}
+  var h='';
+  results.slice(0,15).forEach(function(r){
+    h+='<div onclick="'+r.action+';$(\'globalSearchResults\').style.display=\'none\';$(\'globalSearchInput\').value=\'\'" style="padding:8px 14px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,.05);display:flex;align-items:center;gap:10px" onmouseover="this.style.background=\'rgba(26,122,110,.1)\'" onmouseout="this.style.background=\'\'">';
+    h+='<span style="font-size:18px">'+r.type+'</span>';
+    h+='<div><div style="font-weight:700;font-size:12px">'+r.label+'</div><div style="font-size:10px;color:var(--mt)">'+r.sub+'</div></div>';
+    h+='</div>';
+  });
+  if(results.length>15)h+='<div style="padding:8px;text-align:center;font-size:11px;color:var(--mt)">+'+(results.length-15)+' résultat(s)...</div>';
+  box.innerHTML=h;box.style.display='block';
+}
+
 function filterClientSelect(selId,val){
   var sel=$(selId);if(!sel)return;
   var search=val.toLowerCase().trim();
@@ -8856,7 +8905,25 @@ function updateAddrList(){
 }
 
 // EDIT MODALS
-function eCli(id){var c=db.clients.find(function(x){return x.id===id});if(!c)return;oMo('✏️ Client','<div class="row"><div class="c6 fd"><label>Nom</label><input id="ec_n" value="'+esc(c.nom)+'"></div><div class="c6 fd"><label>Prénom</label><input id="ec_p" value="'+esc(c.prenom)+'"></div><div class="c6 fd"><label>Tél</label><input id="ec_t" value="'+esc(c.tel)+'"></div><div class="c6 fd"><label>Email</label><input id="ec_e" value="'+esc(c.email)+'"></div><div class="c6 fd"><label>Adresse</label><input id="ec_a" value="'+esc(c.adresse)+'"></div><div class="c3 fd"><label>CP</label><input id="ec_c" value="'+esc(c.cp)+'"></div><div class="c3 fd"><label>Ville</label><input id="ec_v" value="'+esc(c.ville)+'"></div><div class="c6 fd"><label>Type client</label><select id="ec_tp"><option value="particulier"'+(c.type==='particulier'||!c.type?' selected':'')+'>Particulier</option><option value="professionnel"'+(c.type==='professionnel'?' selected':'')+'>Professionnel</option><option value="eleveur"'+(c.type==='eleveur'?' selected':'')+'>Éleveur</option><option value="veterinaire"'+(c.type==='veterinaire'?' selected':'')+'>Vétérinaire / Clinique</option><option value="refuge"'+(c.type==='refuge'?' selected':'')+'>Refuge / Association</option></select></div><div class="c6 fd"><label>SIRET / TVA (pro)</label><input id="ec_si" value="'+esc(c.siret||'')+'"></div></div><div class="fd"><label>Notes</label><textarea id="ec_no">'+esc(c.notes)+'</textarea></div>','<button class="btn rd" onclick="delRec(\'clients\',\''+id+'\',\''+esc(c.nom)+'\')">🗑️</button> <button class="btn bu" onclick="showCliHistory(\''+id+'\')">📋 Historique</button> <button class="btn gn" onclick="sCli(\''+id+'\')">💾</button>')}
+function eCli(id){var c=db.clients.find(function(x){return x.id===id});if(!c)return;
+  // Stats CA client
+  var cFacs=act(db.factures).filter(function(f){return f.clientId===id});
+  var cDevs=act(db.devis).filter(function(d){return d.clientId===id});
+  var cTrs=act(db.transports).filter(function(t){return t.clientId===id});
+  var cGrds=act(db.gardes).filter(function(g){return g.clientId===id});
+  var caTotal=cFacs.reduce(function(s,f){return s+E(f.total)},0);
+  var caPaye=cFacs.filter(function(f){return f.status==='payée'}).reduce(function(s,f){return s+E(f.total)},0);
+  var caImpaye=cFacs.filter(function(f){return f.status!=='payée'&&f.status!=='avoir'}).reduce(function(s,f){return s+E(f.total)-E(f.acompte)},0);
+  var nbMissions=cTrs.length+cGrds.length;
+  var anis=act(db.animaux).filter(function(a){return a.clientId===id});
+  var statsHtml='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:10px 0;padding:10px;background:rgba(26,122,110,.06);border:1px solid rgba(26,122,110,.15);border-radius:8px">';
+  statsHtml+='<div style="text-align:center"><div style="font-size:9px;color:var(--mt)">CA TOTAL</div><div style="font-size:14px;font-weight:900;color:var(--a2)">'+euro(caTotal)+'</div></div>';
+  statsHtml+='<div style="text-align:center"><div style="font-size:9px;color:var(--mt)">PAYÉ</div><div style="font-size:14px;font-weight:900;color:#22c55e">'+euro(caPaye)+'</div></div>';
+  statsHtml+='<div style="text-align:center"><div style="font-size:9px;color:var(--mt)">IMPAYÉ</div><div style="font-size:14px;font-weight:900;color:'+(caImpaye>0?'var(--rd)':'var(--mt)')+'">'+euro(caImpaye)+'</div></div>';
+  statsHtml+='<div style="text-align:center"><div style="font-size:9px;color:var(--mt)">MISSIONS</div><div style="font-size:14px;font-weight:900">'+nbMissions+'</div></div>';
+  statsHtml+='</div>';
+  statsHtml+='<div style="font-size:10px;color:var(--mt);margin-bottom:8px">🐾 '+anis.length+' animal(aux) · 📝 '+cDevs.length+' devis · 💶 '+cFacs.length+' factures · 🚗 '+cTrs.length+' transports · 🏡 '+cGrds.length+' gardes</div>';
+  oMo('✏️ Client — '+cN(id),statsHtml+'<div class="row"><div class="c6 fd"><label>Nom</label><input id="ec_n" value="'+esc(c.nom)+'"></div><div class="c6 fd"><label>Prénom</label><input id="ec_p" value="'+esc(c.prenom)+'"></div><div class="c6 fd"><label>Tél</label><input id="ec_t" value="'+esc(c.tel)+'"></div><div class="c6 fd"><label>Email</label><input id="ec_e" value="'+esc(c.email)+'"></div><div class="c6 fd"><label>Adresse</label><input id="ec_a" value="'+esc(c.adresse)+'"></div><div class="c3 fd"><label>CP</label><input id="ec_c" value="'+esc(c.cp)+'"></div><div class="c3 fd"><label>Ville</label><input id="ec_v" value="'+esc(c.ville)+'"></div><div class="c6 fd"><label>Type client</label><select id="ec_tp"><option value="particulier"'+(c.type==='particulier'||!c.type?' selected':'')+'>Particulier</option><option value="professionnel"'+(c.type==='professionnel'?' selected':'')+'>Professionnel</option><option value="eleveur"'+(c.type==='eleveur'?' selected':'')+'>Éleveur</option><option value="veterinaire"'+(c.type==='veterinaire'?' selected':'')+'>Vétérinaire / Clinique</option><option value="refuge"'+(c.type==='refuge'?' selected':'')+'>Refuge / Association</option></select></div><div class="c6 fd"><label>SIRET / TVA (pro)</label><input id="ec_si" value="'+esc(c.siret||'')+'"></div></div><div class="fd"><label>Notes</label><textarea id="ec_no">'+esc(c.notes)+'</textarea></div>','<button class="btn rd" onclick="delRec(\'clients\',\''+id+'\',\''+esc(c.nom)+'\')">🗑️</button> <button class="btn bu" onclick="showCliHistory(\''+id+'\')">📋 Historique</button> <button class="btn gn" onclick="sCli(\''+id+'\')">💾</button>')}
 
 // HISTORIQUE CLIENT COMPLET
 function showCliHistory(cid){
@@ -8995,7 +9062,7 @@ function eGrd(id){var g=db.gardes.find(function(x){return x.id===id});if(!g)retu
   _editModalCliId=g.clientId;
   var aniPickerHtml=renderMultiAniPicker('egd',g.clientId);
   var accBlockHtml=renderAccBlock('egd');
-  oMo('✏️ '+g.ref,aniPickerHtml+accBlockHtml+'<div class="row"><div class="c6 fd"><label>Entrée</label><input id="eg_s" type="datetime-local" value="'+esc(g.start)+'"></div><div class="c6 fd"><label>Sortie</label><input id="eg_e" type="datetime-local" value="'+esc(g.end)+'"></div><div class="c4 fd"><label>Vente €</label><input id="eg_p" type="number" step="0.01" value="'+(g.price||0)+'"></div><div class="c4 fd"><label>Coût €</label><input id="eg_c" type="number" step="0.01" value="'+(g.cost||0)+'"></div><div class="c4 fd"><label>Extra €</label><input id="eg_x" type="number" step="0.01" value="'+(g.extra||0)+'"></div></div><div class="fd"><label>Notes</label><textarea id="eg_no">'+esc(g.notes)+'</textarea></div>','<button class="btn rd" onclick="delRec(\'gardes\',\''+id+'\',\''+esc(g.ref)+'\')">🗑️</button> <button class="btn og" onclick="printContratGarde(\''+id+'\')">📄 Contrat</button> <button class="btn gn" onclick="sGrd(\''+id+'\')">💾</button>');
+  oMo('✏️ '+g.ref,aniPickerHtml+accBlockHtml+'<div class="row"><div class="c6 fd"><label>Entrée</label><input id="eg_s" type="datetime-local" value="'+esc(g.start)+'"></div><div class="c6 fd"><label>Sortie</label><input id="eg_e" type="datetime-local" value="'+esc(g.end)+'"></div><div class="c4 fd"><label>Vente €</label><input id="eg_p" type="number" step="0.01" value="'+(g.price||0)+'"></div><div class="c4 fd"><label>Coût €</label><input id="eg_c" type="number" step="0.01" value="'+(g.cost||0)+'"></div><div class="c4 fd"><label>Extra €</label><input id="eg_x" type="number" step="0.01" value="'+(g.extra||0)+'"></div></div><div class="fd"><label>Notes</label><textarea id="eg_no">'+esc(g.notes)+'</textarea></div>','<button class="btn rd" onclick="delRec(\'gardes\',\''+id+'\',\''+esc(g.ref)+'\')">🗑️</button> <button class="btn" onclick="addRecurrence(\''+id+'\')" style="background:#1a2a3a;border-color:#7c3aed;color:#a78bfa">🔄 Récurrence</button> <button class="btn og" onclick="printContratGarde(\''+id+'\')">📄 Contrat</button> <button class="btn gn" onclick="sGrd(\''+id+'\')">💾</button>');
   setTimeout(function(){setPickerAniIds('egd',getAniIds(g));setAccList('egd',g.accompagnants||[])},50);
 }
 function sGrd(id){var g=db.gardes.find(function(x){return x.id===id});if(!g)return;stamp(g);g.start=V('eg_s');g.end=V('eg_e');g.price=E(V('eg_p'));g.cost=E(V('eg_c'));g.extra=E(V('eg_x'));g.notes=V('eg_no');
@@ -10020,6 +10087,26 @@ function rBriefing(){
       });
     }
     if(devisBrouillon.length) h+='<div style="margin-top:4px"><b style="color:var(--mt)">📝 '+devisBrouillon.length+' brouillon(s) à finaliser</b></div>';
+    h+='</div>';
+  }
+  // 3bis. RAPPELS VACCINS
+  var vaccAlerts=[];
+  act(db.animaux).forEach(function(a){
+    if(a.vaccin1){var d=new Date(a.vaccin1);var diff=Math.floor((d-new Date())/864e5);
+      if(diff<30&&diff>=-7)vaccAlerts.push({nom:a.nom,type:'Rage',jours:diff,clientId:a.clientId,aniId:a.id})}
+    if(a.vaccin2){var d2=new Date(a.vaccin2);var diff2=Math.floor((d2-new Date())/864e5);
+      if(diff2<30&&diff2>=-7)vaccAlerts.push({nom:a.nom,type:'Vaccin',jours:diff2,clientId:a.clientId,aniId:a.id})}
+    if(a.touxChenil==='non')vaccAlerts.push({nom:a.nom,type:'Toux chenil',jours:-1,clientId:a.clientId,aniId:a.id});
+  });
+  if(vaccAlerts.length){
+    h+='<div style="padding:8px 10px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:8px;margin-bottom:8px">';
+    h+='<b style="color:var(--rd)">💉 '+vaccAlerts.length+' rappel(s) vaccin</b>';
+    vaccAlerts.forEach(function(v){
+      var urgTxt=v.jours<0?'<span style="color:var(--rd);font-weight:800">EXPIRÉ</span>':'<span style="color:var(--or)">J-'+v.jours+'</span>';
+      h+='<div style="padding:3px 0;font-size:11px">💉 <b>'+v.nom+'</b> — '+v.type+' '+urgTxt+' · '+cN(v.clientId);
+      h+=' <button class="btn sm" onclick="quickMail(\'rappel_vaccin\',\''+v.clientId+'\',\''+v.aniId+'\')" style="font-size:9px;padding:2px 6px;background:#1a2a3a;border-color:var(--rd);color:var(--rd)">📧 Rappeler</button>';
+      h+='</div>';
+    });
     h+='</div>';
   }
   // 4. CA du mois en cours
@@ -12741,6 +12828,62 @@ function msUpdateNav(t){
   var legs = tLegs(t);
   if(!legs.length){ nav.innerHTML='<div class="nt">Aucun trajet renseigné.</div>'; return; }
   nav.innerHTML = navLkAll(legs[0], legs[legs.length-1], legs);
+}
+
+// ═══ PHOTO ANIMAL ═══
+var _aniPhotoTemp='';
+function previewAniPhoto(input){
+  if(input.files&&input.files[0]){
+    // Compresser à 100x100 pour ne pas saturer le localStorage
+    var reader=new FileReader();
+    reader.onload=function(e){
+      var img=new Image();
+      img.onload=function(){
+        var canvas=document.createElement('canvas');
+        var sz=80;canvas.width=sz;canvas.height=sz;
+        var ctx=canvas.getContext('2d');
+        var scale=Math.max(sz/img.width,sz/img.height);
+        var w=img.width*scale,h=img.height*scale;
+        ctx.drawImage(img,(sz-w)/2,(sz-h)/2,w,h);
+        _aniPhotoTemp=canvas.toDataURL('image/jpeg',0.6);
+        var prev=$('a_photo_img');if(prev){prev.src=_aniPhotoTemp;$('a_photo_prev').style.display='block'}
+      };
+      img.src=e.target.result;
+    };
+    reader.readAsDataURL(input.files[0]);
+  }
+}
+
+// ═══ RÉCURRENCE GARDES ═══
+function addRecurrence(gardeId){
+  var g=db.gardes.find(function(x){return x.id===gardeId});if(!g)return;
+  var bd='<div class="fd"><label>Répéter cette garde</label><select id="rec_type"><option value="hebdo">Chaque semaine</option><option value="2sem">Toutes les 2 semaines</option><option value="mensuel">Chaque mois</option></select></div>';
+  bd+='<div class="fd"><label>Nombre de répétitions</label><input id="rec_nb" type="number" value="4" min="1" max="52"></div>';
+  oMo('🔄 Récurrence — '+g.ref, bd, '<button class="btn gn" onclick="createRecurrence(\''+gardeId+'\')">✅ Créer les gardes</button> <button class="btn" onclick="cMo()">Annuler</button>');
+}
+
+function createRecurrence(gardeId){
+  var g=db.gardes.find(function(x){return x.id===gardeId});if(!g)return;
+  var type=V('rec_type')||'hebdo';
+  var nb=E(V('rec_nb'))||4;
+  var created=0;
+  var dStart=new Date(g.start);var dEnd=new Date(g.end);
+  var dur=dEnd-dStart;
+  for(var i=1;i<=nb;i++){
+    var offset=type==='hebdo'?7*i:type==='2sem'?14*i:30*i;
+    var newStart=new Date(dStart);newStart.setDate(newStart.getDate()+offset);
+    var newEnd=new Date(newStart.getTime()+dur);
+    var newG=JSON.parse(JSON.stringify(g));
+    newG.id=uid('g');
+    newG.ref=g.ref+'-R'+(i);
+    newG.start=newStart.toISOString().slice(0,10);
+    newG.end=newEnd.toISOString().slice(0,10);
+    newG.status='planifié';
+    newG.recurrenceParent=gardeId;
+    stamp(newG);db.gardes.push(newG);created++;
+  }
+  sav();cMo();rAll();
+  showToast('🔄 '+created+' garde(s) récurrentes créées');
 }
 
 // ═══ CARTE DES DEVIS ═══
@@ -18937,9 +19080,12 @@ function printContratGarde(gardeId) {
 function addAni(){
   var cliId=V('a_cl');
   var espece=V('a_es');
+  // Photo — petite taille pour localStorage
+  var photoData=_aniPhotoTemp||'';
   var a={id:uid('a'),clientId:cliId,nom:V('a_nm'),espece:espece,race:V('a_ra'),
     poids:E(V('a_po')),ident:V('a_id'),couleur:V('a_col'),sexe:V('a_sx'),
     difficult:V('a_di')==='1',cites:V('a_ci'),touxChenil:V('a_tc'),
+    photo:photoData,
     notes:V('a_no'),vaccin1:V('a_v1'),vaccin2:V('a_v2'),passeport:V('a_pp'),
     traitement:V('a_tr'),allergie:V('a_al'),veto:V('a_vt')};
   if(!a.clientId||!a.nom){alert('Client+nom requis');return}
