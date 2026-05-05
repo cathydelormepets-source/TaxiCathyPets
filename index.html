@@ -18535,8 +18535,10 @@ function ctenvSyncTarifFromAnimaux(){
   var nbFeries=ctenvDetectFeries();
   var majF=$('ctenv_ferie_maj')&&$('ctenv_ferie_maj').checked;
   if(nbFeries>0&&majF)ctenvAddTarifLine('Supplément jours fériés',nbFeries,10,0);
-  ctenvAddTarifLine('Transport aller \u2014 prise en charge \u00e0 domicile',1,150,0);
-  ctenvAddTarifLine('Transport retour \u2014 restitution \u00e0 domicile',1,150,0);
+  var hasTaxiA=false,hasTaxiR=false;
+  document.querySelectorAll('.ctenv_svc:checked').forEach(function(cb){if(cb.value==='taxi')hasTaxiA=true;if(cb.value==='taxi-retour')hasTaxiR=true});
+  if(hasTaxiA)ctenvAddTarifLine('Transport aller — prise en charge à domicile',1,150,0);
+  if(hasTaxiR)ctenvAddTarifLine('Transport retour — restitution à domicile',1,150,0);
   ctenvAddTarifLine('Frais complémentaires (toilettage, soins, etc.)','',0,0);
   ctenvCalcTarif();
   showToast('\u2705 Tarification générée \u2014 '+anis.length+' animal(aux)');
