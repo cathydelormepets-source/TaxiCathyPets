@@ -18340,9 +18340,15 @@ function rContrats(){
     btns+='<button class="btn sm og" onclick="printContrat(\''+c.id+'\')" title="Imprimer">🖨️</button>';
     btns+=' <button class="btn sm rd" onclick="delContrat(\''+c.id+'\')" title="Supprimer">✕</button>';
     
+    // Animaux liés au contrat
+    var aniNames='';
+    if(c.animaux&&c.animaux.length){
+      aniNames=c.animaux.map(function(a){return a.nom||''}).filter(Boolean).join(', ');
+    }
+    
     return '<tr'+(needRelance?' style="background:rgba(239,68,68,.06)"':'')+'>'+
       '<td><b>'+c.ref+'</b></td>'+
-      '<td>'+cN(c.clientId)+'</td>'+
+      '<td>'+cN(c.clientId)+(aniNames?' <div style="font-size:10px;color:var(--or)">🐾 '+aniNames+'</div>':'')+'</td>'+
       '<td style="font-size:11px">'+periode+'</td>'+
       '<td style="font-size:11px">'+(c.type||'—')+'</td>'+
       '<td>'+euro(c.montant||0)+'</td>'+
