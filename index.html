@@ -18643,7 +18643,7 @@ function ctenvSwitchTarif(mode){
 
 function ctenvTypeChange(){
   var t=V('ctenv_type')||'';
-  var isGarde=t.match(/garde|pension|famille|promenade|combine|veterinaire/);
+  var isGarde=t.match(/garde|pension|famille|promenade|combine|veterinaire|visite/);
   var isTransport=t.match(/transport|combine/);
   var bg=$('ctenv_bloc_garde');
   var bt=$('ctenv_bloc_transport');
