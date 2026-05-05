@@ -998,6 +998,72 @@
     </div>
   </div>
 
+  <!-- ── SECTION 5bis : CONTACT D'URGENCE ── -->
+  <div class="section">
+    <div class="section-header grey">📞 &nbsp;5bis. Personne à contacter en cas de problème</div>
+    <div class="section-body">
+      <div class="info-box" style="margin-bottom:12px;font-size:12px">ℹ️ Autre que le propriétaire de l'animal. Cette personne pourra être contactée et l'animal pourra lui être reconduit si nécessaire.</div>
+      <div class="grid-2">
+        <div class="field"><label>Nom complet <span class="req">*</span></label><input type="text" id="urg-nom" placeholder="Nom et Prénom"></div>
+        <div class="field"><label>Téléphone <span class="req">*</span></label><input type="tel" id="urg-tel" placeholder="06 XX XX XX XX"></div>
+        <div class="field span-2"><label>Adresse</label><input type="text" id="urg-adresse" placeholder="Adresse complète"></div>
+        <div class="field span-2"><label>Lien avec le propriétaire</label><input type="text" id="urg-lien" placeholder="Ex : Conjoint, parent, ami, voisin..."></div>
+      </div>
+      <label class="check-item" style="margin-top:10px;border-radius:6px;background:#fff8e1;border-color:#ffe082">
+        <input type="checkbox" id="urg-accept">
+        <span>✅ En cas de problème non spécifié, j'autorise Cathy Pets à reconduire l'animal à cette personne.</span>
+      </label>
+    </div>
+  </div>
+
+  <!-- ── SECTION 5ter : NOURRITURE ── -->
+  <div class="section">
+    <div class="section-header" style="background:#8B4513">🥣 &nbsp;5ter. Nourriture</div>
+    <div class="section-body">
+      <div style="font-size:11px;font-weight:700;color:#546e7a;text-transform:uppercase;margin-bottom:8px">La nourriture est fournie par :</div>
+      <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px">
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;padding:8px 12px;background:#fff8f0;border:1px solid #ffcc80;border-radius:8px;cursor:pointer">
+          <input type="radio" name="nourr-par" value="gardien" id="nourr-gardien"> La personne en charge de la garde <strong>(avec facturation)</strong>
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;padding:8px 12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;cursor:pointer">
+          <input type="radio" name="nourr-par" value="proprietaire" id="nourr-proprio" checked> Le propriétaire de l'animal
+        </label>
+      </div>
+      <div class="info-box" style="margin-bottom:12px;font-size:11px;background:#fff8f0;border-color:#ffcc80">
+        ⚠️ Afin de ne pas perturber l'équilibre digestif de votre animal, merci de prévoir sa nourriture habituelle en quantité suffisante (un peu plus que la durée du séjour), avec un doseur marqué à la quantité par repas. Si votre animal est difficile ou facilement perturbé par le changement (risque de refus de manger), merci de nous prévenir.
+      </div>
+      <div class="grid-2">
+        <div class="field"><label>Marque / Type d'alimentation</label><input type="text" id="nourr-marque" placeholder="Ex : Royal Canin Medium Adult, croquettes sans céréales..."></div>
+        <div class="field"><label>Nombre de repas par jour</label><select id="nourr-repas"><option value="1">1 repas/jour</option><option value="2" selected>2 repas/jour</option><option value="3">3 repas/jour</option><option value="libre">Libre service</option></select></div>
+        <div class="field"><label>Quantité par repas</label><input type="text" id="nourr-qty" placeholder="Ex : 150g matin + 150g soir"></div>
+        <div class="field"><label>Friandises autorisées ?</label><select id="nourr-friandises"><option value="oui">Oui</option><option value="non">Non</option><option value="specifiques">Oui, uniquement celles fournies</option></select></div>
+        <div class="field span-2"><label>Allergies / Interdits alimentaires</label><input type="text" id="nourr-allergies" placeholder="Ex : Pas de poulet, intolérance au gluten..."></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SECTION 5quater : RENSEIGNEMENTS COMPLÉMENTAIRES ── -->
+  <div class="section">
+    <div class="section-header" style="background:#b91c1c">🩺 &nbsp;5quater. Renseignements complémentaires sur l'animal</div>
+    <div class="section-body">
+      <div class="grid-2">
+        <div class="field"><label>A-t-il un problème de santé ? <span class="req">*</span></label><select id="sante-pb"><option value="non">Non</option><option value="oui">Oui</option></select></div>
+        <div class="field"><label>Si oui, lequel ?</label><input type="text" id="sante-detail" placeholder="Détaillez le problème de santé"></div>
+        <div class="field"><label>Est-il à jour de ses vaccins ? <span class="req">*</span></label><select id="sante-vaccins"><option value="oui">✅ Oui</option><option value="non">❌ Non</option></select></div>
+        <div class="field"><label>Toux du chenil (vaccination) <span class="req">*</span></label><select id="sante-toux"><option value="oui">✅ Vacciné</option><option value="non">❌ Non vacciné</option><option value="inconnu">❓ Inconnu</option></select></div>
+        <div class="field"><label>Suit-il un traitement ?</label><select id="sante-trait"><option value="non">Non</option><option value="oui">Oui</option></select></div>
+        <div class="field"><label>Précisez le traitement</label><input type="text" id="sante-trait-detail" placeholder="Nom, posologie, horaires..."></div>
+        <div class="field"><label>Traitement antipuces à jour ? <span class="req">*</span></label><select id="sante-antipuce"><option value="oui">✅ Oui</option><option value="non">❌ Non</option></select></div>
+        <div class="field"><label>Vermifuge à jour ? <span class="req">*</span></label><select id="sante-vermi"><option value="oui">✅ Oui</option><option value="non">❌ Non</option></select></div>
+        <div class="field span-2"><label>Où dort-il habituellement ?</label><input type="text" id="sante-dodo" placeholder="Ex : canapé, panier au salon, dans le lit, cage..."></div>
+        <div class="field span-2"><label>Fait-il des bêtises ? Si oui, lesquelles ?</label><textarea id="sante-betises" placeholder="Ex : gratte les portes, mâchouille les chaussures, saute sur les meubles..."></textarea></div>
+      </div>
+      <div class="info-box" style="margin-top:12px;font-size:12px;background:#fef2f2;border-color:#fca5a5">
+        ⚠️ <strong>Votre animal doit être sain et exempt de maladies contagieuses et vacciné.</strong> Le carnet de santé est obligatoire au moment de la garde.
+      </div>
+    </div>
+  </div>
+
   <!-- ── SECTION 6 : CONDITIONS GÉNÉRALES ── -->
   <div class="section">
     <div class="section-header grey">📜 &nbsp;6. Conditions Générales &amp; Engagements</div>
@@ -1073,7 +1139,23 @@
 
       <div class="article">
         <h4>Art. 8 — RGPD &amp; Données Personnelles</h4>
-        <p>Les données collectées sont traitées exclusivement pour l'exécution du contrat. Droit d'accès, rectification, suppression : <a href="/cdn-cgi/l/email-protection#f99a988d91809d9c95968b949c899c8d8ab99e94989095d79a9694"><span class="__cf_email__" data-cfemail="8eedeffae6f7eaebe2e1fce3ebfeebfafdcee9e3efe7e2a0ede1e3">[email&#160;protected]</span></a>. Conformément au Règlement EU 2016/679.</p>
+        <p>Les données collectées sont traitées exclusivement pour l'exécution du contrat. Droit d'accès, rectification, suppression : cathydelormepets@gmail.com. Conformément au Règlement EU 2016/679.</p>
+      </div>
+
+      <div class="article" style="border-left-color:#1a7a6e;background:#f0fdf4">
+        <h4 style="color:#1a7a6e">Art. 8bis — Urgences &amp; Responsabilités</h4>
+        <p>En cas de problème, nous avertissons les propriétaires et amenons l'animal à la clinique vétérinaire la plus proche si urgence.</p>
+        <p style="margin-top:6px">Le nettoyage de nos locaux étant assuré quotidiennement, la pension n'est pas engagée en cas d'épidémie qui pourrait survenir lors du séjour de votre animal. Tout objet endommagé vous sera facturé hormis les jouets.</p>
+        <p style="margin-top:6px">Notre responsabilité sera dégagée lors de tout accident de nature imprévisible (crise cardiaque, vieillesse, etc.) ainsi que la fugue éventuelle malgré nos installations et surveillance permanente.</p>
+      </div>
+
+      <div class="article" style="border-left-color:#b91c1c;background:#fef2f2">
+        <h4 style="color:#b91c1c">Art. 8ter — Garde en pension familiale — Clause obligatoire</h4>
+        <p>Le propriétaire de l'animal est conscient des avantages mais aussi des risques liés à la garde en pension dite familiale, soit <strong>l'absence de boxes individuels</strong> et le quotidien des animaux en communauté.</p>
+        <p style="margin-top:6px">Malgré une sélection rigoureuse des pensionnaires, <strong>le risque zéro n'existe pas</strong>. C'est donc en connaissance de cause que le propriétaire confie son animal et s'engage à nous informer de tout risque que peut présenter son animal dans tous les domaines.</p>
+        <p style="margin-top:6px">À l'arrivée d'un nouveau chien, nous ne nous contentons pas de le « ranger » dans un box jusqu'à la fin de son séjour. Nous devons l'introduire dans la meute existante pour assurer la sécurité et le bien-être de tous — cela peut prendre 5 minutes comme 2 heures ou plus.</p>
+        <p style="margin-top:6px">Rajoutez à cela la séparation d'avec sa famille, l'acclimatation au nouveau lieu — la première nuit est bien souvent agitée. Nous devons composer avec les habitudes de chaque animal, qui ne sont pas forcément les nôtres : réclamer pour sortir le matin à l'heure où le chien le décide, ne pas supporter de ne pas être dans la même pièce que nous sans aboyer, gratter ou détruire les portes, faire ses besoins à l'intérieur, etc.</p>
+        <p style="margin-top:6px"><strong>Par n'importe quel temps, nous sommes dehors avec eux pour leur offrir la dépense d'énergie dont ils ont besoin, et veillons à leur sécurité.</strong></p>
       </div>
 
       <div class="article">
@@ -1098,6 +1180,10 @@
         <label class="check-item" style="border-radius:6px; background:#fff8f0; border-color:#ffcc80;">
           <input type="checkbox" id="cohab-accept" required>
           <span>🐕 &nbsp;Je déclare avoir renseigné <strong>sincèrement et complètement</strong> le comportement de mon animal (Art. 6bis). Je reconnais qu'en cas d'incompatibilité ou de fausse déclaration, Cathy Pets pourra mettre fin à la garde et que les frais de pension partenaire ou de retour seront à <strong>ma charge exclusive</strong>.</span>
+        </label>
+        <label class="check-item" style="border-radius:6px; background:#fef2f2; border-color:#fca5a5;">
+          <input type="checkbox" id="pension-accept" required>
+          <span>🏡 &nbsp;Je reconnais avoir été informé(e) des conditions de la <strong>garde en pension familiale</strong> (Art. 8ter) : absence de boxes individuels, vie en communauté, risques inhérents. Je confie mon animal <strong>en connaissance de cause</strong>.</span>
         </label>
       </div>
     </div>
