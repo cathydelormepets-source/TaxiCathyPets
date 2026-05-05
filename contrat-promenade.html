@@ -187,7 +187,25 @@
   </div>
 </div>
 
-<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js">// Parsing tarif_animaux
+setTimeout(function(){
+  var tp2=new URLSearchParams(window.location.search);
+  if(tp2.get('tarif_animaux')){
+    var tbody=document.getElementById('tarifBody');var total=0;
+    tp2.get('tarif_animaux').split(';;').forEach(function(line){
+      var parts=line.split('|');if(parts.length>=3){
+        var desc=parts[0],qty=parseFloat(parts[1])||0,pu=parseFloat(parts[2])||0,rem=parseFloat(parts[3])||0;
+        var mt=qty*pu;if(rem>0)mt=mt*(100-rem)/100;total+=mt;
+        if(tbody){var tr=document.createElement('tr');
+          tr.innerHTML='<td style="padding:5px;border:1px solid #ddd">'+desc+'</td><td style="text-align:center;padding:5px;border:1px solid #ddd">'+qty+'</td><td style="text-align:right;padding:5px;border:1px solid #ddd">'+pu.toFixed(2)+' \u20ac</td><td style="text-align:center;padding:5px;border:1px solid #ddd">'+(rem>0?'-'+rem+'%':'')+'</td><td style="text-align:right;padding:5px;border:1px solid #ddd;font-weight:700">'+mt.toFixed(2).replace('.',',')+' \u20ac</td>';
+          tbody.appendChild(tr);}
+      }
+    });
+    var totalEl=document.getElementById('tarifTotal');
+    if(totalEl)totalEl.textContent=total.toFixed(2).replace('.',',')+' \u20ac';
+  }
+},300);
+</script><script>
 // Vérification code accès
 var params=new URLSearchParams(window.location.search);
 var hasCode=params.has('code')||params.has('mode')||params.has('nom');
@@ -236,6 +254,24 @@ function submitContrat(){
     window.location.href='mailto:cathydelormepets@gmail.com?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
   });
 }
+// Parsing tarif_animaux
+setTimeout(function(){
+  var tp2=new URLSearchParams(window.location.search);
+  if(tp2.get('tarif_animaux')){
+    var tbody=document.getElementById('tarifBody');var total=0;
+    tp2.get('tarif_animaux').split(';;').forEach(function(line){
+      var parts=line.split('|');if(parts.length>=3){
+        var desc=parts[0],qty=parseFloat(parts[1])||0,pu=parseFloat(parts[2])||0,rem=parseFloat(parts[3])||0;
+        var mt=qty*pu;if(rem>0)mt=mt*(100-rem)/100;total+=mt;
+        if(tbody){var tr=document.createElement('tr');
+          tr.innerHTML='<td style="padding:5px;border:1px solid #ddd">'+desc+'</td><td style="text-align:center;padding:5px;border:1px solid #ddd">'+qty+'</td><td style="text-align:right;padding:5px;border:1px solid #ddd">'+pu.toFixed(2)+' \u20ac</td><td style="text-align:center;padding:5px;border:1px solid #ddd">'+(rem>0?'-'+rem+'%':'')+'</td><td style="text-align:right;padding:5px;border:1px solid #ddd;font-weight:700">'+mt.toFixed(2).replace('.',',')+' \u20ac</td>';
+          tbody.appendChild(tr);}
+      }
+    });
+    var totalEl=document.getElementById('tarifTotal');
+    if(totalEl)totalEl.textContent=total.toFixed(2).replace('.',',')+' \u20ac';
+  }
+},300);
 </script>
 </div><!-- /contractForm -->
 </body>

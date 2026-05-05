@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Contrat Visite à domicile — Cathy Pets</title>
+<style>
+  :root{--p:#c45400;--tl:#1a7a6e;--gy:#546e7a;--gl:#eceff1;--gb:#cfd8dc;--bg:#fdf6ee}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:#263238;font-size:14px;line-height:1.6}
+  .hdr{background:linear-gradient(135deg,#6d28d9,#8b5cf6 60%,#a78bfa);color:#fff;padding:24px 30px 18px}
+  .hdr h1{font-size:20px;font-weight:800} .hdr p{font-size:11px;opacity:.85;margin-top:2px}
+  .ct{max-width:800px;margin:0 auto;padding:16px}
+  .sec{background:#fff;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.1);margin-bottom:14px;overflow:hidden}
+  .sh{padding:10px 18px;font-weight:700;font-size:13px;color:#fff}
+  .sb{padding:14px 18px}
+  .row{display:flex;flex-wrap:wrap;gap:10px} .fd{flex:1;min-width:170px}
+  .fd label{display:block;font-size:10px;font-weight:700;color:var(--gy);text-transform:uppercase;margin-bottom:3px}
+  .fd input,.fd select,.fd textarea{width:100%;padding:7px 10px;border:1px solid var(--gb);border-radius:6px;font:inherit;font-size:12px;background:#fff;color:#333}
+  input[type="date"],input[type="time"],select{background:#fff!important;color:#333!important}
+  .ro{background:#e8e8e8!important;font-weight:700!important}
+  table{width:100%;border-collapse:collapse;font-size:12px}
+  th{padding:8px;text-align:left;border:1px solid var(--gb);background:var(--gl);font-size:11px}
+  td{padding:7px 8px;border:1px solid var(--gb)}
+  .sig{border:2px dashed var(--gb);border-radius:8px;padding:10px;text-align:center;margin:6px 0}
+  .btn{display:inline-block;padding:10px 24px;border:none;border-radius:6px;font:inherit;font-weight:700;cursor:pointer;font-size:14px}
+  .btn-p{background:var(--tl);color:#fff}
+  .total-row td{font-weight:800;font-size:14px;background:#e8f5e9}
+  .svc-item{display:flex;align-items:center;gap:8px;padding:6px 10px;background:#f5f3ff;border:1px solid #ddd6fe;border-radius:6px;margin-bottom:4px;font-size:12px}
+  .svc-check{width:16px;height:16px;accent-color:#6d28d9}
+  @media(max-width:600px){.row{flex-direction:column}}
+  @media print{body{background:#fff}.sec{box-shadow:none;border:1px solid #ddd}}
+</style>
+</head>
+<body>
+<div class="hdr">
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
+    <div>
+      <h1>&#127968; Contrat de Visite &#224; Domicile</h1>
+      <p>Cathy Pets SAS &#8212; SIRET 928 564 269 &#8212; RC Pro Hiscox HSXIN320028640M</p>
+      <p>&#128222; 07.83.43.63.06 &#183; cathydelormepets@gmail.com &#183; cathypetsitter.com</p>
+    </div>
+    <div style="text-align:right">
+      <div style="font-size:11px;opacity:.8" id="dDate"></div>
+    </div>
+  </div>
+</div>
+<div class="ct" id="contractForm">
+  <!-- CLIENT -->
+  <div class="sec"><div class="sh" style="background:var(--p)">&#128100; Client</div><div class="sb">
+    <div class="row"><div class="fd"><label>Nom</label><input id="cli_nom" class="ro" readonly></div><div class="fd"><label>T&#233;l&#233;phone</label><input id="cli_tel" class="ro" readonly></div><div class="fd"><label>Email</label><input id="cli_email" class="ro" readonly></div></div>
+    <div class="row"><div class="fd"><label>Adresse de la visite</label><input id="cli_adresse" class="ro" readonly></div></div>
+  </div></div>
+
+  <!-- ANIMAUX -->
+  <div class="sec"><div class="sh" style="background:var(--gy)">&#128062; Animal(aux)</div><div class="sb">
+    <div id="animauxList"></div>
+  </div></div>
+
+  <!-- PLANNING VISITES -->
+  <div class="sec"><div class="sh" style="background:#6d28d9">&#128197; Planning des visites</div><div class="sb">
+    <div class="row">
+      <div class="fd"><label>P&#233;riode du</label><input id="vis_debut" type="date"></div>
+      <div class="fd"><label>Au</label><input id="vis_fin" type="date"></div>
+      <div class="fd"><label>Fr&#233;quence</label><select id="vis_freq"><option value="1">1 visite/jour</option><option value="2" selected>2 visites/jour</option><option value="3">3 visites/jour</option></select></div>
+    </div>
+    <div class="row">
+      <div class="fd"><label>Heure visite 1</label><input id="vis_h1" type="time" value="08:00"></div>
+      <div class="fd"><label>Heure visite 2</label><input id="vis_h2" type="time" value="18:00"></div>
+      <div class="fd"><label>Dur&#233;e par visite</label><select id="vis_duree"><option value="30">30 min</option><option value="45" selected>45 min</option><option value="60">1 heure</option><option value="90">1h30</option></select></div>
+    </div>
+  </div></div>
+
+  <!-- SERVICES INCLUS -->
+  <div class="sec"><div class="sh" style="background:#6d28d9">&#9989; Services inclus dans la visite</div><div class="sb">
+    <div class="svc-item"><input type="checkbox" class="svc-check" checked disabled> &#127869; Nourriture et eau fra&#238;che</div>
+    <div class="svc-item"><input type="checkbox" class="svc-check" checked disabled> &#128169; Nettoyage liti&#232;re / ramassage d&#233;jections</div>
+    <div class="svc-item"><input type="checkbox" class="svc-check" checked disabled> &#129730; Promenade / sortie au jardin</div>
+    <div class="svc-item"><input type="checkbox" class="svc-check" checked disabled> &#128149; C&#226;lins et jeux</div>
+    <div class="svc-item"><input type="checkbox" class="svc-check" checked disabled> &#128247; Photo/vid&#233;o envoy&#233;e au propri&#233;taire</div>
+    <div class="svc-item"><input type="checkbox" class="svc-check" id="svc_med"> &#128138; Administration de m&#233;dicaments</div>
+    <div class="svc-item"><input type="checkbox" class="svc-check" id="svc_plantes"> &#127793; Arrosage plantes</div>
+    <div class="svc-item"><input type="checkbox" class="svc-check" id="svc_courrier"> &#128231; Rel&#232;ve du courrier</div>
+    <div class="svc-item"><input type="checkbox" class="svc-check" id="svc_volets"> &#127968; Ouverture/fermeture volets</div>
+    <div class="fd" style="margin-top:8px"><label>Autres services demand&#233;s</label><textarea id="vis_autres" rows="2" placeholder="Pr&#233;cisez..."></textarea></div>
+  </div></div>
+
+  <!-- TARIFICATION -->
+  <div class="sec"><div class="sh" style="background:var(--tl)">&#128182; Tarification</div><div class="sb">
+    <table>
+      <thead><tr><th>D&#233;signation</th><th style="width:55px;text-align:center">Qt&#233;</th><th style="width:80px;text-align:right">PU &#8364;</th><th style="width:50px;text-align:center">Rem%</th><th style="width:90px;text-align:right">Montant</th></tr></thead>
+      <tbody id="tarifBody"></tbody>
+      <tfoot>
+        <tr class="total-row"><td colspan="4" style="text-align:right">TOTAL TTC</td><td style="text-align:right;color:var(--tl)" id="tarifTotal">0,00 &#8364;</td></tr>
+      </tfoot>
+    </table>
+    <p style="font-size:11px;color:var(--gy);margin-top:6px">TVA non applicable, art. 293B du CGI.</p>
+  </div></div>
+
+  <!-- CONDITIONS -->
+  <div class="sec"><div class="sh" style="background:var(--gy)">&#128220; Conditions</div><div class="sb" style="font-size:11px;color:var(--gy)">
+    <p><b>Cl&#233;s :</b> Les cl&#233;s du domicile sont confi&#233;es &#224; Cathy Pets pour la dur&#233;e du contrat et restitu&#233;es &#224; la fin de la prestation.</p>
+    <p style="margin-top:6px"><b>Annulation :</b> Gratuite &#224; plus de 48h. Entre 24-48h : 50% retenu. Moins de 24h : aucun remboursement.</p>
+    <p style="margin-top:6px"><b>Urgence v&#233;t&#233;rinaire :</b> En cas de probl&#232;me de sant&#233;, Cathy Pets contactera le propri&#233;taire et emm&#232;nera l'animal chez le v&#233;t&#233;rinaire le plus proche si urgence.</p>
+    <p style="margin-top:6px"><b>Assurance :</b> RC Professionnelle Hiscox HSXIN320028640M.</p>
+  </div></div>
+
+  <!-- SIGNATURE -->
+  <div class="sec"><div class="sh" style="background:#7b3f00">&#9997;&#65039; Signature</div><div class="sb">
+    <div class="row">
+      <div class="fd"><label>Signature Cathy Pets</label><div class="sig"><p style="font-size:10px;color:var(--gy)">Cathy DELORME &#8212; Cathy Pets SAS</p><p style="font-size:10px;color:#c45400;font-weight:700">&#128222; 07.83.43.63.06</p><p style="font-size:9px;color:#999">Sign&#233; &#233;lectroniquement</p></div></div>
+      <div class="fd"><label>Signature du Client</label><div class="sig"><canvas id="sig_canvas" width="320" height="120" style="width:100%;max-width:320px;height:120px;background:#fafafa;cursor:crosshair;touch-action:none"></canvas><div style="margin-top:4px"><button style="background:#ef4444;color:#fff;border:none;border-radius:4px;padding:4px 10px;cursor:pointer;font-size:10px" onclick="clearSig()">Effacer</button></div></div></div>
+    </div>
+    <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;margin-top:10px"><input type="checkbox" id="accept"> Bon pour accord &#8212; Contrat accept&#233;, lu et approuv&#233;</label>
+    <div style="margin-top:14px;text-align:center"><button class="btn btn-p" onclick="submitContrat()" id="submitBtn" style="font-size:15px;padding:12px 36px">&#9989; Valider et signer le contrat</button></div>
+  </div></div>
+</div>
+
+<script>
+// Signature
+var cv=document.getElementById('sig_canvas'),cx=cv.getContext('2d'),dr=false;
+function gP(e){var r=cv.getBoundingClientRect();var t=e.touches?e.touches[0]:e;return{x:(t.clientX-r.left)*(cv.width/r.width),y:(t.clientY-r.top)*(cv.height/r.height)}}
+cv.onmousedown=function(e){dr=true;cx.beginPath();var p=gP(e);cx.moveTo(p.x,p.y)};
+cv.onmousemove=function(e){if(!dr)return;var p=gP(e);cx.lineTo(p.x,p.y);cx.strokeStyle='#222';cx.lineWidth=2;cx.stroke()};
+cv.onmouseup=function(){dr=false};
+cv.addEventListener('touchstart',function(e){e.preventDefault();dr=true;cx.beginPath();var p=gP(e);cx.moveTo(p.x,p.y)},{passive:false});
+cv.addEventListener('touchmove',function(e){e.preventDefault();if(!dr)return;var p=gP(e);cx.lineTo(p.x,p.y);cx.strokeStyle='#222';cx.lineWidth=2;cx.stroke()},{passive:false});
+cv.addEventListener('touchend',function(){dr=false});
+function clearSig(){cx.clearRect(0,0,cv.width,cv.height)}
+
+document.getElementById('dDate').textContent=new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'});
+
+// URL params
+setTimeout(function(){
+  var p=new URLSearchParams(window.location.search);
+  if(p.get('nom'))document.getElementById('cli_nom').value=p.get('nom');
+  if(p.get('tel'))document.getElementById('cli_tel').value=p.get('tel');
+  if(p.get('email'))document.getElementById('cli_email').value=p.get('email');
+  if(p.get('adresse'))document.getElementById('cli_adresse').value=p.get('adresse');
+  if(p.get('debut'))document.getElementById('vis_debut').value=p.get('debut');
+  if(p.get('fin'))document.getElementById('vis_fin').value=p.get('fin');
+  if(p.get('animaux')){
+    var list=document.getElementById('animauxList');
+    p.get('animaux').split(';;').forEach(function(a){
+      var parts=a.split('|');
+      if(parts.length>=2){
+        var div=document.createElement('div');
+        div.style.cssText='padding:6px 10px;background:#f5f3ff;border:1px solid #ddd6fe;border-radius:6px;margin-bottom:4px;font-size:12px';
+        div.innerHTML='\uD83D\uDC3E <b>'+parts[1]+'</b> ('+parts[0]+(parts[2]?' \u2014 '+parts[2]:'')+')';
+        list.appendChild(div);
+      }
+    });
+  }
+  // Tarifs
+  if(p.get('tarif_animaux')){
+    var tbody=document.getElementById('tarifBody');var total=0;
+    p.get('tarif_animaux').split(';;').forEach(function(line){
+      var parts=line.split('|');if(parts.length>=3){
+        var desc=parts[0],qty=parseFloat(parts[1])||0,pu=parseFloat(parts[2])||0,rem=parseFloat(parts[3])||0;
+        var mt=qty*pu;if(rem>0)mt=mt*(100-rem)/100;total+=mt;
+        if(tbody){var tr=document.createElement('tr');
+          tr.innerHTML='<td>'+desc+'</td><td style="text-align:center">'+qty+'</td><td style="text-align:right">'+pu.toFixed(2)+' \u20ac</td><td style="text-align:center">'+(rem>0?'-'+rem+'%':'')+'</td><td style="text-align:right;font-weight:700">'+mt.toFixed(2).replace('.',',')+' \u20ac</td>';
+          tbody.appendChild(tr);}
+      }
+    });
+    document.getElementById('tarifTotal').textContent=total.toFixed(2).replace('.',',')+' \u20ac';
+  }
+},200);
+
+function submitContrat(){
+  if(!document.getElementById('accept').checked){alert('Veuillez cocher "Bon pour accord"');return}
+  var sd=cv.toDataURL(),bl=document.createElement('canvas');bl.width=cv.width;bl.height=cv.height;
+  if(sd===bl.toDataURL()){alert('Veuillez signer le contrat');return}
+  var p=new URLSearchParams(window.location.search);
+  var nom=document.getElementById('cli_nom').value||'';
+  var body='=== CONTRAT VISITE \u00c0 DOMICILE SIGN\u00c9 ===\n\n';
+  body+='Client: '+nom+'\nAdresse: '+(document.getElementById('cli_adresse').value||'')+'\n';
+  body+='P\u00e9riode: '+(document.getElementById('vis_debut').value||'')+' au '+(document.getElementById('vis_fin').value||'')+'\n';
+  body+='Total: '+(document.getElementById('tarifTotal').textContent||'')+'\n';
+  body+='\n--- Sign\u00e9 le '+new Date().toLocaleDateString('fr-FR')+' ---';
+  var subject='\u2705 CONTRAT VISITE sign\u00e9 \u2014 '+nom;
+  var btn=document.getElementById('submitBtn');btn.textContent='\u23f3 Envoi...';btn.disabled=true;
+  fetch('https://formsubmit.co/ajax/cathydelormepets@gmail.com',{
+    method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},
+    body:JSON.stringify({_subject:subject,message:body,name:nom,_template:'table'})
+  }).then(function(r){return r.json()}).then(function(data){
+    if(data.success){document.getElementById('contractForm').innerHTML='<div style="text-align:center;padding:60px 20px"><div style="font-size:60px;margin-bottom:20px">\u2705</div><h2 style="color:#1a7a6e">Contrat sign\u00e9 !</h2><p style="color:#546e7a">Cathy Pets a re\u00e7u votre contrat de visite \u00e0 domicile.</p><p style="margin-top:20px;font-size:16px">Merci ! \uD83D\uDC3E</p></div>'}
+    else{alert('Erreur');btn.textContent='\u2705 Valider';btn.disabled=false}
+  }).catch(function(){alert('Erreur r\u00e9seau');btn.textContent='\u2705 Valider';btn.disabled=false});
+}
+</script>
+</body>
+</html>

@@ -185,7 +185,19 @@ data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAA4KCw0LCQ4NDA0QDw4RFiQXF
 
   <!-- SECTION 5 : ENGAGEMENTS -->
   <div class="section">
-    <div class="section-header">📜 Section 5 — Engagements et responsabilités</div>
+    <div class="section-header" style="background:linear-gradient(135deg,#1a7a6e,#22a693)">&#128182; Section 5 &#8212; Tarification</div>
+    <div class="section-body">
+      <table style="width:100%;border-collapse:collapse;font-size:13px">
+        <thead><tr style="background:#f5f5f5"><th style="text-align:left;padding:8px;border:1px solid #ddd">D&#233;signation</th><th style="width:60px;text-align:center;padding:8px;border:1px solid #ddd">Qt&#233;</th><th style="width:80px;text-align:right;padding:8px;border:1px solid #ddd">PU &#8364;</th><th style="width:50px;text-align:center;padding:8px;border:1px solid #ddd">Rem%</th><th style="width:90px;text-align:right;padding:8px;border:1px solid #ddd">Montant</th></tr></thead>
+        <tbody id="tarifBody"></tbody>
+        <tfoot><tr style="background:#e8f5e9;font-weight:800"><td colspan="4" style="text-align:right;padding:8px;border:1px solid #ddd">TOTAL TTC</td><td style="text-align:right;padding:8px;border:1px solid #ddd" id="tarifTotal">0,00 &#8364;</td></tr></tfoot>
+      </table>
+      <p style="font-size:11px;color:#888;margin-top:6px">TVA non applicable, art. 293B du CGI.</p>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header">&#128220; Section 6 &#8212; Engagements et responsabilit&#233;s</div>
     <div class="section-body">
       <div class="article"><b>Art. 1 — Véracité des informations :</b> Le propriétaire certifie que toutes les informations fournies dans ce contrat sont exactes et complètes. <strong>Toute fausse déclaration ou omission dégage Cathy Pets SAS de toute responsabilité</strong> en cas d'incident lié à un état de santé ou de comportement non déclaré.</div>
       <div class="article"><b>Art. 2 — Droit de refus :</b> Cathy Pets SAS se réserve le droit de <strong>refuser la prise en charge</strong> de l'animal si son état physique ou comportemental ne correspond pas à la déclaration faite dans ce contrat.</div>
@@ -198,7 +210,7 @@ data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAA4KCw0LCQ4NDA0QDw4RFiQXF
 
   <!-- SECTION 6 : SIGNATURES -->
   <div class="section">
-    <div class="section-header">✍️ Section 6 — Signatures</div>
+    <div class="section-header">&#9997;&#65039; Section 7 &#8212; Signatures</div>
     <div class="section-body">
       <div class="form-row">
         <!-- Signature client -->
@@ -528,8 +540,29 @@ function applyURLParams(){
   if(p.get('date')){var el=document.getElementById('trajet_date');if(el)el.value=p.get('date')}
   if(p.get('heure')){var el=document.getElementById('trajet_heure');if(el)el.value=p.get('heure')}
 }
-checkAccess(); // Vérifier le code d'accès et afficher le formulaire
+checkAccess();
 setTimeout(applyURLParams, 200);
+// Parsing tarif_animaux
+setTimeout(function(){
+  var tp2=new URLSearchParams(window.location.search);
+  if(tp2.get('tarif_animaux')){
+    var tbody=document.getElementById('tarifBody');
+    var total=0;
+    tp2.get('tarif_animaux').split(';;').forEach(function(line){
+      var parts=line.split('|');
+      if(parts.length>=3){
+        var desc=parts[0],qty=parseFloat(parts[1])||0,pu=parseFloat(parts[2])||0,rem=parseFloat(parts[3])||0;
+        var mt=qty*pu;if(rem>0)mt=mt*(100-rem)/100;
+        total+=mt;
+        if(tbody){var tr=document.createElement('tr');
+          tr.innerHTML='<td style="padding:6px;border:1px solid #ddd">'+desc+'</td><td style="text-align:center;padding:6px;border:1px solid #ddd">'+qty+'</td><td style="text-align:right;padding:6px;border:1px solid #ddd">'+pu.toFixed(2)+' \u20ac</td><td style="text-align:center;padding:6px;border:1px solid #ddd">'+(rem>0?'-'+rem+'%':'')+'</td><td style="text-align:right;padding:6px;border:1px solid #ddd;font-weight:700">'+mt.toFixed(2).replace('.',',')+' \u20ac</td>';
+          tbody.appendChild(tr);}
+      }
+    });
+    var totalEl=document.getElementById('tarifTotal');
+    if(totalEl)totalEl.textContent=total.toFixed(2).replace('.',',')+' \u20ac';
+  }
+},300);
 </script>
 </body>
 </html>
