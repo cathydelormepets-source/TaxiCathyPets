@@ -18792,7 +18792,7 @@ function ctenvBuildURL(){
     for(var tli=0;tli<_ctenvTarifLineN+5;tli++){
       var td=$('ctl_d_'+tli),tq=$('ctl_q_'+tli),tp=$('ctl_p_'+tli),tr=$('ctl_r_'+tli);
       if(!td)continue;
-      if(td.value||E(tq?tq.value:0)>0)tarifAni.push(encodeURIComponent(td.value)+'|'+(tq?tq.value:0)+'|'+(tp?tp.value:0)+'|'+(tr?tr.value:0));
+      if(td.value||E(tq?tq.value:0)>0)tarifAni.push(td.value+'|'+(tq?tq.value:0)+'|'+(tp?tp.value:0)+'|'+(tr?tr.value:0));
     }
     if(tarifAni.length)p.push('tarif_animaux='+encodeURIComponent(tarifAni.join(';;')));
     // VIP mode

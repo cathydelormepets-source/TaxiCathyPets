@@ -383,7 +383,7 @@ function applyURL(){
   if(p.get('tarif_animaux')){
     p.get('tarif_animaux').split(';;').forEach(function(lt){
       var parts=lt.split('|');
-      if(parts.length>=3)ajouterLigneTarif(decodeURIComponent(parts[0]),parts[1],parts[2],parts[3]||0);
+      if(parts.length>=3)ajouterLigneTarif(parts[0],parts[1],parts[2],parts[3]||0);
     });
   } else {
     // Fallback ancien format t1p/t2p...

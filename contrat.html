@@ -2052,11 +2052,12 @@ function applyURLParams() {
   } else if (params.has('tarif_animaux')) {
     // Format dynamique : desc|qty|pu|rem;;desc|qty|pu|rem
     try{
-      var taLines=decodeURIComponent(params.get('tarif_animaux')).split(';;');
+      var taRaw=params.get('tarif_animaux');
+      var taLines=taRaw.split(';;');
       taLines.forEach(function(line){
         var parts=line.split('|');
         if(parts.length>=3){
-          var desc=decodeURIComponent(parts[0]);
+          var desc=parts[0]||'';
           var qty=parseFloat(parts[1])||0;
           var pu=parseFloat(parts[2])||0;
           var rem=parseFloat(parts[3])||0;
