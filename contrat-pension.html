@@ -18,7 +18,9 @@
   .row{display:flex;flex-wrap:wrap;gap:10px}
   .fd{flex:1;min-width:170px}
   .fd label{display:block;font-size:10px;font-weight:700;color:var(--gy);text-transform:uppercase;letter-spacing:.3px;margin-bottom:3px}
-  .fd input,.fd select,.fd textarea{width:100%;padding:7px 10px;border:1px solid var(--gb);border-radius:6px;font:inherit;font-size:12px;background:var(--gl)}
+  .fd input,.fd select,.fd textarea{width:100%;padding:7px 10px;border:1px solid var(--gb);border-radius:6px;font:inherit;font-size:12px;background:#fff;color:#333}
+  input[type="date"],input[type="time"]{background:#fff!important;color:#333!important;-webkit-appearance:none}
+  select{background:#fff!important;color:#333!important}
   .fd textarea{min-height:50px;resize:vertical}
   .ro{background:#e8e8e8!important;color:#333!important;font-weight:700!important;cursor:not-allowed}
   .art{border-left:3px solid var(--grn);padding:8px 14px;margin:6px 0;background:var(--pale);border-radius:0 6px 6px 0;font-size:11px}
@@ -206,9 +208,9 @@ function ajouterCoupure(){
   var i=_coupN++;
   var z=document.getElementById('coup_zone');
   var d=document.createElement('div');d.id='cp_'+i;d.style.cssText='display:flex;gap:6px;align-items:center;margin-bottom:4px';
-  d.innerHTML='<input id="cp_d1_'+i+'" type="date" style="flex:1;padding:5px;border:1px solid #ccc;border-radius:4px;font-size:11px" onchange="calcAll()">'+
+  d.innerHTML='<input id="cp_d1_'+i+'" type="date" style="flex:1;padding:5px;border:1px solid #ccc;border-radius:4px;font-size:11px;background:#fff;color:#333" onchange="calcAll()">'+
     '<span style="font-size:10px;color:#888">au</span>'+
-    '<input id="cp_d2_'+i+'" type="date" style="flex:1;padding:5px;border:1px solid #ccc;border-radius:4px;font-size:11px" onchange="calcAll()">'+
+    '<input id="cp_d2_'+i+'" type="date" style="flex:1;padding:5px;border:1px solid #ccc;border-radius:4px;font-size:11px;background:#fff;color:#333" onchange="calcAll()">'+
     '<button onclick="document.getElementById(\'cp_'+i+'\').remove();calcAll()" style="background:#ef4444;color:#fff;border:none;border-radius:4px;padding:3px 7px;cursor:pointer;font-size:11px">&times;</button>';
   z.appendChild(d);
 }
@@ -318,10 +320,10 @@ function ajouterLigneTarif(desc,qty,pu,remise){
   var z=document.getElementById('tarif_lignes_zone');if(!z)return;
   var row=document.createElement('div');row.id='tl_'+i;
   row.style.cssText='display:grid;grid-template-columns:1fr 55px 80px 55px 80px;gap:4px;align-items:center;margin-bottom:3px';
-  row.innerHTML='<input id="tl_d_'+i+'" value="'+(desc||'')+'" class="ro" readonly style="padding:5px;font-size:11px;border:1px solid #cfd8dc;border-radius:4px">'
+  row.innerHTML='<input id="tl_d_'+i+'" value="'+(desc||'')+'" class="ro" readonly style="padding:5px;font-size:11px;border:1px solid #cfd8dc;border-radius:4px;background:#f5f5f5;color:#333">'
     +'<input id="tl_q_'+i+'" type="number" value="'+(qty||0)+'" class="ro" readonly style="padding:5px;font-size:11px;border:1px solid #cfd8dc;border-radius:4px;text-align:center">'
     +'<input id="tl_p_'+i+'" type="number" step="0.01" value="'+(pu||0)+'" class="ro" readonly style="padding:5px;font-size:11px;border:1px solid #cfd8dc;border-radius:4px;text-align:right;font-weight:700">'
-    +'<input id="tl_r_'+i+'" type="number" step="1" min="0" max="100" value="'+(remise||0)+'" class="ro" readonly style="padding:5px;font-size:11px;border:1px solid #bbf7d0;border-radius:4px;text-align:center;color:#16a34a;font-weight:700;background:#f0fdf4">'
+    +'<input id="tl_r_'+i+'" type="number" step="1" min="0" max="100" value="'+(remise||0)+'" class="ro" readonly style="padding:5px;font-size:11px;border:1px solid #bbf7d0;border-radius:4px;text-align:center;color:#16a34a;font-weight:700;background:#f0fdf4!important">'
     +'<span id="tl_t_'+i+'" style="text-align:right;font-size:11px;font-weight:700;color:#1a7a6e">0 \u20ac</span>';
   z.appendChild(row);
   calcTarif();
