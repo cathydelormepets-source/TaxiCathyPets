@@ -2,21 +2,30 @@
 <html lang="fr" translate="no">
 <head>
 <meta charset="UTF-8"/>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <meta name="google" content="notranslate">
 <meta http-equiv="Content-Language" content="fr">
 <script>
 /* ═══ MODE OFFLINE — Cache direct (compatible GitHub Pages single-file) ═══ */
-var CP_CACHE_VERSION='cathypets-v31';
+var CP_CACHE_VERSION='cathypets-v32';
 (function(){
-  // Cache la page actuelle pour accès offline
+  // Purger TOUS les anciens caches d'abord
   if(typeof caches!=='undefined'){
+    caches.keys().then(function(names){
+      names.forEach(function(n){if(n!==CP_CACHE_VERSION)caches.delete(n)});
+    });
+    // Puis mettre en cache la version actuelle
     caches.open(CP_CACHE_VERSION).then(function(c){
-      c.add(location.href).then(function(){console.log('✅ Page mise en cache offline')});
-      // Nettoyer les anciens caches
-      caches.keys().then(function(names){
-        names.forEach(function(n){if(n!==CP_CACHE_VERSION)caches.delete(n)});
-      });
+      c.add(location.href).then(function(){console.log('✅ Page mise en cache offline v32')});
     }).catch(function(e){console.log('Cache offline non dispo:',e)});
+  }
+  // Désenregistrer les anciens service workers
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.getRegistrations().then(function(regs){
+      regs.forEach(function(r){r.unregister()});
+    });
   }
   // Détection online/offline avec bannière
   var _isOffline=!navigator.onLine;
