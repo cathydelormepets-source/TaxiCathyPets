@@ -8973,9 +8973,16 @@ function showCliHistory(cid){
   h+='<div style="display:flex;gap:4px;margin-bottom:8px;flex-wrap:wrap">';
   h+='<button class="btn sm bu" onclick="chTab(\'h_ani\')" id="hb_ani">🐾 Animaux ('+nbAni+')</button>';
   h+='<button class="btn sm" onclick="chTab(\'h_tr\')" id="hb_tr">🚗 Transports ('+nbTr+')</button>';
-  h+='<button class="btn sm" onclick="chTab(\'h_dev\')" id="hb_dev">📝 Devis ('+nbDev+')</button>';
-  h+='<button class="btn sm" onclick="chTab(\'h_fac\')" id="hb_fac">📄 Factures ('+nbFac+')</button>';
+  h+='<button class="btn sm" onclick="chTab(\'h_dev\')" id="hb_dev" style="background:#3d2c0a;border-color:#6d5a2a;color:#fcd77a">📝 Devis ('+nbDev+')</button>';
+  h+='<button class="btn sm" onclick="chTab(\'h_fac\')" id="hb_fac" style="background:#133a28;border-color:#2a6a40;color:#7bf0b0">📄 Factures ('+nbFac+')</button>';
   h+='<button class="btn sm" onclick="chTab(\'h_grd\')" id="hb_grd">🏠 Gardes ('+nbGrd+')</button>';
+  h+='</div>';
+  // Actions rapides
+  h+='<div style="display:flex;gap:4px;margin-bottom:10px;flex-wrap:wrap">';
+  h+='<button class="btn sm gn" onclick="cMo();setTimeout(function(){sTab(\'dev\');$(\'q_cl\').value=\''+cid+'\';try{qClChange()}catch(e){}},200)" title="Créer un devis pour ce client">📝+ Nouveau devis</button>';
+  h+='<button class="btn sm" style="background:#133a28;border-color:#2a6a40;color:#7bf0b0" onclick="cMo();setTimeout(function(){sTab(\'fac\')},200)" title="Aller aux factures">💶+ Nouvelle facture</button>';
+  h+='<button class="btn sm" style="background:#1a2a3a;border-color:#2a4060;color:#8ec8ff" onclick="cMo();setTimeout(function(){sTab(\'dev\')},200)" title="Voir tous les devis">📝 Voir les devis</button>';
+  h+='<button class="btn sm" style="background:#1a2a3a;border-color:#2a4060;color:#8ec8ff" onclick="cMo();setTimeout(function(){sTab(\'fac\')},200)" title="Voir toutes les factures">💶 Voir les factures</button>';
   h+='</div>';
   // Animaux
   h+='<div id="h_ani" class="htab" style="max-height:300px;overflow-y:auto">';
@@ -9009,11 +9016,19 @@ function showCliHistory(cid){
   if(!devs.length)h+='<div class="nt">Aucun devis</div>';
   else devs.forEach(function(q){
     var stCol=q.status==='accepté'?'gt':q.status==='refusé'?'rt':q.status==='facturé'?'bt':'ot';
-    h+='<div class="itm" style="margin-bottom:4px;display:flex;justify-content:space-between;align-items:center">';
+    h+='<div class="itm" style="margin-bottom:6px;padding:8px;background:rgba(255,255,255,.03);border-radius:8px;border-left:3px solid '+(q.status==='accepté'?'var(--a2)':q.status==='refusé'?'var(--rd)':'#f59e0b')+'">';
+    h+='<div style="display:flex;justify-content:space-between;align-items:center">';
     h+='<div><strong>'+esc(q.ref)+'</strong> <span class="pill '+stCol+'">'+esc(q.status)+'</span>';
     if(q.total)h+=' <span style="color:#fcd77a;font-weight:700">'+euro(q.total)+'</span>';
-    h+='<br><span style="font-size:10px;color:#6d8aa6">'+new Date(q.date).toLocaleDateString('fr-FR')+'</span></div>';
-    h+='<div><button class="btn sm og" onclick="printDevisPro(\''+q.id+'\')">🖨️</button> <button class="btn sm at" onclick="cMo();eDev(\''+q.id+'\')">✏️</button></div></div>';
+    var anis=q.animalIds?q.animalIds.map(function(aid){var a=db.animaux.find(function(x){return x.id===aid});return a?a.nom:''}).filter(Boolean).join(', '):'';
+    if(anis)h+='<br><span style="font-size:10px;color:var(--or)">🐾 '+anis+'</span>';
+    h+='<br><span style="font-size:10px;color:#6d8aa6">📅 '+new Date(q.date).toLocaleDateString('fr-FR')+'</span></div>';
+    h+='<div style="display:flex;gap:3px;flex-wrap:wrap">';
+    h+='<button class="btn sm og" onclick="cMo();printDevisPro(\''+q.id+'\')" title="PDF">🖨️</button>';
+    h+='<button class="btn sm bu" onclick="cMo();eDev(\''+q.id+'\')" title="Modifier">✏️</button>';
+    if(q.status==='accepté')h+='<button class="btn sm gn" onclick="cMo();devToFacDirect(\''+q.id+'\')" title="Facturer">💶</button>';
+    if(q.status==='envoyé')h+='<button class="btn sm" style="background:#1a3020;border-color:#2a6030;color:#7bf0a0" onclick="cMo();contratValide(\''+q.id+'\')" title="Contrat reçu">📋</button>';
+    h+='</div></div></div>';
   });
   h+='</div>';
   // Factures
@@ -9021,11 +9036,18 @@ function showCliHistory(cid){
   if(!facs.length)h+='<div class="nt">Aucune facture</div>';
   else facs.forEach(function(f){
     var stCol=f.status==='payée'?'gt':f.status==='envoyée'?'ot':'rt';
-    h+='<div class="itm" style="margin-bottom:4px;display:flex;justify-content:space-between;align-items:center">';
+    h+='<div class="itm" style="margin-bottom:6px;padding:8px;background:rgba(255,255,255,.03);border-radius:8px;border-left:3px solid '+(f.status==='payée'?'var(--a2)':f.status==='envoyée'?'#f59e0b':'var(--rd)')+'">';
+    h+='<div style="display:flex;justify-content:space-between;align-items:center">';
     h+='<div><strong>'+esc(f.ref)+'</strong> <span class="pill '+stCol+'">'+(f.status||'brouillon')+'</span>';
     h+=' <span style="color:#7bf0b0;font-weight:700">'+euro(f.total)+'</span>';
-    h+='<br><span style="font-size:10px;color:#6d8aa6">'+new Date(f.date).toLocaleDateString('fr-FR')+'</span></div>';
-    h+='<div><button class="btn sm og" onclick="printFacturePro(\''+f.id+'\')">🖨️</button> <button class="btn sm at" onclick="cMo();setTimeout(function(){eFac(\''+f.id+'\')},150)">✏️</button></div></div>';
+    if(f.acompteRecu)h+=' <span style="font-size:9px;color:#9d6">[Ac✅]</span>';
+    h+='<br><span style="font-size:10px;color:#6d8aa6">📅 '+new Date(f.date).toLocaleDateString('fr-FR')+'</span></div>';
+    h+='<div style="display:flex;gap:3px;flex-wrap:wrap">';
+    h+='<button class="btn sm og" onclick="cMo();printFacturePro(\''+f.id+'\')" title="PDF">🖨️</button>';
+    h+='<button class="btn sm bu" onclick="cMo();setTimeout(function(){eFac(\''+f.id+'\')},150)" title="Modifier">✏️</button>';
+    if(f.status!=='payée')h+='<button class="btn sm gn" onclick="cMo();marquerPayeeModal(\''+f.id+'\')" title="Marquer payée">✅</button>';
+    if(f.status!=='payée'&&!f.acompteRecu)h+='<button class="btn sm" style="background:#1a2a10;border-color:#3a6a10;color:#9d6" onclick="cMo();marquerAcompte(\''+f.id+'\')" title="Acompte reçu">💰</button>';
+    h+='</div></div></div>';
   });
   h+='</div>';
   // Gardes
