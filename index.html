@@ -1709,15 +1709,15 @@ Tel : 06 12 34 56 78
     <div class="nut-ligne" style="display:flex;gap:6px;align-items:end;margin-bottom:6px;flex-wrap:wrap">
       <div class="fd" style="flex:3;margin:0"><label style="font-size:10px">📦 Produit *</label><select id="nut_prod_1" onchange="nutProdChange(1)" style="font-size:12px"></select></div>
       <div class="fd" style="flex:1;margin:0"><label style="font-size:10px">Qté</label><input id="nut_qty_1" type="number" value="1" min="1" oninput="nutCalcTotal()" style="font-size:12px;padding:8px"></div>
-      <div class="fd" style="flex:1.5;margin:0"><label style="font-size:10px">Prix unit. €</label><input id="nut_pu_1" type="number" step="0.01" oninput="nutCalcTotal()" style="font-size:12px;padding:8px"></div>
+      <div class="fd" style="flex:1.5;margin:0"><label style="font-size:10px">Prix TTC €</label><input id="nut_pu_1" type="number" step="0.01" oninput="nutCalcTotal()" style="font-size:12px;padding:8px"></div>
       <div class="fd" style="flex:1.5;margin:0"><label style="font-size:10px">Total</label><input id="nut_lt_1" readonly style="font-size:12px;padding:8px;background:var(--pn);font-weight:700"></div>
     </div>
   </div>
   <button class="btn sm at" onclick="nutAddLigne()" style="margin-bottom:10px;font-size:11px">➕ Ajouter une ligne</button>
 
   <div style="display:flex;gap:10px;align-items:center;justify-content:space-between;background:var(--pn);padding:10px;border-radius:8px;margin-bottom:10px">
-    <div style="font-size:12px;color:var(--mt)">Sous-total HT : <b id="nut_ht">0,00 €</b></div>
-    <div style="font-size:12px;color:var(--mt)">TVA 20% : <b id="nut_tva">0,00 €</b></div>
+    <div style="font-size:12px;color:var(--mt)">dont HT : <b id="nut_ht">0,00 €</b></div>
+    <div style="font-size:12px;color:var(--mt)">dont TVA <span id="nut_tva_pct">20</span>% : <b id="nut_tva">0,00 €</b></div>
     <div style="font-size:18px;font-weight:900;color:var(--or)">Total TTC : <span id="nut_ttc">0,00 €</span></div>
   </div>
 
@@ -1771,7 +1771,7 @@ Tel : 06 12 34 56 78
     <div class="dep-ligne" style="display:flex;gap:6px;align-items:end;margin-bottom:6px;flex-wrap:wrap">
       <div class="fd" style="flex:3;margin:0"><label style="font-size:10px">Produit *</label><select id="dep_prod_1" style="font-size:12px"></select></div>
       <div class="fd" style="flex:1;margin:0"><label style="font-size:10px">Qté déposée</label><input id="dep_qty_1" type="number" value="1" min="1" style="font-size:12px;padding:8px"></div>
-      <div class="fd" style="flex:1.5;margin:0"><label style="font-size:10px">Prix vente €</label><input id="dep_pu_1" type="number" step="0.01" style="font-size:12px;padding:8px"></div>
+      <div class="fd" style="flex:1.5;margin:0"><label style="font-size:10px">Prix TTC €</label><input id="dep_pu_1" type="number" step="0.01" style="font-size:12px;padding:8px"></div>
     </div>
   </div>
   <button class="btn sm at" onclick="depAddLigne()" style="margin-bottom:10px;font-size:11px">➕ Ajouter un produit</button>
@@ -7979,7 +7979,7 @@ function nutAddLigne(){
   div.style.cssText='display:flex;gap:6px;align-items:end;margin-bottom:6px;flex-wrap:wrap';
   div.innerHTML='<div class="fd" style="flex:3;margin:0"><label style="font-size:10px">📦 Produit</label><select id="nut_prod_'+n+'" onchange="nutProdChange('+n+')" style="font-size:12px"></select></div>'+
     '<div class="fd" style="flex:1;margin:0"><label style="font-size:10px">Qté</label><input id="nut_qty_'+n+'" type="number" value="1" min="1" oninput="nutCalcTotal()" style="font-size:12px;padding:8px"></div>'+
-    '<div class="fd" style="flex:1.5;margin:0"><label style="font-size:10px">Prix unit.</label><input id="nut_pu_'+n+'" type="number" step="0.01" oninput="nutCalcTotal()" style="font-size:12px;padding:8px"></div>'+
+    '<div class="fd" style="flex:1.5;margin:0"><label style="font-size:10px">Prix TTC €</label><input id="nut_pu_'+n+'" type="number" step="0.01" oninput="nutCalcTotal()" style="font-size:12px;padding:8px"></div>'+
     '<div class="fd" style="flex:1.5;margin:0"><label style="font-size:10px">Total</label><input id="nut_lt_'+n+'" readonly style="font-size:12px;padding:8px;background:var(--pn);font-weight:700"></div>'+
     '<button class="btn sm rd" onclick="this.parentElement.remove();nutCalcTotal()" style="padding:6px 8px;margin-bottom:2px">✕</button>';
   $('nut_lignes').appendChild(div);
@@ -8000,6 +8000,7 @@ function nutCalcTotal(){
   var tvaAmt=totalTTC-ht;
   $('nut_ht').textContent=euro(ht);
   $('nut_tva').textContent=euro(tvaAmt);
+  var tvaPctEl=$('nut_tva_pct');if(tvaPctEl)tvaPctEl.textContent=tva;
   $('nut_ttc').textContent=euro(totalTTC);
 }
 
@@ -8061,7 +8062,7 @@ function nutVenteFacturer(){
   $('nut_lignes').innerHTML='<div class="nut-ligne" style="display:flex;gap:6px;align-items:end;margin-bottom:6px;flex-wrap:wrap">'+
     '<div class="fd" style="flex:3;margin:0"><label style="font-size:10px">📦 Produit *</label><select id="nut_prod_1" onchange="nutProdChange(1)" style="font-size:12px"></select></div>'+
     '<div class="fd" style="flex:1;margin:0"><label style="font-size:10px">Qté</label><input id="nut_qty_1" type="number" value="1" min="1" oninput="nutCalcTotal()" style="font-size:12px;padding:8px"></div>'+
-    '<div class="fd" style="flex:1.5;margin:0"><label style="font-size:10px">Prix unit. €</label><input id="nut_pu_1" type="number" step="0.01" oninput="nutCalcTotal()" style="font-size:12px;padding:8px"></div>'+
+    '<div class="fd" style="flex:1.5;margin:0"><label style="font-size:10px">Prix TTC €</label><input id="nut_pu_1" type="number" step="0.01" oninput="nutCalcTotal()" style="font-size:12px;padding:8px"></div>'+
     '<div class="fd" style="flex:1.5;margin:0"><label style="font-size:10px">Total</label><input id="nut_lt_1" readonly style="font-size:12px;padding:8px;background:var(--pn);font-weight:700"></div></div>';
   nutFillProdSelects();
   $('nut_ht').textContent='0,00 €';$('nut_tva').textContent='0,00 €';$('nut_ttc').textContent='0,00 €';
@@ -8125,7 +8126,7 @@ function depAddLigne(){
   div.style.cssText='display:flex;gap:6px;align-items:end;margin-bottom:6px;flex-wrap:wrap';
   div.innerHTML='<div class="fd" style="flex:3;margin:0"><label style="font-size:10px">Produit</label><select id="dep_prod_'+n+'" style="font-size:12px"></select></div>'+
     '<div class="fd" style="flex:1;margin:0"><label style="font-size:10px">Qté</label><input id="dep_qty_'+n+'" type="number" value="1" min="1" style="font-size:12px;padding:8px"></div>'+
-    '<div class="fd" style="flex:1.5;margin:0"><label style="font-size:10px">Prix vente €</label><input id="dep_pu_'+n+'" type="number" step="0.01" style="font-size:12px;padding:8px"></div>'+
+    '<div class="fd" style="flex:1.5;margin:0"><label style="font-size:10px">Prix TTC €</label><input id="dep_pu_'+n+'" type="number" step="0.01" style="font-size:12px;padding:8px"></div>'+
     '<button class="btn sm rd" onclick="this.parentElement.remove()" style="padding:6px 8px;margin-bottom:2px">✕</button>';
   $('dep_lignes').appendChild(div);
   depFillProdSelects();
