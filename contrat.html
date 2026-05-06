@@ -572,6 +572,7 @@
   .success-card p { color: var(--grey); font-size: 13px; margin-bottom: 20px; }
   input[type="date"],input[type="time"],select{background:#fff!important;color:#333!important}
 </style>
+<link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&display=swap" rel="stylesheet">
 </head>
 <body>
 
@@ -1220,8 +1221,25 @@
         </div>
         <div class="sig-box">
           <span class="sig-label">Le Client</span>
-          <span id="sig-client-name" class="sig-name">—</span>
-          <span class="sig-stamp">Signature précédée de "Lu et approuvé"<br>à l'original</span>
+          <div style="display:flex;gap:6px;margin-bottom:8px">
+            <button onclick="setSigMode('type')" id="sigModeBtn_type" style="flex:1;padding:6px;font-size:11px;font-weight:700;background:#3b82f6;color:#fff;border:none;border-radius:6px;cursor:pointer">&#9000; Signer au clavier</button>
+            <button onclick="setSigMode('draw')" id="sigModeBtn_draw" style="flex:1;padding:6px;font-size:11px;font-weight:700;background:#e5e7eb;color:#333;border:none;border-radius:6px;cursor:pointer">&#9997;&#65039; Dessiner</button>
+          </div>
+          <div id="sigType">
+            <div style="display:flex;gap:8px;margin-bottom:8px">
+              <div style="flex:1"><label style="font-size:10px;color:#888">Pr&#233;nom</label><input id="sig_prenom" type="text" placeholder="Pr&#233;nom" oninput="updateTypeSig()" style="padding:8px;border:1px solid #ccc;border-radius:6px;font-size:13px;width:100%"></div>
+              <div style="flex:1"><label style="font-size:10px;color:#888">Nom</label><input id="sig_nom" type="text" placeholder="Nom" oninput="updateTypeSig()" style="padding:8px;border:1px solid #ccc;border-radius:6px;font-size:13px;width:100%"></div>
+            </div>
+            <div style="padding:16px;border:2px dashed #ccc;border-radius:8px;text-align:center;background:#fafafa;min-height:80px;display:flex;flex-direction:column;align-items:center;justify-content:center">
+              <div id="sig_preview" style="font-family:'Dancing Script',cursive;font-size:28px;color:#222;min-height:36px"></div>
+              <div id="sig_date" style="font-size:11px;color:#888;margin-top:4px"></div>
+            </div>
+            <p style="font-size:10px;color:#888;margin-top:4px;text-align:center">En tapant votre nom, vous confirmez que cette signature &#233;lectronique a la m&#234;me valeur qu&#8217;une signature manuscrite.</p>
+          </div>
+          <div id="sigDraw" style="display:none">
+            <canvas id="sig_canvas" width="320" height="120" style="width:100%;max-width:320px;height:120px;background:#fafafa;cursor:crosshair;touch-action:none;border:1px solid #ccc;border-radius:6px"></canvas>
+            <div style="margin-top:4px"><button onclick="clearSig()" style="background:#ef4444;color:#fff;border:none;border-radius:4px;padding:4px 10px;cursor:pointer;font-size:10px">Effacer</button></div>
+          </div>
         </div>
       </div>
       <p class="sig-read" style="margin-top:12px;">ℹ️ En validant ce formulaire, vous confirmez avoir lu le contrat. La signature manuscrite sera apposée lors de la remise de l'exemplaire papier.</p>
@@ -1269,7 +1287,41 @@
   RC Pro Hiscox HSXIN320028640M &nbsp;|&nbsp; <a href="https://cathypetsitter.com">cathypetsitter.com</a> &nbsp;|&nbsp; <a href="/cdn-cgi/l/email-protection#e38082978b9a87868f8c918e8693869790a3848e828a8fcd808c8e"><span class="__cf_email__" data-cfemail="0f6c6e7b67766b6a63607d626a7f6a7b7c4f68626e6663216c6062">[email&#160;protected]</span></a>
 </div>
 
-<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js">
+// Signature clavier/dessin
+var _sigMode='type';
+function setSigMode(mode){
+  _sigMode=mode;
+  document.getElementById('sigDraw').style.display=mode==='draw'?'block':'none';
+  document.getElementById('sigType').style.display=mode==='type'?'block':'none';
+  document.getElementById('sigModeBtn_draw').style.background=mode==='draw'?'#3b82f6':'#e5e7eb';
+  document.getElementById('sigModeBtn_draw').style.color=mode==='draw'?'#fff':'#333';
+  document.getElementById('sigModeBtn_type').style.background=mode==='type'?'#3b82f6':'#e5e7eb';
+  document.getElementById('sigModeBtn_type').style.color=mode==='type'?'#fff':'#333';
+  if(mode==='type')updateTypeSig();
+  if(mode==='draw')initSigCanvas();
+}
+function updateTypeSig(){
+  var prenom=document.getElementById('sig_prenom')?document.getElementById('sig_prenom').value:'';
+  var nom=document.getElementById('sig_nom')?document.getElementById('sig_nom').value:'';
+  var prev=document.getElementById('sig_preview');if(prev)prev.textContent=prenom+' '+nom;
+  var dt=document.getElementById('sig_date');if(dt)dt.textContent='Sign\u00e9 le '+new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'});
+}
+var _sigInited=false;
+function initSigCanvas(){
+  if(_sigInited)return;_sigInited=true;
+  var cv=document.getElementById('sig_canvas');if(!cv)return;
+  var cx=cv.getContext('2d'),dr=false;
+  function gP(e){var r=cv.getBoundingClientRect();var t=e.touches?e.touches[0]:e;return{x:(t.clientX-r.left)*(cv.width/r.width),y:(t.clientY-r.top)*(cv.height/r.height)}}
+  cv.onmousedown=function(e){dr=true;cx.beginPath();var p=gP(e);cx.moveTo(p.x,p.y)};
+  cv.onmousemove=function(e){if(!dr)return;var p=gP(e);cx.lineTo(p.x,p.y);cx.strokeStyle='#222';cx.lineWidth=2;cx.stroke()};
+  cv.onmouseup=function(){dr=false};
+  cv.addEventListener('touchstart',function(e){e.preventDefault();dr=true;cx.beginPath();var p=gP(e);cx.moveTo(p.x,p.y)},{passive:false});
+  cv.addEventListener('touchmove',function(e){e.preventDefault();if(!dr)return;var p=gP(e);cx.lineTo(p.x,p.y);cx.strokeStyle='#222';cx.lineWidth=2;cx.stroke()},{passive:false});
+  cv.addEventListener('touchend',function(){dr=false});
+}
+function clearSig(){var cv=document.getElementById('sig_canvas');if(cv){var cx=cv.getContext('2d');cx.clearRect(0,0,cv.width,cv.height)}}
+</script><script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>

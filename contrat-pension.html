@@ -52,6 +52,7 @@
     a{color:#000!important;text-decoration:none!important}
   }
 </style>
+<link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&display=swap" rel="stylesheet">
 </head>
 <body>
 <div class="hdr">
@@ -173,7 +174,22 @@
   <div class="sec"><div class="sh" style="background:#7b3f00">&#9997;&#65039; 8. Signatures</div><div class="sb">
     <div class="row">
       <div class="fd"><label>Cathy Pets</label><div class="sig"><p style="font-size:10px;color:var(--gy)">Cathy DELORME — Cathy Pets SAS</p><p style="font-size:10px;color:#546e7a;margin-top:4px">&#128222; 07.83.43.63.06</p><p style="font-size:9px;color:#999">Signé électroniquement</p></div></div>
-      <div class="fd"><label>Client</label><div class="sig"><canvas id="sig_canvas" width="320" height="120" style="width:100%;max-width:320px;height:120px;background:#fafafa;cursor:crosshair;touch-action:none"></canvas><div style="margin-top:4px"><button class="btn btn-s btn-d" onclick="clearSig()">Effacer</button></div></div></div>
+      <div class="fd"><label>Client</label><div class="sig"><div style="display:flex;gap:6px;margin-bottom:8px">
+          <button onclick="setSigMode('draw')" id="sigModeBtn_draw" style="flex:1;padding:6px;font-size:11px;font-weight:700;background:#3b82f6;color:#fff;border:none;border-radius:6px;cursor:pointer">&#9997;&#65039; Dessiner</button>
+          <button onclick="setSigMode('type')" id="sigModeBtn_type" style="flex:1;padding:6px;font-size:11px;font-weight:700;background:#e5e7eb;color:#333;border:none;border-radius:6px;cursor:pointer">&#9000; Au clavier</button>
+        </div>
+        <div id="sigDraw"><canvas id="sig_canvas" width="320" height="120" style="width:100%;max-width:320px;height:120px;background:#fafafa;cursor:crosshair;touch-action:none"></canvas><div style="margin-top:4px"><button class="btn btn-s btn-d" onclick="clearSig()">Effacer</button></div></div>
+        <div id="sigType" style="display:none">
+          <div style="display:flex;gap:8px;margin-bottom:8px">
+            <div style="flex:1"><label style="font-size:10px;color:#888">Pr&#233;nom</label><input id="sig_prenom" type="text" placeholder="Pr&#233;nom" oninput="updateTypeSig()" style="padding:8px;border:1px solid #cfd8dc;border-radius:6px;font-size:13px;width:100%;background:#fff;color:#333"></div>
+            <div style="flex:1"><label style="font-size:10px;color:#888">Nom</label><input id="sig_nom" type="text" placeholder="Nom" oninput="updateTypeSig()" style="padding:8px;border:1px solid #cfd8dc;border-radius:6px;font-size:13px;width:100%;background:#fff;color:#333"></div>
+          </div>
+          <div style="padding:16px;border:2px dashed #cfd8dc;border-radius:8px;text-align:center;background:#fafafa;min-height:80px;display:flex;flex-direction:column;align-items:center;justify-content:center">
+            <div id="sig_preview" style="font-family:'Dancing Script',cursive;font-size:28px;color:#222;min-height:36px"></div>
+            <div id="sig_date" style="font-size:11px;color:#888;margin-top:4px"></div>
+          </div>
+          <p style="font-size:10px;color:#888;margin-top:4px;text-align:center">En tapant votre nom, vous confirmez que cette signature &#233;lectronique a la m&#234;me valeur qu&#8217;une signature manuscrite.</p>
+        </div></div></div>
     </div>
     <div style="margin-top:10px"><label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700"><input type="checkbox" id="accept_cgu"> J'ai lu et j'accepte les conditions</label></div>
     <div style="margin-top:14px;text-align:center" class="np"><button class="btn btn-p" onclick="submitContrat()" style="font-size:15px;padding:12px 36px">&#9989; Valider et envoyer</button></div>
@@ -181,6 +197,25 @@
 </div>
 
 <script>
+// Signature clavier/dessin
+var _sigMode='type';
+function setSigMode(mode){
+  _sigMode=mode;
+  var dd=document.getElementById('sigDraw'),dt=document.getElementById('sigType');
+  if(dd)dd.style.display=mode==='draw'?'block':'none';
+  if(dt)dt.style.display=mode==='type'?'block':'none';
+  var bd=document.getElementById('sigModeBtn_draw'),bt=document.getElementById('sigModeBtn_type');
+  if(bd){bd.style.background=mode==='draw'?'#3b82f6':'#e5e7eb';bd.style.color=mode==='draw'?'#fff':'#333'}
+  if(bt){bt.style.background=mode==='type'?'#3b82f6':'#e5e7eb';bt.style.color=mode==='type'?'#fff':'#333'}
+  if(mode==='type')updateTypeSig();
+}
+function updateTypeSig(){
+  var prenom=document.getElementById('sig_prenom')?document.getElementById('sig_prenom').value:'';
+  var nom=document.getElementById('sig_nom')?document.getElementById('sig_nom').value:'';
+  var prev=document.getElementById('sig_preview');if(prev)prev.textContent=prenom+' '+nom;
+  var dt=document.getElementById('sig_date');if(dt)dt.textContent='Sign\u00e9 le '+new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'});
+}
+
 // ═══ SIGNATURE ═══
 var cv=document.getElementById('sig_canvas'),cx=cv.getContext('2d'),dr=false;
 function gP(e){var r=cv.getBoundingClientRect();var t=e.touches?e.touches[0]:e;return{x:(t.clientX-r.left)*(cv.width/r.width),y:(t.clientY-r.top)*(cv.height/r.height)}}

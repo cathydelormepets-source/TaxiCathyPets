@@ -96,6 +96,7 @@
     a{color:#000!important;text-decoration:none!important}
   }
 </style>
+<link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&display=swap" rel="stylesheet">
 </head>
 <body>
 
@@ -230,10 +231,25 @@ data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAA4KCw0LCQ4NDA0QDw4RFiQXF
       <div class="form-row">
         <!-- Signature client -->
         <div class="form-group" style="flex:1">
-          <label>Signature du propriétaire *</label>
-          <div class="sig-zone">
+          <label>Signature du propri&#233;taire *</label>
+          <div style="display:flex;gap:6px;margin-bottom:8px">
+            <button onclick="setSigMode('type')" id="sigModeBtn_type" style="flex:1;padding:6px;font-size:11px;font-weight:700;background:#3b82f6;color:#fff;border:none;border-radius:6px;cursor:pointer">&#9000; Au clavier</button>
+            <button onclick="setSigMode('draw')" id="sigModeBtn_draw" style="flex:1;padding:6px;font-size:11px;font-weight:700;background:#e5e7eb;color:#333;border:none;border-radius:6px;cursor:pointer">&#9997;&#65039; Dessiner</button>
+          </div>
+          <div id="sigType">
+            <div style="display:flex;gap:8px;margin-bottom:8px">
+              <div style="flex:1"><label style="font-size:10px;color:#888">Pr&#233;nom</label><input id="sig_prenom" type="text" placeholder="Pr&#233;nom" oninput="updateTypeSig()" style="padding:8px;border:1px solid #ccc;border-radius:6px;font-size:13px;width:100%"></div>
+              <div style="flex:1"><label style="font-size:10px;color:#888">Nom</label><input id="sig_nom" type="text" placeholder="Nom" oninput="updateTypeSig()" style="padding:8px;border:1px solid #ccc;border-radius:6px;font-size:13px;width:100%"></div>
+            </div>
+            <div style="padding:16px;border:2px dashed #ccc;border-radius:8px;text-align:center;background:#fafafa;min-height:80px;display:flex;flex-direction:column;align-items:center;justify-content:center">
+              <div id="sig_preview" style="font-family:'Dancing Script',cursive;font-size:28px;color:#222;min-height:36px"></div>
+              <div id="sig_date" style="font-size:11px;color:#888;margin-top:4px"></div>
+            </div>
+            <p style="font-size:10px;color:#888;margin-top:4px;text-align:center">En tapant votre nom, cette signature a la m&#234;me valeur qu&#8217;une signature manuscrite.</p>
+          </div>
+          <div id="sigDraw" style="display:none" class="sig-zone">
             <canvas id="sigCanvas" class="sig-canvas" width="340" height="150"></canvas>
-            <br><button class="sig-clear" onclick="clearSig()">🗑️ Effacer</button>
+            <br><button class="sig-clear" onclick="clearSig()">&#128465;&#65039; Effacer</button>
           </div>
           <div class="checkbox-row" style="margin-top:10px">
             <input type="checkbox" id="lu_approuve">
@@ -267,6 +283,25 @@ data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAA4KCw0LCQ4NDA0QDw4RFiQXF
 </div>
 
 <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+// Signature clavier/dessin
+var _sigMode='type';
+function setSigMode(mode){
+  _sigMode=mode;
+  var dd=document.getElementById('sigDraw'),dt=document.getElementById('sigType');
+  if(dd)dd.style.display=mode==='draw'?'block':'none';
+  if(dt)dt.style.display=mode==='type'?'block':'none';
+  var bd=document.getElementById('sigModeBtn_draw'),bt=document.getElementById('sigModeBtn_type');
+  if(bd){bd.style.background=mode==='draw'?'#3b82f6':'#e5e7eb';bd.style.color=mode==='draw'?'#fff':'#333'}
+  if(bt){bt.style.background=mode==='type'?'#3b82f6':'#e5e7eb';bt.style.color=mode==='type'?'#fff':'#333'}
+  if(mode==='type')updateTypeSig();
+}
+function updateTypeSig(){
+  var prenom=document.getElementById('sig_prenom')?document.getElementById('sig_prenom').value:'';
+  var nom=document.getElementById('sig_nom')?document.getElementById('sig_nom').value:'';
+  var prev=document.getElementById('sig_preview');if(prev)prev.textContent=prenom+' '+nom;
+  var dt=document.getElementById('sig_date');if(dt)dt.textContent='Sign\u00e9 le '+new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'});
+}
+
 // ═══ VARIABLES ═══
 var animalCount = 0;
 var sigDrawing = false;

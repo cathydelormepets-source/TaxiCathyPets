@@ -48,6 +48,7 @@
     a{color:#000!important;text-decoration:none!important}
   }
 </style>
+<link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&display=swap" rel="stylesheet">
 </head>
 <body>
 <div class="hdr">
@@ -105,7 +106,27 @@
     <p style="font-size:12px;margin-bottom:10px">En signant ce devis, vous acceptez les conditions ci-dessus et confirmez votre réservation.</p>
     <div class="row">
       <div class="fd"><label>Signature Cathy Pets</label><div class="sig"><p style="font-size:10px;color:var(--gy)">Cathy DELORME — Cathy Pets SAS</p><p style="font-size:9px;color:#999">Signé électroniquement</p></div></div>
-      <div class="fd"><label>Signature du Client</label><div class="sig"><canvas id="sig_canvas" width="320" height="120" style="width:100%;max-width:320px;height:120px;background:#fafafa;cursor:crosshair;touch-action:none"></canvas><div style="margin-top:4px"><button class="btn-s" onclick="clearSig()" style="background:#ef4444;color:#fff;border:none;border-radius:4px;cursor:pointer">Effacer</button></div></div></div>
+      <div class="fd"><label>Signature du Client</label>
+        <!-- Choix mode signature -->
+        <div style="display:flex;gap:6px;margin-bottom:8px">
+          <button onclick="setSigMode('draw')" id="sigModeBtn_draw" style="flex:1;padding:6px;font-size:11px;font-weight:700;background:#3b82f6;color:#fff;border:none;border-radius:6px;cursor:pointer">&#9997;&#65039; Dessiner</button>
+          <button onclick="setSigMode('type')" id="sigModeBtn_type" style="flex:1;padding:6px;font-size:11px;font-weight:700;background:#e5e7eb;color:#333;border:none;border-radius:6px;cursor:pointer">&#9000; Au clavier</button>
+        </div>
+        <!-- Mode dessin -->
+        <div id="sigDraw" class="sig"><canvas id="sig_canvas" width="320" height="120" style="width:100%;max-width:320px;height:120px;background:#fafafa;cursor:crosshair;touch-action:none"></canvas><div style="margin-top:4px"><button class="btn-s" onclick="clearSig()" style="background:#ef4444;color:#fff;border:none;border-radius:4px;cursor:pointer">Effacer</button></div></div>
+        <!-- Mode clavier -->
+        <div id="sigType" style="display:none">
+          <div style="display:flex;gap:8px;margin-bottom:8px">
+            <div style="flex:1"><label style="font-size:10px;color:#888">Pr&#233;nom</label><input id="sig_prenom" type="text" placeholder="Pr&#233;nom" oninput="updateTypeSig()" style="padding:8px;border:1px solid #cfd8dc;border-radius:6px;font-size:13px;width:100%;background:#fff;color:#333"></div>
+            <div style="flex:1"><label style="font-size:10px;color:#888">Nom</label><input id="sig_nom" type="text" placeholder="Nom" oninput="updateTypeSig()" style="padding:8px;border:1px solid #cfd8dc;border-radius:6px;font-size:13px;width:100%;background:#fff;color:#333"></div>
+          </div>
+          <div style="padding:16px;border:2px dashed #cfd8dc;border-radius:8px;text-align:center;background:#fafafa;min-height:80px;display:flex;flex-direction:column;align-items:center;justify-content:center">
+            <div id="sig_preview" style="font-family:'Dancing Script',cursive;font-size:28px;color:#222;min-height:36px"></div>
+            <div id="sig_date" style="font-size:11px;color:#888;margin-top:4px"></div>
+          </div>
+          <p style="font-size:10px;color:#888;margin-top:4px;text-align:center">En tapant votre nom, vous confirmez que cette signature &#233;lectronique a la m&#234;me valeur qu&#8217;une signature manuscrite.</p>
+        </div>
+      </div>
     </div>
     <div style="margin-top:10px"><label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700"><input type="checkbox" id="accept"> Bon pour accord — Devis accept&#233;, lu et approuv&#233;</label></div>
     <div style="margin-top:14px;text-align:center" class="np"><button class="btn btn-p" onclick="submitDevis()" style="font-size:15px;padding:12px 36px" id="submitBtn">&#9989; Accepter et signer le devis</button></div>
@@ -123,6 +144,24 @@ cv.addEventListener('touchstart',function(e){e.preventDefault();dr=true;cx.begin
 cv.addEventListener('touchmove',function(e){e.preventDefault();if(!dr)return;var p=gP(e);cx.lineTo(p.x,p.y);cx.strokeStyle='#222';cx.lineWidth=2;cx.stroke()},{passive:false});
 cv.addEventListener('touchend',function(){dr=false});
 function clearSig(){cx.clearRect(0,0,cv.width,cv.height)}
+
+var _sigMode='draw';
+function setSigMode(mode){
+  _sigMode=mode;
+  document.getElementById('sigDraw').style.display=mode==='draw'?'block':'none';
+  document.getElementById('sigType').style.display=mode==='type'?'block':'none';
+  document.getElementById('sigModeBtn_draw').style.background=mode==='draw'?'#3b82f6':'#e5e7eb';
+  document.getElementById('sigModeBtn_draw').style.color=mode==='draw'?'#fff':'#333';
+  document.getElementById('sigModeBtn_type').style.background=mode==='type'?'#3b82f6':'#e5e7eb';
+  document.getElementById('sigModeBtn_type').style.color=mode==='type'?'#fff':'#333';
+  if(mode==='type')updateTypeSig();
+}
+function updateTypeSig(){
+  var prenom=document.getElementById('sig_prenom').value||'';
+  var nom=document.getElementById('sig_nom').value||'';
+  document.getElementById('sig_preview').textContent=prenom+' '+nom;
+  document.getElementById('sig_date').textContent='Sign\u00e9 le '+new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'});
+}
 
 // Date
 var now=new Date();
@@ -164,8 +203,13 @@ setTimeout(applyParams,100);
 // Envoi
 function submitDevis(){
   if(!document.getElementById('accept').checked){alert('Veuillez cocher "Bon pour accord"');return}
-  var sd=cv.toDataURL(),bl=document.createElement('canvas');bl.width=cv.width;bl.height=cv.height;
-  if(sd===bl.toDataURL()){alert('Veuillez signer le devis');return}
+  var hasSigDraw=false;
+  var sd=cv.toDataURL(),bl2=document.createElement('canvas');bl2.width=cv.width;bl2.height=cv.height;
+  if(sd!==bl2.toDataURL())hasSigDraw=true;
+  var sigPrenom=(document.getElementById('sig_prenom')?document.getElementById('sig_prenom').value:'').trim();
+  var sigNom=(document.getElementById('sig_nom')?document.getElementById('sig_nom').value:'').trim();
+  var hasSigType=sigPrenom.length>=2&&sigNom.length>=2;
+  if(!hasSigDraw&&!hasSigType){alert('Veuillez signer le devis (dessiner ou taper votre nom)');return}
   var p=new URLSearchParams(window.location.search);
   var nom=document.getElementById('d_nom').value||'';
   var email=document.getElementById('d_email').value||'';
@@ -175,6 +219,7 @@ function submitDevis(){
   body+='R\u00e9f\u00e9rence: '+ref+'\n';
   body+='Client: '+nom+'\nEmail: '+email+'\nT\u00e9l: '+(document.getElementById('d_tel').value||'')+'\n';
   body+='Type: '+(document.getElementById('d_type').value||'')+'\n';
+  if(hasSigType)body+='Signature clavier: '+sigPrenom+' '+sigNom+'\n';
   body+='P\u00e9riode: '+(document.getElementById('d_periode').value||'')+'\n';
   body+='Total TTC: '+total+'\n';
   body+='\n--- Sign\u00e9 le '+new Date().toLocaleDateString('fr-FR')+' ---';
