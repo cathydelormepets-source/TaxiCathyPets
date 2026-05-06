@@ -9695,7 +9695,20 @@ function rCli(filterQuery){
       return hay.indexOf(q)>=0;
     });
   }
-  rTbl('clTbl',['Nom','Tél','Ville','Type','Actions'],sortedCli.map(function(cl){var cid=cl.id;return '<tr><td><b>'+cl.nom+' '+(cl.prenom||'')+'</b></td><td>'+(cl.tel||'')+'</td><td>'+(cl.ville||'')+'</td><td>'+(cl.type||'')+'</td><td style="display:flex;gap:3px"><button class="btn sm gn" onclick="showFicheClient(\''+cid+'\')" title="Fiche">👤</button><button class="btn sm bu" onclick="eCli(\''+cid+'\')" title="Modifier">✏️</button><button class="btn sm" style="background:#1a2a3a;border-color:#2a4060;color:#aac" onclick="showQR(\''+cid+'\')" title="QR">📱</button></td></tr>';}));
+  rTbl('clTbl',['Nom','Tél','Ville','Type','Stats','Actions'],sortedCli.map(function(cl){
+    var cid=cl.id;
+    var nbDev=act(db.devis).filter(function(q){return q.clientId===cid}).length;
+    var nbFac=act(db.factures).filter(function(f){return f.clientId===cid}).length;
+    var nbGrd=act(db.gardes).filter(function(g){return g.clientId===cid}).length;
+    var nbAni=act(db.animaux).filter(function(a){return a.clientId===cid}).length;
+    var statsHtml='<span style="font-size:9px">';
+    if(nbAni)statsHtml+='🐾'+nbAni+' ';
+    if(nbDev)statsHtml+='📝'+nbDev+' ';
+    if(nbFac)statsHtml+='💶'+nbFac+' ';
+    if(nbGrd)statsHtml+='🏡'+nbGrd;
+    if(!nbAni&&!nbDev&&!nbFac&&!nbGrd)statsHtml+='—';
+    statsHtml+='</span>';
+    return '<tr><td><b>'+cl.nom+' '+(cl.prenom||'')+'</b></td><td>'+(cl.tel||'')+'</td><td>'+(cl.ville||'')+'</td><td>'+(cl.type||'')+'</td><td>'+statsHtml+'</td><td style="display:flex;gap:3px"><button class="btn sm gn" onclick="showFicheClient(\''+cid+'\')" title="Fiche">👤</button><button class="btn sm bu" onclick="eCli(\''+cid+'\')" title="Modifier">✏️</button><button class="btn sm" style="background:#3d2c0a;border-color:#6d5a2a;color:#fcd77a" onclick="showCliHistory(\''+cid+'\')" title="Historique devis, factures...">📋</button><button class="btn sm" style="background:#1a2a3a;border-color:#2a4060;color:#aac" onclick="showQR(\''+cid+'\')" title="QR">📱</button></td></tr>';}));
 }
 function filterCliTable(val){rCli(val);}
 function rAni(){rTbl('anTbl',['Animal','Client','Espèce','Race','CITES',''],act(db.animaux).map(function(a){return '<tr><td>'+a.nom+'</td><td>'+cN(a.clientId)+'</td><td>'+a.espece+'</td><td>'+(a.race||'')+'</td><td>'+(a.cites||'')+'</td><td><button class="btn sm bu" onclick="eAni(\''+a.id+'\')">✏️</button></td></tr>'}))}
