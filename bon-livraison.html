@@ -26,6 +26,8 @@
   .check label{display:flex;align-items:center;gap:8px;font-size:12px;padding:6px 0}
   @media print{body{background:#fff}.sec{box-shadow:none;border:1px solid #ddd}}
   input[type="date"],input[type="time"],select{background:#fff!important;color:#333!important}
+
+  @media print{#printBar,.np,button[onclick*="submitBon"]{display:none!important}body{background:#fff!important}canvas{border:1px solid #ccc!important}}
 </style>
 </head>
 <body>
@@ -171,5 +173,8 @@ function submitBon(){
   }).catch(function(){alert('Erreur r\u00e9seau');btn.textContent='\u2705 Valider';btn.disabled=false});
 }
 </script>
+<div id="printBar" style="position:fixed;bottom:0;left:0;right:0;background:rgba(0,0,0,.9);padding:10px 16px;display:flex;gap:8px;justify-content:center;z-index:9999;box-shadow:0 -4px 16px rgba(0,0,0,.3)">
+  <button onclick="window.print()" style="padding:12px 30px;font-size:15px;font-weight:700;background:#3b82f6;color:#fff;border:none;border-radius:8px;cursor:pointer">&#128424; Imprimer / PDF</button>
+</div>
 </body>
 </html>

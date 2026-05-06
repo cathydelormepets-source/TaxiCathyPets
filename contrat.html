@@ -2220,5 +2220,9 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 });
 </script>
+<div id="printBar" style="position:fixed;bottom:0;left:0;right:0;background:rgba(0,0,0,.9);padding:10px 16px;display:flex;gap:8px;justify-content:center;z-index:9999;box-shadow:0 -4px 16px rgba(0,0,0,.3)">
+  <button onclick="window.print()" style="padding:12px 30px;font-size:15px;font-weight:700;background:#3b82f6;color:#fff;border:none;border-radius:8px;cursor:pointer">&#128424; Imprimer / PDF</button>
+  <span style="font-size:11px;color:#aaa;display:flex;align-items:center">Astuce : choisissez &laquo; Enregistrer en PDF &raquo; comme imprimante</span>
+</div>
 </body>
 </html>
