@@ -8058,12 +8058,18 @@ function nutRenderHisto(){
   var ventes=act(db.factures).filter(function(f){return f.activityType==='nutrica'});
   if(!ventes.length){if(tbl)tbl.innerHTML='<div class="itm" style="color:var(--mt)">Aucune vente Nutrica</div>';return}
   var caTotal=ventes.reduce(function(s,f){return s+E(f.total)},0);
-  if(stats)stats.textContent=ventes.length+' vente(s) · CA: '+euro(caTotal);
-  var h='<table><thead><tr><th>Réf</th><th>Date</th><th>Client</th><th>Produits</th><th>Total</th><th>Paiement</th><th>Statut</th></tr></thead><tbody>';
+  var caPaye=ventes.filter(function(f){return f.status==='payée'}).reduce(function(s,f){return s+E(f.total)},0);
+  var caImpaye=caTotal-caPaye;
+  if(stats)stats.textContent=ventes.length+' vente(s) · CA: '+euro(caTotal)+' · Payé: '+euro(caPaye)+(caImpaye>0?' · Impayé: '+euro(caImpaye):'');
+  var h='<table><thead><tr><th>Réf</th><th>Date</th><th>Client</th><th>Produits</th><th>Total</th><th>Paiement</th><th>Statut</th><th>Actions</th></tr></thead><tbody>';
   h+=ventes.slice().reverse().map(function(f){
     var prods=f.lignes?f.lignes.map(function(l){return l.desc}).join(', '):'—';
     var pillClass=f.status==='payée'?'gt':'yl';
-    return '<tr><td><b>'+f.ref+'</b></td><td>'+new Date(f.date).toLocaleDateString('fr-FR')+'</td><td>'+cN(f.clientId)+'</td><td style="font-size:11px">'+prods+'</td><td>'+euro(f.total)+'</td><td style="font-size:11px">'+(f.paiement||'—')+'</td><td><span class="pill '+pillClass+'">'+f.status+'</span></td></tr>';
+    var btns='<button class="btn sm bu" onclick="eFac(\''+f.id+'\')" title="Modifier">✏️</button> ';
+    btns+='<button class="btn sm og" onclick="printFacturePro(\''+f.id+'\')" title="PDF">🖨️</button> ';
+    if(f.status!=='payée')btns+='<button class="btn sm gn" onclick="marquerPayeeModal(\''+f.id+'\')" title="Payée">✅</button> ';
+    btns+='<button class="btn sm rd" onclick="delRec(\'factures\',\''+f.id+'\',\''+esc(f.ref)+'\')" title="Supprimer">🗑️</button>';
+    return '<tr><td><b>'+f.ref+'</b></td><td>'+new Date(f.date).toLocaleDateString('fr-FR')+'</td><td>'+cN(f.clientId)+'</td><td style="font-size:11px">'+prods+'</td><td><b>'+euro(f.total)+'</b></td><td style="font-size:11px">'+(f.paiement||'—')+'</td><td><span class="pill '+pillClass+'">'+f.status+'</span></td><td style="white-space:nowrap">'+btns+'</td></tr>';
   }).join('');
   h+='</tbody></table>';
   if(tbl)tbl.innerHTML=h;
