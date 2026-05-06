@@ -9219,19 +9219,20 @@ function eqGetLignes(){
 }
 function eqCalcTotal(){
   var lignes=eqGetLignes();
-  var totalHT=0;
-  lignes.forEach(function(lg){totalHT+=lg.montant});
+  var totalTTC=0;
+  lignes.forEach(function(lg){totalTTC+=lg.montant});
   var remise=parseFloat((document.getElementById('eq_remise')||{}).value)||0;
-  var htApresRemise=totalHT*(1-remise/100);
+  var ttcApresRemise=totalTTC*(1-remise/100);
   var tva=parseFloat((document.getElementById('eq_tva')||{}).value);
   if(isNaN(tva))tva=20;
-  var ttc=htApresRemise*(1+tva/100);
+  var htApresRemise=tva>0?ttcApresRemise/(1+tva/100):ttcApresRemise;
+  var tvaM=ttcApresRemise-htApresRemise;
   var el=document.getElementById('eq_t');
-  if(el)el.value=Math.round(ttc*100)/100;
+  if(el)el.value=Math.round(ttcApresRemise*100)/100;
   var recap=document.getElementById('eq_recap');
   if(recap&&lignes.length){
     recap.style.display='block';
-    recap.innerHTML='💰 HT : <b>'+euro(totalHT)+'</b>'+(remise>0?' — Remise '+remise+'% : -<b>'+euro(totalHT*remise/100)+'</b> → HT net <b>'+euro(htApresRemise)+'</b>':'')+' · TVA '+tva+'% : <b>'+euro(htApresRemise*tva/100)+'</b> · <b style="color:#22a693">TTC : '+euro(ttc)+'</b>';
+    recap.innerHTML='💰 <b style="color:#22a693">TTC : '+euro(ttcApresRemise)+'</b>'+(remise>0?' — Remise '+remise+'%':'')+(tva>0?' · dont HT : <b>'+euro(htApresRemise)+'</b> · TVA '+tva+'% : <b>'+euro(tvaM)+'</b>':' · <span style="font-size:10px;color:var(--mt)">TVA non applicable</span>');
   }
 }
 
@@ -9380,7 +9381,7 @@ function efAddLigne(article,desc,qty,pu,remise,noTva){
     +'<input id="ef_lg_a_'+i+'" placeholder="Article" value="'+esc(article||'')+'" style="background:#080f1a;border:1px solid #1e3a58;color:#fff;border-radius:6px;padding:6px;font:inherit;font-size:11px;font-weight:700">'
     +'<input id="ef_lg_d_'+i+'" placeholder="Description" value="'+esc(desc||'')+'" style="background:#080f1a;border:1px solid #1e3a58;color:#fff;border-radius:6px;padding:6px;font:inherit;font-size:11px">'
     +'<input id="ef_lg_q_'+i+'" type="number" min="0.5" step="0.5" value="'+(qty||1)+'" oninput="efCalcTotal()" style="background:#080f1a;border:1px solid #1e3a58;color:#fff;border-radius:6px;padding:6px;font:inherit;font-size:11px;text-align:center" placeholder="Qté">'
-    +'<input id="ef_lg_p_'+i+'" type="number" step="0.01" min="0" value="'+(pu||'')+'" oninput="efCalcTotal()" placeholder="PU HT" style="background:#080f1a;border:1px solid #1e3a58;color:#fff;border-radius:6px;padding:6px;font:inherit;font-size:11px">'
+    +'<input id="ef_lg_p_'+i+'" type="number" step="0.01" min="0" value="'+(pu||'')+'" oninput="efCalcTotal()" placeholder="PU TTC" style="background:#080f1a;border:1px solid #1e3a58;color:#fff;border-radius:6px;padding:6px;font:inherit;font-size:11px">'
     +'<input id="ef_lg_r_'+i+'" type="number" step="1" min="0" max="100" value="'+(remise||0)+'" oninput="efCalcTotal()" placeholder="%" title="Remise %" style="background:#080f1a;border:1px solid #1e3a58;color:#f59e0b;border-radius:6px;padding:6px;font:inherit;font-size:11px;text-align:center">'
     +'<label style="display:flex;align-items:center;gap:2px;font-size:9px;color:#f59e0b;cursor:pointer;white-space:nowrap"><input type="checkbox" id="ef_lg_nt_'+i+'" '+(noTva?'checked':'')+' onchange="efCalcTotal()">ExoTVA</label>'
     +'<button onclick="document.getElementById(\'ef_lg_'+i+'\').remove();efCalcTotal()" style="background:none;border:none;color:#f55;font-size:14px;cursor:pointer">✕</button>'
@@ -9410,15 +9411,15 @@ function efGetLignes(){
 }
 function efCalcTotal(){
   var lignes=efGetLignes();
-  var totalHT=0;
-  lignes.forEach(function(lg){totalHT+=lg.total});
+  var totalTTC=0;
+  lignes.forEach(function(lg){totalTTC+=lg.total});
   var remise=parseFloat((document.getElementById('ef_remise')||{}).value)||0;
-  var htApresRemise=totalHT*(1-remise/100);
+  var ttcApresRemise=totalTTC*(1-remise/100);
   var tva=parseFloat((document.getElementById('ef_tva')||{}).value);
   if(isNaN(tva))tva=20;
-  var ttc=htApresRemise*(1+tva/100);
+  // Prix saisis en TTC — on extrait la TVA (pas d'ajout)
   var el=document.getElementById('ef_t');
-  if(el)el.value=Math.round(ttc*100)/100;
+  if(el)el.value=Math.round(ttcApresRemise*100)/100;
 }
 function sFac(id){
   var f=db.factures.find(function(x){return x.id===id;});if(!f)return;stamp(f);
@@ -16126,7 +16127,7 @@ function ttPrintFacTerrain(facId){
   h+='</div></div>';
   if(an){h+='<div style="background:#f0f8f6;border:1px solid #b8e0d9;border-radius:6px;padding:10px;margin-bottom:12px"><b>🐾 Animal :</b> '+an.nom+' · '+an.espece+(an.race?' · '+an.race:'')+(an.poids?' · '+an.poids+' kg':'')+'</div>';}
   h+='<p style="font-size:12px;margin-bottom:10px"><b>Objet :</b> '+(f.objet||'Transport animalier')+'</p>';
-  h+='<table><thead><tr><th>Description</th><th style="text-align:center">Qté</th><th style="text-align:right">PU HT</th><th style="text-align:right">Montant HT</th></tr></thead><tbody>';
+  h+='<table><thead><tr><th>Description</th><th style="text-align:center">Qté</th><th style="text-align:right">PU TTC</th><th style="text-align:right">Montant TTC</th></tr></thead><tbody>';
   var facLignes=f.lignes&&f.lignes.length?f.lignes:[{desc:f.objet||'Prestation',qty:1,pu:ht,montant:ht}];
   var totalLignesHT=0;
   facLignes.forEach(function(lg){
