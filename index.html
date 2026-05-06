@@ -9429,15 +9429,29 @@ function sFac(id){
 // ═══ MARQUER PAYÉE ═══
 function marquerAcompte(id){
   var f=db.factures.find(function(x){return x.id===id});if(!f)return;
-  var montant=Math.round(E(f.total)*40)/100;
-  if(!confirm('💰 Marquer acompte reçu ?\n\n'+f.ref+' — '+cN(f.clientId)+'\nAcompte 40% : '+euro(montant)))return;
-  f.acompteRecu=true;
+  var montant40=Math.round(E(f.total)*40)/100;
+  var bd='<div style="text-align:center;margin-bottom:12px"><b>'+f.ref+' — '+cN(f.clientId)+'</b><br>Total : <b>'+euro(f.total)+'</b></div>';
+  bd+='<div class="fd"><label>Montant de l\'acompte re&#231;u</label><input id="ac_montant" type="number" step="0.01" value="'+montant40.toFixed(2)+'" style="font-size:18px;font-weight:800;color:var(--or);text-align:center"></div>';
+  bd+='<div style="display:flex;gap:6px;justify-content:center;margin-top:8px">';
+  bd+='<button class="btn sm" onclick="$(\'ac_montant\').value=0" style="font-size:10px">0 &#8364;</button>';
+  bd+='<button class="btn sm" onclick="$(\'ac_montant\').value='+(Math.round(E(f.total)*30)/100).toFixed(2)+'" style="font-size:10px">30%</button>';
+  bd+='<button class="btn sm" onclick="$(\'ac_montant\').value='+montant40.toFixed(2)+'" style="font-size:10px">40%</button>';
+  bd+='<button class="btn sm" onclick="$(\'ac_montant\').value='+(Math.round(E(f.total)*50)/100).toFixed(2)+'" style="font-size:10px">50%</button>';
+  bd+='<button class="btn sm" onclick="$(\'ac_montant\').value='+E(f.total).toFixed(2)+'" style="font-size:10px">100%</button>';
+  bd+='</div>';
+  oMo('💰 Acompte — '+f.ref, bd, '<button class="btn gn" onclick="saveAcompte(\''+id+'\')">💰 Enregistrer</button> <button class="btn" onclick="cMo()">Annuler</button>');
+}
+
+function saveAcompte(id){
+  var f=db.factures.find(function(x){return x.id===id});if(!f)return;
+  var montant=E(V('ac_montant'));
+  f.acompteRecu=montant>0;
   f.acompteDate=tdy();
   f.acompteMontant=montant;
   f.acompte=montant;
-  stamp(f);sav();rAll();
+  stamp(f);sav();cMo();rAll();
   showToast('💰 Acompte '+euro(montant)+' enregistré pour '+f.ref);
-  lH('facture','Acompte reçu: '+f.ref+' — '+euro(montant));
+  lH('facture','Acompte: '+f.ref+' — '+euro(montant));
 }
 
 function marquerPayeeModal(id){
@@ -18773,7 +18787,8 @@ function ctenvCalcTarif(){
       tot+=m;
     }
   }
-  var pctAc=E(V('ctenv_acompte_pct'))||40;
+  var pctAcVal=V('ctenv_acompte_pct');
+  var pctAc=pctAcVal!==''&&pctAcVal!==undefined?E(pctAcVal):40;
   var ttcEl=$('ctenv_ttc');if(ttcEl)ttcEl.textContent=euro(tot);
   var acEl=$('ctenv_acompte');if(acEl)acEl.textContent=euro(Math.round(tot*pctAc)/100);
   var slEl=$('ctenv_solde');if(slEl)slEl.textContent=euro(Math.round(tot*(100-pctAc))/100);
@@ -18783,7 +18798,7 @@ function ctenvCalcTransport(){
   var r=E(V('ctenv_tr_prix_retour'));
   var tot=a+r;
   var tEl=$('ctenv_tr_total');if(tEl)tEl.value=tot.toFixed(2);
-  var acEl=$('ctenv_tr_acompte');if(acEl)acEl.value=euro(Math.round(tot*40)/100);
+  var acEl=$('ctenv_tr_acompte');if(acEl)acEl.value=euro(Math.round(tot*pctAc)/100);
 }
 function ctenvBuildURL(){
   var t=V('ctenv_type')||'';
