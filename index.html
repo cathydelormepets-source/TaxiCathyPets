@@ -9,7 +9,7 @@
 <meta http-equiv="Content-Language" content="fr">
 <script>
 /* ═══ MODE OFFLINE — Cache direct (compatible GitHub Pages single-file) ═══ */
-var CP_CACHE_VERSION='cathypets-v32-final3';
+var CP_CACHE_VERSION='cathypets-v32-final4';
 (function(){
   // Purger TOUS les anciens caches d'abord
   if(typeof caches!=='undefined'){
@@ -9258,9 +9258,9 @@ function eDev(id){var q=db.devis.find(function(x){return x.id===id});if(!q)retur
   else{eqAddLigne()}
   eqCalcTotal();
   setTimeout(function(){
-    setPickerAniIds('edv',getAniIds(q));setAccList('edv',q.accompagnants||[]);
-    var mBd=$('mBd');if(mBd){var sigDiv=document.createElement('div');sigDiv.innerHTML=renderSigBlock('edv');mBd.appendChild(sigDiv);initSigBlock('edv');if(q.sigPec||q.sigDep)sigSetData('edv',{sigPec:q.sigPec,sigDep:q.sigDep})}
-  },50);
+    try{setPickerAniIds('edv',getAniIds(q))}catch(e){}
+    try{setAccList('edv',q.accompagnants||[])}catch(e){}
+  },100);
 }
 function eqAddLigne(article,desc,qty,pu,remise,noTva){
   var i=_eqLigneCount++;
@@ -9301,7 +9301,12 @@ function eqGetLignes(){
   }
   return lignes;
 }
+var _eqCalcTimer=null;
 function eqCalcTotal(){
+  if(_eqCalcTimer)clearTimeout(_eqCalcTimer);
+  _eqCalcTimer=setTimeout(_eqCalcTotalNow,50);
+}
+function _eqCalcTotalNow(){
   var lignes=eqGetLignes();
   var totalTTC=0;
   lignes.forEach(function(lg){totalTTC+=lg.montant});
