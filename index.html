@@ -9,7 +9,7 @@
 <meta http-equiv="Content-Language" content="fr">
 <script>
 /* ═══ MODE OFFLINE — Cache direct (compatible GitHub Pages single-file) ═══ */
-var CP_CACHE_VERSION='cathypets-v32-final2';
+var CP_CACHE_VERSION='cathypets-v32-final3';
 (function(){
   // Purger TOUS les anciens caches d'abord
   if(typeof caches!=='undefined'){
@@ -6360,7 +6360,6 @@ function sTab(t){
 // MODAL
 function oMo(ti,bd,ft){
   try{
-  // Nettoyer overlays résiduels
   ['payModal','impayeModal','avoirModal'].forEach(function(mid){var m=document.getElementById(mid);if(m)m.remove()});
   var ov=$('mOv');
   if(!ov)return;
@@ -6369,12 +6368,12 @@ function oMo(ti,bd,ft){
   var ftEl=$('mFt');if(ftEl)ftEl.innerHTML=ft||'';
   ov.classList.add('show');
   ov.style.display='flex';
-  // Bloquer fermeture par propagation de clic pendant 300ms
-  ov.style.pointerEvents='none';
-  setTimeout(function(){ov.style.pointerEvents=''},300);
+  ov.style.pointerEvents='';
   }catch(e){console.error('oMo error:',e)}
 }
 function cMo(){var ov=$('mOv');if(ov){ov.classList.remove('show');ov.style.display='none'}}
+// Echap pour fermer les modaux
+document.addEventListener('keydown',function(e){if(e.key==='Escape')cMo()});
 function delRec(col,id,lb){if(!confirm('Supprimer '+lb+' ?'))return;var item=(db[col]||[]).find(function(x){return x.id===id});if(item){stamp(item);item._deleted=true;item._deletedAt=new Date().toISOString()}else{db[col]=db[col].filter(function(x){return x.id!==id})}if(col==='devis')renumDev();if(col==='factures')renumFac();lH('del','Supprimé: '+lb);sav();cMo()}
 
 // SELECTS
