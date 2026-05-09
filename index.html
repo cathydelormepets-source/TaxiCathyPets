@@ -9,7 +9,7 @@
 <meta http-equiv="Content-Language" content="fr">
 <script>
 /* ═══ MODE OFFLINE — Cache direct (compatible GitHub Pages single-file) ═══ */
-var CP_CACHE_VERSION='cathypets-v32-final';
+var CP_CACHE_VERSION='cathypets-v32-final2';
 (function(){
   // Purger TOUS les anciens caches d'abord
   if(typeof caches!=='undefined'){
@@ -5210,8 +5210,12 @@ function ENT(key){
 }
 var _Y=new Date().getFullYear();
 function act(arr){return (arr||[]).filter(function(x){return !x._deleted})}
-var _nullEl={textContent:'',innerHTML:'',value:'',style:{display:'',background:'',color:'',borderColor:'',fontWeight:'',opacity:''},classList:{add:function(){},remove:function(){},toggle:function(){}},appendChild:function(){},removeChild:function(){},setAttribute:function(){},getAttribute:function(){return''},addEventListener:function(){},click:function(){},focus:function(){},checked:false,disabled:false,children:[],querySelectorAll:function(){return[]}};
-function $(id){return document.getElementById(id)||_nullEl}
+function $(id){return document.getElementById(id)}
+function $s(id){return document.getElementById(id)||{textContent:'',innerHTML:'',value:'',style:{display:'',background:'',color:''},classList:{add:function(){},remove:function(){}},checked:false}}
+
+// Gestionnaire d'erreurs global — l'app ne crashe plus
+window.onerror=function(msg,url,line){console.warn('⚠️ Erreur L'+line+':',msg);return true};
+window.addEventListener('unhandledrejection',function(e){console.warn('⚠️ Promise:',e.reason);e.preventDefault()});
 function V(id){var e=$(id);return e?e.value.trim?e.value.trim():e.value:''}
 function euro(n){return E(n).toFixed(2).replace('.',',')+' €'}
 function ht(ttc){var tva=(db.settings.tvaRate!==undefined&&db.settings.tvaRate!=='')?E(db.settings.tvaRate):20;return ttc/(1+tva/100)}
@@ -6355,19 +6359,22 @@ function sTab(t){
 
 // MODAL
 function oMo(ti,bd,ft){
+  try{
   // Nettoyer overlays résiduels
   ['payModal','impayeModal','avoirModal'].forEach(function(mid){var m=document.getElementById(mid);if(m)m.remove()});
   var ov=$('mOv');
-  $('mTi').textContent=ti;
-  $('mBd').innerHTML=bd;
-  $('mFt').innerHTML=ft||'';
+  if(!ov)return;
+  var tiEl=$('mTi');if(tiEl)tiEl.textContent=ti;
+  var bdEl=$('mBd');if(bdEl)bdEl.innerHTML=bd;
+  var ftEl=$('mFt');if(ftEl)ftEl.innerHTML=ft||'';
   ov.classList.add('show');
   ov.style.display='flex';
   // Bloquer fermeture par propagation de clic pendant 300ms
   ov.style.pointerEvents='none';
   setTimeout(function(){ov.style.pointerEvents=''},300);
+  }catch(e){console.error('oMo error:',e)}
 }
-function cMo(){var ov=$('mOv');ov.classList.remove('show');ov.style.display='none'}
+function cMo(){var ov=$('mOv');if(ov){ov.classList.remove('show');ov.style.display='none'}}
 function delRec(col,id,lb){if(!confirm('Supprimer '+lb+' ?'))return;var item=(db[col]||[]).find(function(x){return x.id===id});if(item){stamp(item);item._deleted=true;item._deletedAt=new Date().toISOString()}else{db[col]=db[col].filter(function(x){return x.id!==id})}if(col==='devis')renumDev();if(col==='factures')renumFac();lH('del','Supprimé: '+lb);sav();cMo()}
 
 // SELECTS
@@ -23641,8 +23648,6 @@ console.log('[CathyPets V32] ✅ Multi-Transport & Devis Rapide loaded');
 
 // Stubs pour fonctions supprimées (V29 cleanup)
 function relanceFac(id){var f=db.factures.find(function(x){return x.id===id});if(!f)return;quickMail('relance_fac',f.clientId,id)}
-
-function batchRelance(){
 
 // ═══ MODÈLES DE DEVIS ═══
 function saveDevTemplate(){
