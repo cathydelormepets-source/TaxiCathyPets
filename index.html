@@ -9,7 +9,7 @@
 <meta http-equiv="Content-Language" content="fr">
 <script>
 /* ═══ MODE OFFLINE — Cache direct (compatible GitHub Pages single-file) ═══ */
-var CP_CACHE_VERSION='cathypets-v32-final8';
+var CP_CACHE_VERSION='cathypets-v32-final9';
 (function(){
   // Purger TOUS les anciens caches d'abord
   if(typeof caches!=='undefined'){
@@ -1963,10 +1963,10 @@ document.getElementById('q_contrat_pec').addEventListener('change',function(){
 <!-- FACTURES -->
 <section class="tab" id="fac"><div class="sp">
 
-<!-- Sous-onglets Factures — tabs compacts -->
-<div style="display:flex;gap:0;margin-bottom:12px;border-bottom:2px solid var(--ln)">
-  <button id="facTab-liste" onclick="facShowTab('liste')" style="padding:8px 16px;font-size:12px;font-weight:700;background:rgba(26,122,110,.15);color:var(--a2);border:none;border-bottom:2px solid var(--a2);cursor:pointer;font-family:var(--f)">📋 Factures</button>
-  <button id="facTab-creer" onclick="facShowTab('creer')" style="padding:8px 16px;font-size:12px;font-weight:500;background:transparent;color:var(--mt);border:none;border-bottom:2px solid transparent;cursor:pointer;font-family:var(--f)">➕ Créer</button>
+<!-- Sous-onglets Factures — tabs bien distincts -->
+<div style="display:flex;gap:0;margin-bottom:14px">
+  <button id="facTab-liste" onclick="facShowTab('liste')" style="flex:1;padding:14px 16px;font-size:14px;font-weight:700;background:rgba(26,122,110,.15);color:var(--a2);border:none;border-bottom:3px solid var(--a2);cursor:pointer;font-family:var(--f);border-radius:8px 0 0 0">📋 Mes Factures</button>
+  <button id="facTab-creer" onclick="facShowTab('creer')" style="flex:1;padding:14px 16px;font-size:14px;font-weight:500;background:#1a2030;color:var(--mt);border:none;border-bottom:3px solid transparent;cursor:pointer;font-family:var(--f);border-radius:0 8px 0 0">➕ Créer une facture</button>
 </div>
 
 <!-- ═══ CRÉER UNE FACTURE ═══ -->
@@ -2065,9 +2065,10 @@ document.getElementById('q_contrat_pec').addEventListener('change',function(){
   </div>
   <div class="fd"><label>Notes / conditions</label><textarea id="fd_notes" placeholder="Ex: Paiement à réception. Acompte de 30% versé le..." style="min-height:50px"></textarea></div>
 
-  <div class="il">
-    <button class="btn gn" onclick="addFacDirecte()">➕ Créer la facture</button>
-    <button class="btn og" onclick="addFacDirecte(true)">➕ Créer + PDF</button>
+  <div class="il" style="display:flex;gap:8px;flex-wrap:wrap">
+    <button class="btn og" onclick="addFacDirecte(false,false)">📄 Créer la facture</button>
+    <button class="btn gn" onclick="addFacDirecte(false,true)" style="font-size:14px;padding:12px 24px">💶 Créer + Encaisser</button>
+    <button class="btn" onclick="addFacDirecte(true,false)" style="background:#1a2a3a;border-color:#2a4a6f;color:#8ec8ff">🖨️ Créer + PDF</button>
   </div>
 </div>
 
@@ -7596,10 +7597,10 @@ function facShowTab(t){
     if(b){
       if(k===t){
         b.style.background='rgba(26,122,110,.15)';b.style.color='var(--a2)';
-        b.style.fontWeight='700';b.style.borderBottom='2px solid var(--a2)';
+        b.style.fontWeight='700';b.style.borderBottom='3px solid var(--a2)';
       }else{
-        b.style.background='transparent';b.style.color='var(--mt)';
-        b.style.fontWeight='500';b.style.borderBottom='2px solid transparent';
+        b.style.background='#1a2030';b.style.color='var(--mt)';
+        b.style.fontWeight='500';b.style.borderBottom='3px solid transparent';
       }
     }
   });
@@ -7957,7 +7958,7 @@ function fdGetAnimalIds(){
   return ids;
 }
 
-function addFacDirecte(andPrint){
+function addFacDirecte(andPrint,payNow){
   var cliId = V('fd_cl');
   var obj = ((document.getElementById('fd_obj')||{}).value||'').trim();
   var lignes = fdGetLignes();
@@ -7981,12 +7982,13 @@ function addFacDirecte(andPrint){
     objet:obj, lignes:lignes, total:ttc, tva:tva, remise:remise,
     acompte:acompte, paiement:mp, paiementAcompte:mpac, notes:notes,
     date:dt, echeance:ech,
-    activityType:actType, mode:'directe', status:'emise'
+    activityType:actType, mode:'directe',
+    status:payNow?'payée':'emise'
   };
-  
+  if(payNow){inv.datePaiement=tdy();inv.paiementDate=tdy()}
   stamp(inv);db.factures.push(inv);
   db.tresorerie.unshift({id:uid('ca'),type:'recette',label:'Facture '+inv.ref+' — '+cN(cliId),amount:ttc,date:new Date().toISOString()});
-  lH('facture','Facture directe: '+inv.ref+' — '+euro(ttc));
+  lH('facture','Facture directe: '+inv.ref+' — '+euro(ttc)+(payNow?' [PAYÉE]':''));
   sav();
   // Reset
   _fdLigneCount = 0;
@@ -7996,8 +7998,10 @@ function addFacDirecte(andPrint){
   var recap = document.getElementById('fd_recap'); if(recap) recap.style.display='none';
   document.getElementById('fd_dt').value = tdy();
   fdAddLigne();
-  showToast('✅ Facture '+inv.ref+' créée');
+  showToast(payNow?'💶 Facture '+inv.ref+' créée et ENCAISSÉE — '+euro(ttc):'✅ Facture '+inv.ref+' créée — '+euro(ttc));
   if(andPrint) setTimeout(function(){ printFacPro(inv.id); }, 300);
+  // Basculer sur la liste pour voir la facture
+  setTimeout(function(){facShowTab('liste')},500);
 }
 
 function addFac(){ addFacFromDevis(); } // compat
