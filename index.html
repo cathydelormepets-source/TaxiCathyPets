@@ -9,7 +9,7 @@
 <meta http-equiv="Content-Language" content="fr">
 <script>
 /* ═══ MODE OFFLINE — Cache direct (compatible GitHub Pages single-file) ═══ */
-var CP_CACHE_VERSION='cathypets-v32-final7';
+var CP_CACHE_VERSION='cathypets-v32-final8';
 (function(){
   // Purger TOUS les anciens caches d'abord
   if(typeof caches!=='undefined'){
@@ -5708,6 +5708,30 @@ function forceRefreshGrdAniSelect(){var s=$('gd_aniSel');if(!s)return;var cliId=
 function lH(t,x){db.history.unshift({id:uid('h'),date:new Date().toISOString(),type:t,text:x});if(db.history.length>200)db.history.length=200}
 function clr(ids){ids.forEach(function(id){var e=$(id);if(e)e.value=''})}
 
+// Recalculer les compteurs depuis les refs existants (protection contre reset)
+function fixCounters(){
+  var maxDev=0;
+  db.devis.forEach(function(q){
+    if(!q.ref)return;
+    var m=q.ref.match(/DEV-\d+-(\d+)/);
+    if(m){var n=parseInt(m[1],10);if(n>=maxDev)maxDev=n+1}
+  });
+  if(maxDev>db.settings.nextQuote){
+    console.log('[CathyPets] Fix compteur devis: '+db.settings.nextQuote+' → '+maxDev);
+    db.settings.nextQuote=maxDev;
+  }
+  var maxFac=0;
+  db.factures.forEach(function(f){
+    if(!f.ref)return;
+    var m=f.ref.match(/FAC-\d+-(\d+)/);
+    if(m){var n=parseInt(m[1],10);if(n>=maxFac)maxFac=n+1}
+  });
+  if(maxFac>db.settings.nextInvoice){
+    console.log('[CathyPets] Fix compteur facture: '+db.settings.nextInvoice+' → '+maxFac);
+    db.settings.nextInvoice=maxFac;
+  }
+}
+
 // STORAGE + AUTO-SAVE + FIREBASE
 // Marque un record comme modifié pour le sync multi-poste
 function stamp(r){if(r){r._updatedAt=new Date().toISOString();r._dirty=true}return r}
@@ -9834,7 +9858,7 @@ function tLegs(t){
 }
 
 // RENDER ALL with try/catch
-function rAll(){
+function rAll(){try{fixCounters()}catch(e){}
   try{bSel()}catch(e){console.error('bSel',e)}
   try{updateAddrList()}catch(e){console.error('addrList',e)}
   var fns=['rCli','rAni','rTrp','rGrd2','rDev2','rFac2','rCol2','rNut2','rDash','rPlan','rRoute','rMulti','rTres','rPL','rStat','rHist','rDrv','rSet','rMails','bSelMail','bSelCliHist','bSelFac','rGcal','rMission','rCarbu','initRapport','rCerfrance','rContrats','rIntlTbl','bSelVitrine','artRender'];
@@ -12129,26 +12153,31 @@ function printDevisPro(id) {
   html += '<tr><td><strong>Validité:</strong></td><td>' + validiteStr + '</td></tr></table></div>';
   if(q.notes){ html += '<div style="margin-bottom:14px;padding:10px 12px;background:#f8f9fa;border-left:3px solid #1a7a6e;border-radius:4px;font-size:11px;line-height:1.6"><strong style="color:#1a7a6e">Description:</strong><br>' + esc(q.notes).replace(/\n/g,'<br>') + '</div>'; }
   if(q.conditions){ html += '<div style="margin-bottom:14px;padding:10px 12px;background:#fff8f0;border-left:3px solid #e67e22;border-radius:4px;font-size:11px;line-height:1.6"><strong style="color:#e67e22">Conditions particulières:</strong><br>' + esc(q.conditions).replace(/\n/g,'<br>') + '</div>'; }
-  // V30 : Tableau articles pro devis (Qté | Article | Description | PU | Remise | TVA | Total)
+  // V32 : Tableau articles pro devis (Qté | Article | Description | PU TTC | Rem. | HT | TVA | Total TTC)
   html += '<div style="margin:20px 0;border:1px solid #999;width:100%"><table style="width:100%;border-collapse:collapse;font-size:11px">';
   html += '<tr style="background:#ddd"><th style="border:1px solid #999;padding:6px;width:30px;text-align:center;font-size:10px">Qté</th>';
   html += '<th style="border:1px solid #999;padding:6px;width:90px;text-align:left;font-size:10px">Article</th>';
   html += '<th style="border:1px solid #999;padding:6px;text-align:left;font-size:10px">Description</th>';
   html += '<th style="border:1px solid #999;padding:6px;width:65px;text-align:right;font-size:10px">PU TTC</th>';
   html += '<th style="border:1px solid #999;padding:6px;width:35px;text-align:right;font-size:10px">Rem.</th>';
+  html += '<th style="border:1px solid #999;padding:6px;width:55px;text-align:right;font-size:10px">HT</th>';
   html += '<th style="border:1px solid #999;padding:6px;width:55px;text-align:right;font-size:10px">TVA</th>';
-  html += '<th style="border:1px solid #999;padding:6px;width:65px;text-align:right;font-size:10px">Total</th></tr>';
+  html += '<th style="border:1px solid #999;padding:6px;width:65px;text-align:right;font-size:10px">Total TTC</th></tr>';
   var qLignes = q.lignes && q.lignes.length ? q.lignes : [{desc: q.notes || 'Transport animalier', qty: 1, pu: ht, montant: ht}];
   var totalTTCLignes = 0;
+  var totalHTLignes = 0;
+  var totalTVALignes = 0;
   qLignes.forEach(function(lg){
     var qtyVal = lg.qty||1;
     var puVal = lg.pu||0;
     var remLigne = lg.remise||0;
     var brut = qtyVal * puVal;
     var mntTTC = brut * (1 - remLigne/100);
-    // Prix saisis en TTC — extraire la TVA
-    var tvaLigne = lg.noTva ? 0 : (mntTTC - mntTTC / (1 + tva / 100));
+    var htLigne = lg.noTva ? mntTTC : mntTTC / (1 + tva / 100);
+    var tvaLigne = mntTTC - htLigne;
     totalTTCLignes += mntTTC;
+    totalHTLignes += htLigne;
+    totalTVALignes += tvaLigne;
     var articleName = lg.article || lg.desc || 'Article';
     var descDetail = lg.article ? (lg.desc || '') : '';
     html += '<tr>';
@@ -12157,6 +12186,7 @@ function printDevisPro(id) {
     html += '<td style="border:1px solid #999;padding:8px;vertical-align:top;color:#555">' + esc(descDetail) + '</td>';
     html += '<td style="border:1px solid #999;padding:8px;text-align:right;vertical-align:top">' + euro(puVal) + '</td>';
     html += '<td style="border:1px solid #999;padding:8px;text-align:right;vertical-align:top;color:'+(remLigne>0?'#e67e22':'#999')+'">' + (remLigne>0?'-'+remLigne+'%':'—') + '</td>';
+    html += '<td style="border:1px solid #999;padding:8px;text-align:right;vertical-align:top">' + euro(htLigne) + '</td>';
     html += '<td style="border:1px solid #999;padding:8px;text-align:right;vertical-align:top">' + euro(tvaLigne) + '</td>';
     html += '<td style="border:1px solid #999;padding:8px;text-align:right;vertical-align:top;font-weight:bold">' + euro(mntTTC) + '</td>';
     html += '</tr>';
@@ -12164,19 +12194,23 @@ function printDevisPro(id) {
   html += '</table></div>';
   var remisePct = E(q.remise) || 0;
   var ttcApresRemise = totalTTCLignes * (1 - remisePct/100);
-  var htApresRemise = tva > 0 ? ttcApresRemise / (1 + tva / 100) : ttcApresRemise;
-  var tvaMontant = ttcApresRemise - htApresRemise;
+  var htApresRemise = totalHTLignes * (1 - remisePct/100);
+  var tvaApresRemise = ttcApresRemise - htApresRemise;
   html += '<div style="margin:15px 0"><table style="width:100%;border:1px solid #999;font-size:11px"><tr style="background:#ddd">';
   html += '<th style="border:1px solid #999;padding:8px">Taux</th><th style="border:1px solid #999;padding:8px">Total HT</th><th style="border:1px solid #999;padding:8px">Montant TVA</th></tr>';
   html += '<tr><td style="border:1px solid #999;padding:8px">' + tva.toFixed(2) + ' %</td><td style="border:1px solid #999;padding:8px">' + euro(htApresRemise) + '</td>';
-  html += '<td style="border:1px solid #999;padding:8px">' + euro(tvaMontant) + '</td></tr></table></div>';
+  html += '<td style="border:1px solid #999;padding:8px">' + euro(tvaApresRemise) + '</td></tr></table></div>';
   html += '<div style="margin:15px 0"><table style="width:100%;border:1px solid #999;font-size:11px">';
+  if(remisePct > 0){
+    html += '<tr><td style="border:1px solid #999;padding:8px">Sous-total TTC</td><td style="border:1px solid #999;padding:8px;text-align:right">' + euro(totalTTCLignes) + '</td></tr>';
+    html += '<tr><td style="border:1px solid #999;padding:8px;color:#e67e22">Remise ' + remisePct + '%</td><td style="border:1px solid #999;padding:8px;text-align:right;color:#e67e22">-' + euro(totalTTCLignes * remisePct/100) + '</td></tr>';
+  }
   html += '<tr><td style="border:1px solid #999;padding:8px;font-weight:bold">Total HT</td>';
   html += '<td style="border:1px solid #999;padding:8px;text-align:right">' + euro(htApresRemise) + '</td></tr>';
-  if(remisePct > 0){ html += '<tr><td style="border:1px solid #999;padding:8px;color:#e67e22">Remise ' + remisePct + '%</td><td style="border:1px solid #999;padding:8px;text-align:right;color:#e67e22">-' + euro(totalTTCLignes * remisePct/100) + '</td></tr>'; }
   html += '<tr><td style="border:1px solid #999;padding:8px;font-weight:bold">TVA ' + tva + '%</td>';
-  html += '<td style="border:1px solid #999;padding:8px;text-align:right">' + euro(tvaMontant) + '</td></tr><tr style="background:#ddd"><td style="border:1px solid #999;padding:8px;font-weight:bold">Total TTC</td>';
-  html += '<td style="border:1px solid #999;padding:8px;text-align:right;font-weight:bold">' + euro(ttcApresRemise) + '</td></tr></table></div>';
+  html += '<td style="border:1px solid #999;padding:8px;text-align:right">' + euro(tvaApresRemise) + '</td></tr>';
+  html += '<tr style="background:#ddd"><td style="border:1px solid #999;padding:8px;font-weight:bold;font-size:13px">Total TTC</td>';
+  html += '<td style="border:1px solid #999;padding:8px;text-align:right;font-weight:bold;font-size:13px">' + euro(ttcApresRemise) + '</td></tr></table></div>';
   html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin:15px 0">';
   html += '<div style="font-size:11px"><p><strong>BIC: '+(db.settings.entBIC||'')+'</strong></p><p><strong>IBAN: '+(db.settings.entIBAN||'')+'</strong></p></div>';
   html += '<div style="text-align:center">' + qrCodeImg(getVitrineUrl(q.ref), 70) + '<div style="font-size:8px;color:#666;margin-top:2px">Scannez pour suivre</div></div></div>';
@@ -12258,26 +12292,29 @@ function printFacturePro(id) {
     html += '<p style="font-size:11px;margin:0">'+aniNames.join('<br>')+'</p></div>';
   }
   html += '<h4 style="font-size:12px;font-weight:bold;margin:0 0 4px 0">Facture ' + f.ref + '</h4><p style="font-size:11px">Date: ' + dateStr + '</p></div></div>';
-  // V30 : Tableau articles pro (Qté | Article | Description | PU | Remise | TVA | Total)
+  // V32 : Tableau articles pro facture (Qté | Article | Description | PU TTC | Rem. | HT | TVA | Total TTC)
   html += '<div style="margin:20px 0;border:1px solid #999"><table style="width:100%;border-collapse:collapse;font-size:11px"><tr style="background:#ddd">';
   html += '<th style="border:1px solid #999;padding:6px;width:30px;text-align:center;font-size:10px">Qté</th>';
   html += '<th style="border:1px solid #999;padding:6px;width:90px;text-align:left;font-size:10px">Article</th>';
   html += '<th style="border:1px solid #999;padding:6px;text-align:left;font-size:10px">Description</th>';
   html += '<th style="border:1px solid #999;padding:6px;width:65px;text-align:right;font-size:10px">PU TTC</th>';
   html += '<th style="border:1px solid #999;padding:6px;width:35px;text-align:right;font-size:10px">Rem.</th>';
+  html += '<th style="border:1px solid #999;padding:6px;width:55px;text-align:right;font-size:10px">HT</th>';
   html += '<th style="border:1px solid #999;padding:6px;width:55px;text-align:right;font-size:10px">TVA</th>';
-  html += '<th style="border:1px solid #999;padding:6px;width:65px;text-align:right;font-size:10px">Total</th></tr>';
+  html += '<th style="border:1px solid #999;padding:6px;width:65px;text-align:right;font-size:10px">Total TTC</th></tr>';
   var facLignes = f.lignes && f.lignes.length ? f.lignes : [{desc: f.objet || 'Prestation', qty: 1, pu: ht}];
-  var facTotalHT = 0;
+  var facTotalTTC = 0, facTotalHT2 = 0, facTotalTVA2 = 0;
   facLignes.forEach(function(lg){
     var qtyVal = lg.qty||1;
     var puVal = lg.pu||0;
     var remLigne = lg.remise||0;
     var brut = qtyVal * puVal;
-    var mnt = brut * (1 - remLigne/100);
-    var tvaLigne = lg.noTva ? 0 : (mnt * tva / 100);
-    facTotalHT += mnt;
-    // V30 : utiliser article et desc directement
+    var mntTTC = brut * (1 - remLigne/100);
+    var htLigne = lg.noTva ? mntTTC : mntTTC / (1 + tva / 100);
+    var tvaLigne = mntTTC - htLigne;
+    facTotalTTC += mntTTC;
+    facTotalHT2 += htLigne;
+    facTotalTVA2 += tvaLigne;
     var articleName = lg.article || lg.desc || 'Article';
     var descDetail = lg.article ? (lg.desc || '') : '';
     html += '<tr>';
@@ -12286,29 +12323,32 @@ function printFacturePro(id) {
     html += '<td style="border:1px solid #999;padding:8px;vertical-align:top;color:#555">' + esc(descDetail) + '</td>';
     html += '<td style="border:1px solid #999;padding:8px;text-align:right;vertical-align:top">' + euro(puVal) + '</td>';
     html += '<td style="border:1px solid #999;padding:8px;text-align:right;vertical-align:top;color:'+(remLigne>0?'#e67e22':'#999')+'">' + (remLigne>0?'-'+remLigne+'%':'—') + '</td>';
+    html += '<td style="border:1px solid #999;padding:8px;text-align:right;vertical-align:top">' + euro(htLigne) + '</td>';
     html += '<td style="border:1px solid #999;padding:8px;text-align:right;vertical-align:top">' + euro(tvaLigne) + '</td>';
-    html += '<td style="border:1px solid #999;padding:8px;text-align:right;vertical-align:top;font-weight:bold">' + euro(mnt) + '</td>';
+    html += '<td style="border:1px solid #999;padding:8px;text-align:right;vertical-align:top;font-weight:bold">' + euro(mntTTC) + '</td>';
     html += '</tr>';
   });
   html += '</table></div>';
   var facRemise = E(f.remise) || 0;
   var facTTCApresRemise = E(f.total);
-  var facHTApresRemise = tva > 0 ? facTTCApresRemise / (1 + tva/100) : facTTCApresRemise;
+  var facHTApresRemise = facTotalHT2 * (1 - facRemise/100);
   var facTvaMontant = facTTCApresRemise - facHTApresRemise;
   html += '<div style="margin:15px 0"><table style="width:100%;border:1px solid #999;font-size:11px">';
+  if(facRemise > 0){
+    html += '<tr><td style="border:1px solid #999;padding:8px">Sous-total TTC</td><td style="border:1px solid #999;padding:8px;text-align:right">' + euro(facTotalTTC) + '</td></tr>';
+    html += '<tr><td style="border:1px solid #999;padding:8px;color:#e67e22">Remise ' + facRemise + '%</td><td style="border:1px solid #999;padding:8px;text-align:right;color:#e67e22">-' + euro(facTotalTTC * facRemise/100) + '</td></tr>';
+  }
+  html += '<tr><td style="border:1px solid #999;padding:8px;font-weight:bold">Total HT</td>';
+  html += '<td style="border:1px solid #999;padding:8px;text-align:right">' + euro(facHTApresRemise) + '</td></tr>';
   if(tva > 0){
-    html += '<tr><td style="border:1px solid #999;padding:8px;font-weight:bold">Total HT</td>';
-    html += '<td style="border:1px solid #999;padding:8px;text-align:right">' + euro(facHTApresRemise) + '</td></tr>';
-    if(facRemise > 0){ html += '<tr><td style="border:1px solid #999;padding:8px;color:#e67e22">Remise ' + facRemise + '%</td><td style="border:1px solid #999;padding:8px;text-align:right;color:#e67e22">-' + euro(E(f.total)/(1-facRemise/100)*facRemise/100) + '</td></tr>'; }
     html += '<tr><td style="border:1px solid #999;padding:8px;font-weight:bold">TVA ' + tva + '%</td>';
     html += '<td style="border:1px solid #999;padding:8px;text-align:right">' + euro(facTvaMontant) + '</td></tr>';
   } else {
-    if(facRemise > 0){ html += '<tr><td style="border:1px solid #999;padding:8px;color:#e67e22">Remise ' + facRemise + '%</td><td style="border:1px solid #999;padding:8px;text-align:right;color:#e67e22">appliquée</td></tr>'; }
     html += '<tr><td style="border:1px solid #999;padding:8px">TVA</td>';
     html += '<td style="border:1px solid #999;padding:8px;text-align:right"><span style="color:#e65c00">Non applicable (Art. 293 B CGI)</span></td></tr>';
   }
-  html += '<tr style="background:#ddd"><td style="border:1px solid #999;padding:8px;font-weight:bold">Total TTC</td>';
-  html += '<td style="border:1px solid #999;padding:8px;text-align:right;font-weight:bold">' + euro(E(f.total)) + '</td></tr>';
+  html += '<tr style="background:#ddd"><td style="border:1px solid #999;padding:8px;font-weight:bold;font-size:13px">Total TTC</td>';
+  html += '<td style="border:1px solid #999;padding:8px;text-align:right;font-weight:bold;font-size:13px">' + euro(facTTCApresRemise) + '</td></tr>';
   if(isPaye){
     html += '<tr style="background:#e6f7f0"><td style="border:1px solid #999;padding:8px;font-weight:bold;color:#1a7a6e">Payé' + (datePayStr ? ' le ' + datePayStr : '') + '</td>';
     html += '<td style="border:1px solid #999;padding:8px;text-align:right;font-weight:bold;color:#1a7a6e">' + euro(E(f.total)) + '</td></tr>';
