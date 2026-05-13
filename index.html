@@ -9,7 +9,7 @@
 <meta http-equiv="Content-Language" content="fr">
 <script>
 /* ═══ MODE OFFLINE — Cache direct (compatible GitHub Pages single-file) ═══ */
-var CP_CACHE_VERSION='cathypets-v32-final4';
+var CP_CACHE_VERSION='cathypets-v32-final5';
 (function(){
   // Purger TOUS les anciens caches d'abord
   if(typeof caches!=='undefined'){
@@ -9245,7 +9245,9 @@ function eDev(id){var q=db.devis.find(function(x){return x.id===id});if(!q)retur
 
   var footer='<button class="btn rd" onclick="delRec(\'devis\',\''+id+'\',\''+esc(q.ref)+'\')">🗑️</button> ';
   footer+=(q.status!=='facturé'?'<button class="btn at" onclick="devToTr(\''+id+'\')">🚗 → Transport</button> ':'');
-  footer+=(q.status==='envoyé'?'<button class="btn gn" onclick="contratValide(\''+id+'\');cMo()">📋 Contrat reçu</button> ':'');
+  footer+=(q.status==='envoyé'?'<button class="btn" style="background:#133a28;border-color:#2a6a40;color:#7bf0b0" onclick="contratValide(\''+id+'\');cMo()">📋 Contrat reçu → Accepter</button> ':'');
+  footer+=(q.status==='envoyé'||q.status==='brouillon'?'<button class="btn gn" onclick="quickAcceptDev(\''+id+'\')">✅ Valider le devis</button> ':'');
+  footer+=(q.status==='accepté'?'<button class="btn gn" onclick="devToFacDirect(\''+id+'\');cMo()" style="font-size:13px;padding:10px 20px">💶 Transformer en facture</button> ':'');
   footer+='<button class="btn og" onclick="printDevisPro(\''+id+'\')">🖨️ PDF</button> ';
   footer+='<button class="btn bu" onclick="quickMail(\'conf_dev\',\''+q.clientId+'\',\''+id+'\');cMo()">📧</button> ';
   footer+='<button class="btn" style="background:#1a2030;border-color:#2a3a50;color:#aab" onclick="dupDev(\''+id+'\')">📋</button> ';
@@ -9868,10 +9870,20 @@ function rDev2(){rTbl('dvTbl',['Réf','Client','Mode','Trajet','Total','Statut',
   '<button class="btn sm" style="background:#1a3a2a;border-color:#2a6040;color:#7bf0b0" onclick="genLienAcompte(\''+q.id+'\')" title="Lien acompte en ligne">💳</button>'+
   (q.status!=='facturé'?'<button class="btn sm" style="background:#1a2a3a;border-color:#2a4060;color:#9bc" onclick="devToTr(\''+q.id+'\')" title="→ Transport">🚗</button>':'')+
   (q.status==='envoyé'?'<button class="btn sm" style="background:#1a3020;border-color:#2a6030;color:#7bf0a0;font-size:10px" onclick="contratValide(\''+q.id+'\')" title="Contrat signé reçu → accepter + créer mission + calendrier">📋 Contrat reçu</button>':'')+
+  (q.status==='envoyé'||q.status==='brouillon'?'<button class="btn sm gn" onclick="quickAcceptDev(\''+q.id+'\')" title="Valider ce devis" style="font-size:10px">✅ Valider</button>':'')+
   (q.status==='accepté'?'<button class="btn sm gn" onclick="devToFacDirect(\''+q.id+'\')" title="→ Facture en 1 clic" style="font-size:10px">💶 Facturer</button>':'')+
   '<button class="btn sm" style="background:#1a2030;border-color:#2a3a50;color:#aab" onclick="dupDev(\''+q.id+'\')" title="Dupliquer">📋</button>'+
   '<button class="btn sm rd" onclick="hardDelDev(\''+q.id+'\')" title="Supprimer">🗑️</button>'+
   '</td></tr>';}))}
+
+// Valider un devis (envoyé → accepté)
+function quickAcceptDev(id){
+  var q=db.devis.find(function(x){return x.id===id});if(!q)return;
+  if(!confirm('✅ Valider le devis '+q.ref+' ?\n\nStatut passera de "'+q.status+'" à "accepté"'))return;
+  q.status='accepté';stamp(q);sav();cMo();rAll();
+  showToast('✅ Devis '+q.ref+' validé — tu peux maintenant le facturer');
+  setTimeout(function(){eDev(id)},300);
+}
 
 function devToFacDirect(id){
   var q=db.devis.find(function(x){return x.id===id;});
