@@ -9,7 +9,7 @@
 <meta http-equiv="Content-Language" content="fr">
 <script>
 /* ═══ MODE OFFLINE — Cache direct (compatible GitHub Pages single-file) ═══ */
-var CP_CACHE_VERSION='cathypets-v32-final5';
+var CP_CACHE_VERSION='cathypets-v32-final7';
 (function(){
   // Purger TOUS les anciens caches d'abord
   if(typeof caches!=='undefined'){
@@ -9248,6 +9248,13 @@ function eDev(id){var q=db.devis.find(function(x){return x.id===id});if(!q)retur
   footer+=(q.status==='envoyé'?'<button class="btn" style="background:#133a28;border-color:#2a6a40;color:#7bf0b0" onclick="contratValide(\''+id+'\');cMo()">📋 Contrat reçu → Accepter</button> ':'');
   footer+=(q.status==='envoyé'||q.status==='brouillon'?'<button class="btn gn" onclick="quickAcceptDev(\''+id+'\')">✅ Valider le devis</button> ':'');
   footer+=(q.status==='accepté'?'<button class="btn gn" onclick="devToFacDirect(\''+id+'\');cMo()" style="font-size:13px;padding:10px 20px">💶 Transformer en facture</button> ':'');
+  // Si facturé mais la facture n'existe plus → permettre de re-facturer
+  if(q.status==='facturé'){
+    var facExists=act(db.factures).some(function(f){return f.quoteId===id});
+    if(!facExists){
+      footer+='<button class="btn" style="background:#5a1a1a;border-color:#8a3030;color:#ff8080;font-size:12px;padding:8px 16px" onclick="reFacturerDev(\''+id+'\')">⚠️ Facture supprimée — Re-facturer</button> ';
+    }
+  }
   footer+='<button class="btn og" onclick="printDevisPro(\''+id+'\')">🖨️ PDF</button> ';
   footer+='<button class="btn bu" onclick="quickMail(\'conf_dev\',\''+q.clientId+'\',\''+id+'\');cMo()">📧</button> ';
   footer+='<button class="btn" style="background:#1a2030;border-color:#2a3a50;color:#aab" onclick="dupDev(\''+id+'\')">📋</button> ';
@@ -9872,6 +9879,7 @@ function rDev2(){rTbl('dvTbl',['Réf','Client','Mode','Trajet','Total','Statut',
   (q.status==='envoyé'?'<button class="btn sm" style="background:#1a3020;border-color:#2a6030;color:#7bf0a0;font-size:10px" onclick="contratValide(\''+q.id+'\')" title="Contrat signé reçu → accepter + créer mission + calendrier">📋 Contrat reçu</button>':'')+
   (q.status==='envoyé'||q.status==='brouillon'?'<button class="btn sm gn" onclick="quickAcceptDev(\''+q.id+'\')" title="Valider ce devis" style="font-size:10px">✅ Valider</button>':'')+
   (q.status==='accepté'?'<button class="btn sm gn" onclick="devToFacDirect(\''+q.id+'\')" title="→ Facture en 1 clic" style="font-size:10px">💶 Facturer</button>':'')+
+  (q.status==='facturé'&&!act(db.factures).some(function(f){return f.quoteId===q.id})?'<button class="btn sm" style="background:#5a1a1a;border-color:#8a3030;color:#ff8080;font-size:9px" onclick="reFacturerDev(\''+q.id+'\')" title="Facture supprimée — re-créer">⚠️ Re-facturer</button>':'')+
   '<button class="btn sm" style="background:#1a2030;border-color:#2a3a50;color:#aab" onclick="dupDev(\''+q.id+'\')" title="Dupliquer">📋</button>'+
   '<button class="btn sm rd" onclick="hardDelDev(\''+q.id+'\')" title="Supprimer">🗑️</button>'+
   '</td></tr>';}))}
@@ -9888,9 +9896,27 @@ function quickAcceptDev(id){
 function devToFacDirect(id){
   var q=db.devis.find(function(x){return x.id===id;});
   if(!q)return;
-  if(!confirm('Créer une facture de '+euro(q.total)+' pour '+cN(q.clientId)+' depuis le devis '+q.ref+' ?'))return;
+  var bd='<div style="text-align:center;margin-bottom:14px"><b>'+q.ref+' — '+cN(q.clientId)+'</b><br>Total : <b style="color:var(--a2);font-size:18px">'+euro(q.total)+'</b></div>';
+  bd+='<div class="fd"><label>Mode de paiement</label><select id="dtf_mp" style="padding:10px;font-size:14px"><option value="virement">💳 Virement</option><option value="especes">💵 Espèces</option><option value="cheque">📝 Chèque</option><option value="cb">💳 Carte bancaire</option><option value="paypal">🅿️ PayPal</option></select></div>';
+  bd+='<div class="fd" style="margin-top:8px"><label>Notes facture</label><input id="dtf_notes" placeholder="(optionnel)"></div>';
+  oMo('💶 Facturer '+q.ref, bd, 
+    '<button class="btn" onclick="cMo()">Annuler</button> '+
+    '<button class="btn og" onclick="execDevToFac(\''+id+'\',false)">📄 Créer facture (impayée)</button> '+
+    '<button class="btn gn" onclick="execDevToFac(\''+id+'\',true)" style="font-size:14px;padding:10px 24px">💶 Créer + Encaisser</button>');
+}
+
+// Re-facturer un devis dont la facture a été supprimée
+function reFacturerDev(id){
+  var q=db.devis.find(function(x){return x.id===id});if(!q)return;
+  if(!confirm('⚠️ La facture liée au devis '+q.ref+' a été supprimée.\n\nRe-créer une nouvelle facture de '+euro(q.total)+' ?'))return;
+  q.status='accepté';stamp(q);sav();cMo();
+  devToFacDirect(id);
+}
+
+function execDevToFac(id,payNow){
+  var q=db.devis.find(function(x){return x.id===id;});
+  if(!q)return;
   var tva=q.tva||(db.settings.tvaRate!==undefined&&db.settings.tvaRate!==''&&db.settings.tvaRate!==null?E(db.settings.tvaRate):20);
-  // Build lignes complètes : lignes devis + hébergement + multi-modal
   var facLignes=(q.lignes&&q.lignes.length)?JSON.parse(JSON.stringify(q.lignes)):[];
   if(E(q.hotelCost)>0){
     facLignes.push({desc:'Hébergement: '+(q.hotel||'Hôtel')+' ('+(q.hotelNuits||1)+' nuit'+(q.hotelNuits>1?'s':'')+')',qty:1,pu:E(q.hotelCost),montant:E(q.hotelCost)});
@@ -9899,20 +9925,24 @@ function devToFacDirect(id){
     var mmL={ferry:'Ferry',train:'Train',avion:'Avion',bateau:'Bateau'};
     facLignes.push({desc:(mmL[q.multiModal]||q.multiModal)+': '+(q.mmCompagnie||'')+' '+(q.mmRef||''),qty:1,pu:E(q.mmCost),montant:E(q.mmCost)});
   }
+  var mp=V('dtf_mp')||'virement';
+  var notes=V('dtf_notes')||'';
   var inv={
     id:uid('f'), ref:nextFacRef(),
     clientId:q.clientId, animalIds:getAniIds(q), animalId:q.animalId||'', accompagnants:q.accompagnants||[], quoteId:q.id,
     objet:q.objet||q.notes||'Transport animalier — '+q.ref,
     lignes:facLignes, total:q.total, tva:tva, remise:q.remise||0,
-    acompte:0, paiement:'virement', paiementAcompte:'', notes:'',
-    date:tdy(), echeance:'', activityType:(q.mode||'transport'), mode:'depuis-devis', status:'emise'
+    acompte:0, paiement:mp, paiementAcompte:'', notes:notes,
+    date:tdy(), echeance:'', activityType:(q.mode||'transport'), mode:'depuis-devis',
+    status:payNow?'payée':'emise'
   };
-   stamp(inv);db.factures.push(inv);
+  if(payNow){inv.datePaiement=tdy();inv.paiementDate=tdy()}
+  stamp(inv);db.factures.push(inv);
   q.status='facturé';
   db.tresorerie.unshift({id:uid('ca'),type:'recette',label:'Facture '+inv.ref+' — '+cN(q.clientId),amount:inv.total,date:new Date().toISOString()});
-  lH('facture','Depuis devis: '+inv.ref+' — '+euro(inv.total)+' ('+facLignes.length+' lignes)');
-  sav(); rDev2(); rFac2();
-  showToast('✅ Facture '+inv.ref+' créée — '+euro(inv.total)+' — '+facLignes.length+' ligne(s)');
+  lH('facture','Depuis devis: '+inv.ref+' — '+euro(inv.total)+(payNow?' [PAYÉE]':''));
+  sav();cMo();rAll();
+  showToast(payNow?'💶 Facture '+inv.ref+' créée et ENCAISSÉE — '+euro(inv.total):'📄 Facture '+inv.ref+' créée — '+euro(inv.total));
 }
 function fcSubTab(v){
   var btns=['all','emise','impayee','payee','retard','avoir'];
