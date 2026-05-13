@@ -9,7 +9,7 @@
 <meta http-equiv="Content-Language" content="fr">
 <script>
 /* ═══ MODE OFFLINE — Cache direct (compatible GitHub Pages single-file) ═══ */
-var CP_CACHE_VERSION='cathypets-v32-final12';
+var CP_CACHE_VERSION='cathypets-v32-final13';
 (function(){
   // Purger TOUS les anciens caches d'abord
   if(typeof caches!=='undefined'){
@@ -10367,9 +10367,20 @@ function rBriefing(){
   var moisActuel=new Date().toISOString().slice(0,7);
   var facsMois=act(db.factures).filter(function(f){return f.date&&f.date.slice(0,7)===moisActuel&&f.status!=='avoir'});
   var caMois=facsMois.reduce(function(s,f){return s+E(f.total)},0);
-  var payeMois=facsMois.filter(function(f){return f.status==='payée'}).reduce(function(s,f){return s+E(f.total)},0);
-  var attenteMois=facsMois.filter(function(f){return f.status!=='payée'}).reduce(function(s,f){return s+E(f.total)-E(f.acompte||0)},0);
-  var nbAttente=facsMois.filter(function(f){return f.status!=='payée'}).length;
+  var payeMois=0;
+  var attenteMois=0;
+  var nbAttente=0;
+  facsMois.forEach(function(f){
+    var montant=E(f.total);
+    if(f.status==='payée'){
+      payeMois+=montant;
+    } else {
+      var ac=E(f.acompte||0);
+      payeMois+=ac;
+      attenteMois+=(montant-ac);
+      nbAttente++;
+    }
+  });
   var obj=db.settings.objectifMois||0;
   h+='<div style="padding:8px 12px;background:rgba(59,130,246,.06);border-radius:8px;font-size:11px;border-left:3px solid var(--bl)">';
   h+='<div style="font-weight:700;margin-bottom:4px">💰 CA du mois — '+facsMois.length+' facture(s)</div>';
@@ -17316,23 +17327,24 @@ function rObjectifs(){
   var bkObj = document.getElementById('bk_obj');
   if(bkObj && document.activeElement!==bkObj && obj) bkObj.value = obj;
 
-  // CA mois en cours (TTC) — TOTAL FACTURÉ (incluant en attente)
+  // CA mois en cours basé UNIQUEMENT sur factures (source unique de vérité)
   var caMois = 0;
   var caEncaisse = 0;
   var caAttente = 0;
   var nbAttente = 0;
-  act(db.transports).forEach(function(t){if(t.date&&t.date.slice(0,7)===mois)caMois+=E(t.price);});
-  act(db.gardes).forEach(function(g){if(g.start&&g.start.slice(0,7)===mois)caMois+=E(g.price);});
-  act(db.colis).forEach(function(p){if(p.date&&p.date.slice(0,7)===mois)caMois+=E(p.price);});
   act(db.factures).forEach(function(f){
     if((f.date||'').slice(0,7)!==mois) return;
     if(f.status==='avoir') return;
     var montant = E(f.total);
-    var lTr=f.transportId&&act(db.transports).find(function(t){return t.id===f.transportId;});
-    var lGd=f.gardeId&&act(db.gardes).find(function(g){return g.id===f.gardeId;});
-    if(!lTr&&!lGd) caMois += montant;
-    if(f.status==='payée'){caEncaisse += montant}
-    else{caAttente += (montant - E(f.acompte||0)); nbAttente++}
+    caMois += montant;
+    if(f.status==='payée'){
+      caEncaisse += montant;
+    } else {
+      var acompteRecu = E(f.acompte||0);
+      caEncaisse += acompteRecu;
+      caAttente += (montant - acompteRecu);
+      nbAttente++;
+    }
   });
 
   // Jours restants dans le mois
