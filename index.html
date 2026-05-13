@@ -9,7 +9,7 @@
 <meta http-equiv="Content-Language" content="fr">
 <script>
 /* ═══ MODE OFFLINE — Cache direct (compatible GitHub Pages single-file) ═══ */
-var CP_CACHE_VERSION='cathypets-v32-final11';
+var CP_CACHE_VERSION='cathypets-v32-final12';
 (function(){
   // Purger TOUS les anciens caches d'abord
   if(typeof caches!=='undefined'){
@@ -17316,16 +17316,23 @@ function rObjectifs(){
   var bkObj = document.getElementById('bk_obj');
   if(bkObj && document.activeElement!==bkObj && obj) bkObj.value = obj;
 
-  // CA mois en cours (TTC)
+  // CA mois en cours (TTC) — TOTAL FACTURÉ (incluant en attente)
   var caMois = 0;
+  var caEncaisse = 0;
+  var caAttente = 0;
+  var nbAttente = 0;
   act(db.transports).forEach(function(t){if(t.date&&t.date.slice(0,7)===mois)caMois+=E(t.price);});
   act(db.gardes).forEach(function(g){if(g.start&&g.start.slice(0,7)===mois)caMois+=E(g.price);});
   act(db.colis).forEach(function(p){if(p.date&&p.date.slice(0,7)===mois)caMois+=E(p.price);});
   act(db.factures).forEach(function(f){
     if((f.date||'').slice(0,7)!==mois) return;
+    if(f.status==='avoir') return;
+    var montant = E(f.total);
     var lTr=f.transportId&&act(db.transports).find(function(t){return t.id===f.transportId;});
     var lGd=f.gardeId&&act(db.gardes).find(function(g){return g.id===f.gardeId;});
-    if(!lTr&&!lGd) caMois+=E(f.total);
+    if(!lTr&&!lGd) caMois += montant;
+    if(f.status==='payée'){caEncaisse += montant}
+    else{caAttente += (montant - E(f.acompte||0)); nbAttente++}
   });
 
   // Jours restants dans le mois
@@ -17350,7 +17357,14 @@ function rObjectifs(){
     if(bar){ bar.style.width=pct.toFixed(1)+'%'; bar.style.background=pct>=100?'linear-gradient(90deg,var(--gd),var(--a2))':pct>=70?'linear-gradient(90deg,var(--or),var(--gd))':'linear-gradient(90deg,var(--ac),var(--a2))'; }
     if(barPct) barPct.textContent = pct.toFixed(0)+'%';
     if(badge){ badge.textContent=euro(caMois)+' / '+euro(obj); badge.style.color=pct>=100?'var(--gd)':pct>=70?'var(--or)':'var(--mt)'; }
-    if(leftEl) leftEl.innerHTML='<span style="color:'+(pct>=100?'var(--a2)':'var(--or)')+'">'+( pct>=100?'✅ Objectif atteint !':'Reste : <b>'+euro(reste)+'</b>')+'</span>';
+    if(leftEl){
+      var html='<span style="color:'+(pct>=100?'var(--a2)':'var(--or)')+'">'+(pct>=100?'✅ Objectif atteint !':'Reste : <b>'+euro(reste)+'</b>')+'</span>';
+      html+='<div style="font-size:10px;color:var(--mt);margin-top:4px">';
+      html+='💚 Encaissé : <b style="color:#22c55e">'+euro(caEncaisse)+'</b>';
+      if(caAttente>0){html+=' · 🟠 En attente ('+nbAttente+') : <b style="color:var(--or)">'+euro(caAttente)+'</b>'}
+      html+='</div>';
+      leftEl.innerHTML=html;
+    }
     if(daysEl) daysEl.textContent = joursRestants+' jours restants';
     if(projEl) projEl.innerHTML='Projection : <b style="color:'+(projection>=obj?'var(--a2)':'var(--or)')+'">'+euro(projection)+'</b>';
   } else {
