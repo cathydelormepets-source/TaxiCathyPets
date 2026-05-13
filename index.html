@@ -9,7 +9,7 @@
 <meta http-equiv="Content-Language" content="fr">
 <script>
 /* ═══ MODE OFFLINE — Cache direct (compatible GitHub Pages single-file) ═══ */
-var CP_CACHE_VERSION='cathypets-v32-final9';
+var CP_CACHE_VERSION='cathypets-v32-final10';
 (function(){
   // Purger TOUS les anciens caches d'abord
   if(typeof caches!=='undefined'){
@@ -2052,23 +2052,31 @@ document.getElementById('q_contrat_pec').addEventListener('change',function(){
       </select>
     </div>
   </div>
-  <div class="row">
-    <div class="c6 fd"><label>Mode paiement du solde</label>
-      <select id="fd_mp" style="background:#080f1a;border:1px solid var(--ln);color:var(--tx);border-radius:10px;padding:10px 12px;font:inherit;font-size:13px;width:100%">
-        <option value="virement">Virement bancaire</option>
-        <option value="cheque">Chèque</option>
-        <option value="cb">Carte bancaire</option>
-        <option value="especes">Espèces</option>
-      </select>
-    </div>
-    <div class="c6 fd"></div>
-  </div>
   <div class="fd"><label>Notes / conditions</label><textarea id="fd_notes" placeholder="Ex: Paiement à réception. Acompte de 30% versé le..." style="min-height:50px"></textarea></div>
 
-  <div class="il" style="display:flex;gap:8px;flex-wrap:wrap">
-    <button class="btn og" onclick="addFacDirecte(false,false)">📄 Créer la facture</button>
-    <button class="btn gn" onclick="addFacDirecte(false,true)" style="font-size:14px;padding:12px 24px">💶 Créer + Encaisser</button>
-    <button class="btn" onclick="addFacDirecte(true,false)" style="background:#1a2a3a;border-color:#2a4a6f;color:#8ec8ff">🖨️ Créer + PDF</button>
+  <!-- ENCAISSEMENT IMMÉDIAT — bien visible -->
+  <div style="margin-top:14px;padding:14px;background:rgba(34,197,94,.06);border:2px solid rgba(34,197,94,.25);border-radius:10px">
+    <div style="font-size:13px;font-weight:800;color:#22c55e;margin-bottom:10px">💶 Encaissement immédiat</div>
+    <div class="row">
+      <div class="c8 fd"><label>Mode de paiement reçu</label>
+        <select id="fd_mp" style="background:#080f1a;border:2px solid #22c55e;color:#fff;border-radius:10px;padding:12px;font:inherit;font-size:15px;font-weight:700;width:100%">
+          <option value="virement">💳 Virement bancaire</option>
+          <option value="especes">💵 Espèces</option>
+          <option value="cheque">📝 Chèque</option>
+          <option value="cb">💳 Carte bancaire</option>
+          <option value="paypal">🅿️ PayPal / Lydia</option>
+        </select>
+      </div>
+      <div class="c4 fd" style="display:flex;align-items:flex-end">
+        <button class="btn gn" onclick="addFacDirecte(false,true)" style="width:100%;padding:14px;font-size:15px;font-weight:800;background:#22c55e;border-color:#22c55e">💶 Créer + Encaisser</button>
+      </div>
+    </div>
+    <div style="font-size:10px;color:var(--mt);margin-top:4px;text-align:center">↑ Cliquez ici si le client paie en même temps que vous créez la facture (statut = payée)</div>
+  </div>
+
+  <div class="il" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+    <button class="btn og" onclick="addFacDirecte(false,false)" style="flex:1">📄 Créer la facture (non payée)</button>
+    <button class="btn" onclick="addFacDirecte(true,false)" style="flex:1;background:#1a2a3a;border-color:#2a4a6f;color:#8ec8ff">🖨️ Créer + PDF (non payée)</button>
   </div>
 </div>
 
