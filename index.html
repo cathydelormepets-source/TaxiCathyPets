@@ -9,7 +9,7 @@
 <meta http-equiv="Content-Language" content="fr">
 <script>
 /* ═══ MODE OFFLINE — Cache direct (compatible GitHub Pages single-file) ═══ */
-var CP_CACHE_VERSION='cathypets-v32-final10';
+var CP_CACHE_VERSION='cathypets-v32-final11';
 (function(){
   // Purger TOUS les anciens caches d'abord
   if(typeof caches!=='undefined'){
@@ -10363,16 +10363,24 @@ function rBriefing(){
     });
     h+='</div>';
   }
-  // 4. CA du mois en cours
+  // 4. CA du mois en cours — Facturé / Encaissé / En attente
   var moisActuel=new Date().toISOString().slice(0,7);
-  var caMois=act(db.factures).filter(function(f){return f.date&&f.date.slice(0,7)===moisActuel}).reduce(function(s,f){return s+E(f.total)},0);
-  var payeMois=act(db.factures).filter(function(f){return f.status==='payée'&&f.datePaiement&&f.datePaiement.slice(0,7)===moisActuel}).reduce(function(s,f){return s+E(f.total)},0);
+  var facsMois=act(db.factures).filter(function(f){return f.date&&f.date.slice(0,7)===moisActuel&&f.status!=='avoir'});
+  var caMois=facsMois.reduce(function(s,f){return s+E(f.total)},0);
+  var payeMois=facsMois.filter(function(f){return f.status==='payée'}).reduce(function(s,f){return s+E(f.total)},0);
+  var attenteMois=facsMois.filter(function(f){return f.status!=='payée'}).reduce(function(s,f){return s+E(f.total)-E(f.acompte||0)},0);
+  var nbAttente=facsMois.filter(function(f){return f.status!=='payée'}).length;
   var obj=db.settings.objectifMois||0;
-  h+='<div style="padding:6px 10px;background:rgba(59,130,246,.06);border-radius:8px;font-size:11px">';
-  h+='💰 <b>CA du mois</b> : '+euro(caMois)+' facturé · '+euro(payeMois)+' encaissé';
+  h+='<div style="padding:8px 12px;background:rgba(59,130,246,.06);border-radius:8px;font-size:11px;border-left:3px solid var(--bl)">';
+  h+='<div style="font-weight:700;margin-bottom:4px">💰 CA du mois — '+facsMois.length+' facture(s)</div>';
+  h+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;font-size:10px">';
+  h+='<div><div style="color:var(--mt);font-size:9px">FACTURÉ TOTAL</div><div style="font-weight:800;color:var(--bl);font-size:13px">'+euro(caMois)+'</div></div>';
+  h+='<div><div style="color:var(--mt);font-size:9px">ENCAISSÉ</div><div style="font-weight:800;color:#22c55e;font-size:13px">'+euro(payeMois)+'</div></div>';
+  h+='<div><div style="color:var(--mt);font-size:9px">EN ATTENTE ('+nbAttente+')</div><div style="font-weight:800;color:'+(attenteMois>0?'var(--or)':'var(--mt)')+';font-size:13px">'+euro(attenteMois)+'</div></div>';
+  h+='</div>';
   if(obj>0){
     var pct=Math.round(caMois/obj*100);
-    h+=' · Objectif : <b style="color:'+(pct>=100?'var(--a2)':pct>=60?'var(--or)':'var(--rd)')+'">'+pct+'%</b>';
+    h+='<div style="margin-top:6px;font-size:10px;color:var(--mt)">🎯 Objectif : '+euro(obj)+' · <b style="color:'+(pct>=100?'var(--a2)':pct>=60?'var(--or)':'var(--rd)')+'">'+pct+'%</b></div>';
   }
   h+='</div>';
   el.innerHTML=h;
