@@ -9,7 +9,7 @@
 <meta http-equiv="Content-Language" content="fr">
 <script>
 /* ═══ MODE OFFLINE — Cache direct (compatible GitHub Pages single-file) ═══ */
-var CP_CACHE_VERSION='cathypets-v32-final13';
+var CP_CACHE_VERSION='cathypets-v32-final14';
 (function(){
   // Purger TOUS les anciens caches d'abord
   if(typeof caches!=='undefined'){
@@ -9932,8 +9932,21 @@ function quickAcceptDev(id){
 function devToFacDirect(id){
   var q=db.devis.find(function(x){return x.id===id;});
   if(!q)return;
+  var today=tdy();
+  var ech30=new Date();ech30.setDate(ech30.getDate()+30);var ech30s=ech30.toISOString().slice(0,10);
   var bd='<div style="text-align:center;margin-bottom:14px"><b>'+q.ref+' — '+cN(q.clientId)+'</b><br>Total : <b style="color:var(--a2);font-size:18px">'+euro(q.total)+'</b></div>';
-  bd+='<div class="fd"><label>Mode de paiement</label><select id="dtf_mp" style="padding:10px;font-size:14px"><option value="virement">💳 Virement</option><option value="especes">💵 Espèces</option><option value="cheque">📝 Chèque</option><option value="cb">💳 Carte bancaire</option><option value="paypal">🅿️ PayPal</option></select></div>';
+  bd+='<div class="row" style="margin-bottom:8px">';
+  bd+='<div class="c6 fd"><label>📅 Date de la facture</label><input id="dtf_date" type="date" value="'+today+'" style="font-size:14px;font-weight:700"></div>';
+  bd+='<div class="c6 fd"><label>📅 Date d\'échéance</label><input id="dtf_ech" type="date" value="'+ech30s+'" style="font-size:14px"></div>';
+  bd+='</div>';
+  bd+='<div class="row" style="margin-bottom:8px">';
+  bd+='<div class="c6 fd"><label>⚡ Date rapide</label><div style="display:flex;gap:4px;margin-top:4px;flex-wrap:wrap">';
+  bd+='<button class="btn sm" onclick="$(\'dtf_date\').value=tdy()" style="font-size:10px;padding:6px 8px">Aujourd\'hui</button>';
+  bd+='<button class="btn sm" onclick="var d=new Date();d.setDate(d.getDate()-1);$(\'dtf_date\').value=d.toISOString().slice(0,10)" style="font-size:10px;padding:6px 8px">Hier</button>';
+  bd+='<button class="btn sm" onclick="$(\'dtf_date\').value=\''+(q.date||today)+'\'" style="font-size:10px;padding:6px 8px">Date du devis</button>';
+  bd+='</div></div>';
+  bd+='<div class="c6 fd"><label>Mode de paiement</label><select id="dtf_mp" style="padding:10px;font-size:14px"><option value="virement">💳 Virement</option><option value="especes">💵 Espèces</option><option value="cheque">📝 Chèque</option><option value="cb">💳 Carte bancaire</option><option value="paypal">🅿️ PayPal</option></select></div>';
+  bd+='</div>';
   bd+='<div class="fd" style="margin-top:8px"><label>Notes facture</label><input id="dtf_notes" placeholder="(optionnel)"></div>';
   oMo('💶 Facturer '+q.ref, bd, 
     '<button class="btn" onclick="cMo()">Annuler</button> '+
@@ -9963,22 +9976,24 @@ function execDevToFac(id,payNow){
   }
   var mp=V('dtf_mp')||'virement';
   var notes=V('dtf_notes')||'';
+  var dateFac=V('dtf_date')||tdy();
+  var dateEch=V('dtf_ech')||'';
   var inv={
     id:uid('f'), ref:nextFacRef(),
     clientId:q.clientId, animalIds:getAniIds(q), animalId:q.animalId||'', accompagnants:q.accompagnants||[], quoteId:q.id,
     objet:q.objet||q.notes||'Transport animalier — '+q.ref,
     lignes:facLignes, total:q.total, tva:tva, remise:q.remise||0,
     acompte:0, paiement:mp, paiementAcompte:'', notes:notes,
-    date:tdy(), echeance:'', activityType:(q.mode||'transport'), mode:'depuis-devis',
+    date:dateFac, echeance:dateEch, activityType:(q.mode||'transport'), mode:'depuis-devis',
     status:payNow?'payée':'emise'
   };
-  if(payNow){inv.datePaiement=tdy();inv.paiementDate=tdy()}
+  if(payNow){inv.datePaiement=dateFac;inv.paiementDate=dateFac}
   stamp(inv);db.factures.push(inv);
   q.status='facturé';
-  db.tresorerie.unshift({id:uid('ca'),type:'recette',label:'Facture '+inv.ref+' — '+cN(q.clientId),amount:inv.total,date:new Date().toISOString()});
-  lH('facture','Depuis devis: '+inv.ref+' — '+euro(inv.total)+(payNow?' [PAYÉE]':''));
+  db.tresorerie.unshift({id:uid('ca'),type:'recette',label:'Facture '+inv.ref+' — '+cN(q.clientId),amount:inv.total,date:new Date(dateFac).toISOString()});
+  lH('facture','Depuis devis: '+inv.ref+' — '+euro(inv.total)+(payNow?' [PAYÉE]':'')+' (date: '+dateFac+')');
   sav();cMo();rAll();
-  showToast(payNow?'💶 Facture '+inv.ref+' créée et ENCAISSÉE — '+euro(inv.total):'📄 Facture '+inv.ref+' créée — '+euro(inv.total));
+  showToast(payNow?'💶 Facture '+inv.ref+' créée et ENCAISSÉE — '+euro(inv.total)+' (date: '+new Date(dateFac).toLocaleDateString('fr-FR')+')':'📄 Facture '+inv.ref+' créée — '+euro(inv.total)+' (date: '+new Date(dateFac).toLocaleDateString('fr-FR')+')');
 }
 function fcSubTab(v){
   var btns=['all','emise','impayee','payee','retard','avoir'];
