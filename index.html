@@ -9,7 +9,7 @@
 <meta http-equiv="Content-Language" content="fr">
 <script>
 /* ═══ MODE OFFLINE — Cache direct (compatible GitHub Pages single-file) ═══ */
-var CP_CACHE_VERSION='cathypets-v32-final14';
+var CP_CACHE_VERSION='cathypets-v32-final15';
 (function(){
   // Purger TOUS les anciens caches d'abord
   if(typeof caches!=='undefined'){
@@ -17405,45 +17405,56 @@ function rObjectifs(){
   // Prévisionnel 30/60/90 jours — CA attendu dans chaque période
   var today = new Date(); today.setHours(0,0,0,0);
   var p30=0,p60=0,p90=0;
+  
   // 1. Transports futurs (pas encore facturés)
   act(db.transports).forEach(function(t){
     if(!t.date) return;
+    // Skip si déjà facturé
+    var facturé = act(db.factures).some(function(f){return f.transportId===t.id});
+    if(facturé) return;
     var dt = new Date(t.date); dt.setHours(0,0,0,0);
     var diff = Math.floor((dt-today)/864e5);
-    if(diff>0&&diff<=30) p30+=E(t.price);
-    if(diff>30&&diff<=60) p60+=E(t.price);
-    if(diff>60&&diff<=90) p90+=E(t.price);
+    if(diff>=0&&diff<=30) p30+=E(t.price);
+    else if(diff>30&&diff<=60) p60+=E(t.price);
+    else if(diff>60&&diff<=90) p90+=E(t.price);
   });
-  // 2. Gardes futures
+  
+  // 2. Gardes futures (pas encore facturées)
   act(db.gardes).forEach(function(g){
     if(!g.start) return;
+    var facturé = act(db.factures).some(function(f){return f.gardeId===g.id});
+    if(facturé) return;
     var dt=new Date(g.start);dt.setHours(0,0,0,0);
     var diff=Math.floor((dt-today)/864e5);
-    if(diff>0&&diff<=30) p30+=E(g.price);
-    if(diff>30&&diff<=60) p60+=E(g.price);
-    if(diff>60&&diff<=90) p90+=E(g.price);
+    if(diff>=0&&diff<=30) p30+=E(g.price);
+    else if(diff>30&&diff<=60) p60+=E(g.price);
+    else if(diff>60&&diff<=90) p90+=E(g.price);
   });
+  
   // 3. Factures émises non payées (reste à encaisser par échéance)
   act(db.factures).forEach(function(f){
     if(f.status==='payée'||f.status==='avoir')return;
-    var reste=Math.max(E(f.total)-E(f.acompte),0);
+    var reste=Math.max(E(f.total)-E(f.acompte||0),0);
     if(reste<=0)return;
-    // Calculer l'échéance (date + 10j si pas définie)
+    // Date d'échéance : si pas définie → date facture + 30j (standard B2B)
     var dateF=new Date(f.date||Date.now());
-    var ech=f.echeance?new Date(f.echeance):new Date(dateF.getTime()+10*864e5);
+    var ech=f.echeance?new Date(f.echeance):new Date(dateF.getTime()+30*864e5);
     ech.setHours(0,0,0,0);
     var diff=Math.floor((ech-today)/864e5);
-    // Factures déjà en retard ou dues aujourd'hui → dans les 30j
+    // Tout ce qui est dû maintenant ou dans les 30 prochains jours
     if(diff<=30) p30+=reste;
     else if(diff<=60) p60+=reste;
     else if(diff<=90) p90+=reste;
+    // > 90 jours = pas affiché (probablement perdu)
   });
-  // 4. Devis acceptés non encore facturés
+  
+  // 4. Devis acceptés non encore facturés (correction : 'accepté' avec accent)
   act(db.devis).forEach(function(q){
-    if(q.status!=='accepte'&&q.status!=='signe')return;
+    if(q.status!=='accepté'&&q.status!=='accepte'&&q.status!=='signe'&&q.status!=='envoyé')return;
     // Considéré comme encaissable sous 30j
     p30+=E(q.total);
   });
+  
   var e30=document.getElementById('prev30'),e60=document.getElementById('prev60'),e90=document.getElementById('prev90');
   if(e30) e30.textContent=euro(p30);
   if(e60) e60.textContent=euro(p60);
