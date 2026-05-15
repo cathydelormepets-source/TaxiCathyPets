@@ -8570,39 +8570,78 @@ function depPrintDecompte(depId){
   var dep=db.depots.find(function(d){return d.id===depId});
   if(!dep)return;
   var tva=(db.settings.tvaRate!==undefined&&db.settings.tvaRate!==''&&db.settings.tvaRate!==null?E(db.settings.tvaRate):20);
-  var totalVente=0,totalComm=0,totalNet=0;
+  var totalVente=0,totalComm=0,totalNet=0,totalStockRestant=0,totalDepose=0,totalVendu=0;
   dep.produits.forEach(function(p){
-    if(p.qtyVendue<=0)return;
-    var caVente=p.qtyVendue*p.prixVente;
+    var caVente=(p.qtyVendue||0)*p.prixVente;
     totalVente+=caVente;
     totalComm+=caVente*dep.commission/100;
     totalNet+=caVente*(1-dep.commission/100);
+    var restant=(p.qtyDeposee||0)-(p.qtyVendue||0);
+    if(restant>0) totalStockRestant+=restant*p.prixVente;
+    totalDepose+=(p.qtyDeposee||0);
+    totalVendu+=(p.qtyVendue||0);
   });
+  var totalRestantQty=totalDepose-totalVendu;
   var totalHT=tva>0?totalVente/(1+tva/100):totalVente;
   var totalTVA=totalVente-totalHT;
   var cli=db.clients.find(function(c){return c.id===dep.clientId})||{};
-  var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Décompte '+dep.ref+'</title><style>body{font-family:Arial;padding:30px;color:#222}h1{color:#7c3aed;border-bottom:3px solid #7c3aed;padding-bottom:8px}table{width:100%;border-collapse:collapse;margin:15px 0}th,td{border:1px solid #999;padding:8px;font-size:12px}th{background:#f0e8ff}.kpi{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:20px 0}.kpi div{padding:14px;border-radius:8px;text-align:center}.kpi b{font-size:20px;display:block;margin:6px 0}@media print{body{padding:15px}}</style></head><body>';
+  var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Décompte '+dep.ref+'</title><style>body{font-family:Arial;padding:30px;color:#222}h1{color:#7c3aed;border-bottom:3px solid #7c3aed;padding-bottom:8px}table{width:100%;border-collapse:collapse;margin:15px 0}th,td{border:1px solid #999;padding:8px;font-size:12px}th{background:#f0e8ff}.kpi{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:20px 0}.kpi div{padding:14px;border-radius:8px;text-align:center}.kpi b{font-size:22px;display:block;margin:6px 0}@media print{body{padding:15px}}</style></head><body>';
   html+='<h1>📦 DÉCOMPTE DÉPÔT-VENTE</h1>';
   html+='<table><tr><td><b>Référence dépôt</b></td><td>'+dep.ref+'</td><td><b>Dépositaire</b></td><td>'+(cli.nom||'')+' '+(cli.prenom||'')+'</td></tr>';
-  html+='<tr><td><b>Date dépôt</b></td><td>'+new Date(dep.date).toLocaleDateString('fr-FR')+'</td><td><b>Date clôture</b></td><td>'+new Date().toLocaleDateString('fr-FR')+'</td></tr>';
+  html+='<tr><td><b>Date dépôt</b></td><td>'+new Date(dep.date).toLocaleDateString('fr-FR')+'</td><td><b>Date décompte</b></td><td>'+new Date().toLocaleDateString('fr-FR')+'</td></tr>';
   html+='<tr><td><b>Adresse</b></td><td colspan="3">'+(cli.adresse||'')+(cli.cp?' · '+cli.cp+' '+cli.ville:'')+'</td></tr>';
-  html+='<tr><td><b>Commission</b></td><td colspan="3">'+dep.commission+'% retenue par le dépositaire</td></tr></table>';
-  html+='<table><thead><tr><th>Produit</th><th style="text-align:center">Qté vendue</th><th style="text-align:right">PU TTC</th><th style="text-align:right">Total TTC</th><th style="text-align:right">Commission '+dep.commission+'%</th><th style="text-align:right">Net Cathy</th></tr></thead><tbody>';
-  dep.produits.forEach(function(p){
-    if(p.qtyVendue<=0)return;
-    var caV=p.qtyVendue*p.prixVente;
-    var cm=caV*dep.commission/100;
-    html+='<tr><td>'+p.nom+'</td><td style="text-align:center">'+p.qtyVendue+'</td><td style="text-align:right">'+euro(p.prixVente)+'</td><td style="text-align:right"><b>'+euro(caV)+'</b></td><td style="text-align:right;color:#d97706">-'+euro(cm)+'</td><td style="text-align:right;color:#16a34a;font-weight:700">'+euro(caV-cm)+'</td></tr>';
-  });
-  html+='</tbody></table>';
+  html+='<tr><td><b>Commission convenue</b></td><td colspan="3">'+dep.commission+'% retenue par le dépositaire sur les ventes</td></tr></table>';
+  
+  // ═══ LES 3 INFOS PRINCIPALES POUR LE DÉPOSITAIRE ═══
+  html+='<h2 style="color:#7c3aed;margin-top:24px;font-size:16px">💰 Récapitulatif pour le dépositaire</h2>';
   html+='<div class="kpi">';
-  html+='<div style="background:#f0e8ff"><div style="font-size:10px">TOTAL VENTES TTC</div><b style="color:#7c3aed">'+euro(totalVente)+'</b><div style="font-size:10px">HT : '+euro(totalHT)+' · TVA '+tva+'% : '+euro(totalTVA)+'</div></div>';
-  html+='<div style="background:#fef3c7"><div style="font-size:10px">🎁 BÉNÉFICE DÉPOSITAIRE</div><b style="color:#d97706">'+euro(totalComm)+'</b><div style="font-size:10px">Commission '+dep.commission+'%</div></div>';
-  html+='<div style="background:#dcfce7;border:2px solid #16a34a"><div style="font-size:10px">💳 REMBOURSEMENT DÛ À CATHY</div><b style="color:#16a34a">'+euro(totalNet)+'</b><div style="font-size:10px">À verser sous 30 jours</div></div>';
+  html+='<div style="background:#fef3c7;border:2px solid #d97706"><div style="font-size:11px;font-weight:700">🎁 VOTRE GAIN</div><b style="color:#d97706">'+euro(totalComm)+'</b><div style="font-size:11px">Commission '+dep.commission+'% sur '+euro(totalVente)+' de ventes</div></div>';
+  html+='<div style="background:#fee2e2;border:2px solid #dc2626"><div style="font-size:11px;font-weight:700">💳 À NOUS REVERSER</div><b style="color:#dc2626">'+euro(totalNet)+'</b><div style="font-size:11px">Montant dû à Cathy Pets SAS</div></div>';
+  html+='<div style="background:#dbeafe;border:2px solid #2563eb"><div style="font-size:11px;font-weight:700">📦 STOCK RESTANT</div><b style="color:#2563eb">'+euro(totalStockRestant)+'</b><div style="font-size:11px">'+totalRestantQty+' article(s) encore en stock</div></div>';
   html+='</div>';
-  html+='<p style="margin-top:30px;padding:14px;background:#f5f5f5;border-radius:8px;font-size:12px">Le dépositaire <b>'+(cli.nom||'')+' '+(cli.prenom||'')+'</b> reconnaît avoir vendu '+Math.round(dep.produits.reduce(function(s,p){return s+(p.qtyVendue||0)},0))+' produit(s) pour un total TTC de <b>'+euro(totalVente)+'</b>. Il garde <b>'+euro(totalComm)+'</b> ('+dep.commission+'% de commission) et doit reverser <b>'+euro(totalNet)+'</b> à Cathy Pets SAS par virement bancaire.</p>';
-  html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:30px"><div><b>Signature Cathy Pets</b><div style="height:80px;border:1px solid #999;margin-top:8px;padding:8px;font-size:10px">Cathy DELORME — 07.83.43.63.06</div></div><div><b>Signature Dépositaire</b><div style="height:80px;border:1px solid #999;margin-top:8px;padding:8px;font-size:10px">'+(cli.nom||'')+' '+(cli.prenom||'')+'</div></div></div>';
-  html+='<p style="text-align:center;font-size:10px;color:#888;margin-top:30px">Cathy Pets SAS · SIRET 928 564 269 · RC Pro Hiscox HSXIN320028640M · cathypetsitter.com</p>';
+  
+  // Détail des produits vendus
+  html+='<h2 style="color:#7c3aed;margin-top:24px;font-size:16px">📋 Détail des ventes</h2>';
+  html+='<table><thead><tr><th>Produit</th><th style="text-align:center">Déposé</th><th style="text-align:center">Vendu</th><th style="text-align:center">Restant</th><th style="text-align:right">PU TTC</th><th style="text-align:right">Total ventes</th><th style="text-align:right">Votre gain</th><th style="text-align:right">À reverser</th></tr></thead><tbody>';
+  dep.produits.forEach(function(p){
+    var caV=(p.qtyVendue||0)*p.prixVente;
+    var cm=caV*dep.commission/100;
+    var restant=(p.qtyDeposee||0)-(p.qtyVendue||0);
+    html+='<tr><td>'+p.nom+'</td>';
+    html+='<td style="text-align:center">'+(p.qtyDeposee||0)+'</td>';
+    html+='<td style="text-align:center"><b>'+(p.qtyVendue||0)+'</b></td>';
+    html+='<td style="text-align:center;color:#2563eb;font-weight:700">'+restant+'</td>';
+    html+='<td style="text-align:right">'+euro(p.prixVente)+'</td>';
+    html+='<td style="text-align:right"><b>'+euro(caV)+'</b></td>';
+    html+='<td style="text-align:right;color:#d97706">'+euro(cm)+'</td>';
+    html+='<td style="text-align:right;color:#dc2626;font-weight:700">'+euro(caV-cm)+'</td></tr>';
+  });
+  html+='<tr style="background:#f5f5f5;font-weight:700"><td>TOTAUX</td><td style="text-align:center">'+totalDepose+'</td><td style="text-align:center">'+totalVendu+'</td><td style="text-align:center;color:#2563eb">'+totalRestantQty+'</td><td></td><td style="text-align:right">'+euro(totalVente)+'</td><td style="text-align:right;color:#d97706">'+euro(totalComm)+'</td><td style="text-align:right;color:#dc2626">'+euro(totalNet)+'</td></tr>';
+  html+='</tbody></table>';
+  
+  // Info TVA
+  html+='<p style="font-size:11px;color:#666;margin-top:10px">Total TTC : '+euro(totalVente)+' · dont HT : '+euro(totalHT)+' · TVA '+tva+'% : '+euro(totalTVA)+'</p>';
+  
+  // Accord
+  html+='<p style="margin-top:30px;padding:14px;background:#f5f5f5;border-radius:8px;font-size:12px;border-left:4px solid #7c3aed">';
+  html+='<b>Le dépositaire</b> <b>'+(cli.nom||'')+' '+(cli.prenom||'')+'</b> reconnaît avoir vendu <b>'+totalVendu+' article(s)</b> sur les <b>'+totalDepose+' déposés</b> pour un total TTC de <b>'+euro(totalVente)+'</b>.<br><br>';
+  html+='Il garde <b style="color:#d97706">'+euro(totalComm)+'</b> ('+dep.commission+'% de commission) et doit reverser <b style="color:#dc2626">'+euro(totalNet)+'</b> à Cathy Pets SAS par virement bancaire sous 30 jours.<br><br>';
+  html+='Il reste <b style="color:#2563eb">'+totalRestantQty+' article(s) ('+euro(totalStockRestant)+')</b> en stock chez le dépositaire.';
+  html+='</p>';
+  
+  // Signatures
+  html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:30px">';
+  html+='<div><b>Signature Cathy Pets SAS</b><div style="height:80px;border:1px solid #999;margin-top:8px;padding:8px;font-size:10px">Cathy DELORME — 07.83.43.63.06</div></div>';
+  html+='<div><b>Signature Dépositaire</b><div style="height:80px;border:1px solid #999;margin-top:8px;padding:8px;font-size:10px">'+(cli.nom||'')+' '+(cli.prenom||'')+'</div></div>';
+  html+='</div>';
+  
+  // IBAN
+  html+='<p style="margin-top:20px;padding:10px;background:#dcfce7;border-radius:8px;font-size:11px;text-align:center">';
+  html+='<b>💳 Coordonnées bancaires Cathy Pets SAS</b><br>';
+  html+='IBAN : FR33 1144 9000 0101 3933 6001 S46 · BIC : BDEIFRPPXXX';
+  html+='</p>';
+  
+  html+='<p style="text-align:center;font-size:10px;color:#888;margin-top:20px">Cathy Pets SAS · SIRET 928 564 269 · RC Pro Hiscox HSXIN320028640M · cathypetsitter.com</p>';
   html+='</body></html>';
   var w=window.open('','_blank');w.document.write(html);w.document.close();setTimeout(function(){w.print()},500);
 }
