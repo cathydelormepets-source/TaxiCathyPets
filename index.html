@@ -9,7 +9,7 @@
 <meta http-equiv="Content-Language" content="fr">
 <script>
 /* ═══ MODE OFFLINE — Cache direct (compatible GitHub Pages single-file) ═══ */
-var CP_CACHE_VERSION='cathypets-v77c';
+var CP_CACHE_VERSION='cathypets-v77e';
 (function(){
   // Purger TOUS les anciens caches d'abord
   if(typeof caches!=='undefined'){
@@ -1888,6 +1888,10 @@ Tel : 06 12 34 56 78
 <div id="devT3" style="display:none">
   <div style="font-size:11px;font-weight:800;color:var(--mt);text-transform:uppercase;letter-spacing:.1em;margin:4px 0 6px">📝 Description du devis</div>
   <div class="fd"><label>Objet / titre du devis</label><input id="q_obj" placeholder="Ex: Transport canin Paris → Lyon" style="font-size:14px;padding:10px"></div>
+  <div class="row">
+    <div class="c6 fd"><label>📅 Date de prestation prévue</label><input id="q_dateDebut" type="date" style="font-size:13px;padding:8px" title="Date à laquelle la prestation aura lieu (pour le prévisionnel CA)"></div>
+    <div class="c6 fd"><label>📅 Date de fin (optionnel)</label><input id="q_dateFin" type="date" style="font-size:13px;padding:8px" title="Pour une garde de plusieurs jours"></div>
+  </div>
   <div class="fd"><label>Description détaillée</label><textarea id="q_no" placeholder="Transport animalier de...\nDétails du trajet, conditions, animaux transportés, consignes spéciales..." rows="8" style="font-size:13px;padding:10px;line-height:1.5"></textarea></div>
   <div class="fd"><label>Conditions particulières</label><textarea id="q_cond" placeholder="Conditions de paiement, annulation, assurance, délais..." rows="4" style="font-size:12px;padding:8px;line-height:1.4"></textarea></div>
   <div class="fd"><label>Notes internes (non visibles sur le devis)</label><textarea id="q_notes_int" placeholder="Notes pour usage interne uniquement..." rows="3" style="font-size:12px;padding:8px;background:rgba(239,68,68,.06);border-color:rgba(239,68,68,.2)"></textarea></div>
@@ -7442,7 +7446,7 @@ function addDev(){
   var devLignes=devGetLignes();
   var tvaRate=((document.getElementById('q_tva')||{}).value!==''&&(document.getElementById('q_tva')||{}).value!==undefined?parseFloat((document.getElementById('q_tva')||{}).value):20);
   var remiseRate=parseFloat((document.getElementById('q_remise')||{}).value||0)||0;
-  var q={id:uid('q'),ref:'CP-DEV-'+_Y+'-'+db.settings.nextQuote,mode:V('q_mo'),clientId:V('q_cl'),animalIds:aniIds,animalId:aniIds[0]||'',accompagnants:accs,bienEtre:be,segments:segs,sigPec:sigs.sigPec||'',sigDep:sigs.sigDep||'',total:E(V('q_to')),objet:V('q_obj'),notes:V('q_no'),conditions:V('q_cond'),notesInternes:V('q_notes_int'),lignes:devLignes,tva:tvaRate,remise:remiseRate,waypoints:wps,hotel:V('q_htl'),hotelNuits:E(V('q_htn')),hotelCost:E(V('q_htc')),multiModal:V('q_mm'),mmCompagnie:V('q_mmc'),mmRef:V('q_mmr'),mmCost:E(V('q_mmx')),status:'brouillon',date:new Date().toISOString()};
+  var q={id:uid('q'),ref:'CP-DEV-'+_Y+'-'+db.settings.nextQuote,mode:V('q_mo'),clientId:V('q_cl'),animalIds:aniIds,animalId:aniIds[0]||'',accompagnants:accs,bienEtre:be,segments:segs,sigPec:sigs.sigPec||'',sigDep:sigs.sigDep||'',total:E(V('q_to')),objet:V('q_obj'),notes:V('q_no'),conditions:V('q_cond'),notesInternes:V('q_notes_int'),lignes:devLignes,tva:tvaRate,remise:remiseRate,waypoints:wps,hotel:V('q_htl'),hotelNuits:E(V('q_htn')),hotelCost:E(V('q_htc')),multiModal:V('q_mm'),mmCompagnie:V('q_mmc'),mmRef:V('q_mmr'),mmCost:E(V('q_mmx')),dateDebut:V('q_dateDebut')||'',dateFin:V('q_dateFin')||'',status:'brouillon',date:new Date().toISOString()};
   if(!q.clientId||!q.total){alert('Client+montant requis');return}
   db.settings.nextQuote++;stamp(q);db.devis.push(q);lH('devis','Devis: '+q.ref+' ('+wps.length+' étapes, '+devLignes.length+' article(s))');sav();
   var dz=$('q_aniZone');if(dz)dz.innerHTML='';
@@ -8238,11 +8242,17 @@ function depFillProdSelects(){
   var prods=act(db.nutrica);
   var opts='<option value="">— Produit —</option>'+prods.map(function(p){return'<option value="'+p.id+'" data-price="'+p.price+'">'+p.name+' — '+euro(p.price)+'</option>'}).join('');
   for(var i=1;i<=_depLigneCount;i++){
-    var sel=$('dep_prod_'+i);if(sel)sel.innerHTML=opts;
-    // Auto-remplir le prix
-    var selEl=$('dep_prod_'+i);
-    if(selEl&&selEl.value){
-      var opt=selEl.options[selEl.selectedIndex];
+    var sel=$('dep_prod_'+i);
+    if(!sel)continue;
+    // Préserver la sélection actuelle
+    var currentVal=sel.value;
+    if(!sel.innerHTML||sel.options.length<=1){
+      sel.innerHTML=opts;
+      if(currentVal)sel.value=currentVal;
+    }
+    // Auto-remplir le prix si pas encore renseigné
+    if(sel.value){
+      var opt=sel.options[sel.selectedIndex];
       if(opt){var pu=$('dep_pu_'+i);if(pu&&!pu.value)pu.value=opt.getAttribute('data-price')||''}
     }
   }
@@ -17577,24 +17587,45 @@ function rObjectifs(){
   // 4. Devis acceptés non encore facturés — utiliser la date de prestation si disponible
   act(db.devis).forEach(function(q){
     if(q.status!=='accepté'&&q.status!=='accepte'&&q.status!=='signe'&&q.status!=='envoyé')return;
-    var diff=0;
-    // Chercher transport lié pour avoir la vraie date
+    var diff=null;
+    var dateSource='défaut';
+    // 1. Chercher transport lié pour avoir la vraie date
     var trLie=act(db.transports).find(function(t){return t.devisId===q.id||t.quoteId===q.id});
     var grLie=act(db.gardes).find(function(g){return g.devisId===q.id||g.quoteId===q.id});
     if(trLie&&trLie.date){
       var dt=new Date(trLie.date);dt.setHours(0,0,0,0);
       diff=Math.floor((dt-today)/864e5);
+      dateSource='transport lié';
     } else if(grLie&&grLie.start){
       var dt2=new Date(grLie.start);dt2.setHours(0,0,0,0);
       diff=Math.floor((dt2-today)/864e5);
+      dateSource='garde liée';
     } else if(q.dateDebut){
       var dt3=new Date(q.dateDebut);dt3.setHours(0,0,0,0);
       diff=Math.floor((dt3-today)/864e5);
+      dateSource='dateDebut';
+    } else if(q.dateTransport){
+      var dt4=new Date(q.dateTransport);dt4.setHours(0,0,0,0);
+      diff=Math.floor((dt4-today)/864e5);
+      dateSource='dateTransport';
+    } else if(q.dateLivraison){
+      var dt5=new Date(q.dateLivraison);dt5.setHours(0,0,0,0);
+      diff=Math.floor((dt5-today)/864e5);
+      dateSource='dateLivraison';
+    } else if(q.dateExec){
+      var dt6=new Date(q.dateExec);dt6.setHours(0,0,0,0);
+      diff=Math.floor((dt6-today)/864e5);
+      dateSource='dateExec';
     } else {
-      diff=15; // Pas de date → on suppose 15j (donc 0-30)
+      // Pas de date de prestation → on suppose 30j depuis la date du devis
+      var dDevis=new Date(q.date||Date.now());dDevis.setHours(0,0,0,0);
+      var diffDevis=Math.floor((dDevis-today)/864e5);
+      diff=diffDevis+30; // Devis créé il y a 5j → prestation prévue J+25
+      dateSource='estimation date devis+30j';
     }
     if(diff<0)diff=0;
     placerDansTranche(E(q.total), diff);
+    console.log('[Devis '+q.ref+'] '+q.status+' · '+euro(q.total)+' · diff:'+diff+'j ('+dateSource+')');
   });
   
   console.log('[Prévisionnel] 30j:'+euro(p30)+' ('+dbg30+' éléments) · 60j:'+euro(p60)+' ('+dbg60+' éléments) · 90j:'+euro(p90)+' ('+dbg90+' éléments)');
