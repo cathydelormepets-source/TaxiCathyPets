@@ -9,7 +9,7 @@
 <meta http-equiv="Content-Language" content="fr">
 <script>
 /* ═══ MODE OFFLINE — Cache direct (compatible GitHub Pages single-file) ═══ */
-var CP_CACHE_VERSION='cathypets-v32-final17';
+var CP_CACHE_VERSION='cathypets-v77';
 (function(){
   // Purger TOUS les anciens caches d'abord
   if(typeof caches!=='undefined'){
@@ -18,7 +18,7 @@ var CP_CACHE_VERSION='cathypets-v32-final17';
     });
     // Puis mettre en cache la version actuelle
     caches.open(CP_CACHE_VERSION).then(function(c){
-      c.add(location.href).then(function(){console.log('✅ Page mise en cache offline V32 Final')});
+      c.add(location.href).then(function(){console.log('✅ Page mise en cache offline V77 — Final')});
     }).catch(function(e){console.log('Cache offline non dispo:',e)});
   }
   // Désenregistrer les anciens service workers
@@ -55,7 +55,7 @@ var CP_CACHE_VERSION='cathypets-v32-final17';
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <meta name="apple-mobile-web-app-title" content="Cathy Pets"/>
 <meta name="theme-color" content="#060e18"/>
-<title>CathyPets Pro V32</title>
+<title>CathyPets Pro V77</title>
 <link id="pwa-manifest" rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" sizes="192x192" href="icon-192.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -516,7 +516,7 @@ body.nuit .card{border-color:#0a1520}
     </div>
     <h1 style="color:#fff;font-size:22px;font-weight:900;margin:0 0 4px;letter-spacing:1px">CATHY PETS</h1>
     <div style="color:var(--a2);font-size:12px;font-weight:600;margin-bottom:6px">Taxi Animalier & Pet Sitter</div>
-    <div style="color:#556;font-size:10px;margin-bottom:30px">V29 test 2</div>
+    <div style="color:#556;font-size:10px;margin-bottom:30px">V77 — Final</div>
 
     <!-- Code PIN -->
     <div style="margin-bottom:20px">
@@ -547,7 +547,7 @@ body.nuit .card{border-color:#0a1520}
 <div class="mo" id="mOv" onclick="if(event.target===this)cMo()"><div class="mdl"><div class="mh"><h3 id="mTi">Édition</h3><button class="xb" onclick="cMo()">✕</button></div><div class="mb" id="mBd"></div><div class="mf" id="mFt"></div></div></div>
 <div class="app">
 <aside class="sidebar" id="sb">
-<div class="brand" style="padding:6px 10px"><img src="" id="brandLogo" style="width:100%;max-width:180px;height:auto;border-radius:8px;display:block;margin:0 auto 4px"><small style="display:block;text-align:center;color:#f59e0b;font-size:10px;font-weight:700">V31</small></div>
+<div class="brand" style="padding:6px 10px"><img src="" id="brandLogo" style="width:100%;max-width:180px;height:auto;border-radius:8px;display:block;margin:0 auto 4px"><small style="display:block;text-align:center;color:#f59e0b;font-size:10px;font-weight:700">V77</small></div>
 <div class="ng" data-role="admin">Pilotage</div><div class="nv">
 <button class="nb active" data-t="dash" data-role="admin">🏠 Dashboard</button>
 <button class="nb" data-t="plan" data-role="admin">📅 Planning</button>
@@ -4455,7 +4455,7 @@ document.getElementById('q_contrat_pec').addEventListener('change',function(){
 </div>
 
 <div class="card">
-  <div class="hd"><h3>ℹ️ Cathy Pets V30</h3></div>
+  <div class="hd"><h3>ℹ️ Cathy Pets V77</h3></div>
   <div class="bd">
     <div class="nt" style="font-size:12px;line-height:1.9" id="appInfoEnt">SIRET 928 564 269 · RC Pro Hiscox<br><span style="color:var(--mt)">Données sur cet appareil uniquement</span></div>
     <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px">
@@ -5990,7 +5990,7 @@ function fbConnect(){
           safeSave();
           rAll();
           syncUI('on','Sync OK — '+new Date().toLocaleTimeString('fr-FR'));
-          // V30 : si le merge a modifié des données locales, re-push pour synchro
+          // V77 : si le merge a modifié des données locales, re-push pour synchro
           var localAfter=JSON.stringify(db);
           if(localBefore!==localAfter){
             setTimeout(function(){fbPush(true)},1500);
@@ -6047,7 +6047,7 @@ function fbPush(silent){
     syncUI('syncing','Envoi...');
     _skipRemote=true;
     _lastPushTime=Date.now();
-    // V30 : Lire le cloud AVANT d'écraser pour merger
+    // V77 : Lire le cloud AVANT d'écraser pour merger
     fbRef.once('value').then(function(snap){
       var remote=snap.val();
       var dataToSend=db;
@@ -6093,7 +6093,7 @@ function fbPull(){
   fbRef.once('value').then(function(snap){
     var remote=snap.val();
     if(!remote){alert('Aucune donnée dans le cloud');syncUI('on','Cloud vide');return}
-    // V30: utiliser mergeData au lieu d'écraser — respect des suppressions locales
+    // V77: utiliser mergeData au lieu d'écraser — respect des suppressions locales
     var merged=mergeData(db,remote);
     db=merged;
     safeSave();
@@ -6111,7 +6111,7 @@ function fbForceCloud(){
   fbRef.once('value').then(function(snap){
     var remote=snap.val();
     if(!remote){alert('Aucune donnée dans le cloud');return}
-    // V30: pas de backup local (localStorage limité) — utiliser Export données
+    // V77: pas de backup local (localStorage limité) — utiliser Export données
     db=Object.assign({},JSON.parse(JSON.stringify(DD)),remote);
     safeSave();
     rAll();
@@ -6155,7 +6155,7 @@ function restoreBackup(key){
   var data=localStorage.getItem(key);
   if(!data){alert('Backup introuvable');return}
   try{
-    // V30: pas de backup pré-restore
+    // V77: pas de backup pré-restore
     db=Object.assign({},JSON.parse(JSON.stringify(DD)),JSON.parse(data));
     safeSave();
     rAll();cMo();
@@ -6163,7 +6163,7 @@ function restoreBackup(key){
   }catch(e){alert('Erreur restauration: '+e.message)}
 }
 // Merge: union of records by id, most recently modified wins, deletions respected
-// V29: robuste aux conversions Firebase (objets au lieu de tableaux)
+// V77: robuste aux conversions Firebase (objets au lieu de tableaux)
 function _toArr(v){
   if(!v)return[];
   if(Array.isArray(v))return v;
@@ -6189,7 +6189,7 @@ function mergeData(local,remote){
           if(!r._deleted) byId[r.id]=r;
           return;
         }
-        // V30 : si local est _deleted, la suppression GAGNE toujours
+        // V77 : si local est _deleted, la suppression GAGNE toujours
         // (empêche un autre poste de "ressusciter" un record supprimé)
         if(existing._deleted){
           // Garder la suppression locale — le _deletedAt fait foi
@@ -12205,7 +12205,7 @@ function printDevisPro(id) {
   html += '<tr><td><strong>Validité:</strong></td><td>' + validiteStr + '</td></tr></table></div>';
   if(q.notes){ html += '<div style="margin-bottom:14px;padding:10px 12px;background:#f8f9fa;border-left:3px solid #1a7a6e;border-radius:4px;font-size:11px;line-height:1.6"><strong style="color:#1a7a6e">Description:</strong><br>' + esc(q.notes).replace(/\n/g,'<br>') + '</div>'; }
   if(q.conditions){ html += '<div style="margin-bottom:14px;padding:10px 12px;background:#fff8f0;border-left:3px solid #e67e22;border-radius:4px;font-size:11px;line-height:1.6"><strong style="color:#e67e22">Conditions particulières:</strong><br>' + esc(q.conditions).replace(/\n/g,'<br>') + '</div>'; }
-  // V32 : Tableau articles pro devis (Qté | Article | Description | PU TTC | Rem. | HT | TVA | Total TTC)
+  // V77 : Tableau articles pro devis (Qté | Article | Description | PU TTC | Rem. | HT | TVA | Total TTC)
   html += '<div style="margin:20px 0;border:1px solid #999;width:100%"><table style="width:100%;border-collapse:collapse;font-size:11px">';
   html += '<tr style="background:#ddd"><th style="border:1px solid #999;padding:6px;width:30px;text-align:center;font-size:10px">Qté</th>';
   html += '<th style="border:1px solid #999;padding:6px;width:90px;text-align:left;font-size:10px">Article</th>';
@@ -12344,7 +12344,7 @@ function printFacturePro(id) {
     html += '<p style="font-size:11px;margin:0">'+aniNames.join('<br>')+'</p></div>';
   }
   html += '<h4 style="font-size:12px;font-weight:bold;margin:0 0 4px 0">Facture ' + f.ref + '</h4><p style="font-size:11px">Date: ' + dateStr + '</p></div></div>';
-  // V32 : Tableau articles pro facture (Qté | Article | Description | PU TTC | Rem. | HT | TVA | Total TTC)
+  // V77 : Tableau articles pro facture (Qté | Article | Description | PU TTC | Rem. | HT | TVA | Total TTC)
   html += '<div style="margin:20px 0;border:1px solid #999"><table style="width:100%;border-collapse:collapse;font-size:11px"><tr style="background:#ddd">';
   html += '<th style="border:1px solid #999;padding:6px;width:30px;text-align:center;font-size:10px">Qté</th>';
   html += '<th style="border:1px solid #999;padding:6px;width:90px;text-align:left;font-size:10px">Article</th>';
@@ -14190,7 +14190,7 @@ function shareRapport(){
   var km=trs.reduce(function(s,t){return s+E(t.kmManual);},0);
   var txt='🐾 Cathy Pets — Rapport du '+new Date(dt).toLocaleDateString('fr-FR')+'\n';
   txt+='💰 CA: '+euro(ca)+' | 📏 Km: '+km+' | 🚗 Transports: '+trs.length+'\n';
-  txt+='Généré par CathyPets V18';
+  txt+='Généré par CathyPets V77';
   if(navigator.share){ navigator.share({title:'Rapport Cathy Pets',text:txt}).catch(function(){}); }
   else { navigator.clipboard.writeText(txt).then(function(){ showToast('📋 Rapport copié'); }); }
 }
@@ -15031,7 +15031,7 @@ function saveAppToPhone(){
       if(navigator.canShare({files:[file]})){
         navigator.share({
           files:[file],
-          title:'CathyPets V16',
+          title:'CathyPets V77',
           text:'Application Cathy Pets V25'
         }).then(function(){
           showToast('📲 Partage réussi !');
@@ -17129,7 +17129,7 @@ function cfExportPDF(){
   h+='<tr style="font-weight:900;border-top:2px solid #1a7a6e"><td colspan="4">TOTAL VENTES</td><td>'+caHT.toFixed(2)+'</td><td>'+tvaColl.toFixed(2)+'</td><td>'+caTTC.toFixed(2)+'</td></tr></tbody></table></div>';
   // TVA
   h+='<div class="section"><h3>Synthèse TVA</h3><table><tbody><tr><td>TVA collectée (ventes)</td><td style="font-weight:700">'+tvaColl.toFixed(2)+' €</td></tr><tr><td>TVA déductible (achats)</td><td>'+tvaDed.toFixed(2)+' €</td></tr><tr style="font-weight:900;border-top:2px solid #1a7a6e"><td>TVA nette à décaisser</td><td style="color:'+(tvaColl-tvaDed>=0?'#d4a843':'#1a7a6e')+'">'+((tvaColl-tvaDed)).toFixed(2)+' €</td></tr></tbody></table></div>';
-  h+='<div class="ftr">Document généré par CathyPets V19 · '+new Date().toLocaleString('fr-FR')+' · À remettre à votre conseiller CERFRANCE</div>';
+  h+='<div class="ftr">Document généré par CathyPets V77 · '+new Date().toLocaleString('fr-FR')+' · À remettre à votre conseiller CERFRANCE</div>';
   h+='</div><script>window.onload=function(){window.print();}<\/script></body></html>';
   openHtmlBlob(h);
   showToast('🖨️ PDF CERFRANCE généré');
@@ -17705,7 +17705,7 @@ function initPWA(){
     else{showToast('📱 Sur Samsung : Menu Chrome → "Ajouter à l\'écran d\'accueil"');}
   };
 
-  // Service Worker géré en haut du fichier (cache offline V30)
+  // Service Worker géré en haut du fichier (cache offline V77)
 }
 
 // =================== MÉTÉO DASHBOARD ===================
@@ -18676,7 +18676,7 @@ function rVitrine(){previewVitrine();}
 // =================== CONTRATS ÉLECTRONIQUES ===================
 var _ctSigCtx = null;
 
-// [V29] Ancienne signature contrat — conservée pour compatibilité
+// [V77] Ancienne signature contrat — conservée pour compatibilité
 function _ctInitSigOld_unused(){
   var canvas = document.getElementById('ct_signature_unused');
   if(!canvas) return;
@@ -20266,7 +20266,7 @@ function genLivreFactures(){
   h+='<b>'+ENT('entNom')+'</b> — '+ENT('entAdresse')+' — SIRET: '+ENT('entSiret')+' — RCS: '+ENT('entRcs')+'<br>';
   h+='TVA: '+ENT('entTva')+' — APE: '+ENT('entApe')+' — RC Pro: '+ENT('entRcpro')+'<br>';
   h+='Tél: '+ENT('entTel1')+' / '+ENT('entTel2')+' — '+ENT('entEmail')+' — '+ENT('entWeb')+'<br>';
-  h+='Document généré automatiquement par CathyPets Pro V32 — Livre des factures conforme Art. L123-12 du Code de Commerce</div>';
+  h+='Document généré automatiquement par CathyPets Pro V77 — Livre des factures conforme Art. L123-12 du Code de Commerce</div>';
   h+='</div></body></html>';
 
   openHtmlBlob(h,'Livre_Factures_'+annee+'_CathyPets.html');
@@ -21156,7 +21156,7 @@ var mUrl=URL.createObjectURL(mBlob);
 var mLink=document.getElementById('pwa-manifest');
 if(mLink)mLink.href=mUrl;
 
-/* 4. Service Worker — géré en haut du fichier (cache offline V30) */
+/* 4. Service Worker — géré en haut du fichier (cache offline V77) */
 
 /* 5. Bannière d'installation */
 var deferredPrompt=null;
@@ -21510,18 +21510,18 @@ window.sTab=function(t){
   else if(t==='retour')loadRetour();
   else if(t==='checklist')loadChecklist();
   else if(t==='livelink')loadLiveLink();
-  // V26 Terrain
+  // V77 Terrain
   else if(t==='photos')loadPhotos();
   else if(t==='sos')loadSOS();
   else if(t==='gps')loadGPS();
   else if(t==='pauses')loadPauses();
   else if(t==='qrcode')loadQRCode();
-  // V26 Fidélisation
+  // V77 Fidélisation
   else if(t==='templates')loadTemplates();
   else if(t==='whatsapp')loadWhatsApp();
 };
 
-console.log('[CathyPets V32] ✅ Impact CA modules loaded');
+console.log('[CathyPets V77] ✅ Impact CA modules loaded');
 })();
 </script>
 
@@ -22579,7 +22579,7 @@ window.quickWA = function(msg){
   window.open('https://wa.me/' + tel + '?text=' + encodeURIComponent(msg), '_blank');
 };
 
-console.log('[CathyPets V32] ✅ Terrain + Fidélisation modules loaded');
+console.log('[CathyPets V77] ✅ Terrain + Fidélisation modules loaded');
 })();
 </script>
 
@@ -23116,7 +23116,7 @@ window.sTab = function(t){
   else if(t==='vehicule') loadVehicule();
 };
 
-console.log('[CathyPets V32] ✅ Automatisation modules loaded');
+console.log('[CathyPets V77] ✅ Automatisation modules loaded');
 })();
 </script>
 
@@ -23821,7 +23821,7 @@ function pointToLineDistance(point, line){
   return haversine(point.lat, point.lng, xx, yy);
 }
 
-console.log('[CathyPets V32] ✅ Multi-Transport & Devis Rapide loaded');
+console.log('[CathyPets V77] ✅ Multi-Transport & Devis Rapide loaded');
 })();
 </script>
 
@@ -23874,7 +23874,7 @@ console.log('[CathyPets V32] ✅ Multi-Transport & Devis Rapide loaded');
   console.log('[CathyPets Agent Bridge] ✅ Initialisé');
 })();
 
-// Stubs pour fonctions supprimées (V29 cleanup)
+// Stubs pour fonctions supprimées (V77 cleanup)
 function relanceFac(id){var f=db.factures.find(function(x){return x.id===id});if(!f)return;quickMail('relance_fac',f.clientId,id)}
 
 // ═══ MODÈLES DE DEVIS ═══
