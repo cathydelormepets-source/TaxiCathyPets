@@ -9,7 +9,7 @@
 <meta http-equiv="Content-Language" content="fr">
 <script>
 /* ═══ MODE OFFLINE — Cache direct (compatible GitHub Pages single-file) ═══ */
-var CP_CACHE_VERSION='cathypets-v77g';
+var CP_CACHE_VERSION='cathypets-v77h';
 (function(){
   // Purger TOUS les anciens caches d'abord
   if(typeof caches!=='undefined'){
@@ -8470,19 +8470,24 @@ function depCloturer(depId){
   
   // Calculer les totaux
   var totalVenteTTC=0,totalCommission=0,totalNet=0;
+  var totalStockRestant=0,totalDepose=0,totalVendu=0;
   var lignesDetail=[];
   dep.produits.forEach(function(p){
-    if(p.qtyVendue<=0)return;
-    var caVente=p.qtyVendue*p.prixVente; // TTC
+    var caVente=(p.qtyVendue||0)*p.prixVente;
     var commMt=caVente*dep.commission/100;
     var net=caVente-commMt;
     totalVenteTTC+=caVente;
     totalCommission+=commMt;
     totalNet+=net;
-    lignesDetail.push({nom:p.nom,qty:p.qtyVendue,prix:p.prixVente,total:caVente,commission:commMt,net:net});
+    var restant=(p.qtyDeposee||0)-(p.qtyVendue||0);
+    if(restant>0) totalStockRestant+=restant*p.prixVente;
+    totalDepose+=(p.qtyDeposee||0);
+    totalVendu+=(p.qtyVendue||0);
+    lignesDetail.push({nom:p.nom,qtyDep:p.qtyDeposee||0,qty:p.qtyVendue||0,restant:restant,prix:p.prixVente,total:caVente,commission:commMt,net:net});
   });
+  var totalRestantQty=totalDepose-totalVendu;
   
-  if(totalNet<=0){alert('⚠️ Aucune vente saisie\n\nVa dans la liste des dépôts et saisis les quantités vendues pour chaque produit avant de clôturer.');return}
+  if(totalNet<=0&&totalRestantQty===totalDepose){alert('⚠️ Aucune vente saisie\n\nVa dans la liste des dépôts et saisis les quantités vendues pour chaque produit avant de clôturer.');return}
   
   var totalHT=tva>0?totalVenteTTC/(1+tva/100):totalVenteTTC;
   var totalTVA=totalVenteTTC-totalHT;
@@ -8492,36 +8497,43 @@ function depCloturer(depId){
   var bd='<div style="text-align:center;margin-bottom:14px"><b style="font-size:14px;color:var(--pu)">📦 Décompte Dépôt-Vente '+dep.ref+'</b><br>';
   bd+='<span style="font-size:11px;color:var(--mt)">Dépositaire : '+clientNom+' · Période : '+new Date(dep.date).toLocaleDateString('fr-FR')+' au '+new Date().toLocaleDateString('fr-FR')+'</span></div>';
   
-  // Tableau des produits vendus
-  bd+='<div style="font-size:11px;font-weight:700;color:var(--gd);margin-bottom:6px">📋 Produits vendus :</div>';
-  bd+='<table style="width:100%;font-size:11px;border-collapse:collapse;margin-bottom:12px"><thead><tr style="background:rgba(139,92,246,.1)"><th style="padding:6px;text-align:left">Produit</th><th style="padding:6px;text-align:center">Qté</th><th style="padding:6px;text-align:right">PU TTC</th><th style="padding:6px;text-align:right">Total TTC</th><th style="padding:6px;text-align:right">Commission</th><th style="padding:6px;text-align:right">Net Cathy</th></tr></thead><tbody>';
+  // Tableau des produits avec STOCK RESTANT
+  bd+='<div style="font-size:11px;font-weight:700;color:var(--gd);margin-bottom:6px">📋 Détail produits :</div>';
+  bd+='<table style="width:100%;font-size:11px;border-collapse:collapse;margin-bottom:12px"><thead><tr style="background:rgba(139,92,246,.1)"><th style="padding:6px;text-align:left">Produit</th><th style="padding:6px;text-align:center">Déposé</th><th style="padding:6px;text-align:center">Vendu</th><th style="padding:6px;text-align:center">Restant</th><th style="padding:6px;text-align:right">PU TTC</th><th style="padding:6px;text-align:right">Total vente</th><th style="padding:6px;text-align:right">Gain dép.</th><th style="padding:6px;text-align:right">Net Cathy</th></tr></thead><tbody>';
   lignesDetail.forEach(function(l){
     bd+='<tr><td style="padding:6px;border-bottom:1px solid rgba(255,255,255,.05)">'+esc(l.nom)+'</td>';
-    bd+='<td style="padding:6px;text-align:center;border-bottom:1px solid rgba(255,255,255,.05)">'+l.qty+'</td>';
+    bd+='<td style="padding:6px;text-align:center;border-bottom:1px solid rgba(255,255,255,.05)">'+l.qtyDep+'</td>';
+    bd+='<td style="padding:6px;text-align:center;border-bottom:1px solid rgba(255,255,255,.05);font-weight:700">'+l.qty+'</td>';
+    bd+='<td style="padding:6px;text-align:center;border-bottom:1px solid rgba(255,255,255,.05);color:var(--bl);font-weight:700">'+l.restant+'</td>';
     bd+='<td style="padding:6px;text-align:right;border-bottom:1px solid rgba(255,255,255,.05)">'+euro(l.prix)+'</td>';
     bd+='<td style="padding:6px;text-align:right;border-bottom:1px solid rgba(255,255,255,.05);font-weight:700">'+euro(l.total)+'</td>';
-    bd+='<td style="padding:6px;text-align:right;border-bottom:1px solid rgba(255,255,255,.05);color:var(--or)">-'+euro(l.commission)+'</td>';
+    bd+='<td style="padding:6px;text-align:right;border-bottom:1px solid rgba(255,255,255,.05);color:var(--or)">'+euro(l.commission)+'</td>';
     bd+='<td style="padding:6px;text-align:right;border-bottom:1px solid rgba(255,255,255,.05);color:var(--a2);font-weight:700">'+euro(l.net)+'</td></tr>';
   });
+  bd+='<tr style="background:rgba(255,255,255,.04);font-weight:800"><td style="padding:6px">TOTAUX</td><td style="padding:6px;text-align:center">'+totalDepose+'</td><td style="padding:6px;text-align:center">'+totalVendu+'</td><td style="padding:6px;text-align:center;color:var(--bl)">'+totalRestantQty+'</td><td></td><td style="padding:6px;text-align:right">'+euro(totalVenteTTC)+'</td><td style="padding:6px;text-align:right;color:var(--or)">'+euro(totalCommission)+'</td><td style="padding:6px;text-align:right;color:var(--a2)">'+euro(totalNet)+'</td></tr>';
   bd+='</tbody></table>';
   
-  // Récap visuel - 3 blocs
-  bd+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px">';
-  bd+='<div style="padding:12px;background:rgba(139,92,246,.08);border:1px solid var(--pu);border-radius:8px;text-align:center"><div style="font-size:9px;color:var(--mt);font-weight:700">💰 TOTAL VENTES TTC</div><div style="font-size:18px;font-weight:900;color:var(--pu);margin-top:2px">'+euro(totalVenteTTC)+'</div><div style="font-size:9px;color:var(--mt)">HT : '+euro(totalHT)+' · TVA '+tva+'% : '+euro(totalTVA)+'</div></div>';
-  bd+='<div style="padding:12px;background:rgba(245,158,11,.08);border:1px solid var(--or);border-radius:8px;text-align:center"><div style="font-size:9px;color:var(--mt);font-weight:700">🎁 BÉNÉFICE DÉPOSITAIRE</div><div style="font-size:18px;font-weight:900;color:var(--or);margin-top:2px">'+euro(totalCommission)+'</div><div style="font-size:9px;color:var(--mt)">Commission '+dep.commission+'% retenue</div></div>';
-  bd+='<div style="padding:12px;background:rgba(34,197,94,.08);border:2px solid var(--a2);border-radius:8px;text-align:center"><div style="font-size:9px;color:var(--mt);font-weight:700">💳 À VERSER À CATHY</div><div style="font-size:18px;font-weight:900;color:var(--a2);margin-top:2px">'+euro(totalNet)+'</div><div style="font-size:9px;color:var(--mt)">Remboursement dû</div></div>';
+  // Récap visuel - 4 blocs maintenant avec STOCK RESTANT
+  bd+='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:14px">';
+  bd+='<div style="padding:10px;background:rgba(139,92,246,.08);border:1px solid var(--pu);border-radius:8px;text-align:center"><div style="font-size:9px;color:var(--mt);font-weight:700">💰 TOTAL VENTES</div><div style="font-size:16px;font-weight:900;color:var(--pu);margin-top:2px">'+euro(totalVenteTTC)+'</div><div style="font-size:9px;color:var(--mt)">'+totalVendu+' article(s)</div></div>';
+  bd+='<div style="padding:10px;background:rgba(245,158,11,.08);border:1px solid var(--or);border-radius:8px;text-align:center"><div style="font-size:9px;color:var(--mt);font-weight:700">🎁 GAIN DÉPOSITAIRE</div><div style="font-size:16px;font-weight:900;color:var(--or);margin-top:2px">'+euro(totalCommission)+'</div><div style="font-size:9px;color:var(--mt)">Comm. '+dep.commission+'%</div></div>';
+  bd+='<div style="padding:10px;background:rgba(34,197,94,.08);border:2px solid var(--a2);border-radius:8px;text-align:center"><div style="font-size:9px;color:var(--mt);font-weight:700">💳 À VERSER À CATHY</div><div style="font-size:16px;font-weight:900;color:var(--a2);margin-top:2px">'+euro(totalNet)+'</div><div style="font-size:9px;color:var(--mt)">Remboursement dû</div></div>';
+  bd+='<div style="padding:10px;background:rgba(59,130,246,.08);border:2px solid var(--bl);border-radius:8px;text-align:center"><div style="font-size:9px;color:var(--mt);font-weight:700">📦 STOCK RESTANT</div><div style="font-size:16px;font-weight:900;color:var(--bl);margin-top:2px">'+euro(totalStockRestant)+'</div><div style="font-size:9px;color:var(--mt)">'+totalRestantQty+' article(s)</div></div>';
   bd+='</div>';
   
   // Note
   bd+='<div style="padding:10px;background:rgba(59,130,246,.06);border:1px solid var(--bl);border-radius:8px;font-size:11px;color:var(--mt)">';
-  bd+='ℹ️ Le dépositaire <b>'+clientNom+'</b> a vendu <b>'+lignesDetail.reduce(function(s,l){return s+l.qty},0)+'</b> produit(s) pour un total de <b>'+euro(totalVenteTTC)+'</b>.<br>';
-  bd+='Il garde <b style="color:var(--or)">'+euro(totalCommission)+'</b> comme commission ('+dep.commission+'%) et doit reverser <b style="color:var(--a2)">'+euro(totalNet)+'</b> à Cathy Pets.';
+  bd+='ℹ️ Le dépositaire <b>'+clientNom+'</b> a vendu <b>'+totalVendu+'</b> article(s) sur <b>'+totalDepose+'</b> déposés, pour un total de <b>'+euro(totalVenteTTC)+'</b>.<br>';
+  bd+='Il garde <b style="color:var(--or)">'+euro(totalCommission)+'</b> comme commission ('+dep.commission+'%) et doit reverser <b style="color:var(--a2)">'+euro(totalNet)+'</b> à Cathy Pets.<br>';
+  bd+='Il reste <b style="color:var(--bl)">'+totalRestantQty+' article(s) ('+euro(totalStockRestant)+')</b> chez le dépositaire — la marchandise non vendue.';
   bd+='</div>';
   
-  oMo('🧾 Clôture Dépôt-Vente '+dep.ref, bd, 
-    '<button class="btn" onclick="cMo()">Annuler</button> '+
-    '<button class="btn og" onclick="depPrintDecompte(\''+depId+'\')">🖨️ Imprimer décompte</button> '+
-    '<button class="btn gn" onclick="depExecCloture(\''+depId+'\')" style="font-size:14px;padding:10px 20px">✅ Créer la facture '+euro(totalNet)+'</button>');
+  var boutons='<button class="btn" onclick="cMo()">Annuler</button> '+
+    '<button class="btn og" onclick="depPrintDecompte(\''+depId+'\')">🖨️ Imprimer décompte</button> ';
+  if(totalNet>0){
+    boutons+='<button class="btn gn" onclick="depExecCloture(\''+depId+'\')" style="font-size:14px;padding:10px 20px">✅ Créer la facture '+euro(totalNet)+'</button>';
+  }
+  oMo('🧾 Clôture Dépôt-Vente '+dep.ref, bd, boutons);
 }
 
 function depExecCloture(depId){
