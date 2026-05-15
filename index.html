@@ -9,7 +9,7 @@
 <meta http-equiv="Content-Language" content="fr">
 <script>
 /* ═══ MODE OFFLINE — Cache direct (compatible GitHub Pages single-file) ═══ */
-var CP_CACHE_VERSION='cathypets-v77b';
+var CP_CACHE_VERSION='cathypets-v77c';
 (function(){
   // Purger TOUS les anciens caches d'abord
   if(typeof caches!=='undefined'){
@@ -1792,12 +1792,16 @@ Tel : 06 12 34 56 78
   <div style="font-weight:800;font-size:12px;color:var(--pu);margin:8px 0 4px">📦 Produits déposés :</div>
   <div id="dep_lignes">
     <div class="dep-ligne" style="display:flex;gap:6px;align-items:end;margin-bottom:6px;flex-wrap:wrap">
-      <div class="fd" style="flex:3;margin:0"><label style="font-size:10px">Produit *</label><select id="dep_prod_1" style="font-size:12px"></select></div>
-      <div class="fd" style="flex:1;margin:0"><label style="font-size:10px">Qté déposée</label><input id="dep_qty_1" type="number" value="1" min="1" style="font-size:12px;padding:8px"></div>
-      <div class="fd" style="flex:1.5;margin:0"><label style="font-size:10px">Prix TTC €</label><input id="dep_pu_1" type="number" step="0.01" style="font-size:12px;padding:8px"></div>
+      <div class="fd" style="flex:3;margin:0"><label style="font-size:10px">Produit *</label><select id="dep_prod_1" onchange="depCalcTotal()" style="font-size:12px"></select></div>
+      <div class="fd" style="flex:1;margin:0"><label style="font-size:10px">Qté déposée</label><input id="dep_qty_1" type="number" value="1" min="1" oninput="depCalcTotal()" style="font-size:12px;padding:8px"></div>
+      <div class="fd" style="flex:1.5;margin:0"><label style="font-size:10px">Prix TTC €</label><input id="dep_pu_1" type="number" step="0.01" oninput="depCalcTotal()" style="font-size:12px;padding:8px"></div>
     </div>
   </div>
   <button class="btn sm at" onclick="depAddLigne()" style="margin-bottom:10px;font-size:11px">➕ Ajouter un produit</button>
+  
+  <!-- Récap dépôt en temps réel -->
+  <div id="dep_recap" style="display:none;padding:10px 12px;margin-bottom:10px;background:rgba(139,92,246,.08);border:1px solid rgba(139,92,246,.25);border-radius:8px;font-size:12px"></div>
+  
   <button class="btn gn" onclick="depCreer()" style="width:100%;padding:12px;font-size:14px">📦 Créer le dépôt</button>
   <div id="dep_result" style="margin-top:8px"></div>
 </div></div>
@@ -8250,12 +8254,61 @@ function depAddLigne(){
   var div=document.createElement('div');
   div.className='dep-ligne';
   div.style.cssText='display:flex;gap:6px;align-items:end;margin-bottom:6px;flex-wrap:wrap';
-  div.innerHTML='<div class="fd" style="flex:3;margin:0"><label style="font-size:10px">Produit</label><select id="dep_prod_'+n+'" style="font-size:12px"></select></div>'+
-    '<div class="fd" style="flex:1;margin:0"><label style="font-size:10px">Qté</label><input id="dep_qty_'+n+'" type="number" value="1" min="1" style="font-size:12px;padding:8px"></div>'+
-    '<div class="fd" style="flex:1.5;margin:0"><label style="font-size:10px">Prix TTC €</label><input id="dep_pu_'+n+'" type="number" step="0.01" style="font-size:12px;padding:8px"></div>'+
-    '<button class="btn sm rd" onclick="this.parentElement.remove()" style="padding:6px 8px;margin-bottom:2px">✕</button>';
+  div.innerHTML='<div class="fd" style="flex:3;margin:0"><label style="font-size:10px">Produit</label><select id="dep_prod_'+n+'" onchange="depUpdatePrix('+n+');depCalcTotal()" style="font-size:12px"></select></div>'+
+    '<div class="fd" style="flex:1;margin:0"><label style="font-size:10px">Qté</label><input id="dep_qty_'+n+'" type="number" value="1" min="1" oninput="depCalcTotal()" style="font-size:12px;padding:8px"></div>'+
+    '<div class="fd" style="flex:1.5;margin:0"><label style="font-size:10px">Prix TTC €</label><input id="dep_pu_'+n+'" type="number" step="0.01" oninput="depCalcTotal()" style="font-size:12px;padding:8px"></div>'+
+    '<button class="btn sm rd" onclick="this.parentElement.remove();depCalcTotal()" style="padding:6px 8px;margin-bottom:2px">✕</button>';
   $('dep_lignes').appendChild(div);
   depFillProdSelects();
+}
+
+// Récap TTC/HT/TVA en temps réel pour le dépôt-vente
+function depCalcTotal(){
+  var tva=(db.settings.tvaRate!==undefined&&db.settings.tvaRate!==''&&db.settings.tvaRate!==null?E(db.settings.tvaRate):20);
+  var comm=E(V('dep_comm'))||20;
+  var totalTTC=0;
+  var nbProd=0;
+  for(var i=1;i<=_depLigneCount;i++){
+    var prodId=V('dep_prod_'+i);
+    var qty=E(V('dep_qty_'+i))||0;
+    var pu=E(V('dep_pu_'+i))||0;
+    if(!prodId||!qty||!pu)continue;
+    totalTTC+=qty*pu;
+    nbProd++;
+  }
+  var totalHT=tva>0?totalTTC/(1+tva/100):totalTTC;
+  var totalTVA=totalTTC-totalHT;
+  var commissionMontant=totalTTC*comm/100;
+  var netDepositaire=totalTTC-commissionMontant;
+  var recap=$('dep_recap');
+  if(recap){
+    if(totalTTC>0){
+      recap.style.display='block';
+      var h='<div style="font-weight:700;color:var(--pu);margin-bottom:6px">📦 '+nbProd+' produit(s) déposé(s)</div>';
+      h+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:6px">';
+      h+='<div style="text-align:center;padding:6px;background:rgba(255,255,255,.03);border-radius:6px"><div style="font-size:9px;color:var(--mt)">TOTAL TTC</div><div style="font-size:14px;font-weight:800;color:var(--gd)">'+euro(totalTTC)+'</div></div>';
+      h+='<div style="text-align:center;padding:6px;background:rgba(255,255,255,.03);border-radius:6px"><div style="font-size:9px;color:var(--mt)">dont HT</div><div style="font-size:13px;font-weight:700;color:var(--a2)">'+euro(totalHT)+'</div></div>';
+      h+='<div style="text-align:center;padding:6px;background:rgba(255,255,255,.03);border-radius:6px"><div style="font-size:9px;color:var(--mt)">TVA '+tva+'%</div><div style="font-size:13px;font-weight:700;color:var(--bl)">'+euro(totalTVA)+'</div></div>';
+      h+='</div>';
+      h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;padding-top:6px;border-top:1px solid var(--ln)">';
+      h+='<div style="text-align:center"><div style="font-size:9px;color:var(--mt)">Commission '+comm+'% (Cathy)</div><div style="font-size:14px;font-weight:800;color:var(--or)">'+euro(commissionMontant)+'</div></div>';
+      h+='<div style="text-align:center"><div style="font-size:9px;color:var(--mt)">Net dépositaire</div><div style="font-size:14px;font-weight:800;color:var(--a2)">'+euro(netDepositaire)+'</div></div>';
+      h+='</div>';
+      recap.innerHTML=h;
+    } else {
+      recap.style.display='none';
+    }
+  }
+}
+
+function depUpdatePrix(n){
+  var prodId=V('dep_prod_'+n);
+  if(!prodId)return;
+  var prod=act(db.nutrica).find(function(p){return p.id===prodId});
+  if(prod){
+    var pu=$('dep_pu_'+n);
+    if(pu&&!pu.value){pu.value=E(prod.prixVenteTTC||prod.prixVente||prod.price)||0}
+  }
 }
 
 function depCreer(){
