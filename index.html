@@ -9,7 +9,7 @@
 <meta http-equiv="Content-Language" content="fr">
 <script>
 /* ═══ MODE OFFLINE — Cache direct (compatible GitHub Pages single-file) ═══ */
-var CP_CACHE_VERSION='cathypets-v77h';
+var CP_CACHE_VERSION='cathypets-v77i';
 (function(){
   // Purger TOUS les anciens caches d'abord
   if(typeof caches!=='undefined'){
@@ -8547,7 +8547,16 @@ function depExecCloture(depId){
     var commMt=caVente*dep.commission/100;
     var net=caVente-commMt;
     totalVente+=caVente;totalComm+=commMt;totalNet+=net;
-    lignes.push({desc:p.nom+' — '+p.qtyVendue+' vendu(s) × '+euro(p.prixVente)+' = '+euro(caVente)+' (commission '+dep.commission+'% : '+euro(commMt)+')',qty:p.qtyVendue,pu:p.prixVente*(1-dep.commission/100),montant:net});
+    // ✅ PU TTC = vrai prix de vente original, Total TTC = qty × prix sans déduction
+    lignes.push({
+      article:p.nom,
+      desc:'Vente dépôt — '+p.qtyVendue+' unité(s)',
+      qty:p.qtyVendue,
+      pu:p.prixVente,
+      remise:dep.commission, // commission dépositaire en remise par ligne
+      montant:net,
+      total:net
+    });
   });
   var tva=(db.settings.tvaRate!==undefined&&db.settings.tvaRate!==''&&db.settings.tvaRate!==null?E(db.settings.tvaRate):20);
   var ref=nextFacRef();
@@ -8557,7 +8566,7 @@ function depExecCloture(depId){
     objet:'Dépôt-vente '+dep.ref+' — Décompte du '+new Date().toLocaleDateString('fr-FR'),
     lignes:lignes,total:totalNet,tva:tva,remise:0,
     acompte:0,paiement:'virement',
-    notes:'Dépôt '+dep.ref+'\nCA brut TTC : '+euro(totalVente)+'\nBénéfice dépositaire ('+dep.commission+'%) : '+euro(totalComm)+'\nNet à recevoir : '+euro(totalNet),
+    notes:'Dépôt '+dep.ref+'\nCA brut TTC : '+euro(totalVente)+'\nCommission dépositaire ('+dep.commission+'%) : '+euro(totalComm)+'\nNet à recevoir : '+euro(totalNet),
     date:tdy(),
     activityType:'nutrica',mode:'depot-vente',
     status:'emise',
