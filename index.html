@@ -9,7 +9,7 @@
 <meta http-equiv="Content-Language" content="fr">
 <script>
 /* ═══ MODE OFFLINE — Cache direct (compatible GitHub Pages single-file) ═══ */
-var CP_CACHE_VERSION='cathypets-v32-final15';
+var CP_CACHE_VERSION='cathypets-v32-final17';
 (function(){
   // Purger TOUS les anciens caches d'abord
   if(typeof caches!=='undefined'){
@@ -691,6 +691,12 @@ body.nuit .card{border-color:#0a1520}
       <div style="font-size:9px;color:var(--mt);font-weight:700;text-transform:uppercase">61 — 90 jours</div>
       <div style="font-size:16px;font-weight:900;color:var(--gd);margin-top:3px" id="prev90">—</div>
     </div>
+  </div>
+
+  <!-- HISTORIQUE 6 DERNIERS MOIS -->
+  <div style="margin-top:12px;padding:10px;background:#0a1822;border-radius:8px;border:1px solid var(--ln)">
+    <div style="font-size:10px;font-weight:700;color:var(--mt);text-transform:uppercase;margin-bottom:8px">📊 Historique 6 derniers mois (CA TTC)</div>
+    <div id="histoMois" style="display:grid;grid-template-columns:repeat(6,1fr);gap:4px"></div>
   </div>
 </div>
 
@@ -17405,18 +17411,23 @@ function rObjectifs(){
   // Prévisionnel 30/60/90 jours — CA attendu dans chaque période
   var today = new Date(); today.setHours(0,0,0,0);
   var p30=0,p60=0,p90=0;
+  var dbg30=0,dbg60=0,dbg90=0; // debug counters
+  
+  // Helper : placer un montant dans la bonne tranche selon le nb de jours
+  function placerDansTranche(montant, diff){
+    if(diff<=30){p30+=montant;dbg30++}
+    else if(diff<=60){p60+=montant;dbg60++}
+    else if(diff<=90){p90+=montant;dbg90++}
+  }
   
   // 1. Transports futurs (pas encore facturés)
   act(db.transports).forEach(function(t){
     if(!t.date) return;
-    // Skip si déjà facturé
     var facturé = act(db.factures).some(function(f){return f.transportId===t.id});
     if(facturé) return;
     var dt = new Date(t.date); dt.setHours(0,0,0,0);
     var diff = Math.floor((dt-today)/864e5);
-    if(diff>=0&&diff<=30) p30+=E(t.price);
-    else if(diff>30&&diff<=60) p60+=E(t.price);
-    else if(diff>60&&diff<=90) p90+=E(t.price);
+    if(diff>=0) placerDansTranche(E(t.price), diff);
   });
   
   // 2. Gardes futures (pas encore facturées)
@@ -17426,9 +17437,7 @@ function rObjectifs(){
     if(facturé) return;
     var dt=new Date(g.start);dt.setHours(0,0,0,0);
     var diff=Math.floor((dt-today)/864e5);
-    if(diff>=0&&diff<=30) p30+=E(g.price);
-    else if(diff>30&&diff<=60) p60+=E(g.price);
-    else if(diff>60&&diff<=90) p90+=E(g.price);
+    if(diff>=0) placerDansTranche(E(g.price), diff);
   });
   
   // 3. Factures émises non payées (reste à encaisser par échéance)
@@ -17436,29 +17445,90 @@ function rObjectifs(){
     if(f.status==='payée'||f.status==='avoir')return;
     var reste=Math.max(E(f.total)-E(f.acompte||0),0);
     if(reste<=0)return;
-    // Date d'échéance : si pas définie → date facture + 30j (standard B2B)
     var dateF=new Date(f.date||Date.now());
     var ech=f.echeance?new Date(f.echeance):new Date(dateF.getTime()+30*864e5);
     ech.setHours(0,0,0,0);
     var diff=Math.floor((ech-today)/864e5);
-    // Tout ce qui est dû maintenant ou dans les 30 prochains jours
-    if(diff<=30) p30+=reste;
-    else if(diff<=60) p60+=reste;
-    else if(diff<=90) p90+=reste;
-    // > 90 jours = pas affiché (probablement perdu)
+    // Factures déjà en retard → tranche 0-30
+    if(diff<0)diff=0;
+    placerDansTranche(reste, diff);
   });
   
-  // 4. Devis acceptés non encore facturés (correction : 'accepté' avec accent)
+  // 4. Devis acceptés non encore facturés — utiliser la date de prestation si disponible
   act(db.devis).forEach(function(q){
     if(q.status!=='accepté'&&q.status!=='accepte'&&q.status!=='signe'&&q.status!=='envoyé')return;
-    // Considéré comme encaissable sous 30j
-    p30+=E(q.total);
+    var diff=0;
+    // Chercher transport lié pour avoir la vraie date
+    var trLie=act(db.transports).find(function(t){return t.devisId===q.id||t.quoteId===q.id});
+    var grLie=act(db.gardes).find(function(g){return g.devisId===q.id||g.quoteId===q.id});
+    if(trLie&&trLie.date){
+      var dt=new Date(trLie.date);dt.setHours(0,0,0,0);
+      diff=Math.floor((dt-today)/864e5);
+    } else if(grLie&&grLie.start){
+      var dt2=new Date(grLie.start);dt2.setHours(0,0,0,0);
+      diff=Math.floor((dt2-today)/864e5);
+    } else if(q.dateDebut){
+      var dt3=new Date(q.dateDebut);dt3.setHours(0,0,0,0);
+      diff=Math.floor((dt3-today)/864e5);
+    } else {
+      diff=15; // Pas de date → on suppose 15j (donc 0-30)
+    }
+    if(diff<0)diff=0;
+    placerDansTranche(E(q.total), diff);
   });
+  
+  console.log('[Prévisionnel] 30j:'+euro(p30)+' ('+dbg30+' éléments) · 60j:'+euro(p60)+' ('+dbg60+' éléments) · 90j:'+euro(p90)+' ('+dbg90+' éléments)');
   
   var e30=document.getElementById('prev30'),e60=document.getElementById('prev60'),e90=document.getElementById('prev90');
   if(e30) e30.textContent=euro(p30);
   if(e60) e60.textContent=euro(p60);
   if(e90) e90.textContent=euro(p90);
+
+  // HISTORIQUE 6 DERNIERS MOIS
+  var histoEl=document.getElementById('histoMois');
+  if(histoEl){
+    var moisNoms=['Janv','Fév','Mars','Avr','Mai','Juin','Juil','Août','Sept','Oct','Nov','Déc'];
+    var now=new Date();
+    var moisData=[];
+    var maxCA=0;
+    for(var i=5;i>=0;i--){
+      var m=new Date(now.getFullYear(),now.getMonth()-i,1);
+      var moisKey=m.toISOString().slice(0,7);
+      var moisLabel=moisNoms[m.getMonth()]+' '+String(m.getFullYear()).slice(-2);
+      var caM=0,payeM=0,attenteM=0;
+      act(db.factures).forEach(function(f){
+        if((f.date||'').slice(0,7)!==moisKey) return;
+        if(f.status==='avoir') return;
+        var montant=E(f.total);
+        caM+=montant;
+        if(f.status==='payée'){payeM+=montant}
+        else{var ac=E(f.acompte||0);payeM+=ac;attenteM+=(montant-ac)}
+      });
+      if(caM>maxCA) maxCA=caM;
+      moisData.push({key:moisKey,label:moisLabel,ca:caM,paye:payeM,attente:attenteM,isCurrent:moisKey===now.toISOString().slice(0,7)});
+    }
+    var h='';
+    moisData.forEach(function(m){
+      var pctPaye=m.ca>0?Math.round(m.paye/m.ca*100):0;
+      var hauteurBarre=maxCA>0?Math.max(4,Math.round(m.ca/maxCA*40)):4;
+      h+='<div style="text-align:center;padding:6px 2px;background:'+(m.isCurrent?'rgba(26,122,110,.15)':'rgba(255,255,255,.02)')+';border-radius:6px;border:1px solid '+(m.isCurrent?'var(--a2)':'rgba(255,255,255,.05)')+'" title="'+m.label+' — Encaissé : '+euro(m.paye)+(m.attente>0?' · En attente : '+euro(m.attente):'')+'">';
+      h+='<div style="font-size:8px;color:'+(m.isCurrent?'var(--a2)':'var(--mt)')+';font-weight:700;text-transform:uppercase">'+m.label+'</div>';
+      h+='<div style="height:40px;display:flex;align-items:flex-end;justify-content:center;margin:4px 0">';
+      if(m.ca>0){
+        h+='<div style="width:80%;height:'+hauteurBarre+'px;background:linear-gradient(180deg,'+(m.isCurrent?'var(--a2)':'var(--ac)')+','+(m.isCurrent?'var(--ac)':'#1a3a5a')+');border-radius:3px 3px 0 0;position:relative">';
+        if(m.attente>0&&m.ca>0){
+          var pctAttente=Math.round(m.attente/m.ca*100);
+          h+='<div style="position:absolute;bottom:0;left:0;right:0;height:'+pctAttente+'%;background:var(--or);border-radius:0 0 3px 3px"></div>';
+        }
+        h+='</div>';
+      }
+      h+='</div>';
+      h+='<div style="font-size:10px;font-weight:800;color:'+(m.ca>0?'var(--gd)':'var(--mt)')+'">'+(m.ca>0?euro(m.ca):'—')+'</div>';
+      if(m.attente>0)h+='<div style="font-size:8px;color:var(--or)">⚠️ '+euro(m.attente)+'</div>';
+      h+='</div>';
+    });
+    histoEl.innerHTML=h;
+  }
 
   // Factures impayées dans prévisionnel
   var impayesTotal = act(db.factures).filter(function(f){return f.status==='emise';}).reduce(function(s,f){return s+E(f.total);},0);
