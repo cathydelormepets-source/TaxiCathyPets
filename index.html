@@ -9,7 +9,7 @@
 <meta http-equiv="Content-Language" content="fr">
 <script>
 /* ═══ MODE OFFLINE — Cache direct (compatible GitHub Pages single-file) ═══ */
-var CP_CACHE_VERSION='cathypets-v77f';
+var CP_CACHE_VERSION='cathypets-v77g';
 (function(){
   // Purger TOUS les anciens caches d'abord
   if(typeof caches!=='undefined'){
@@ -8404,12 +8404,55 @@ function depRender(){
       h+='<button class="btn sm rd" onclick="depSupprimer(\''+dep.id+'\')">✕ Supprimer</button>';
       h+='</div>';
     } else {
-      h+='<div style="margin-top:6px;font-size:11px;color:var(--a2)">✅ Clôturé — Facture(s): '+(dep.factures||[]).join(', ')+'</div>';
+      // Vérifier si les factures existent encore
+      var facsRef=dep.factures||[];
+      var facsExistantes=facsRef.filter(function(ref){
+        return act(db.factures).some(function(f){return f.ref===ref||f.depotId===dep.id});
+      });
+      var facsManquantes=facsRef.length-facsExistantes.length;
+      
+      if(facsManquantes>0||facsRef.length===0){
+        // Au moins une facture a été supprimée → permettre de rouvrir
+        h+='<div style="margin-top:8px;padding:10px;background:rgba(239,68,68,.08);border:1px solid var(--rd);border-radius:8px">';
+        h+='<div style="font-size:11px;color:var(--rd);font-weight:700;margin-bottom:6px">⚠️ Facture supprimée — Dépôt à re-clôturer</div>';
+        h+='<div style="display:flex;gap:8px;flex-wrap:wrap">';
+        h+='<button class="btn gn sm" onclick="depReouvrir(\''+dep.id+'\')">🔄 Rouvrir le dépôt + Refacturer</button>';
+        h+='<button class="btn sm rd" onclick="depSupprimer(\''+dep.id+'\')">✕ Supprimer définitivement</button>';
+        h+='</div></div>';
+      } else {
+        h+='<div style="margin-top:6px;font-size:11px;color:var(--a2)">✅ Clôturé — Facture(s): '+facsRef.join(', ')+'</div>';
+        h+='<div style="display:flex;gap:6px;margin-top:6px"><button class="btn sm" style="background:#1a2030;border-color:#2a3a50;color:#aab" onclick="depReouvrir(\''+dep.id+'\')" title="Rouvrir si besoin de modifier">🔄 Rouvrir</button></div>';
+      }
     }
 
     h+='</div></div>';
   });
   tbl.innerHTML=h;
+}
+
+// Rouvrir un dépôt clôturé pour le modifier / refacturer
+function depReouvrir(depId){
+  var dep=db.depots.find(function(d){return d.id===depId});
+  if(!dep)return;
+  var facsRef=dep.factures||[];
+  var facsExistantes=facsRef.filter(function(ref){
+    return act(db.factures).some(function(f){return f.ref===ref||f.depotId===dep.id});
+  });
+  var msg='🔄 Rouvrir le dépôt '+dep.ref+' ?\n\n';
+  if(facsExistantes.length===0){
+    msg+='⚠️ Aucune facture liée n\'existe (toutes supprimées).\nLe dépôt repassera "en cours" et tu pourras le re-clôturer.';
+  } else {
+    msg+='⚠️ '+facsExistantes.length+' facture(s) sont encore actives : '+facsExistantes.join(', ')+'\nRouvrir le dépôt ne supprimera pas ces factures.\nTu devras les supprimer manuellement pour éviter les doublons.';
+  }
+  if(!confirm(msg))return;
+  dep.status='en_cours';
+  dep.factures=[];
+  dep.clotureDate='';
+  delete dep.totalVente;
+  delete dep.totalCommission;
+  delete dep.totalNet;
+  stamp(dep);sav(false);depRender();
+  showToast('🔄 Dépôt '+dep.ref+' rouvert — tu peux modifier les ventes et le re-clôturer');
 }
 
 function depUpdateVente(depId,idx,val){
