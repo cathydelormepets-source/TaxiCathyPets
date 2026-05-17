@@ -9,7 +9,7 @@
 <meta http-equiv="Content-Language" content="fr">
 <script>
 /* ═══ MODE OFFLINE — Cache direct (compatible GitHub Pages single-file) ═══ */
-var CP_CACHE_VERSION='cathypets-v77m';
+var CP_CACHE_VERSION='cathypets-v77n';
 (function(){
   // Purger TOUS les anciens caches d'abord
   if(typeof caches!=='undefined'){
@@ -19370,18 +19370,77 @@ function rContrats(){
 function ctSetStatus(id,status){
   var ct=(db.contrats||[]).find(function(c){return c.id===id});
   if(!ct)return;
+  var ancienStatus=ct.status;
   ct.status=status;
   ct.statusDate=new Date().toISOString();
+  stamp(ct);
   
-  // Si payé → mettre à jour la facture liée
+  // Si payé → créer/mettre à jour la facture liée
   if(status==='payé'){
     var fac=act(db.factures).find(function(f){return f.contratId===id});
-    if(fac){fac.status='payée';fac.paidAt=new Date().toISOString();}
+    if(fac){
+      // Facture existe → marquer payée
+      fac.status='payée';
+      fac.datePaiement=tdy();
+      fac.paiementDate=tdy();
+      stamp(fac);
+      showToast('✅ Contrat '+ct.ref+' payé · Facture '+fac.ref+' marquée payée');
+    } else {
+      // Pas de facture → en créer une automatiquement
+      var tva=(db.settings.tvaRate!==undefined&&db.settings.tvaRate!==''&&db.settings.tvaRate!==null?E(db.settings.tvaRate):20);
+      var totalCt=E(ct.total)||E(ct.tarif)||E(ct.montant)||0;
+      var lignes=[];
+      // Construire les lignes à partir du contrat
+      if(ct.lignes&&ct.lignes.length){
+        lignes=JSON.parse(JSON.stringify(ct.lignes));
+      } else {
+        // Construire une ligne unique
+        var d1=ct.dateDebut?new Date(ct.dateDebut).toLocaleDateString('fr-FR'):'';
+        var d2=ct.dateFin?new Date(ct.dateFin).toLocaleDateString('fr-FR'):'';
+        var typeLabel={pension:'Pension',promenade:'Promenade',transport:'Transport',veterinaire:'Soins vétérinaires',visite:'Visite à domicile',garde:'Garde'};
+        var label=(typeLabel[ct.type]||ct.type||'Prestation')+(d1?' — '+d1+(d2?' au '+d2:''):'');
+        lignes=[{article:label,desc:ct.objet||'',qty:1,pu:totalCt,total:totalCt,remise:0}];
+      }
+      var ref=nextFacRef();
+      var fac2={
+        id:uid('f'),ref:ref,
+        clientId:ct.clientId,
+        animalIds:ct.animalIds||(ct.animalId?[ct.animalId]:[]),
+        contratId:ct.id,
+        objet:'Contrat '+ct.ref+(ct.type?' — '+ct.type:''),
+        lignes:lignes,total:totalCt,tva:tva,remise:0,
+        acompte:0,paiement:'virement',
+        notes:'Facture générée automatiquement depuis le contrat '+ct.ref,
+        date:tdy(),
+        datePaiement:tdy(),paiementDate:tdy(),
+        activityType:ct.type||'autre',mode:'depuis-contrat',
+        status:'payée'
+      };
+      stamp(fac2);db.factures.push(fac2);
+      db.tresorerie.unshift({id:uid('ca'),type:'recette',label:'Facture '+ref+' — '+cN(ct.clientId)+' (contrat '+ct.ref+')',amount:totalCt,date:new Date().toISOString()});
+      showToast('✅ Contrat '+ct.ref+' payé · Facture '+ref+' créée automatiquement ('+euro(totalCt)+')');
+    }
+  } else if(status==='impayé'){
+    // Si on bascule en impayé : remettre la facture en "émise"
+    var fac3=act(db.factures).find(function(f){return f.contratId===id});
+    if(fac3&&fac3.status==='payée'){
+      fac3.status='emise';
+      delete fac3.datePaiement;
+      delete fac3.paiementDate;
+      stamp(fac3);
+      showToast('⚠️ Contrat '+ct.ref+' impayé · Facture '+fac3.ref+' remise en attente');
+    } else {
+      showToast('⚠️ Contrat '+ct.ref+' marqué impayé');
+    }
+  } else {
+    showToast('✅ Contrat '+ct.ref+' marqué '+status);
   }
   
   lH('contrat','Contrat '+ct.ref+' → '+status);
-  sav(false);rContrats();
-  showToast('✅ Contrat '+ct.ref+' marqué '+status);
+  sav(false);
+  if(typeof rContrats==='function')rContrats();
+  if(typeof rFac2==='function')rFac2();
+  if(typeof rBriefing==='function')rBriefing();
 }
 
 function ctRelance(id){
