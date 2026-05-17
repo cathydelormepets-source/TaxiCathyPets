@@ -9,7 +9,7 @@
 <meta http-equiv="Content-Language" content="fr">
 <script>
 /* ═══ MODE OFFLINE — Cache direct (compatible GitHub Pages single-file) ═══ */
-var CP_CACHE_VERSION='cathypets-v77i';
+var CP_CACHE_VERSION='cathypets-v77l';
 (function(){
   // Purger TOUS les anciens caches d'abord
   if(typeof caches!=='undefined'){
@@ -4483,11 +4483,22 @@ document.getElementById('q_contrat_pec').addEventListener('change',function(){
 <div class="card"><div class="hd"><h3>💰 Calculateur de rentabilité trajet</h3></div><div class="bd">
 <div class="sp">
 <div>
-<h4 style="margin-bottom:12px;color:var(--gd)">📍 Paramètres du trajet</h4>
-<div class="grid" style="grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
-<div><label class="lb">Départ</label><input class="inp" id="rb_dep" placeholder="Ville de départ" value="Neuilly-Saint-Front"></div>
-<div><label class="lb">Arrivée</label><input class="inp" id="rb_arr" placeholder="Ville d'arrivée"></div>
+<h4 style="margin-bottom:12px;color:var(--gd)">📍 Itinéraire (étapes multiples)</h4>
+<div id="rb_etapes_box">
+  <div class="rb_etape" style="display:flex;gap:6px;align-items:end;margin-bottom:6px">
+    <div style="flex:1"><label class="lb" style="font-size:10px">🟢 Départ</label><input class="inp" id="rb_etape_0" placeholder="Ex: Neuilly-Saint-Front" value="Neuilly-Saint-Front"></div>
+  </div>
+  <div class="rb_etape" style="display:flex;gap:6px;align-items:end;margin-bottom:6px">
+    <div style="flex:1"><label class="lb" style="font-size:10px">🔴 Arrivée</label><input class="inp" id="rb_etape_1" placeholder="Ville d'arrivée"></div>
+  </div>
 </div>
+<div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">
+  <button class="btn sm at" onclick="rbAddEtape()" style="font-size:11px">➕ Ajouter une étape intermédiaire</button>
+  <button class="btn sm" onclick="rbCalcRoute()" style="font-size:11px;background:#1a2a3a;border-color:#2a4a6f;color:#8ec8ff">🗺️ Calculer distance + péages</button>
+</div>
+<!-- Garder rb_dep/rb_arr pour compatibilité (masqués) -->
+<input type="hidden" id="rb_dep" value="Neuilly-Saint-Front">
+<input type="hidden" id="rb_arr" value="">
 <div class="grid" style="grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
 <div><label class="lb">Distance aller (km)</label><input type="number" class="inp" id="rb_km" placeholder="Ex: 450" oninput="calcRenta()"></div>
 <div><label class="lb">Péages aller (€)</label><input type="number" class="inp" id="rb_peages" value="0" oninput="calcRenta()"></div>
@@ -4496,10 +4507,37 @@ document.getElementById('q_contrat_pec').addEventListener('change',function(){
 <div><label class="lb">Retour à vide ?</label><select class="inp" id="rb_retour" onchange="calcRenta()"><option value="oui">Oui - Retour à vide</option><option value="non">Non - Client retour trouvé</option><option value="partiel">Partiel - Sur une partie</option></select></div>
 <div><label class="lb">Temps estimé (h)</label><input type="number" class="inp" id="rb_temps" value="5" step="0.5" oninput="calcRenta()"></div>
 </div>
+<div class="grid" style="grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+<div><label class="lb">Taux horaire (€/h)</label><select class="inp" id="rb_tauxH" onchange="rbTauxHChange()">
+<option value="10">Minimum SMIC (10€/h)</option>
+<option value="12">Apprenti (12€/h)</option>
+<option value="15" selected>Standard (15€/h)</option>
+<option value="18">Confirmé (18€/h)</option>
+<option value="20">Premium (20€/h)</option>
+<option value="25">Expert / Nuit (25€/h)</option>
+<option value="30">Urgence (30€/h)</option>
+<option value="custom">✏️ Taux personnalisé...</option>
+</select></div>
+<div id="rb_tauxH_custom_box" style="display:none"><label class="lb">Taux personnalisé (€/h)</label><input type="number" step="0.5" class="inp" id="rb_tauxH_custom" placeholder="Ex: 16.5" oninput="calcRenta()"></div>
+</div>
 <h4 style="margin:16px 0 12px;color:var(--gd)">💵 Tarification</h4>
 <div class="grid" style="grid-template-columns:1fr 1fr;gap:10px">
 <div><label class="lb">Prix facturé au client (€)</label><input type="number" class="inp" id="rb_prix" placeholder="Ex: 540" oninput="calcRenta()"></div>
-<div><label class="lb">Type de tarif</label><select class="inp" id="rb_tarif"><option value="0.80">Standard (0.80€/km)</option><option value="custom">Personnalisé</option></select></div>
+<div><label class="lb">Type de tarif (€/km)</label><select class="inp" id="rb_tarif" onchange="rbTarifChange()">
+<option value="0.65">Économique (0.65€/km)</option>
+<option value="0.75">Standard normal (0.75€/km)</option>
+<option value="0.85">Retour à vide (0.85€/km)</option>
+<option value="0.90" selected>Aller avec animaux (0.90€/km)</option>
+<option value="1.00">Premium (1.00€/km)</option>
+<option value="1.20">Urgence / Nuit (1.20€/km)</option>
+<option value="1.50">Long distance international (1.50€/km)</option>
+<option value="2.00">Tarif spécial (2.00€/km)</option>
+<option value="custom">✏️ Tarif personnalisé...</option>
+</select></div>
+</div>
+<div class="grid" id="rb_tarif_custom_box" style="grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;display:none">
+<div><label class="lb">Tarif personnalisé (€/km)</label><input type="number" step="0.01" class="inp" id="rb_tarif_custom" placeholder="Ex: 0.95" oninput="calcRenta()"></div>
+<div><label class="lb">Description du tarif</label><input class="inp" id="rb_tarif_desc" placeholder="Ex: Client VIP, transport spécial..."></div>
 </div>
 </div>
 <div>
@@ -4514,7 +4552,7 @@ document.getElementById('q_contrat_pec').addEventListener('change',function(){
 <div class="renta-row"><span>⛽ Carburant (8L/100km × 1.65€)</span><span id="rb_cCarbu">0.00€</span></div>
 <div class="renta-row"><span>🛣️ Péages A/R</span><span id="rb_cPeages">0.00€</span></div>
 <div class="renta-row"><span>🔧 Usure véhicule (0.05€/km)</span><span id="rb_cUsure">0.00€</span></div>
-<div class="renta-row"><span>⏱️ Coût temps (15€/h)</span><span id="rb_cTemps">0.00€</span></div>
+<div class="renta-row"><span id="rb_cTemps_lbl">⏱️ Coût temps (15€/h)</span><span id="rb_cTemps">0.00€</span></div>
 <div class="renta-row" style="border-top:1px solid var(--ln);margin-top:6px;padding-top:6px;font-weight:700"><span>TOTAL COÛTS</span><span id="rb_cTotal" style="color:var(--rd)">0.00€</span></div>
 </div>
 <div class="renta-verdict" id="rentaVerdict">
@@ -21588,21 +21626,44 @@ window.calcRenta=function(){
   var temps=parseFloat($('rb_temps').value)||0;
   var prix=parseFloat($('rb_prix').value)||0;
   var retour=$('rb_retour').value;
+  // Tarif au km : si custom, prendre rb_tarif_custom, sinon rb_tarif
+  var tarifSelect=$('rb_tarif');
+  var tarifKm=0.90; // défaut
+  if(tarifSelect){
+    if(tarifSelect.value==='custom'){
+      tarifKm=parseFloat(($('rb_tarif_custom')||{}).value)||0.90;
+    } else {
+      tarifKm=parseFloat(tarifSelect.value)||0.90;
+    }
+  }
   var tauxCarbu=8/100*1.65;
   var tauxUsure=0.05;
-  var tauxH=15;
+  // Taux horaire modifiable
+  var tauxHSel=$('rb_tauxH');
+  var tauxH=15; // défaut
+  if(tauxHSel){
+    if(tauxHSel.value==='custom'){
+      tauxH=parseFloat(($('rb_tauxH_custom')||{}).value)||15;
+    } else {
+      tauxH=parseFloat(tauxHSel.value)||15;
+    }
+  }
   var mult=retour==='oui'?2:(retour==='partiel'?1.5:1);
   var cCarbu=km*mult*tauxCarbu;
   var cPeages=peages*mult;
   var cUsure=km*mult*tauxUsure;
   var cTemps=temps*tauxH;
   var total=cCarbu+cPeages+cUsure+cTemps;
+  // Prix suggéré selon tarif sélectionné (aller + retour si à vide)
+  var prixSuggere=km*tarifKm;
+  if(retour==='oui')prixSuggere=km*tarifKm+km*0.85; // aller au tarif + retour à 0.85
   var marge=prix-total;
   var pct=prix>0?(marge/prix*100):0;
   $('rb_cCarbu').textContent=cCarbu.toFixed(2)+'€';
   $('rb_cPeages').textContent=cPeages.toFixed(2)+'€';
   $('rb_cUsure').textContent=cUsure.toFixed(2)+'€';
   $('rb_cTemps').textContent=cTemps.toFixed(2)+'€';
+  var lblTemps=$('rb_cTemps_lbl');if(lblTemps)lblTemps.textContent='⏱️ Coût temps ('+tauxH+'€/h)';
   $('rb_cTotal').textContent=total.toFixed(2)+'€';
   var valEl=$('rentaVal');
   valEl.textContent=(marge>=0?'+':'')+marge.toFixed(0)+'€';
@@ -21611,9 +21672,15 @@ window.calcRenta=function(){
   bar.style.width=Math.min(Math.max((pct+50)/100*100,0),100)+'%';
   bar.style.background=marge>50?'#22c55e':(marge>0?'#f59e0b':'#ef4444');
   var verd=$('rentaVerdict');
-  if(prix===0||km===0){verd.innerHTML='<span style="font-size:2rem">🤔</span><div><div style="font-weight:700">En attente de calcul</div><div style="font-size:12px;color:var(--mt)">Remplissez les paramètres</div></div>';}
-  else if(marge<0){verd.innerHTML='<span style="font-size:2rem">🚨</span><div><div style="font-weight:700;color:#ef4444">NON RENTABLE</div><div style="font-size:12px;color:var(--mt)">Vous perdez '+Math.abs(marge).toFixed(0)+'€. Augmentez le prix ou trouvez un client retour.</div></div>';}
-  else if(pct<20){verd.innerHTML='<span style="font-size:2rem">⚠️</span><div><div style="font-weight:700;color:#f59e0b">MARGE FAIBLE ('+pct.toFixed(0)+'%)</div><div style="font-size:12px;color:var(--mt)">Objectif: >30%.'+(retour==='oui'?' Un client retour ajouterait ~'+Math.round(km*0.45)+'€.':'')+'</div></div>';}
+  if(prix===0||km===0){
+    if(km>0&&prixSuggere>0){
+      verd.innerHTML='<span style="font-size:2rem">💡</span><div><div style="font-weight:700">Prix suggéré : '+prixSuggere.toFixed(0)+'€</div><div style="font-size:12px;color:var(--mt)">À '+tarifKm.toFixed(2)+'€/km'+(retour==='oui'?' + retour à 0,85€/km':'')+' — Saisis le prix facturé pour calculer la marge</div></div>';
+    } else {
+      verd.innerHTML='<span style="font-size:2rem">🤔</span><div><div style="font-weight:700">En attente de calcul</div><div style="font-size:12px;color:var(--mt)">Remplissez les paramètres</div></div>';
+    }
+  }
+  else if(marge<0){verd.innerHTML='<span style="font-size:2rem">🚨</span><div><div style="font-weight:700;color:#ef4444">NON RENTABLE</div><div style="font-size:12px;color:var(--mt)">Vous perdez '+Math.abs(marge).toFixed(0)+'€. Prix suggéré : '+prixSuggere.toFixed(0)+'€ ('+tarifKm.toFixed(2)+'€/km)</div></div>';}
+  else if(pct<20){verd.innerHTML='<span style="font-size:2rem">⚠️</span><div><div style="font-weight:700;color:#f59e0b">MARGE FAIBLE ('+pct.toFixed(0)+'%)</div><div style="font-size:12px;color:var(--mt)">Objectif: >30%. Prix suggéré : '+prixSuggere.toFixed(0)+'€'+(retour==='oui'?' · Un client retour ajouterait ~'+Math.round(km*0.45)+'€':'')+'</div></div>';}
   else{verd.innerHTML='<span style="font-size:2rem">✅</span><div><div style="font-weight:700;color:#22c55e">RENTABLE ('+pct.toFixed(0)+'%)</div><div style="font-size:12px;color:var(--mt)">Excellent! +'+marge.toFixed(0)+'€ de bénéfice net.</div></div>';}
 };
 
@@ -24229,7 +24296,107 @@ console.log('[CathyPets V77] ✅ Multi-Transport & Devis Rapide loaded');
 // Stubs pour fonctions supprimées (V77 cleanup)
 function relanceFac(id){var f=db.factures.find(function(x){return x.id===id});if(!f)return;quickMail('relance_fac',f.clientId,id)}
 
-// ═══ MODÈLES DE DEVIS ═══
+// ═══ ITINÉRAIRE MULTI-ÉTAPES POUR RENTABILITÉ ═══
+var _rbEtapeCount=2;
+function rbAddEtape(){
+  var box=$('rb_etapes_box');if(!box)return;
+  var n=_rbEtapeCount++;
+  // Réinsérer la dernière ligne (arrivée) après la nouvelle étape
+  var arr=$('rb_etape_1');
+  var arrLabel=arr&&arr.value?arr.value:'';
+  // Créer la nouvelle étape intermédiaire
+  var div=document.createElement('div');
+  div.className='rb_etape';
+  div.style.cssText='display:flex;gap:6px;align-items:end;margin-bottom:6px';
+  div.innerHTML='<div style="flex:1"><label class="lb" style="font-size:10px">🟡 Étape '+(n-1)+'</label><input class="inp" id="rb_etape_'+n+'" placeholder="Ville intermédiaire"></div>'+
+    '<button class="btn sm rd" onclick="this.parentElement.remove()" style="padding:6px 8px;margin-bottom:2px">✕</button>';
+  // Insérer avant la ligne d'arrivée
+  var arrLigne=arr?arr.closest('.rb_etape'):null;
+  if(arrLigne){box.insertBefore(div,arrLigne)}else{box.appendChild(div)}
+}
+
+function rbCalcRoute(){
+  // Récupérer toutes les étapes
+  var etapes=[];
+  var inputs=document.querySelectorAll('#rb_etapes_box input[id^="rb_etape_"]');
+  inputs.forEach(function(inp){if(inp.value.trim())etapes.push(inp.value.trim())});
+  if(etapes.length<2){alert('⚠️ Il faut au moins 2 villes (départ + arrivée)');return}
+  // Mettre à jour les champs cachés rb_dep et rb_arr
+  $('rb_dep').value=etapes[0];
+  $('rb_arr').value=etapes[etapes.length-1];
+  
+  var statusEl=$('rb_km');
+  statusEl.placeholder='⏳ Calcul en cours...';
+  showToast('🗺️ Calcul route '+etapes.length+' étapes...');
+  
+  // Géocoder chaque étape
+  var coords=[];
+  var done=0;
+  etapes.forEach(function(ville,idx){
+    fetch('https://nominatim.openstreetmap.org/search?format=json&q='+encodeURIComponent(ville+', France')+'&limit=1')
+      .then(function(r){return r.json()})
+      .then(function(data){
+        if(data&&data[0]){
+          coords[idx]=[parseFloat(data[0].lon),parseFloat(data[0].lat)];
+        }
+        done++;
+        if(done===etapes.length){
+          // Toutes les villes géocodées
+          var valid=coords.filter(function(c){return c});
+          if(valid.length<2){alert('❌ Impossible de géocoder certaines villes');return}
+          // Construire l'URL OSRM avec toutes les étapes
+          var coordStr=valid.map(function(c){return c[0]+','+c[1]}).join(';');
+          fetch('https://router.project-osrm.org/route/v1/driving/'+coordStr+'?overview=false')
+            .then(function(r){return r.json()})
+            .then(function(route){
+              if(route&&route.routes&&route.routes[0]){
+                var distKm=Math.round(route.routes[0].distance/1000);
+                var dureeH=Math.round(route.routes[0].duration/3600*10)/10;
+                // Estimation péages (~0.105€/km autoroute, ~70% du trajet sur autoroute)
+                var peagesEstim=Math.round(distKm*0.7*0.105);
+                $('rb_km').value=distKm;
+                $('rb_peages').value=peagesEstim;
+                $('rb_temps').value=dureeH;
+                calcRenta();
+                showToast('✅ Route calculée : '+distKm+'km · '+dureeH+'h · ~'+peagesEstim+'€ péages');
+              } else {
+                alert('❌ Erreur de calcul d\'itinéraire');
+              }
+            }).catch(function(e){alert('❌ Erreur OSRM : '+e.message)});
+        }
+      }).catch(function(e){
+        done++;
+        if(done===etapes.length){alert('❌ Erreur géocodage : '+e.message)}
+      });
+  });
+}
+
+function rbTarifChange(){
+  var sel=$('rb_tarif');if(!sel)return;
+  var box=$('rb_tarif_custom_box');
+  if(sel.value==='custom'){
+    if(box)box.style.display='grid';
+    var custom=$('rb_tarif_custom');
+    if(custom){custom.focus();}
+  } else {
+    if(box)box.style.display='none';
+  }
+  calcRenta();
+}
+
+function rbTauxHChange(){
+  var sel=$('rb_tauxH');if(!sel)return;
+  var box=$('rb_tauxH_custom_box');
+  if(sel.value==='custom'){
+    if(box)box.style.display='block';
+    var custom=$('rb_tauxH_custom');
+    if(custom){custom.focus();}
+  } else {
+    if(box)box.style.display='none';
+  }
+  calcRenta();
+}
+
 function saveDevTemplate(){
   var lignes=devGetLignes();
   if(!lignes.length){alert('Ajoute au moins une ligne au devis avant de sauvegarder le modèle');return}
