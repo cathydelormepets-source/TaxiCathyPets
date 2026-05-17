@@ -9,7 +9,7 @@
 <meta http-equiv="Content-Language" content="fr">
 <script>
 /* ═══ MODE OFFLINE — Cache direct (compatible GitHub Pages single-file) ═══ */
-var CP_CACHE_VERSION='cathypets-v77o';
+var CP_CACHE_VERSION='cathypets-v77q';
 (function(){
   // Purger TOUS les anciens caches d'abord
   if(typeof caches!=='undefined'){
@@ -16977,55 +16977,49 @@ function rFinancierTempsReel(){
     if(bankAlert) bankAlert.style.display = 'none';
   }
 
-  // --- CA du JOUR ---
+  // --- CA du JOUR (basé UNIQUEMENT sur factures pour éviter doublons) ---
   var caJour = 0, nbJour = 0;
-  act(db.transports).forEach(function(t){ if(t.date===d){ caJour+=E(t.price); nbJour++; } });
-  act(db.gardes).forEach(function(g){ if(g.start&&g.start.slice(0,10)===d){ caJour+=E(g.price); } });
   act(db.factures).forEach(function(f){
     if((f.date||'').slice(0,10)!==d) return;
-    var lTr=f.transportId&&act(db.transports).find(function(t){return t.id===f.transportId;});
-    var lGd=f.gardeId&&act(db.gardes).find(function(g){return g.id===f.gardeId;});
-    if(!lTr&&!lGd) caJour+=E(f.total);
+    if(f.status==='avoir') return;
+    caJour+=E(f.total);
+    nbJour++;
   });
 
-  // --- CA du MOIS ---
+  // --- CA du MOIS (basé UNIQUEMENT sur factures) ---
   var caMois = 0;
-  act(db.transports).forEach(function(t){ if(t.date&&t.date.slice(0,7)===mois) caMois+=E(t.price); });
-  act(db.gardes).forEach(function(g){ if(g.start&&g.start.slice(0,7)===mois) caMois+=E(g.price); });
-  act(db.colis).forEach(function(p){ if(p.date&&p.date.slice(0,7)===mois) caMois+=E(p.price); });
   act(db.factures).forEach(function(f){
     if((f.date||'').slice(0,7)!==mois) return;
-    var lTr=f.transportId&&act(db.transports).find(function(t){return t.id===f.transportId;});
-    var lGd=f.gardeId&&act(db.gardes).find(function(g){return g.id===f.gardeId;});
-    if(!lTr&&!lGd) caMois+=E(f.total);
+    if(f.status==='avoir') return;
+    caMois+=E(f.total);
   });
 
-  // --- CA ANNÉE ---
+  // --- CA ANNÉE (basé UNIQUEMENT sur factures) ---
   var caAnnee = 0;
-  act(db.transports).forEach(function(t){ if(t.date&&t.date.slice(0,4)===annee) caAnnee+=E(t.price); });
-  act(db.gardes).forEach(function(g){ if(g.start&&g.start.slice(0,4)===annee) caAnnee+=E(g.price); });
-  act(db.colis).forEach(function(p){ if(p.date&&p.date.slice(0,4)===annee) caAnnee+=E(p.price); });
   act(db.factures).forEach(function(f){
     if((f.date||'').slice(0,4)!==annee) return;
-    var lTr=f.transportId&&act(db.transports).find(function(t){return t.id===f.transportId;});
-    var lGd=f.gardeId&&act(db.gardes).find(function(g){return g.id===f.gardeId;});
-    if(!lTr&&!lGd) caAnnee+=E(f.total);
+    if(f.status==='avoir') return;
+    caAnnee+=E(f.total);
   });
 
-  // --- DÉPENSES du JOUR (module CERFRANCE) ---
-  var depJour = 0, depMois = 0;
-  (db.depenses||[]).forEach(function(dep){
-    if(dep.date===d) depJour += E(dep.ht);
-    if(dep.date&&dep.date.slice(0,7)===mois) depMois += E(dep.ht);
+  // --- DÉPENSES du JOUR & MOIS (frais + carburant) ---
+  var depJour = 0, depMois = 0, depAnnee = 0;
+  // 1. Frais (hôtel, restaurant, ferry, etc.) — utiliser le HT extrait du TTC
+  act(db.depenses||[]).forEach(function(dep){
+    var tvaDep=E(dep.tva)||20;
+    var montantTTC=E(dep.montant||dep.ht||0);
+    var htDep=tvaDep>0?montantTTC/(1+tvaDep/100):montantTTC;
+    if(dep.date===d) depJour += htDep;
+    if(dep.date&&dep.date.slice(0,7)===mois) depMois += htDep;
+    if(dep.date&&dep.date.slice(0,4)===annee) depAnnee += htDep;
   });
-  // Ajouter carburant du jour si non dans dépenses
-  (db.carburant||[]).forEach(function(c){
-    var already = (db.depenses||[]).find(function(dep){ return dep.ref==='CARBU_'+c.id; });
-    if(!already){
-      var ht = E(c.cout)/(1+0.20);
-      if(c.date===d) depJour += ht;
-      if(c.date&&c.date.slice(0,7)===mois) depMois += ht;
-    }
+  // 2. Carburant — utiliser le bon champ (prix = TTC)
+  act(db.carburant||[]).forEach(function(c){
+    var prixTTC=E(c.prix||c.cout||0);
+    var htCarbu=prixTTC/1.20; // gazole = TVA 20%
+    if(c.date===d) depJour += htCarbu;
+    if(c.date&&c.date.slice(0,7)===mois) depMois += htCarbu;
+    if(c.date&&c.date.slice(0,4)===annee) depAnnee += htCarbu;
   });
 
   // --- MARGE NETTE HT du MOIS ---
@@ -17033,9 +17027,33 @@ function rFinancierTempsReel(){
   var margeHT = caMoisHT - depMois;
   var txDep = caMoisHT > 0 ? (depMois/caMoisHT*100) : 0;
 
-  // --- PRÉVISIONNEL (transports futurs) ---
+  // --- PRÉVISIONNEL À VENIR (cohérent avec le prévisionnel 0-30/30-60/60-90) ---
   var prevCA = 0, prevNb = 0;
-  act(db.transports).forEach(function(t){ if(t.date && t.date > d){ prevCA += E(t.price); prevNb++; } });
+  // 1. Transports futurs non facturés
+  act(db.transports).forEach(function(t){
+    if(!t.date||t.date<=d)return;
+    var facturé=act(db.factures).some(function(f){return f.transportId===t.id});
+    if(facturé)return;
+    prevCA+=E(t.price);prevNb++;
+  });
+  // 2. Gardes futures non facturées
+  act(db.gardes).forEach(function(g){
+    if(!g.start||g.start<=d)return;
+    var facturé=act(db.factures).some(function(f){return f.gardeId===g.id});
+    if(facturé)return;
+    prevCA+=E(g.price);prevNb++;
+  });
+  // 3. Factures émises non payées (à encaisser)
+  act(db.factures).forEach(function(f){
+    if(f.status==='payée'||f.status==='avoir')return;
+    var reste=Math.max(E(f.total)-E(f.acompte||0),0);
+    if(reste>0){prevCA+=reste;prevNb++}
+  });
+  // 4. Devis acceptés non encore facturés
+  act(db.devis).forEach(function(q){
+    if(q.status!=='accepté'&&q.status!=='accepte'&&q.status!=='signe'&&q.status!=='envoyé')return;
+    prevCA+=E(q.total);prevNb++;
+  });
 
   // --- FACTURES IMPAYÉES ---
   var impayes=0, impayesNb=0, imp7=0, imp15=0, imp30=0;
@@ -17069,7 +17087,7 @@ function rFinancierTempsReel(){
   setText('fk_txdep', txDep.toFixed(1) + ' %');
   setStyle('fk_txdep', 'color', txDep > 80 ? 'var(--rd)' : txDep > 60 ? 'var(--or)' : 'var(--bl)');
   setText('fk_prev', euro(prevCA));
-  setText('fk_prevnb', prevNb + ' transport(s) planifié(s)');
+  setText('fk_prevnb', prevNb + ' élément(s) à venir');
   setText('fk_impayes', euro(impayes));
   setStyle('fk_impayes', 'color', impayes > 0 ? 'var(--rd)' : 'var(--a2)');
   var impTxt=impayesNb+' facture(s)';
