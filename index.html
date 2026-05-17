@@ -9,7 +9,7 @@
 <meta http-equiv="Content-Language" content="fr">
 <script>
 /* ═══ MODE OFFLINE — Cache direct (compatible GitHub Pages single-file) ═══ */
-var CP_CACHE_VERSION='cathypets-v77n';
+var CP_CACHE_VERSION='cathypets-v77o';
 (function(){
   // Purger TOUS les anciens caches d'abord
   if(typeof caches!=='undefined'){
@@ -1424,7 +1424,7 @@ Tel : 06 12 34 56 78
   <div id="ctImportResult" style="margin-top:8px"></div>
 </div></div>
 
-<div class="card"><div class="hd"><h3>📋 Contrats signés</h3><span id="ctStats" style="font-size:11px;color:var(--mt)"></span></div><div class="bd"><div id="ctTbl"></div></div></div>
+<div class="card"><div class="hd"><h3>📋 Contrats signés</h3><span id="ctStats" style="font-size:11px;color:var(--mt)"></span><button class="btn sm" onclick="rattrapageContratsPayes()" style="font-size:10px;background:#3d2c0a;border-color:#6d5a2a;color:#fcd77a;margin-left:8px" title="Créer les factures manquantes pour les contrats déjà payés">🔄 Rattraper factures</button></div><div class="bd"><div id="ctTbl"></div></div></div>
 </div>
 </div>
 
@@ -19365,6 +19365,60 @@ function rContrats(){
   }).join('');
   h+='</tbody></table>';
   if(tbl) tbl.innerHTML=h;
+}
+
+// Rattrapage : créer les factures manquantes pour les contrats déjà payés
+function rattrapageContratsPayes(){
+  var contrats=act(db.contrats||[]).filter(function(c){return c.status==='payé'});
+  if(!contrats.length){alert('Aucun contrat payé trouvé');return}
+  if(!confirm('🔄 Rattrapage : créer les factures manquantes ?\n\n'+contrats.length+' contrat(s) payé(s) trouvé(s).\nL\'app va créer une facture pour chacun, sauf si elle existe déjà.\n\nContinuer ?'))return;
+  var ajoutees=0,dejaExistantes=0;
+  var details=[];
+  contrats.forEach(function(ct){
+    var fac=act(db.factures).find(function(f){return f.contratId===ct.id});
+    if(fac){dejaExistantes++;return}
+    var tva=(db.settings.tvaRate!==undefined&&db.settings.tvaRate!==''&&db.settings.tvaRate!==null?E(db.settings.tvaRate):20);
+    var totalCt=E(ct.total)||E(ct.tarif)||E(ct.montant)||0;
+    if(totalCt<=0){details.push('⚠️ '+ct.ref+' — montant 0 ignoré');return}
+    var lignes=[];
+    if(ct.lignes&&ct.lignes.length){
+      lignes=JSON.parse(JSON.stringify(ct.lignes));
+    } else {
+      var d1=ct.dateDebut?new Date(ct.dateDebut).toLocaleDateString('fr-FR'):'';
+      var d2=ct.dateFin?new Date(ct.dateFin).toLocaleDateString('fr-FR'):'';
+      var typeLabel={pension:'Pension',promenade:'Promenade',transport:'Transport',veterinaire:'Soins vétérinaires',visite:'Visite à domicile',garde:'Garde'};
+      var label=(typeLabel[ct.type]||ct.type||'Prestation')+(d1?' — '+d1+(d2?' au '+d2:''):'');
+      lignes=[{article:label,desc:ct.objet||'',qty:1,pu:totalCt,total:totalCt,remise:0}];
+    }
+    var dateFac=ct.statusDate?ct.statusDate.slice(0,10):(ct.dateFin||ct.dateDebut||tdy());
+    var ref=nextFacRef();
+    var fac2={
+      id:uid('f'),ref:ref,
+      clientId:ct.clientId,
+      animalIds:ct.animalIds||(ct.animalId?[ct.animalId]:[]),
+      contratId:ct.id,
+      objet:'Contrat '+ct.ref+(ct.type?' — '+ct.type:''),
+      lignes:lignes,total:totalCt,tva:tva,remise:0,
+      acompte:0,paiement:'virement',
+      notes:'Facture créée par rattrapage (contrat '+ct.ref+' déjà payé)',
+      date:dateFac,
+      datePaiement:dateFac,paiementDate:dateFac,
+      activityType:ct.type||'autre',mode:'depuis-contrat',
+      status:'payée'
+    };
+    stamp(fac2);db.factures.push(fac2);
+    ajoutees++;
+    details.push('✅ '+ct.ref+' → '+ref+' ('+euro(totalCt)+')');
+  });
+  sav();
+  if(typeof rContrats==='function')rContrats();
+  if(typeof rFac2==='function')rFac2();
+  var msg='🎉 Rattrapage terminé\n\n';
+  msg+='✅ '+ajoutees+' facture(s) créée(s)\n';
+  msg+='ℹ️ '+dejaExistantes+' déjà existante(s)\n\n';
+  if(details.length<=20){msg+=details.join('\n')}
+  else{msg+=details.slice(0,20).join('\n')+'\n... et '+(details.length-20)+' autres'}
+  alert(msg);
 }
 
 function ctSetStatus(id,status){
