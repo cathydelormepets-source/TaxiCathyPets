@@ -9,7 +9,7 @@
 <meta http-equiv="Content-Language" content="fr">
 <script>
 /* ═══ MODE OFFLINE — Cache direct (compatible GitHub Pages single-file) ═══ */
-var CP_CACHE_VERSION='cathypets-v77l';
+var CP_CACHE_VERSION='cathypets-v77m';
 (function(){
   // Purger TOUS les anciens caches d'abord
   if(typeof caches!=='undefined'){
@@ -4520,6 +4520,21 @@ document.getElementById('q_contrat_pec').addEventListener('change',function(){
 </select></div>
 <div id="rb_tauxH_custom_box" style="display:none"><label class="lb">Taux personnalisé (€/h)</label><input type="number" step="0.5" class="inp" id="rb_tauxH_custom" placeholder="Ex: 16.5" oninput="calcRenta()"></div>
 </div>
+
+<h4 style="margin:14px 0 10px;color:var(--or)">⛽ Carburant</h4>
+<div class="grid" style="grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px">
+<div><label class="lb">Type carburant</label><select class="inp" id="rb_carbType" onchange="rbCarbTypeChange()">
+<option value="gasoil" selected>Gasoil / Diesel</option>
+<option value="essence_sp95">Essence SP95</option>
+<option value="essence_sp98">Essence SP98</option>
+<option value="essence_e10">Essence E10</option>
+<option value="electrique">Électrique</option>
+<option value="hybride">Hybride</option>
+<option value="gpl">GPL</option>
+</select></div>
+<div><label class="lb">Conso (L/100km ou kWh/100)</label><input type="number" step="0.1" class="inp" id="rb_conso" value="8" oninput="calcRenta()"></div>
+<div><label class="lb">Prix au L (€)</label><input type="number" step="0.001" class="inp" id="rb_prixL" value="1.65" oninput="calcRenta()"></div>
+</div>
 <h4 style="margin:16px 0 12px;color:var(--gd)">💵 Tarification</h4>
 <div class="grid" style="grid-template-columns:1fr 1fr;gap:10px">
 <div><label class="lb">Prix facturé au client (€)</label><input type="number" class="inp" id="rb_prix" placeholder="Ex: 540" oninput="calcRenta()"></div>
@@ -4549,7 +4564,7 @@ document.getElementById('q_contrat_pec').addEventListener('change',function(){
 </div>
 <div class="renta-detail">
 <div style="font-size:11px;color:var(--mt);margin-bottom:8px;font-weight:700">DÉTAIL DES COÛTS</div>
-<div class="renta-row"><span>⛽ Carburant (8L/100km × 1.65€)</span><span id="rb_cCarbu">0.00€</span></div>
+<div class="renta-row"><span id="rb_cCarbu_lbl">⛽ Carburant (8L/100km × 1.65€)</span><span id="rb_cCarbu">0.00€</span></div>
 <div class="renta-row"><span>🛣️ Péages A/R</span><span id="rb_cPeages">0.00€</span></div>
 <div class="renta-row"><span>🔧 Usure véhicule (0.05€/km)</span><span id="rb_cUsure">0.00€</span></div>
 <div class="renta-row"><span id="rb_cTemps_lbl">⏱️ Coût temps (15€/h)</span><span id="rb_cTemps">0.00€</span></div>
@@ -21636,7 +21651,10 @@ window.calcRenta=function(){
       tarifKm=parseFloat(tarifSelect.value)||0.90;
     }
   }
-  var tauxCarbu=8/100*1.65;
+  // Carburant modifiable
+  var conso=parseFloat(($('rb_conso')||{}).value)||8;
+  var prixL=parseFloat(($('rb_prixL')||{}).value)||1.65;
+  var tauxCarbu=conso/100*prixL;
   var tauxUsure=0.05;
   // Taux horaire modifiable
   var tauxHSel=$('rb_tauxH');
@@ -21660,6 +21678,7 @@ window.calcRenta=function(){
   var marge=prix-total;
   var pct=prix>0?(marge/prix*100):0;
   $('rb_cCarbu').textContent=cCarbu.toFixed(2)+'€';
+  var lblCarbu=$('rb_cCarbu_lbl');if(lblCarbu)lblCarbu.textContent='⛽ Carburant ('+conso+'L/100km × '+prixL.toFixed(2)+'€)';
   $('rb_cPeages').textContent=cPeages.toFixed(2)+'€';
   $('rb_cUsure').textContent=cUsure.toFixed(2)+'€';
   $('rb_cTemps').textContent=cTemps.toFixed(2)+'€';
@@ -24394,6 +24413,25 @@ function rbTauxHChange(){
   } else {
     if(box)box.style.display='none';
   }
+  calcRenta();
+}
+
+// Pré-remplir conso et prix selon le type de carburant
+function rbCarbTypeChange(){
+  var type=V('rb_carbType')||'gasoil';
+  // Valeurs par défaut indicatives
+  var defaults={
+    gasoil:{conso:8,prix:1.65,unit:'€/L'},
+    essence_sp95:{conso:9,prix:1.85,unit:'€/L'},
+    essence_sp98:{conso:9,prix:1.92,unit:'€/L'},
+    essence_e10:{conso:9.2,prix:1.78,unit:'€/L'},
+    electrique:{conso:18,prix:0.25,unit:'€/kWh'},
+    hybride:{conso:5,prix:1.85,unit:'€/L'},
+    gpl:{conso:11,prix:0.95,unit:'€/L'}
+  };
+  var d=defaults[type]||defaults.gasoil;
+  var conso=$('rb_conso');if(conso)conso.value=d.conso;
+  var prix=$('rb_prixL');if(prix)prix.value=d.prix;
   calcRenta();
 }
 
