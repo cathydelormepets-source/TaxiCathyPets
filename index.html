@@ -24653,6 +24653,34 @@ function batchRelance(){
 function editRecur(){ return;}
 function oMoTemplate(){ return;}
 
+</script><script>
+(function() {
+  var API = 'https://cathydelormepets-source-cathy-pets.vercel.app/api/sync';
+  var btn = document.createElement('div');
+  btn.innerHTML = '<div id="syncBtn" style="position:fixed;bottom:80px;left:16px;z-index:99999;cursor:pointer;background:linear-gradient(135deg,#1F4F4A,#2a6b63);color:white;border-radius:14px;padding:10px 16px;font-size:13px;font-weight:700;box-shadow:0 4px 12px rgba(0,0,0,0.2);display:flex;align-items:center;gap:8px;font-family:sans-serif;transition:all 0.2s" onclick="window._syncPlateforme()"><span style="font-size:18px">🔄</span><span>Publier sur<br>la Plateforme</span></div><div id="syncResult" style="position:fixed;bottom:140px;left:16px;z-index:99999;background:white;border-radius:12px;padding:12px 16px;font-size:12px;box-shadow:0 4px 16px rgba(0,0,0,0.15);max-width:280px;display:none;font-family:sans-serif;border:2px solid #1F4F4A"></div>';
+  document.body.appendChild(btn);
+  window._syncPlateforme = async function() {
+    var resultEl = document.getElementById('syncResult');
+    var btnEl = document.getElementById('syncBtn');
+    btnEl.style.opacity = '0.6';
+    resultEl.style.display = 'block';
+    resultEl.innerHTML = '⏳ Envoi en cours...';
+    try {
+      var raw = localStorage.getItem('cathypets_v20');
+      if (!raw) { for (var i = 19; i >= 10; i--) { raw = localStorage.getItem('cathypets_v' + i); if (raw) break; } }
+      if (!raw) { resultEl.innerHTML = '❌ Données V77 non trouvées'; btnEl.style.opacity = '1'; return; }
+      var db = JSON.parse(raw);
+      var transports = (db.transports || []).filter(function(t) { return t.status !== 'annule' && t.status !== 'facture'; });
+      if (transports.length === 0) { resultEl.innerHTML = '⚠️ Aucun transport à publier'; btnEl.style.opacity = '1'; return; }
+      var resp = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ transports: transports }) });
+      var data = await resp.json();
+      if (data.success) { resultEl.innerHTML = '✅ <b>' + data.message + '</b>'; }
+      else { resultEl.innerHTML = '❌ ' + (data.error || 'Erreur'); }
+    } catch(e) { resultEl.innerHTML = '❌ ' + e.message; }
+    btnEl.style.opacity = '1';
+    setTimeout(function() { resultEl.style.display = 'none'; }, 8000);
+  };
+})();
 </script>
 </body>
 </html>
