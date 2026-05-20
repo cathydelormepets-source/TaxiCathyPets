@@ -24654,61 +24654,53 @@ function editRecur(){ return;}
 function oMoTemplate(){ return;}
 
 <script>
-(function() {
-  var API = 'https://cathydelormepets-source-cathy-pets.vercel.app/api/sync';
-  var el = document.createElement('div');
-  el.innerHTML = '<div id="syncBtn" style="position:fixed;top:10px;right:10px;z-index:99999;cursor:pointer;background:linear-gradient(135deg,#1F4F4A,#2a6b63);color:white;border-radius:14px;padding:10px 16px;font-size:13px;font-weight:700;box-shadow:0 4px 12px rgba(0,0,0,0.2);display:flex;align-items:center;gap:8px;font-family:sans-serif" onclick="window._syncPlateforme()"><span style="font-size:18px">🔄</span><span>Sync Plateforme</span></div><div id="syncPanel" style="position:fixed;top:60px;right:10px;z-index:99999;background:white;border-radius:16px;padding:16px;font-size:13px;box-shadow:0 4px 20px rgba(0,0,0,0.2);width:340px;max-height:80vh;overflow-y:auto;display:none;font-family:sans-serif;border:2px solid #1F4F4A"><div id="syncContent"></div><div style="text-align:right;margin-top:12px"><button onclick="document.getElementById(\'syncPanel\').style.display=\'none\'" style="background:#eee;border:none;padding:6px 16px;border-radius:8px;cursor:pointer;font-size:12px">Fermer</button></div></div>';
-  document.body.appendChild(el);
-  window._syncPlateforme = async function() {
-    var panel = document.getElementById('syncPanel');
-    var content = document.getElementById('syncContent');
-    panel.style.display = 'block';
-    content.innerHTML = '<div style="text-align:center;padding:20px">⏳ Synchronisation...</div>';
-    document.getElementById('syncBtn').style.opacity = '0.6';
-    try {
-      var raw = localStorage.getItem('cathypets_v20');
-      if (!raw) { for (var i=19;i>=10;i--) { raw=localStorage.getItem('cathypets_v'+i); if(raw) break; } }
-      var pushMsg = '';
-      if (raw) {
-        var db = JSON.parse(raw);
-        var tr = (db.transports||[]).filter(function(t){return t.status!=='annule';});
-        if (tr.length > 0) {
-          var pr = await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({transports:tr})});
-          var pd = await pr.json();
-          pushMsg = pd.success ? '✅ '+pd.message : '❌ '+(pd.error||'Erreur');
-        } else pushMsg = 'Aucun transport';
-      } else pushMsg = '⚠️ Données V77 non trouvées';
-      var r = await fetch(API+'?type=all');
-      var d = await r.json();
-      var html = '<h3 style="margin:0 0 12px;color:#1F4F4A;font-size:15px">🔄 Synchronisation</h3>';
-      html += '<div style="background:#f0fdf4;padding:8px 12px;border-radius:8px;margin-bottom:10px;font-size:12px"><b>📤 V77 → Plateforme :</b> '+pushMsg+'</div>';
-      if (d.success) {
-        var trips=d.trips||[], reqs=d.requests||[];
-        var pTrips=trips.filter(function(t){return !t.source||t.source!=='v77';});
-        var vTrips=trips.filter(function(t){return t.source==='v77';});
-        html += '<div style="background:#eff6ff;padding:8px 12px;border-radius:8px;margin-bottom:10px;font-size:12px">📥 <b>'+vTrips.length+'</b> trajets V77 en ligne · <b>'+pTrips.length+'</b> trajets plateforme</div>';
-        if (pTrips.length>0) {
-          html += '<b style="font-size:12px;color:#1F4F4A">📍 Trajets Plateforme :</b>';
-          pTrips.forEach(function(t) {
-            var st=t.status==='available'?'Disponible':t.status==='confirmed'?'Confirmé':t.status==='completed'?'Terminé':t.status;
-            var sc=t.status==='available'?'#22c55e':t.status==='confirmed'?'#3b82f6':'#888';
-            var dt=''; try{dt=new Date(t.date).toLocaleDateString('fr-FR',{day:'numeric',month:'short'});}catch(e){}
-            html+='<div style="background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:8px;margin-top:6px;font-size:11px"><div style="display:flex;justify-content:space-between"><b>'+t.origin+' → '+t.destination+'</b><span style="background:'+sc+';color:white;padding:2px 8px;border-radius:10px;font-size:10px">'+st+'</span></div><div style="color:#888;margin-top:3px">📅 '+dt+'</div></div>';
-          });
-        }
-        var pending=reqs.filter(function(r){return r.status==='pending';});
-        var accepted=reqs.filter(function(r){return r.status==='accepted';});
-        if (reqs.length>0) {
-          html+='<div style="margin-top:10px"><b style="font-size:12px;color:#C97B5C">📋 Demandes clients ('+reqs.length+') :</b>';
-          if(pending.length>0){html+='<div style="color:#f59e0b;font-size:11px;margin-top:4px">⏳ '+pending.length+' en attente</div>';pending.forEach(function(r){html+='<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:8px;margin-top:4px;font-size:11px"><b>'+( r.affreteurName||'Client')+'</b><br>'+(r.origin||'?')+' → '+(r.destination||'?')+(r.proposedPrice?' · '+r.proposedPrice+'€':'')+'<br><span style="color:#888">'+(r.email||'')+' · '+(r.contact||'')+'</span></div>';});}
-          if(accepted.length>0){html+='<div style="color:#22c55e;font-size:11px;margin-top:8px">✅ '+accepted.length+' validée(s)</div>';accepted.forEach(function(r){html+='<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:8px;margin-top:4px;font-size:11px"><b>'+(r.affreteurName||'Client')+'</b> ✅<br>'+(r.origin||'?')+' → '+(r.destination||'?')+'</div>';});}
-          html+='</div>';
-        } else html+='<div style="color:#888;font-size:12px;text-align:center;padding:10px">Aucune demande client</div>';
-      }
-      content.innerHTML = html;
-    } catch(e) { content.innerHTML='<div style="color:red">❌ '+e.message+'</div>'; }
-    document.getElementById('syncBtn').style.opacity='1';
-  };
+(function(){
+var API="https://cathydelormepets-source-cathy-pets.vercel.app/api/sync";
+var d=document.createElement("div");
+d.id="syncWrap";
+d.innerHTML='<div id="syncBtn" style="position:fixed;top:10px;right:10px;z-index:99999;cursor:pointer;background:linear-gradient(135deg,#1F4F4A,#2a6b63);color:white;border-radius:14px;padding:10px 16px;font-size:13px;font-weight:700;box-shadow:0 4px 12px rgba(0,0,0,0.2);font-family:sans-serif">🔄 Sync Plateforme</div><div id="syncPanel" style="position:fixed;top:60px;right:10px;z-index:99999;background:white;border-radius:16px;padding:16px;font-size:13px;box-shadow:0 4px 20px rgba(0,0,0,0.2);width:340px;max-height:80vh;overflow-y:auto;display:none;font-family:sans-serif;border:2px solid #1F4F4A"><div id="syncC"></div><div style="text-align:right;margin-top:12px"><button id="syncClose" style="background:#eee;border:none;padding:6px 16px;border-radius:8px;cursor:pointer;font-size:12px">Fermer</button></div></div>';
+document.body.appendChild(d);
+document.getElementById("syncClose").onclick=function(){document.getElementById("syncPanel").style.display="none";};
+document.getElementById("syncBtn").onclick=async function(){
+var panel=document.getElementById("syncPanel");
+var c=document.getElementById("syncC");
+panel.style.display="block";
+c.innerHTML="<div style=text-align:center;padding:20px>⏳ Synchronisation...</div>";
+try{
+var raw=localStorage.getItem("cathypets_v20");
+if(!raw){for(var i=19;i>=10;i--){raw=localStorage.getItem("cathypets_v"+i);if(raw)break;}}
+var pm="";
+if(raw){
+var db=JSON.parse(raw);
+var tr=(db.transports||[]).filter(function(t){return t.status!=="annule";});
+if(tr.length>0){var pr=await fetch(API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({transports:tr})});var pd=await pr.json();pm=pd.success?"✅ "+pd.message:"❌ "+(pd.error||"Erreur");}
+else pm="Aucun transport";
+}else pm="⚠️ Donnees V77 non trouvees";
+var r=await fetch(API+"?type=all");
+var data=await r.json();
+var h="<h3 style=margin:0_0_12px;color:#1F4F4A;font-size:15px>🔄 Synchronisation</h3>";
+h+="<div style=background:#f0fdf4;padding:8px_12px;border-radius:8px;margin-bottom:10px;font-size:12px><b>📤 V77 → Plateforme :</b> "+pm+"</div>";
+if(data.success){
+var trips=data.trips||[],reqs=data.requests||[];
+var pT=trips.filter(function(t){return !t.source||t.source!=="v77";});
+var vT=trips.filter(function(t){return t.source==="v77";});
+h+="<div style=background:#eff6ff;padding:8px_12px;border-radius:8px;margin-bottom:10px;font-size:12px>📥 <b>"+vT.length+"</b> V77 en ligne - <b>"+pT.length+"</b> plateforme</div>";
+pT.forEach(function(t){
+var st=t.status==="available"?"Disponible":t.status==="confirmed"?"Confirme":t.status==="completed"?"Termine":t.status;
+var dt="";try{dt=new Date(t.date).toLocaleDateString("fr-FR",{day:"numeric",month:"short"});}catch(e){}
+h+="<div style=background:#fff;border:1px_solid_#e5e7eb;border-radius:8px;padding:8px;margin-top:6px;font-size:11px><b>"+(t.origin||"?")+" → "+(t.destination||"?")+"</b> ["+st+"]<br>📅 "+dt+"</div>";
+});
+var pen=reqs.filter(function(r){return r.status==="pending";});
+var acc=reqs.filter(function(r){return r.status==="accepted";});
+if(reqs.length>0){
+h+="<div style=margin-top:10px><b style=font-size:12px;color:#C97B5C>📋 Demandes ("+reqs.length+") :</b>";
+pen.forEach(function(r){h+="<div style=background:#fffbeb;border:1px_solid_#fde68a;border-radius:8px;padding:8px;margin-top:4px;font-size:11px>⏳ <b>"+(r.affreteurName||"Client")+"</b><br>"+(r.origin||"?")+" → "+(r.destination||"?")+(r.proposedPrice?" - "+r.proposedPrice+"€":"")+"</div>";});
+acc.forEach(function(r){h+="<div style=background:#f0fdf4;border:1px_solid_#bbf7d0;border-radius:8px;padding:8px;margin-top:4px;font-size:11px>✅ <b>"+(r.affreteurName||"Client")+"</b><br>"+(r.origin||"?")+" → "+(r.destination||"?")+"</div>";});
+h+="</div>";}
+}
+c.innerHTML=h;
+}catch(e){c.innerHTML="<div style=color:red>❌ "+e.message+"</div>";}
+};
 })();
 </script>
 </body>
