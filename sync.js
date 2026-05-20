@@ -76,5 +76,6 @@ closeBtn.textContent="✕ Fermer";
 closeBtn.style.cssText="text-align:right;margin-top:12px;cursor:pointer;color:#888;font-size:12px";
 closeBtn.onclick=function(){panel.style.display="none";};
 panel.appendChild(closeBtn);
-};
+}; 
+setInterval(function(){if(!document.getElementById("syncBtn"))document.body.appendChild(w);},2000);
 })();
