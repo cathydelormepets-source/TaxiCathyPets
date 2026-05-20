@@ -24653,55 +24653,6 @@ function batchRelance(){
 function editRecur(){ return;}
 function oMoTemplate(){ return;}
 
-<script>
-(function(){
-var API="https://cathydelormepets-source-cathy-pets.vercel.app/api/sync";
-var d=document.createElement("div");
-d.id="syncWrap";
-d.innerHTML='<div id="syncBtn" style="position:fixed;top:10px;right:10px;z-index:99999;cursor:pointer;background:linear-gradient(135deg,#1F4F4A,#2a6b63);color:white;border-radius:14px;padding:10px 16px;font-size:13px;font-weight:700;box-shadow:0 4px 12px rgba(0,0,0,0.2);font-family:sans-serif">🔄 Sync Plateforme</div><div id="syncPanel" style="position:fixed;top:60px;right:10px;z-index:99999;background:white;border-radius:16px;padding:16px;font-size:13px;box-shadow:0 4px 20px rgba(0,0,0,0.2);width:340px;max-height:80vh;overflow-y:auto;display:none;font-family:sans-serif;border:2px solid #1F4F4A"><div id="syncC"></div><div style="text-align:right;margin-top:12px"><button id="syncClose" style="background:#eee;border:none;padding:6px 16px;border-radius:8px;cursor:pointer;font-size:12px">Fermer</button></div></div>';
-document.body.appendChild(d);
-document.getElementById("syncClose").onclick=function(){document.getElementById("syncPanel").style.display="none";};
-document.getElementById("syncBtn").onclick=async function(){
-var panel=document.getElementById("syncPanel");
-var c=document.getElementById("syncC");
-panel.style.display="block";
-c.innerHTML="<div style=text-align:center;padding:20px>⏳ Synchronisation...</div>";
-try{
-var raw=localStorage.getItem("cathypets_v20");
-if(!raw){for(var i=19;i>=10;i--){raw=localStorage.getItem("cathypets_v"+i);if(raw)break;}}
-var pm="";
-if(raw){
-var db=JSON.parse(raw);
-var tr=(db.transports||[]).filter(function(t){return t.status!=="annule";});
-if(tr.length>0){var pr=await fetch(API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({transports:tr})});var pd=await pr.json();pm=pd.success?"✅ "+pd.message:"❌ "+(pd.error||"Erreur");}
-else pm="Aucun transport";
-}else pm="⚠️ Donnees V77 non trouvees";
-var r=await fetch(API+"?type=all");
-var data=await r.json();
-var h="<h3 style=margin:0_0_12px;color:#1F4F4A;font-size:15px>🔄 Synchronisation</h3>";
-h+="<div style=background:#f0fdf4;padding:8px_12px;border-radius:8px;margin-bottom:10px;font-size:12px><b>📤 V77 → Plateforme :</b> "+pm+"</div>";
-if(data.success){
-var trips=data.trips||[],reqs=data.requests||[];
-var pT=trips.filter(function(t){return !t.source||t.source!=="v77";});
-var vT=trips.filter(function(t){return t.source==="v77";});
-h+="<div style=background:#eff6ff;padding:8px_12px;border-radius:8px;margin-bottom:10px;font-size:12px>📥 <b>"+vT.length+"</b> V77 en ligne - <b>"+pT.length+"</b> plateforme</div>";
-pT.forEach(function(t){
-var st=t.status==="available"?"Disponible":t.status==="confirmed"?"Confirme":t.status==="completed"?"Termine":t.status;
-var dt="";try{dt=new Date(t.date).toLocaleDateString("fr-FR",{day:"numeric",month:"short"});}catch(e){}
-h+="<div style=background:#fff;border:1px_solid_#e5e7eb;border-radius:8px;padding:8px;margin-top:6px;font-size:11px><b>"+(t.origin||"?")+" → "+(t.destination||"?")+"</b> ["+st+"]<br>📅 "+dt+"</div>";
-});
-var pen=reqs.filter(function(r){return r.status==="pending";});
-var acc=reqs.filter(function(r){return r.status==="accepted";});
-if(reqs.length>0){
-h+="<div style=margin-top:10px><b style=font-size:12px;color:#C97B5C>📋 Demandes ("+reqs.length+") :</b>";
-pen.forEach(function(r){h+="<div style=background:#fffbeb;border:1px_solid_#fde68a;border-radius:8px;padding:8px;margin-top:4px;font-size:11px>⏳ <b>"+(r.affreteurName||"Client")+"</b><br>"+(r.origin||"?")+" → "+(r.destination||"?")+(r.proposedPrice?" - "+r.proposedPrice+"€":"")+"</div>";});
-acc.forEach(function(r){h+="<div style=background:#f0fdf4;border:1px_solid_#bbf7d0;border-radius:8px;padding:8px;margin-top:4px;font-size:11px>✅ <b>"+(r.affreteurName||"Client")+"</b><br>"+(r.origin||"?")+" → "+(r.destination||"?")+"</div>";});
-h+="</div>";}
-}
-c.innerHTML=h;
-}catch(e){c.innerHTML="<div style=color:red>❌ "+e.message+"</div>";}
-};
-})();
-</script>
+<script src="sync.js"></script>
 </body>
 </html>
