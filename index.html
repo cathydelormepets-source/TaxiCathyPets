@@ -9,7 +9,7 @@
 <meta http-equiv="Content-Language" content="fr">
 <script>
 /* ═══ MODE OFFLINE — Cache direct (compatible GitHub Pages single-file) ═══ */
-var CP_CACHE_VERSION='cathypets-v77q';
+var CP_CACHE_VERSION='cathypets-v77s';
 (function(){
   // Purger TOUS les anciens caches d'abord
   if(typeof caches!=='undefined'){
@@ -2030,8 +2030,9 @@ document.getElementById('q_contrat_pec').addEventListener('change',function(){
     </div>
   </div>
 
-  <div class="fd"><label>Objet / description *</label>
-    <textarea id="fd_obj" placeholder="Ex: Transport animalier Paris → Lyon le 22/03/2026 — Rex (Golden Retriever)" style="min-height:60px"></textarea>
+  <div class="fd"><label style="font-size:13px;font-weight:700;color:var(--gd)">📝 Objet / description de la facture *</label>
+    <textarea id="fd_obj" placeholder="Ex: Transport animalier Paris → Lyon le 22/03/2026 — Rex (Golden Retriever)" style="min-height:80px;font-size:14px;font-weight:600;color:#fff;background:#0a1825;border:2px solid var(--ac);padding:12px"></textarea>
+    <div style="font-size:10px;color:var(--mt);margin-top:3px">Ce texte apparaîtra sur la facture PDF</div>
   </div>
 
   <!-- LIGNES DE FACTURATION -->
@@ -9792,7 +9793,7 @@ function eFac(id){
     +'<div><label style="font-size:11px;color:#b0c8df;display:block;margin-bottom:3px">N° Facture</label><input id="ef_ref" value="'+esc(f.ref)+'" style="'+ist+'"></div>'
     +'<div><label style="font-size:11px;color:#b0c8df;display:block;margin-bottom:3px">Date facture</label><input id="ef_dt" type="date" value="'+(f.date?f.date.slice(0,10):'')+'" style="'+ist+'"></div>'
     +'</div>'
-    +'<div style="margin:10px 0"><label style="font-size:11px;color:#b0c8df;display:block;margin-bottom:3px">Objet / description</label><textarea id="ef_obj" style="'+ist+';min-height:45px">'+esc(f.objet||'')+'</textarea></div>'
+    +'<div style="margin:10px 0"><label style="font-size:13px;color:var(--gd);font-weight:700;display:block;margin-bottom:5px">📝 Objet / description</label><textarea id="ef_obj" style="'+ist+';min-height:70px;font-size:14px;font-weight:600;color:#fff;background:#0a1825;border:2px solid var(--ac);padding:12px">'+esc(f.objet||'')+'</textarea></div>'
     +'<div style="margin:10px 0;padding:10px;background:rgba(0,0,0,.2);border:1px solid #1e3a58;border-radius:10px">'
     +'<div style="font-size:12px;font-weight:700;color:#b0c8df;margin-bottom:8px">LIGNES DE FACTURATION</div>'
     +'<div id="ef_lignes"></div>'
@@ -12532,7 +12533,12 @@ function printDevisPro(id) {
   html += '<th style="border:1px solid #999;padding:6px;width:55px;text-align:right;font-size:10px">HT</th>';
   html += '<th style="border:1px solid #999;padding:6px;width:55px;text-align:right;font-size:10px">TVA</th>';
   html += '<th style="border:1px solid #999;padding:6px;width:65px;text-align:right;font-size:10px">Total TTC</th></tr>';
-  var qLignes = q.lignes && q.lignes.length ? q.lignes : [{desc: q.notes || 'Transport animalier', qty: 1, pu: ht, montant: ht}];
+  var qLignes = q.lignes && q.lignes.length ? q.lignes.filter(function(lg){
+    var qty=E(lg.qty)||1;
+    var pu=E(lg.pu||lg.montant)||0;
+    return qty>0 && pu>0;
+  }) : [{desc: q.notes || 'Transport animalier', qty: 1, pu: ht, montant: ht}];
+  if(!qLignes.length) qLignes=[{desc: q.notes || 'Transport animalier', qty: 1, pu: ht, montant: ht}];
   var totalTTCLignes = 0;
   var totalHTLignes = 0;
   var totalTVALignes = 0;
@@ -12671,7 +12677,13 @@ function printFacturePro(id) {
   html += '<th style="border:1px solid #999;padding:6px;width:55px;text-align:right;font-size:10px">HT</th>';
   html += '<th style="border:1px solid #999;padding:6px;width:55px;text-align:right;font-size:10px">TVA</th>';
   html += '<th style="border:1px solid #999;padding:6px;width:65px;text-align:right;font-size:10px">Total TTC</th></tr>';
-  var facLignes = f.lignes && f.lignes.length ? f.lignes : [{desc: f.objet || 'Prestation', qty: 1, pu: ht}];
+  var facLignes = f.lignes && f.lignes.length ? f.lignes.filter(function(lg){
+    // Ignorer les lignes vides (pas de qty OU pas de pu)
+    var qty=E(lg.qty)||1;
+    var pu=E(lg.pu||lg.montant)||0;
+    return qty>0 && pu>0;
+  }) : [{desc: f.objet || 'Prestation', qty: 1, pu: ht}];
+  if(!facLignes.length) facLignes=[{desc: f.objet || 'Prestation', qty: 1, pu: E(f.total)}];
   var facTotalTTC = 0, facTotalHT2 = 0, facTotalTVA2 = 0;
   facLignes.forEach(function(lg){
     var qtyVal = lg.qty||1;
@@ -12699,7 +12711,8 @@ function printFacturePro(id) {
   });
   html += '</table></div>';
   var facRemise = E(f.remise) || 0;
-  var facTTCApresRemise = E(f.total);
+  // Utiliser la SOMME DES LIGNES (cohérent) au lieu de f.total qui peut diverger
+  var facTTCApresRemise = facTotalTTC * (1 - facRemise/100);
   var facHTApresRemise = facTotalHT2 * (1 - facRemise/100);
   var facTvaMontant = facTTCApresRemise - facHTApresRemise;
   html += '<div style="margin:15px 0"><table style="width:100%;border:1px solid #999;font-size:11px">';
@@ -24653,6 +24666,6 @@ function batchRelance(){
 function editRecur(){ return;}
 function oMoTemplate(){ return;}
 
-<script src="sync.js"></script>
+</script>
 </body>
 </html>
