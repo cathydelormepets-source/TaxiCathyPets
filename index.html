@@ -9,7 +9,7 @@
 <meta http-equiv="Content-Language" content="fr">
 <script>
 /* ═══ MODE OFFLINE — Cache direct (compatible GitHub Pages single-file) ═══ */
-var CP_CACHE_VERSION='cathypets-v77s';
+var CP_CACHE_VERSION='cathypets-v77t';
 (function(){
   // Purger TOUS les anciens caches d'abord
   if(typeof caches!=='undefined'){
@@ -2106,6 +2106,7 @@ document.getElementById('q_contrat_pec').addEventListener('change',function(){
 <div id="facTab-liste-panel">
 <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">
   <button class="btn sm rd" onclick="batchRelance()" style="font-size:11px">📧 Relancer toutes les impayées >30j</button>
+  <button class="btn sm" onclick="reconcilierToutesFactures()" style="font-size:11px;background:#3d2c0a;border-color:#6d5a2a;color:#fcd77a" title="Recalcule les totaux et supprime les lignes vides">🔧 Réconcilier TVA & Totaux</button>
 </div>
 <div style="display:flex;flex-direction:column;gap:14px">
 <div class="card"><div class="hd"><h3>Factures</h3><span id="fcStats" style="font-size:11px;color:var(--mt)"></span></div><div class="bd">
@@ -12620,11 +12621,96 @@ function calcPenalitesRetard(f){
   var totalPenalites=Math.round((interets+forfait)*100)/100;
   return {joursRetard:joursRetard,resteDu:resteDu,tauxAnnuel:tauxAnnuel,interets:interets,forfait:forfait,totalPenalites:totalPenalites,echeance:echeance,totalAvecPenalites:Math.round((resteDu+totalPenalites)*100)/100};
 }
+// Réconciliation TVA/Totaux de TOUTES les factures
+function reconcilierToutesFactures(){
+  var corrigees=0,intactes=0,vidées=0;
+  var details=[];
+  act(db.factures).forEach(function(f){
+    if(f.status==='avoir')return;
+    var lignesValides=(f.lignes||[]).filter(function(lg){
+      var qty=E(lg.qty)||1;
+      var pu=E(lg.pu||lg.montant)||0;
+      return qty>0 && pu>0;
+    });
+    var lignesSupp=(f.lignes||[]).length-lignesValides.length;
+    if(lignesSupp>0){vidées++}
+    if(!lignesValides.length){
+      if(lignesSupp>0){
+        f.lignes=[{article:'Prestation',desc:f.objet||'',qty:1,pu:E(f.total),total:E(f.total)}];
+        stamp(f);
+        details.push('🔧 '+f.ref+' : '+lignesSupp+' ligne(s) vide(s) supprimée(s)');
+      }
+      intactes++;
+      return;
+    }
+    var totalRecalcule=0;
+    lignesValides.forEach(function(lg){
+      var qty=E(lg.qty)||1;
+      var pu=E(lg.pu)||0;
+      var rem=E(lg.remise)||0;
+      totalRecalcule+=qty*pu*(1-rem/100);
+    });
+    var remiseGlobale=E(f.remise)||0;
+    totalRecalcule=totalRecalcule*(1-remiseGlobale/100);
+    totalRecalcule=Math.round(totalRecalcule*100)/100;
+    var ancienTotal=E(f.total);
+    var diff=Math.abs(totalRecalcule-ancienTotal);
+    if(diff>0.5||lignesSupp>0){
+      f.total=totalRecalcule;
+      f.lignes=lignesValides;
+      stamp(f);
+      corrigees++;
+      details.push('✅ '+f.ref+' : '+euro(ancienTotal)+' → '+euro(totalRecalcule)+(lignesSupp>0?' (+'+lignesSupp+' vide supp.)':''));
+    } else {
+      intactes++;
+    }
+  });
+  sav(true);rAll();
+  var msg='🔧 Réconciliation TVA/Totaux terminée\n\n';
+  msg+='✅ '+corrigees+' facture(s) corrigée(s)\n';
+  msg+='ℹ️ '+intactes+' déjà cohérente(s)\n';
+  msg+='🗑️ '+vidées+' avec lignes vides supprimées\n\n';
+  if(details.length<=30){msg+=details.join('\n')}
+  else{msg+=details.slice(0,30).join('\n')+'\n... et '+(details.length-30)+' autres'}
+  alert(msg);
+}
+
 function printFacturePro(id) {
   var f = db.factures.find(function(x) { return x.id === id; });
   if (!f) { alert('Facture introuvable'); return; }
   var cl = db.clients.find(function(x) { return x.id === f.clientId; });
   var tva = (f.tva!==undefined&&f.tva!==null&&f.tva!=='') ? E(f.tva) : ((db.settings.tvaRate!==undefined&&db.settings.tvaRate!==null&&db.settings.tvaRate!=='') ? E(db.settings.tvaRate) : 20);
+  
+  // RECALCUL TOTAL À PARTIR DES LIGNES (source unique de vérité)
+  var lignesValides = (f.lignes||[]).filter(function(lg){
+    var qty=E(lg.qty)||1;
+    var pu=E(lg.pu||lg.montant)||0;
+    return qty>0 && pu>0;
+  });
+  if(!lignesValides.length){
+    // Aucune ligne valide → utiliser objet+total
+    lignesValides=[{desc:f.objet||'Prestation',qty:1,pu:E(f.total)||0}];
+  }
+  // Total recalculé = somme des lignes (avec remise par ligne)
+  var totalRecalcule = 0;
+  lignesValides.forEach(function(lg){
+    var qty=E(lg.qty)||1;
+    var pu=E(lg.pu)||0;
+    var rem=E(lg.remise)||0;
+    totalRecalcule += qty*pu*(1-rem/100);
+  });
+  // Appliquer la remise globale
+  var remiseGlobale=E(f.remise)||0;
+  totalRecalcule = totalRecalcule*(1-remiseGlobale/100);
+  
+  // Si le total stocké est très différent (>1€), corriger en base
+  if(Math.abs(totalRecalcule-E(f.total))>1){
+    console.warn('[Facture '+f.ref+'] Total incohérent : stocké='+euro(E(f.total))+' vs calculé='+euro(totalRecalcule)+'. Correction en base.');
+    f.total = Math.round(totalRecalcule*100)/100;
+    f.lignes = lignesValides;
+    stamp(f);sav(false);
+  }
+  
   var ht = tva > 0 ? E(f.total) / (1 + tva / 100) : E(f.total);
   var tvaM = E(f.total) - ht;
   var dateStr = new Date(f.date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
