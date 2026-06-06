@@ -9,7 +9,7 @@
 <meta http-equiv="Content-Language" content="fr">
 <script>
 /* ═══ MODE OFFLINE — Cache direct (compatible GitHub Pages single-file) ═══ */
-var CP_CACHE_VERSION='cathypets-v77z';
+var CP_CACHE_VERSION='cathypets-v77zb';
 (function(){
   // Purger TOUS les anciens caches d'abord
   if(typeof caches!=='undefined'){
@@ -5788,9 +5788,9 @@ function refreshDevAccBlock(){var z=$('q_accZone');if(z&&!z.children.length)z.in
 function refreshGrdAniPicker(){var z=$('g_aniZone');if(z&&!z.children.length)z.innerHTML=renderMultiAniPicker('gd',V('g_cl'))}
 function refreshGrdAccBlock(){var z=$('g_accZone');if(z&&!z.children.length)z.innerHTML=renderAccBlock('gd')}
 // Force refresh (quand le client change — remet le select filtre à jour sans perdre les animaux déjà ajoutés)
-function forceRefreshTrAniSelect(){var s=$('tr_aniSel');if(!s)return;var cliId=V('t_cl');var anis=act(db.animaux);if(cliId)anis=anis.filter(function(a){return a.clientId===cliId});s.innerHTML='<option value="">— Choisir animal —</option>'+anis.map(function(a){return'<option value="'+a.id+'">'+a.nom+' · '+a.espece+'</option>'}).join('')}
-function forceRefreshDevAniSelect(){var s=$('dv_aniSel');if(!s)return;var cliId=V('q_cl');var anis=act(db.animaux);if(cliId)anis=anis.filter(function(a){return a.clientId===cliId});s.innerHTML='<option value="">— Choisir animal —</option>'+anis.map(function(a){return'<option value="'+a.id+'">'+a.nom+' · '+a.espece+'</option>'}).join('')}
-function forceRefreshGrdAniSelect(){var s=$('gd_aniSel');if(!s)return;var cliId=V('g_cl');var anis=act(db.animaux);if(cliId)anis=anis.filter(function(a){return a.clientId===cliId});s.innerHTML='<option value="">— Choisir animal —</option>'+anis.map(function(a){return'<option value="'+a.id+'">'+a.nom+' · '+a.espece+'</option>'}).join('')}
+function forceRefreshTrAniSelect(){var s=$('tr_aniSel');if(!s)return;var cliId=V('t_cl');var anis=act(db.animaux);if(cliId)anis=anis.filter(function(a){return a.clientId===cliId});anis.sort(function(a,b){return(a.nom||'').toLowerCase().localeCompare((b.nom||'').toLowerCase(),'fr')});s.innerHTML='<option value="">— Choisir animal —</option>'+anis.map(function(a){return'<option value="'+a.id+'">'+a.nom+' · '+a.espece+'</option>'}).join('')}
+function forceRefreshDevAniSelect(){var s=$('dv_aniSel');if(!s)return;var cliId=V('q_cl');var anis=act(db.animaux);if(cliId)anis=anis.filter(function(a){return a.clientId===cliId});anis.sort(function(a,b){return(a.nom||'').toLowerCase().localeCompare((b.nom||'').toLowerCase(),'fr')});s.innerHTML='<option value="">— Choisir animal —</option>'+anis.map(function(a){return'<option value="'+a.id+'">'+a.nom+' · '+a.espece+'</option>'}).join('')}
+function forceRefreshGrdAniSelect(){var s=$('gd_aniSel');if(!s)return;var cliId=V('g_cl');var anis=act(db.animaux);if(cliId)anis=anis.filter(function(a){return a.clientId===cliId});anis.sort(function(a,b){return(a.nom||'').toLowerCase().localeCompare((b.nom||'').toLowerCase(),'fr')});s.innerHTML='<option value="">— Choisir animal —</option>'+anis.map(function(a){return'<option value="'+a.id+'">'+a.nom+' · '+a.espece+'</option>'}).join('')}
 function lH(t,x){db.history.unshift({id:uid('h'),date:new Date().toISOString(),type:t,text:x});if(db.history.length>200)db.history.length=200}
 function clr(ids){ids.forEach(function(id){var e=$(id);if(e)e.value=''})}
 
@@ -10956,7 +10956,12 @@ function rPlan(){
   }
   if(fi==='all'||fi==='dev'){
     act(db.devis).filter(function(q){return q.status!=='facturé'&&q.status!=='refusé'}).forEach(function(q){
-      var dt=q.date?q.date.slice(0,10):tdy();
+      // Préférer la date de prestation prévue (si saisie), sinon la date du devis
+      var dt='';
+      if(q.dateDebut)dt=q.dateDebut.slice(0,10);
+      else if(q.dateTransport)dt=q.dateTransport.slice(0,10);
+      else if(q.dateLivraison)dt=q.dateLivraison.slice(0,10);
+      else dt=q.date?q.date.slice(0,10):tdy();
       evts.push({d:dt,tp:'dv',lb:q.ref+' '+q.status+' — '+cN(q.clientId),sub:euro(q.total),id:q.id});
     });
   }
@@ -11005,7 +11010,18 @@ function plWeek(evts){
   });
   h+='</div>';$('plCnt').innerHTML=h;
   var we=evts.filter(function(e){return days.some(function(d){return d.toISOString().slice(0,10)===e.d})});
-  $('plSum').innerHTML='<div class="il"><div class="itm">🚗 '+we.filter(function(e){return e.tp==='tr'}).length+' transport(s)</div><div class="itm">🏡 '+we.filter(function(e){return e.tp==='gi'}).length+' entrée(s)</div><div class="itm">🏡 '+we.filter(function(e){return e.tp==='go'}).length+' sortie(s)</div><div class="itm">📅 '+we.filter(function(e){return e.tp==='gc'}).length+' agenda</div></div>';
+  var nbTr=we.filter(function(e){return e.tp==='tr'}).length;
+  var nbGi=we.filter(function(e){return e.tp==='gi'}).length;
+  var nbGo=we.filter(function(e){return e.tp==='go'}).length;
+  var nbDv=we.filter(function(e){return e.tp==='dv'}).length;
+  var nbGc=we.filter(function(e){return e.tp==='gc'}).length;
+  $('plSum').innerHTML='<div class="il" style="flex-wrap:wrap;gap:8px">'+
+    '<div class="itm" style="background:rgba(34,166,147,.08);border-color:'+(nbTr>0?'var(--a2)':'var(--ln)')+'">🚗 <b style="color:var(--a2)">'+nbTr+'</b> transport(s)</div>'+
+    '<div class="itm" style="background:rgba(34,197,94,.08);border-color:'+(nbGi>0?'#22c55e':'var(--ln)')+'">🏡 <b style="color:#22c55e">'+nbGi+'</b> entrée(s) garde</div>'+
+    '<div class="itm" style="background:rgba(245,158,11,.06);border-color:'+(nbGo>0?'var(--or)':'var(--ln)')+'">🏡 <b style="color:var(--or)">'+nbGo+'</b> sortie(s) garde</div>'+
+    '<div class="itm" style="background:rgba(252,211,77,.05);border-color:'+(nbDv>0?'var(--gd)':'var(--ln)')+'">🧾 <b style="color:var(--gd)">'+nbDv+'</b> devis</div>'+
+    '<div class="itm" style="background:rgba(59,130,246,.06);border-color:'+(nbGc>0?'var(--bl)':'var(--ln)')+'">📅 <b style="color:var(--bl)">'+nbGc+'</b> agenda</div>'+
+    '</div>';
 }
 function plMonth(evts){
   var base=new Date();base.setMonth(base.getMonth()+plOff);
@@ -19884,6 +19900,43 @@ function ctenvClChange(){
     if(el&&!el.value)el.value=E(db.settings.guardDog)||28;
     ctenvCalcTarif();
   }
+  // Auto-remplir les animaux du client sélectionné
+  var cliId=V('ctenv_cl');
+  if(!cliId)return;
+  // Vérifier si la zone est vide ou n'a pas encore d'animaux remplis
+  var zone=$('ctenv_ani_zone');
+  if(!zone)return;
+  // Compter combien d'animaux ont déjà un nom
+  var hasFilled=false;
+  for(var i=0;i<_ctenvAniCount;i++){
+    var nom=$('ctenv_ani_nom_'+i);
+    if(nom&&nom.value.trim()){hasFilled=true;break}
+  }
+  if(hasFilled)return; // Ne pas écraser si l'utilisateur a déjà saisi des animaux
+  // Récupérer les animaux du client, triés alphabétiquement
+  var anisClient=act(db.animaux).filter(function(a){return a.clientId===cliId}).sort(function(a,b){
+    return(a.nom||'').toLowerCase().localeCompare((b.nom||'').toLowerCase(),'fr');
+  });
+  if(!anisClient.length)return;
+  // Vider la zone et ajouter une ligne par animal du client
+  zone.innerHTML='';_ctenvAniCount=0;
+  anisClient.forEach(function(a){
+    ctenvAddAnimal();
+    var idx=_ctenvAniCount-1;
+    var nomEl=$('ctenv_ani_nom_'+idx);
+    var typeEl=$('ctenv_ani_type_'+idx);
+    var raceEl=$('ctenv_ani_race_'+idx);
+    var ageEl=$('ctenv_ani_age_'+idx);
+    if(nomEl)nomEl.value=a.nom||'';
+    if(raceEl)raceEl.value=a.race||'';
+    if(ageEl&&a.age)ageEl.value=a.age;
+    if(typeEl){
+      var typeMap={Chien:'chien',Chat:'chat',NAC:'nac',Oiseau:'oiseau',Cheval:'cheval'};
+      var t=typeMap[a.espece]||'chien';
+      typeEl.value=t;
+    }
+  });
+  showToast('🐾 '+anisClient.length+' animal(aux) du client ajouté(s) au contrat');
 }
 // ═══ CONTRAT — ANIMAUX ═══
 var _ctenvAniCount=0;
@@ -20493,7 +20546,11 @@ function addAni(){
 
 function rAni(){
   var today=tdy();var alerts=0;
-  var rows=act(db.animaux).map(function(a){
+  // Tri alphabétique par nom (insensible casse, accents)
+  var sortedAnis=act(db.animaux).slice().sort(function(a,b){
+    return (a.nom||'').toLowerCase().localeCompare((b.nom||'').toLowerCase(),'fr',{sensitivity:'base'});
+  });
+  var rows=sortedAnis.map(function(a){
     var vaccAlert='';
     var warn=[];
     if(a.vaccin1){var d=new Date(a.vaccin1);var diff=Math.floor((d-new Date())/864e5);if(diff<0)warn.push('💉 Rage EXP');else if(diff<=30)warn.push('💉 Rage J'+diff);}
