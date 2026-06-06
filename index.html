@@ -9,7 +9,7 @@
 <meta http-equiv="Content-Language" content="fr">
 <script>
 /* ═══ MODE OFFLINE — Cache direct (compatible GitHub Pages single-file) ═══ */
-var CP_CACHE_VERSION='cathypets-v77v';
+var CP_CACHE_VERSION='cathypets-v77w';
 (function(){
   // Purger TOUS les anciens caches d'abord
   if(typeof caches!=='undefined'){
@@ -10000,27 +10000,48 @@ function marquerAcompte(id){
   var f=db.factures.find(function(x){return x.id===id});if(!f)return;
   var montant40=Math.round(E(f.total)*40)/100;
   var bd='<div style="text-align:center;margin-bottom:12px"><b>'+f.ref+' — '+cN(f.clientId)+'</b><br>Total : <b>'+euro(f.total)+'</b></div>';
-  bd+='<div class="fd"><label>Montant de l\'acompte re&#231;u</label><input id="ac_montant" type="number" step="0.01" value="'+montant40.toFixed(2)+'" style="font-size:18px;font-weight:800;color:var(--or);text-align:center"></div>';
-  bd+='<div style="display:flex;gap:6px;justify-content:center;margin-top:8px">';
+  bd+='<div class="row">';
+  bd+='<div class="c7 fd"><label>💰 Montant de l\'acompte reçu</label><input id="ac_montant" type="number" step="0.01" value="'+montant40.toFixed(2)+'" style="font-size:18px;font-weight:800;color:var(--or);text-align:center"></div>';
+  bd+='<div class="c5 fd"><label>📅 Date acompte reçu</label><input id="ac_date" type="date" value="'+tdy()+'" style="font-size:14px;font-weight:700"></div>';
+  bd+='</div>';
+  bd+='<div class="fd" style="margin-top:6px"><label>💳 Mode de paiement</label><select id="ac_mode" style="background:#080f1a;border:1px solid var(--ln);color:var(--tx);border-radius:10px;padding:10px;font:inherit;font-size:13px;width:100%">';
+  bd+='<option value="virement">🏦 Virement</option>';
+  bd+='<option value="especes">💵 Espèces</option>';
+  bd+='<option value="cheque">📝 Chèque</option>';
+  bd+='<option value="cb">💳 Carte bancaire</option>';
+  bd+='<option value="paypal">🅿️ PayPal</option>';
+  bd+='</select></div>';
+  bd+='<div style="display:flex;gap:6px;justify-content:center;margin-top:10px;flex-wrap:wrap">';
+  bd+='<span style="font-size:10px;color:var(--mt);width:100%;text-align:center;margin-bottom:2px">Raccourcis montant :</span>';
   bd+='<button class="btn sm" onclick="$(\'ac_montant\').value=0" style="font-size:10px">0 &#8364;</button>';
   bd+='<button class="btn sm" onclick="$(\'ac_montant\').value='+(Math.round(E(f.total)*30)/100).toFixed(2)+'" style="font-size:10px">30%</button>';
   bd+='<button class="btn sm" onclick="$(\'ac_montant\').value='+montant40.toFixed(2)+'" style="font-size:10px">40%</button>';
   bd+='<button class="btn sm" onclick="$(\'ac_montant\').value='+(Math.round(E(f.total)*50)/100).toFixed(2)+'" style="font-size:10px">50%</button>';
   bd+='<button class="btn sm" onclick="$(\'ac_montant\').value='+E(f.total).toFixed(2)+'" style="font-size:10px">100%</button>';
   bd+='</div>';
-  oMo('💰 Acompte — '+f.ref, bd, '<button class="btn gn" onclick="saveAcompte(\''+id+'\')">💰 Enregistrer</button> <button class="btn" onclick="cMo()">Annuler</button>');
+  bd+='<div style="display:flex;gap:6px;justify-content:center;margin-top:10px;flex-wrap:wrap">';
+  bd+='<span style="font-size:10px;color:var(--mt);width:100%;text-align:center;margin-bottom:2px">Raccourcis date :</span>';
+  bd+='<button class="btn sm" onclick="$(\'ac_date\').value=tdy()" style="font-size:10px">Aujourd\'hui</button>';
+  bd+='<button class="btn sm" onclick="var d=new Date();d.setDate(d.getDate()-1);$(\'ac_date\').value=d.toISOString().slice(0,10)" style="font-size:10px">Hier</button>';
+  bd+='<button class="btn sm" onclick="var d=new Date();d.setDate(d.getDate()-7);$(\'ac_date\').value=d.toISOString().slice(0,10)" style="font-size:10px">Il y a 7j</button>';
+  bd+='</div>';
+  oMo('💰 Acompte — '+f.ref, bd, '<button class="btn gn" onclick="saveAcompte(\''+id+'\')">💰 Enregistrer l\'acompte</button> <button class="btn" onclick="cMo()">Annuler</button>');
 }
 
 function saveAcompte(id){
   var f=db.factures.find(function(x){return x.id===id});if(!f)return;
   var montant=E(V('ac_montant'));
+  var dateAc=V('ac_date')||tdy();
+  var modeAc=V('ac_mode')||'virement';
   f.acompteRecu=montant>0;
-  f.acompteDate=tdy();
+  f.acompteDate=dateAc;      // champ utilisé par le code historique
+  f.dateAcompte=dateAc;      // champ utilisé par l'affichage (alias)
   f.acompteMontant=montant;
   f.acompte=montant;
+  f.paiementAcompte=modeAc;
   stamp(f);sav();cMo();rAll();
-  showToast('💰 Acompte '+euro(montant)+' enregistré pour '+f.ref);
-  lH('facture','Acompte: '+f.ref+' — '+euro(montant));
+  showToast('💰 Acompte '+euro(montant)+' du '+new Date(dateAc).toLocaleDateString('fr-FR')+' enregistré');
+  lH('facture','Acompte: '+f.ref+' — '+euro(montant)+' ('+dateAc+')');
 }
 
 function marquerPayeeModal(id){
@@ -10496,7 +10517,15 @@ function rFac2(){
       +'<td style="font-size:11px;white-space:nowrap">'+new Date(f.date||Date.now()).toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'2-digit'})+'</td>'
       +'<td style="font-size:11px;color:var(--mt);max-width:140px">'+esc(obj)+'</td>'
       +'<td style="font-weight:700;color:var(--gd)">'+euro(f.total)+'</td>'
-      +'<td style="color:var(--mt)">'+(ac>0?euro(ac)+(f.dateAcompte?'<br><span style="font-size:9px;color:var(--or)">'+new Date(f.dateAcompte).toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'2-digit'})+'</span>':''):'—')+'</td>'
+      +'<td style="color:var(--mt)">'+(function(){
+        if(ac<=0) return '—';
+        var dateAc=f.dateAcompte||f.acompteDate||'';
+        var modeAc=f.paiementAcompte||'';
+        var modeLabel={virement:'💳',especes:'💵',cheque:'📝',cb:'💳',paypal:'🅿️'};
+        var html='<b style="color:var(--or)">'+euro(ac)+'</b>';
+        if(dateAc) html+='<br><span style="font-size:9px;color:var(--a2)">📅 '+new Date(dateAc).toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'2-digit'})+(modeAc?' '+(modeLabel[modeAc]||''):'')+'</span>';
+        return html;
+      })()+'</td>'
       +'<td style="font-weight:700;color:'+(reste>0?'var(--or)':'var(--a2)')+'">'+euro(reste)+'</td>'
       +'<td><span class="pill '+sc+'">'+f.status+'</span>'+datePay+'</td>'
       +'<td style="white-space:nowrap;display:flex;gap:3px">'
@@ -10504,7 +10533,7 @@ function rFac2(){
         +'<button class="btn sm og" onclick="printFacturePro(\''+fid+'\')" title="PDF">🖨️</button>'
         +'<button class="btn sm at" onclick="quickMail(\'envoi_fac\',\''+cid+'\',\''+fid+'\')" title="Mail">📧</button>'
         +(f.status==='emise'?'<button class="btn sm" onclick="quickMail(\'relance_fac\',\''+cid+'\',\''+fid+'\')" title="Relance impayée" style="background:#2a1010;border-color:#6a2020;color:#ff8a8a;font-size:10px">📨</button>':'')
-        +(f.status!=='payée'&&!f.acompteRecu?'<button class="btn sm" onclick="marquerAcompte(\''+fid+'\')" title="Acompte reçu" style="font-size:10px;background:#1a2a10;border-color:#3a6a10;color:#9d6">💰 Ac.</button>':'')+(f.acompteRecu?'<span style="font-size:9px;color:#9d6" title="Acompte reçu le '+((f.acompteDate||''))+'">[Ac✅]</span>':'')+(f.status!=='payée'?'<button class="btn sm gn" onclick="marquerPayeeModal(\''+fid+'\')" title="Marquer payée" style="font-size:10px">✅</button>':'')
+        +'<button class="btn sm" onclick="marquerAcompte(\''+fid+'\')" title="'+(ac>0?'Modifier acompte':'Ajouter acompte')+'" style="font-size:10px;background:#1a2a10;border-color:#3a6a10;color:#9d6">💰 Ac.</button>'+(f.status!=='payée'?'<button class="btn sm gn" onclick="marquerPayeeModal(\''+fid+'\')" title="Marquer payée" style="font-size:10px">✅</button>':'')
         +(f.status==='emise'?'<button class="btn sm" onclick="marquerImpayee(\''+fid+'\')" title="Marquer impayée" style="background:#3a1010;border-color:#6a2020;color:#ff6666;font-size:10px">❌</button>':'')
         +(f.activityType!=='avoir'?'<button class="btn sm" onclick="creerAvoir(\''+fid+'\')" title="Créer un avoir" style="background:#4a1040;border-color:#8a2080;color:#e0a0d8;font-size:10px">📄 Avoir</button>':'')
         +'<button class="btn sm rd" onclick="hardDelFac(\''+fid+'\')" title="Supprimer" style="font-size:10px">🗑️</button>'
