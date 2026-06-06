@@ -9,7 +9,7 @@
 <meta http-equiv="Content-Language" content="fr">
 <script>
 /* ═══ MODE OFFLINE — Cache direct (compatible GitHub Pages single-file) ═══ */
-var CP_CACHE_VERSION='cathypets-v77x';
+var CP_CACHE_VERSION='cathypets-v77y';
 (function(){
   // Purger TOUS les anciens caches d'abord
   if(typeof caches!=='undefined'){
@@ -6481,7 +6481,24 @@ function oMo(ti,bd,ft){
   ov.style.pointerEvents='';
   }catch(e){console.error('oMo error:',e)}
 }
-function cMo(){var ov=$('mOv');if(ov){ov.classList.remove('show');ov.style.display='none'}}
+function cMo(){
+  var ov=$('mOv');
+  if(ov){
+    ov.classList.remove('show');
+    ov.style.display='none';
+    ov.style.pointerEvents='none';
+    // Vider le contenu pour libérer la mémoire et éviter résidu visuel
+    var bdEl=$('mBd');if(bdEl)bdEl.innerHTML='';
+    var ftEl=$('mFt');if(ftEl)ftEl.innerHTML='';
+  }
+  // Supprimer tous les modaux résiduels (payModal, impayeModal, avoirModal, etc.)
+  ['payModal','impayeModal','avoirModal','ctModal','depModal'].forEach(function(mid){
+    var m=document.getElementById(mid);if(m)m.remove();
+  });
+  // Réactiver le body au cas où
+  document.body.style.overflow='';
+  document.body.style.pointerEvents='';
+}
 // Echap pour fermer les modaux
 document.addEventListener('keydown',function(e){if(e.key==='Escape')cMo()});
 function delRec(col,id,lb){if(!confirm('Supprimer '+lb+' ?'))return;var item=(db[col]||[]).find(function(x){return x.id===id});if(item){stamp(item);item._deleted=true;item._deletedAt=new Date().toISOString()}else{db[col]=db[col].filter(function(x){return x.id!==id})}if(col==='devis')renumDev();if(col==='factures')renumFac();lH('del','Supprimé: '+lb);sav();cMo()}
@@ -17968,7 +17985,7 @@ function showMoisDetail(moisKey, moisLabel){
     bd+='</div>';
   }
   
-  oMo('📊 '+moisLabel, bd, '<button class="btn" onclick="cMo()">Fermer</button>');
+  oMo('📊 '+moisLabel, bd, '<button class="btn" onclick="cMo()" style="background:#1a2a3a;border-color:#2a4a6f;color:#8ec8ff;padding:10px 24px;font-size:14px;font-weight:700">✕ Fermer</button>');
 }
 
 function rObjectifs(){
