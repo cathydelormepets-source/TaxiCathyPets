@@ -9,7 +9,7 @@
 <meta http-equiv="Content-Language" content="fr">
 <script>
 /* ═══ MODE OFFLINE — Cache direct (compatible GitHub Pages single-file) ═══ */
-var CP_CACHE_VERSION='cathypets-v77u';
+var CP_CACHE_VERSION='cathypets-v77v';
 (function(){
   // Purger TOUS les anciens caches d'abord
   if(typeof caches!=='undefined'){
@@ -1757,7 +1757,10 @@ Tel : 06 12 34 56 78
     <div class="c6 fd"><label>📝 Notes</label><input id="nut_notes" placeholder="Ex: Livraison incluse..."></div>
   </div>
 
-  <button class="btn gn" onclick="nutVenteFacturer()" style="width:100%;padding:14px;font-size:16px;margin-top:6px">🧾 Facturer + Encaisser</button>
+  <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap">
+    <button class="btn gn" onclick="nutVenteFacturer(true)" style="flex:2;padding:14px;font-size:15px;font-weight:800">💶 Facturer + Encaisser</button>
+    <button class="btn" onclick="nutVenteFacturer(false)" style="flex:1;padding:14px;font-size:14px;background:#3d2c0a;border-color:#6d5a2a;color:#fcd77a;font-weight:700">📄 Facturer<br><span style="font-size:10px">(à encaisser plus tard)</span></button>
+  </div>
   <div id="nut_result" style="margin-top:8px"></div>
 </div></div>
 </div>
@@ -8262,7 +8265,8 @@ function nutCalcTotal(){
   var elTtc=$('nut_ttc');if(elTtc)elTtc.textContent=euro(totalTTC);
 }
 
-function nutVenteFacturer(){
+function nutVenteFacturer(payNow){
+  if(payNow===undefined)payNow=true; // compatibilité
   var cliId=V('nut_cl');
   if(!cliId){alert('Sélectionne un client');return}
 
@@ -8300,6 +8304,8 @@ function nutVenteFacturer(){
     if(m){var n=parseInt(m[1],10);if(n>maxNut)maxNut=n}
   });
   var ref='CP-NUT-'+yr+'-'+String(maxNut+1).padStart(3,'0');
+  var dateVente=V('nut_date')||tdy();
+  var ech=new Date(dateVente);ech.setDate(ech.getDate()+30);
   var facture={
     id:uid('f'),ref:ref,
     clientId:cliId,
@@ -8307,21 +8313,23 @@ function nutVenteFacturer(){
     lignes:lignes,total:totalTTC,tva:tva,remise:0,
     acompte:0,paiement:V('nut_pay')||'especes',
     notes:V('nut_notes')||'',
-    date:V('nut_date')||tdy(),
+    date:dateVente,
+    echeance:ech.toISOString().slice(0,10),
     activityType:'nutrica',mode:'vente-nutrica',
-    status:'payée'
+    status:payNow?'payée':'emise'
   };
+  if(payNow){facture.datePaiement=dateVente;facture.paiementDate=dateVente}
   
   stamp(facture);db.factures.push(facture);
   lH('facture','Vente Nutrica '+ref+' — '+cN(cliId)+' — '+euro(totalTTC));
   sav(false);
 
   $('nut_result').innerHTML='<div style="padding:12px;background:rgba(34,197,94,.1);border:1px solid var(--a2);border-radius:8px;color:var(--a2)">'+
-    '<b>✅ Facture '+ref+' créée — '+euro(totalTTC)+' TTC</b><br>'+
-    '<span style="font-size:11px">👤 '+cN(cliId)+' · 💳 '+(V('nut_pay')||'espèces')+' · Statut : payée</span><br>'+
+    '<b>'+(payNow?'💶':'📄')+' Facture '+ref+' créée — '+euro(totalTTC)+' TTC</b><br>'+
+    '<span style="font-size:11px">👤 '+cN(cliId)+' · 💳 '+(V('nut_pay')||'espèces')+' · Statut : '+(payNow?'<b style="color:var(--a2)">payée</b>':'<b style="color:var(--or)">en attente</b>')+'</span><br>'+
     '<span style="font-size:11px;color:var(--mt)">Prochaine facture : CP-NUT-'+yr+'-'+String(maxNut+2).padStart(3,'0')+'</span></div>';
 
-  showToast('🧾 Vente Nutrica '+ref+' — '+euro(totalTTC));
+  showToast((payNow?'💶 Vente Nutrica encaissée ':'📄 Vente Nutrica en attente ')+ref+' — '+euro(totalTTC));
 
   // Reset le formulaire
   _nutLigneCount=1;
@@ -8333,6 +8341,8 @@ function nutVenteFacturer(){
   nutFillProdSelects();
   var rh=$('nut_ht');if(rh)rh.textContent='0,00 €';var rv=$('nut_tva');if(rv)rv.textContent='0,00 €';var rt=$('nut_ttc');if(rt)rt.textContent='0,00 €';
   V('nut_notes','');
+  // Si vente différée → basculer sur l'onglet En attente pour la voir
+  if(!payNow){setTimeout(function(){nutShowTab('attente')},600)}
 }
 
 function nutRenderHisto(){
