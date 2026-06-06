@@ -9,7 +9,7 @@
 <meta http-equiv="Content-Language" content="fr">
 <script>
 /* ═══ MODE OFFLINE — Cache direct (compatible GitHub Pages single-file) ═══ */
-var CP_CACHE_VERSION='cathypets-v77w';
+var CP_CACHE_VERSION='cathypets-v77x';
 (function(){
   // Purger TOUS les anciens caches d'abord
   if(typeof caches!=='undefined'){
@@ -12933,12 +12933,24 @@ function printFacturePro(id) {
   }
   html += '<tr style="background:#ddd"><td style="border:1px solid #999;padding:8px;font-weight:bold;font-size:13px">Total TTC</td>';
   html += '<td style="border:1px solid #999;padding:8px;text-align:right;font-weight:bold;font-size:13px">' + euro(facTTCApresRemise) + '</td></tr>';
+  // === LIGNE ACOMPTE AVEC DATE ET MODE ===
+  var acompteMt=E(f.acompte)||0;
+  if(acompteMt>0){
+    var dateAc=f.dateAcompte||f.acompteDate||'';
+    var modeAcLabel={virement:'Virement',especes:'Espèces',cheque:'Chèque',cb:'Carte bancaire',paypal:'PayPal'};
+    var modeAc=f.paiementAcompte?(modeAcLabel[f.paiementAcompte]||f.paiementAcompte):'';
+    var acTxt='💰 Acompte versé';
+    if(dateAc) acTxt+=' le '+new Date(dateAc).toLocaleDateString('fr-FR');
+    if(modeAc) acTxt+=' ('+modeAc+')';
+    html += '<tr style="background:#fff8e1"><td style="border:1px solid #999;padding:8px;font-weight:bold;color:#b8860b">'+acTxt+'</td>';
+    html += '<td style="border:1px solid #999;padding:8px;text-align:right;font-weight:bold;color:#b8860b">- ' + euro(acompteMt) + '</td></tr>';
+  }
   if(isPaye){
-    html += '<tr style="background:#e6f7f0"><td style="border:1px solid #999;padding:8px;font-weight:bold;color:#1a7a6e">Payé' + (datePayStr ? ' le ' + datePayStr : '') + '</td>';
+    html += '<tr style="background:#e6f7f0"><td style="border:1px solid #999;padding:8px;font-weight:bold;color:#1a7a6e">✅ Payé' + (datePayStr ? ' le ' + datePayStr : '') + '</td>';
     html += '<td style="border:1px solid #999;padding:8px;text-align:right;font-weight:bold;color:#1a7a6e">' + euro(E(f.total)) + '</td></tr>';
   } else {
     html += '<tr style="background:#fff8f0"><td style="border:1px solid #999;padding:8px;font-weight:bold;color:#e67e22">Reste à payer</td>';
-    html += '<td style="border:1px solid #999;padding:8px;text-align:right;font-weight:bold;color:#e67e22">' + euro(Math.max(0, E(f.total) - E(f.acompte))) + '</td></tr>';
+    html += '<td style="border:1px solid #999;padding:8px;text-align:right;font-weight:bold;color:#e67e22">' + euro(Math.max(0, E(f.total) - acompteMt)) + '</td></tr>';
   }
   html += '</table></div>';
   // === BLOC PÉNALITÉS DE RETARD ===
