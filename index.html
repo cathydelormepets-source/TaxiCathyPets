@@ -9,7 +9,7 @@
 <meta http-equiv="Content-Language" content="fr">
 <script>
 /* ═══ MODE OFFLINE — Cache direct (compatible GitHub Pages single-file) ═══ */
-var CP_CACHE_VERSION='cathypets-v77t';
+var CP_CACHE_VERSION='cathypets-v77u';
 (function(){
   // Purger TOUS les anciens caches d'abord
   if(typeof caches!=='undefined'){
@@ -1710,6 +1710,7 @@ Tel : 06 12 34 56 78
 <!-- Sous-onglets Nutrica -->
 <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;">
   <button class="btn og" id="nutTab-vente" onclick="nutShowTab('vente')" style="padding:5px 10px;font-size:11px;font-weight:700;">🛒 Vente express</button>
+  <button class="btn" id="nutTab-attente" onclick="nutShowTab('attente')" style="padding:5px 10px;font-size:11px;opacity:0.7;background:#3d2c0a;border-color:#6d5a2a;color:#fcd77a">⏳ En attente</button>
   <button class="btn" id="nutTab-depot" onclick="nutShowTab('depot')" style="padding:5px 10px;font-size:11px;opacity:0.7;">🏪 Dépôt-Vente</button>
   <button class="btn" id="nutTab-produits" onclick="nutShowTab('produits')" style="padding:5px 10px;font-size:11px;opacity:0.7;">📦 Produits</button>
   <button class="btn" id="nutTab-histo" onclick="nutShowTab('histo')" style="padding:5px 10px;font-size:11px;opacity:0.7;">📋 Historique</button>
@@ -1812,6 +1813,10 @@ Tel : 06 12 34 56 78
 </div>
 
 <!-- ── HISTORIQUE VENTES ── -->
+<div id="nutTab-attente-panel" style="display:none">
+<div class="card"><div class="hd"><h3>⏳ Ventes Nutrica en attente de paiement</h3><span id="nutAttenteStats" style="font-size:11px;color:var(--mt);margin-left:8px"></span></div><div class="bd"><div id="nutAttenteTbl"></div></div></div>
+</div>
+
 <div id="nutTab-histo-panel" style="display:none">
 <div class="card"><div class="hd"><h3>📋 Historique des ventes Nutrica</h3><span id="nutHistoStats" style="font-size:11px;color:var(--mt)"></span></div><div class="bd"><div id="nutHistoTbl"></div></div></div>
 </div>
@@ -7531,6 +7536,17 @@ function addDev(){
     if(wps.length>=1)pecUrl+='&depart='+encodeURIComponent(wps[0].label||'');
     if(wps.length>=2)pecUrl+='&arrivee='+encodeURIComponent(wps[wps.length-1].label||'');
     pecUrl+='&devis='+encodeURIComponent(q.ref);
+    // Passer les tarifs (lignes du devis) au contrat
+    if(devLignes&&devLignes.length){
+      var tarifAniPec=devLignes.filter(function(lg){return E(lg.qty)>0&&E(lg.pu)>0}).map(function(lg){
+        var desc=(lg.article||lg.desc||'Prestation').replace(/\|/g,'-');
+        return desc+'|'+(E(lg.qty)||1)+'|'+(E(lg.pu)||0)+'|'+(E(lg.remise)||0);
+      });
+      if(tarifAniPec.length)pecUrl+='&tarif_animaux='+encodeURIComponent(tarifAniPec.join(';;'));
+    } else if(E(q.total)>0){
+      // Fallback : 1 ligne avec le total
+      pecUrl+='&tarif_animaux='+encodeURIComponent('Prestation transport|1|'+E(q.total)+'|0');
+    }
     q.contratPecCode=code2;q.contratPecUrl=pecUrl;stamp(q);sav();
     pecCb.checked=false;document.getElementById('q_contrat_info').style.display='none';
     // Proposer d'envoyer
@@ -8108,7 +8124,7 @@ function addNut(){var n={id:uid('n'),name:V('n_nm'),stock:E(V('n_st')),cost:E(V(
 
 // ═══ NUTRICA — SOUS-ONGLETS ═══
 function nutShowTab(t){
-  ['vente','depot','produits','histo'].forEach(function(k){
+  ['vente','attente','depot','produits','histo'].forEach(function(k){
     var p=$('nutTab-'+k+'-panel');
     var b=$('nutTab-'+k);
     if(p)p.style.display=(k===t)?'block':'none';
@@ -8120,6 +8136,67 @@ function nutShowTab(t){
   if(t==='vente')nutInitVente();
   if(t==='histo')nutRenderHisto();
   if(t==='depot')depInit();
+  if(t==='attente')nutRenderAttente();
+}
+
+// Liste des ventes Nutrica en attente de paiement
+function nutRenderAttente(){
+  var tbl=$('nutAttenteTbl');if(!tbl)return;
+  var ventes=act(db.factures).filter(function(f){
+    return f.activityType==='nutrica' && f.status!=='payée' && f.status!=='avoir';
+  });
+  // Trier par date d'échéance / date (les plus en retard en premier)
+  ventes.sort(function(a,b){
+    var dA=a.echeance||a.date||'';
+    var dB=b.echeance||b.date||'';
+    return dA.localeCompare(dB);
+  });
+  var total=0,enRetard=0,montantRetard=0;
+  var today=tdy();
+  ventes.forEach(function(f){
+    var reste=Math.max(E(f.total)-E(f.acompte||0),0);
+    total+=reste;
+    var ech=f.echeance||(f.date?(function(){var d=new Date(f.date);d.setDate(d.getDate()+30);return d.toISOString().slice(0,10)})():'');
+    if(ech&&ech<today){enRetard++;montantRetard+=reste}
+  });
+  $('nutAttenteStats').innerHTML=ventes.length+' vente(s) · '+euro(total)+' à encaisser'+(enRetard>0?' · <span style="color:var(--rd)">⚠️ '+enRetard+' en retard ('+euro(montantRetard)+')</span>':'');
+  if(!ventes.length){
+    tbl.innerHTML='<div style="text-align:center;padding:30px;color:var(--mt)">✅ Aucune vente Nutrica en attente</div>';
+    return;
+  }
+  var h='<div style="overflow-x:auto"><table style="width:100%;font-size:12px;border-collapse:collapse">';
+  h+='<thead><tr style="background:rgba(245,158,11,.1);text-align:left"><th style="padding:8px">Référence</th><th style="padding:8px">Client</th><th style="padding:8px">Date vente</th><th style="padding:8px">Échéance</th><th style="padding:8px;text-align:right">Total TTC</th><th style="padding:8px;text-align:right">Acompte</th><th style="padding:8px;text-align:right">Reste dû</th><th style="padding:8px;text-align:center">Statut</th><th style="padding:8px;text-align:center">Actions</th></tr></thead><tbody>';
+  ventes.forEach(function(f){
+    var reste=Math.max(E(f.total)-E(f.acompte||0),0);
+    var ech=f.echeance||(f.date?(function(){var d=new Date(f.date);d.setDate(d.getDate()+30);return d.toISOString().slice(0,10)})():'');
+    var retard=ech&&ech<today;
+    var joursRetard=retard?Math.floor((new Date(today)-new Date(ech))/864e5):0;
+    h+='<tr style="border-bottom:1px solid var(--ln);'+(retard?'background:rgba(239,68,68,.04)':'')+'">';
+    h+='<td style="padding:8px;font-weight:700">'+esc(f.ref)+'</td>';
+    h+='<td style="padding:8px">'+esc(cN(f.clientId))+'</td>';
+    h+='<td style="padding:8px">'+(f.date?new Date(f.date).toLocaleDateString('fr-FR'):'—')+'</td>';
+    h+='<td style="padding:8px;color:'+(retard?'var(--rd);font-weight:700':'var(--mt)')+'">'+(ech?new Date(ech).toLocaleDateString('fr-FR'):'—')+(retard?' (J+'+joursRetard+')':'')+'</td>';
+    h+='<td style="padding:8px;text-align:right">'+euro(f.total)+'</td>';
+    h+='<td style="padding:8px;text-align:right;color:var(--a2)">'+euro(f.acompte||0)+'</td>';
+    h+='<td style="padding:8px;text-align:right;font-weight:800;color:'+(retard?'var(--rd)':'var(--or)')+'">'+euro(reste)+'</td>';
+    var stLabel=f.status==='envoyée'?'📨 Envoyée':(f.status==='emise'?'📄 Émise':f.status);
+    h+='<td style="padding:8px;text-align:center"><span style="font-size:10px;padding:3px 6px;background:rgba(245,158,11,.15);border-radius:10px">'+stLabel+'</span></td>';
+    h+='<td style="padding:8px;text-align:center;white-space:nowrap">';
+    h+='<button class="btn sm gn" onclick="marquerPayeeModal(\''+f.id+'\')" title="Encaisser" style="padding:4px 8px;font-size:11px">💶 Encaisser</button> ';
+    h+='<button class="btn sm" onclick="eFac(\''+f.id+'\')" title="Modifier" style="padding:4px 6px">✏️</button> ';
+    h+='<button class="btn sm og" onclick="printFacturePro(\''+f.id+'\')" title="PDF" style="padding:4px 6px">🖨️</button> ';
+    h+='<button class="btn sm" onclick="genMail(\''+f.id+'\',\'relance\')" title="Relancer" style="padding:4px 6px;background:#3a1a1a;border-color:#7a2a2a;color:#ff8a8a">📧</button>';
+    h+='</td>';
+    h+='</tr>';
+  });
+  h+='</tbody></table></div>';
+  // Total en bas
+  h+='<div style="margin-top:14px;padding:12px;background:rgba(245,158,11,.08);border:1px solid var(--or);border-radius:8px;display:grid;grid-template-columns:repeat(3,1fr);gap:10px;text-align:center">';
+  h+='<div><div style="font-size:10px;color:var(--mt)">📦 VENTES EN ATTENTE</div><div style="font-size:18px;font-weight:900;color:var(--or)">'+ventes.length+'</div></div>';
+  h+='<div><div style="font-size:10px;color:var(--mt)">💰 MONTANT TOTAL DÛ</div><div style="font-size:18px;font-weight:900;color:var(--gd)">'+euro(total)+'</div></div>';
+  h+='<div><div style="font-size:10px;color:var(--mt)">⚠️ EN RETARD</div><div style="font-size:18px;font-weight:900;color:'+(enRetard>0?'var(--rd)':'var(--a2)')+'">'+enRetard+' · '+euro(montantRetard)+'</div></div>';
+  h+='</div>';
+  tbl.innerHTML=h;
 }
 
 // ═══ NUTRICA — VENTE EXPRESS ═══
