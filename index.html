@@ -9,7 +9,7 @@
 <meta http-equiv="Content-Language" content="fr">
 <script>
 /* ═══ MODE OFFLINE — Cache direct (compatible GitHub Pages single-file) ═══ */
-var CP_CACHE_VERSION='cathypets-v77zf';
+var CP_CACHE_VERSION='cathypets-v77zg';
 (function(){
   // Purger TOUS les anciens caches d'abord
   if(typeof caches!=='undefined'){
@@ -4278,9 +4278,9 @@ document.getElementById('q_contrat_pec').addEventListener('change',function(){
     4. Tu remplis ton véhicule → meilleure rentabilité ✨<br>
     <br>
     <b style="color:#fff">3 chemins Firebase utilisés :</b><br>
-    • <code style="background:#0a1825;padding:2px 6px;border-radius:4px;color:#7bf0b0">public/trajets/</code> = transports confirmés<br>
-    • <code style="background:#0a1825;padding:2px 6px;border-radius:4px;color:#7bf0b0">public/gardes/</code> = gardes futures<br>
-    • <code style="background:#0a1825;padding:2px 6px;border-radius:4px;color:#7bf0b0">public/routes/</code> = devis = routes prévues pour co-voiturage
+    • <code style="background:#0a1825;padding:2px 6px;border-radius:4px;color:#7bf0b0">site_public/cathypets-default/trajets/</code> = transports confirmés<br>
+    • <code style="background:#0a1825;padding:2px 6px;border-radius:4px;color:#7bf0b0">site_public/cathypets-default/gardes/</code> = gardes futures<br>
+    • <code style="background:#0a1825;padding:2px 6px;border-radius:4px;color:#7bf0b0">site_public/cathypets-default/routes/</code> = devis = routes prévues pour co-voiturage
   </div>
 </div>
 
@@ -4317,7 +4317,7 @@ document.getElementById('q_contrat_pec').addEventListener('change',function(){
   <div style="padding:10px 0;font-size:11px;color:var(--mt);line-height:1.7">
     <b style="color:#fff">Pour que la plateforme Vercel lise les données</b> :<br>
     1. Sur Vercel, configure les variables d'environnement Firebase identiques à V77<br>
-    2. La plateforme lit depuis le chemin Firebase : <code style="background:#0a1825;padding:2px 6px;border-radius:4px;color:#7bf0b0">public/trajets/</code> et <code style="background:#0a1825;padding:2px 6px;border-radius:4px;color:#7bf0b0">public/gardes/</code><br>
+    2. La plateforme lit depuis le chemin Firebase : <code style="background:#0a1825;padding:2px 6px;border-radius:4px;color:#7bf0b0">site_public/cathypets-default/trajets/</code> et <code style="background:#0a1825;padding:2px 6px;border-radius:4px;color:#7bf0b0">site_public/cathypets-default/gardes/</code><br>
     3. URL plateforme : <a href="https://cathydelormepets-source-cathy-pets-platform-fnfaena5n.vercel.app/" target="_blank" style="color:#06b6d4;word-break:break-all">https://cathydelormepets-source-cathy-pets-platform-fnfaena5n.vercel.app/</a><br>
     <br>
     <button class="btn sm" onclick="copyVercelConfig()" style="background:#1a2a3a;border-color:#2a4a6f;color:#8ec8ff;font-size:11px">📋 Copier le code JS pour Vercel</button>
@@ -12940,13 +12940,13 @@ function _grdToPublicObj(g){
   };
 }
 
-// Publier un transport vers Firebase public/trajets/
+// Publier un transport vers Firebase site_public/cathypets-default/trajets/
 function publishTrToPlatform(id){
   if(!fbConnected){alert('⚠️ Firebase n\'est pas connecté.\n\nVa dans Paramètres → Firebase et clique 🔌 Connecter pour activer la passerelle.');return}
   var t=db.transports.find(function(x){return x.id===id});if(!t)return;
   var obj=_trToPublicObj(t);
   try{
-    var ref=fbDb.ref('public/trajets/'+id);
+    var ref=fbDb.ref('site_public/cathypets-default/trajets/'+id);
     ref.set(obj).then(function(){
       t._publiéLePlateforme=new Date().toISOString();
       stamp(t);sav(false);
@@ -12958,13 +12958,13 @@ function publishTrToPlatform(id){
   }catch(e){alert('❌ Erreur : '+e.message)}
 }
 
-// Publier une garde vers Firebase public/gardes/
+// Publier une garde vers Firebase site_public/cathypets-default/gardes/
 function publishGrdToPlatform(id){
   if(!fbConnected){alert('⚠️ Firebase n\'est pas connecté');return}
   var g=db.gardes.find(function(x){return x.id===id});if(!g)return;
   var obj=_grdToPublicObj(g);
   try{
-    var ref=fbDb.ref('public/gardes/'+id);
+    var ref=fbDb.ref('site_public/cathypets-default/gardes/'+id);
     ref.set(obj).then(function(){
       g._publiéLePlateforme=new Date().toISOString();
       stamp(g);sav(false);
@@ -12982,7 +12982,7 @@ function unpublishTrFromPlatform(id){
   var t=db.transports.find(function(x){return x.id===id});if(!t)return;
   if(!confirm('Retirer le trajet '+t.ref+' de la plateforme ?'))return;
   try{
-    fbDb.ref('public/trajets/'+id).remove().then(function(){
+    fbDb.ref('site_public/cathypets-default/trajets/'+id).remove().then(function(){
       delete t._publiéLePlateforme;
       stamp(t);sav(false);
       showToast('🗑️ Trajet '+t.ref+' retiré de la plateforme');
@@ -12997,7 +12997,7 @@ function unpublishGrdFromPlatform(id){
   var g=db.gardes.find(function(x){return x.id===id});if(!g)return;
   if(!confirm('Retirer la garde '+g.ref+' de la plateforme ?'))return;
   try{
-    fbDb.ref('public/gardes/'+id).remove().then(function(){
+    fbDb.ref('site_public/cathypets-default/gardes/'+id).remove().then(function(){
       delete g._publiéLePlateforme;
       stamp(g);sav(false);
       showToast('🗑️ Garde '+g.ref+' retirée de la plateforme');
@@ -13049,13 +13049,13 @@ function _devToPublicObj(q){
   };
 }
 
-// Publier un devis vers Firebase public/routes/
+// Publier un devis vers Firebase site_public/cathypets-default/routes/
 function publishDevToPlatform(id){
   if(!fbConnected){alert('⚠️ Firebase n\'est pas connecté');return}
   var q=db.devis.find(function(x){return x.id===id});if(!q)return;
   var obj=_devToPublicObj(q);
   try{
-    fbDb.ref('public/routes/'+id).set(obj).then(function(){
+    fbDb.ref('site_public/cathypets-default/routes/'+id).set(obj).then(function(){
       q._publiéLePlateforme=new Date().toISOString();
       stamp(q);sav(false);
       showToast('✅ Devis '+q.ref+' publié comme route disponible');
@@ -13071,7 +13071,7 @@ function unpublishDevFromPlatform(id){
   var q=db.devis.find(function(x){return x.id===id});if(!q)return;
   if(!confirm('Retirer la route '+q.ref+' de la plateforme ?'))return;
   try{
-    fbDb.ref('public/routes/'+id).remove().then(function(){
+    fbDb.ref('site_public/cathypets-default/routes/'+id).remove().then(function(){
       delete q._publiéLePlateforme;
       stamp(q);sav(false);
       showToast('🗑️ Route '+q.ref+' retirée');
@@ -13101,19 +13101,19 @@ function publishAllToPlatform(){
   }
   trsAFuturs.forEach(function(t){
     var obj=_trToPublicObj(t);
-    fbDb.ref('public/trajets/'+t.id).set(obj).then(function(){
+    fbDb.ref('site_public/cathypets-default/trajets/'+t.id).set(obj).then(function(){
       t._publiéLePlateforme=new Date().toISOString();stamp(t);onDone();
     }).catch(function(){errors++;onDone()});
   });
   grdsAFuturs.forEach(function(g){
     var obj=_grdToPublicObj(g);
-    fbDb.ref('public/gardes/'+g.id).set(obj).then(function(){
+    fbDb.ref('site_public/cathypets-default/gardes/'+g.id).set(obj).then(function(){
       g._publiéLePlateforme=new Date().toISOString();stamp(g);onDone();
     }).catch(function(){errors++;onDone()});
   });
   devsAttente.forEach(function(q){
     var obj=_devToPublicObj(q);
-    fbDb.ref('public/routes/'+q.id).set(obj).then(function(){
+    fbDb.ref('site_public/cathypets-default/routes/'+q.id).set(obj).then(function(){
       q._publiéLePlateforme=new Date().toISOString();stamp(q);onDone();
     }).catch(function(){errors++;onDone()});
   });
@@ -13124,9 +13124,9 @@ function unpublishAllFromPlatform(){
   if(!fbConnected){alert('⚠️ Firebase n\'est pas connecté');return}
   if(!confirm('⚠️ Retirer TOUS les éléments de la plateforme ?\n\nTrajets + Gardes + Routes prévues seront tous supprimés.\nLes clients ne verront plus rien jusqu\'à ce que tu republies.'))return;
   try{
-    fbDb.ref('public/trajets').remove();
-    fbDb.ref('public/gardes').remove();
-    fbDb.ref('public/routes').remove();
+    fbDb.ref('site_public/cathypets-default/trajets').remove();
+    fbDb.ref('site_public/cathypets-default/gardes').remove();
+    fbDb.ref('site_public/cathypets-default/routes').remove();
     db.transports.forEach(function(t){delete t._publiéLePlateforme});
     db.gardes.forEach(function(g){delete g._publiéLePlateforme});
     db.devis.forEach(function(q){delete q._publiéLePlateforme});
@@ -13247,20 +13247,20 @@ function copyVercelConfig(){
   code+='const app = initializeApp(firebaseConfig);\n';
   code+='const db = getDatabase(app);\n\n';
   code+='// Lire les trajets publics\n';
-  code+='const trajetsRef = ref(db, "public/trajets");\n';
+  code+='const trajetsRef = ref(db, "site_public/cathypets-default/trajets");\n';
   code+='onValue(trajetsRef, (snapshot) => {\n';
   code+='  const trajets = snapshot.val();\n';
   code+='  console.log("Trajets reçus :", trajets);\n';
   code+='  // Mettre à jour ton interface ici\n';
   code+='});\n\n';
   code+='// Lire les gardes publiques\n';
-  code+='const gardesRef = ref(db, "public/gardes");\n';
+  code+='const gardesRef = ref(db, "site_public/cathypets-default/gardes");\n';
   code+='onValue(gardesRef, (snapshot) => {\n';
   code+='  const gardes = snapshot.val();\n';
   code+='  console.log("Gardes reçues :", gardes);\n';
   code+='});\n\n';
   code+='// Lire les ROUTES PRÉVUES (devis pour co-voiturage)\n';
-  code+='const routesRef = ref(db, "public/routes");\n';
+  code+='const routesRef = ref(db, "site_public/cathypets-default/routes");\n';
   code+='onValue(routesRef, (snapshot) => {\n';
   code+='  const routes = snapshot.val();\n';
   code+='  console.log("Routes prévues :", routes);\n';
