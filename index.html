@@ -9,7 +9,7 @@
 <meta http-equiv="Content-Language" content="fr">
 <script>
 /* ═══ MODE OFFLINE — Cache direct (compatible GitHub Pages single-file) ═══ */
-var CP_CACHE_VERSION='cathypets-v77zj';
+var CP_CACHE_VERSION='cathypets-v77zl';
 (function(){
   // Purger TOUS les anciens caches d'abord
   if(typeof caches!=='undefined'){
@@ -7663,6 +7663,10 @@ function addDev(){
   } else {
     showToast('✅ Devis '+q.ref+' créé avec '+devLignes.length+' article(s)');
   }
+  // 🌐 AUTO-SYNC vers plateforme Vercel
+  if(fbConnected&&typeof republishAllToPlatform==='function'){
+    setTimeout(function(){republishAllToPlatform(true)},500);
+  }
   // Reset formulaire pour en créer un autre
   resetFormDevis();
 }
@@ -9879,7 +9883,12 @@ function sDev(id){var q=db.devis.find(function(x){return x.id===id});if(!q)retur
   var cnt=E(V('eq_wpc'));if(cnt){var wps=[];for(var i=0;i<cnt;i++){var a=$('eqw_a_'+i),l=$('eqw_l_'+i);if(a&&a.value.trim())wps.push({label:l?l.value.trim():'Étape '+(i+1),address:a.value.trim()})}q.waypoints=wps}
   q.animalIds=getPickerAniIds('edv');q.animalId=q.animalIds[0]||'';q.accompagnants=getAccList('edv');q.bienEtre=getBeData('edv');q.segments=getSegs('edseg');
   var sigs={};try{sigs=sigGetData('edv')}catch(e){}q.sigPec=sigs.sigPec||q.sigPec||'';q.sigDep=sigs.sigDep||q.sigDep||'';
-  lH('edit','Devis: '+q.ref);sav();cMo()}
+  lH('edit','Devis: '+q.ref);sav();cMo();
+  // 🌐 AUTO-SYNC vers plateforme Vercel (comme Google Agenda)
+  if(fbConnected&&q.status!=='refusé'&&q.status!=='annulé'&&q.status!=='facturé'){
+    setTimeout(function(){republishAllToPlatform(true)},300);
+  }
+}
 // ═══ RENUMÉROTATION SÉQUENTIELLE — Format CERFRANCE 2026 ═══
 function renumDev(){
   var sorted=db.devis.slice().sort(function(a,b){return (a.date||'').localeCompare(b.date||'')});
@@ -13215,7 +13224,14 @@ function unpublishDevFromPlatform(id){
 }
 
 function publishAllToPlatform(){
-  if(!fbConnected){alert('⚠️ Firebase n\'est pas connecté');return}
+  return _publishAllToPlatform(false);
+}
+// Version silencieuse pour auto-sync (sans popup confirmation)
+function republishAllToPlatform(silent){
+  return _publishAllToPlatform(silent===true);
+}
+function _publishAllToPlatform(silent){
+  if(!fbConnected){if(!silent)alert('⚠️ Firebase n\'est pas connecté');return}
   var today=tdy();
   var trsAFuturs=act(db.transports).filter(function(t){return t.date&&t.date>=today});
   var grdsAFuturs=act(db.gardes).filter(function(g){return g.start&&g.start.slice(0,10)>=today});
@@ -13223,8 +13239,10 @@ function publishAllToPlatform(){
     return q.status!=='refusé'&&q.status!=='annulé'&&q.status!=='facturé';
   });
   var total=trsAFuturs.length+grdsAFuturs.length+devsRoutes.length;
-  if(!total){alert('✅ Rien à publier');return}
-  if(!confirm('Publier sur la plateforme Vercel :\n\n'+trsAFuturs.length+' trajet(s) confirmé(s)\n'+devsRoutes.length+' route(s) en devis\n'+grdsAFuturs.length+' garde(s)\n\nTotal : '+total+' éléments\n\nFormat compatible avec ta plateforme existante.'))return;
+  if(!total){if(!silent)alert('✅ Rien à publier');return}
+  if(!silent){
+    if(!confirm('Publier sur la plateforme Vercel :\n\n'+trsAFuturs.length+' trajet(s) confirmé(s)\n'+devsRoutes.length+' route(s) en devis\n'+grdsAFuturs.length+' garde(s)\n\nTotal : '+total+' éléments\n\nFormat compatible avec ta plateforme existante.'))return;
+  }
   
   // Construire un TABLEAU au format attendu par ta plateforme Vercel
   var trajetsArray=[];
@@ -13253,7 +13271,6 @@ function publishAllToPlatform(){
   
   var updatedAt=Date.now();
   var promises=[];
-  // Format exact attendu par la plateforme : { trajets: [...], updatedAt }
   promises.push(fbDb.ref('site_public/cathypets-default/trajets').set({
     trajets:trajetsArray,
     updatedAt:updatedAt
@@ -13267,11 +13284,17 @@ function publishAllToPlatform(){
   
   Promise.all(promises).then(function(){
     sav(false);
-    showToast('✅ '+total+' éléments publiés');
-    renderPlatformList();
-    alert('✅ Publication réussie !\n\n'+trajetsArray.length+' trajets+routes publiés\n'+gardesArray.length+' gardes publiées\n\n👉 Va sur ta plateforme Vercel et rafraîchis la page (Ctrl+F5) pour voir le résultat !');
+    if(silent){
+      showToast('🌐 Plateforme synchronisée');
+    } else {
+      showToast('✅ '+total+' éléments publiés');
+      renderPlatformList();
+      alert('✅ Publication réussie !\n\n'+trajetsArray.length+' trajets+routes publiés\n'+gardesArray.length+' gardes publiées\n\n👉 Va sur ta plateforme Vercel et rafraîchis la page (Ctrl+F5) pour voir le résultat !');
+    }
+    if(!silent)renderPlatformList();
   }).catch(function(err){
-    alert('❌ Erreur publication : '+err.message);
+    if(!silent)alert('❌ Erreur publication : '+err.message);
+    console.error('Auto-sync erreur:',err);
   });
 }
 
@@ -13305,9 +13328,9 @@ function renderPlatformList(){
   $('platPubTr').textContent=nbPubTr;
   $('platPubGd').textContent=nbPubGd;
   var pdev=$('platPubDev');if(pdev)pdev.textContent=nbPubDev;
-  // Dernière sync
+  // Dernière sync — inclure aussi les devis publiés
   var lastSync=0;
-  [].concat(db.transports||[],db.gardes||[]).forEach(function(x){
+  [].concat(db.transports||[],db.gardes||[],db.devis||[]).forEach(function(x){
     if(x._publiéLePlateforme){var t=new Date(x._publiéLePlateforme).getTime();if(t>lastSync)lastSync=t}
   });
   $('platLastSync').textContent=lastSync?new Date(lastSync).toLocaleDateString('fr-FR')+' '+new Date(lastSync).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):'Jamais';
@@ -13413,15 +13436,22 @@ function renderPlatformList(){
       }
       if(!dep)dep='⚠️ pas de ville';
       if(!arr)arr='⚠️ pas de ville';
+      var noCity=(dep==='⚠️ pas de ville'||arr==='⚠️ pas de ville');
       var dt=q.dateDebut||q.dateTransport||q.date||'';
       var statusColors={'brouillon':'var(--mt)','envoyé':'var(--or)','accepté':'var(--a2)','signe':'var(--a2)'};
       var statusLabels={'brouillon':'⏳ À valider','envoyé':'📤 À pourvoir','accepté':'✅ Confirmé','signe':'✅ Signé','accepte':'✅ Confirmé'};
-      h+='<div style="display:flex;justify-content:space-between;align-items:center;padding:10px;margin-bottom:5px;background:rgba(255,255,255,.02);border-left:3px solid '+(pub?'var(--bl)':'var(--ln)')+';border-radius:6px">';
+      h+='<div style="display:flex;justify-content:space-between;align-items:center;padding:10px;margin-bottom:5px;background:rgba(255,255,255,.02);border-left:3px solid '+(noCity?'#f59e0b':(pub?'var(--bl)':'var(--ln)'))+';border-radius:6px">';
       h+='<div style="flex:1"><b>'+esc(q.ref)+'</b> · <span style="color:'+(statusColors[q.status]||'var(--mt)')+';font-size:10px;font-weight:700">'+(statusLabels[q.status]||q.status)+'</span>';
-      h+='<br><span style="font-size:12px;font-weight:700;color:#06b6d4">'+esc(dep)+' → '+esc(arr)+'</span>';
+      h+='<br><span style="font-size:12px;font-weight:700;color:'+(noCity?'#f59e0b':'#06b6d4')+'">'+esc(dep)+' → '+esc(arr)+'</span>';
+      if(noCity){
+        h+='<br><span style="font-size:10px;color:#f59e0b">💡 Édite ce devis et écris la route dans l\'objet, ex: "Paris → Marseille"</span>';
+      }
       h+='<br><span style="font-size:10px;color:var(--mt)">'+(dt?new Date(dt).toLocaleDateString('fr-FR'):'⚠️ pas de date')+' · '+cN(q.clientId)+(pub?' · <b style="color:var(--bl)">📡 Publié</b>':'')+'</span>';
       h+='</div>';
-      h+='<div style="display:flex;gap:4px">';
+      h+='<div style="display:flex;gap:4px;align-items:flex-start">';
+      if(noCity){
+        h+='<button class="btn sm" onclick="eDev(\''+q.id+'\')" title="Éditer le devis" style="background:#3d2c0a;border-color:#6d5a2a;color:#fcd77a;font-size:11px">✏️</button>';
+      }
       if(pub){
         h+='<button class="btn sm" onclick="publishDevToPlatform(\''+q.id+'\')" title="Mettre à jour" style="background:#3d2c0a;border-color:#6d5a2a;color:#fcd77a;font-size:11px">🔄</button>';
         h+='<button class="btn sm rd" onclick="unpublishDevFromPlatform(\''+q.id+'\')" title="Dépublier" style="font-size:11px">🗑️</button>';
