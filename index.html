@@ -9,7 +9,7 @@
 <meta http-equiv="Content-Language" content="fr">
 <script>
 /* ═══ MODE OFFLINE — Cache direct (compatible GitHub Pages single-file) ═══ */
-var CP_CACHE_VERSION='cathypets-v77zc';
+var CP_CACHE_VERSION='cathypets-v77zd';
 (function(){
   // Purger TOUS les anciens caches d'abord
   if(typeof caches!=='undefined'){
@@ -5948,6 +5948,8 @@ function sav(manual){
   rAll();
   if(manual)showToast('💾 Sauvegardé');
   if(fbConnected)fbPush(true);
+  // Auto-rafraîchir l'UI pour mettre à jour planning, dashboard, etc.
+  if(typeof rAll==='function')setTimeout(function(){try{rAll()}catch(e){console.error('rAll after sav',e)}},50);
 }
 function cleanStorage(){
   try{
