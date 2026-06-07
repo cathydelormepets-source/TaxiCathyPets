@@ -9,7 +9,7 @@
 <meta http-equiv="Content-Language" content="fr">
 <script>
 /* ═══ MODE OFFLINE — Cache direct (compatible GitHub Pages single-file) ═══ */
-var CP_CACHE_VERSION='cathypets-v77zl';
+var CP_CACHE_VERSION='cathypets-v77zm';
 (function(){
   // Purger TOUS les anciens caches d'abord
   if(typeof caches!=='undefined'){
@@ -598,6 +598,7 @@ body.nuit .card{border-color:#0a1520}
 <button class="nb" data-t="retour" data-role="admin" style="border-left:3px solid #3b82f6">🔄 Retour client</button>
 <button class="nb" data-t="vitrine" data-role="admin" style="border-left:3px solid var(--pu)">🔗 Vitrine client</button>
 <button class="nb" data-t="plateforme" data-role="admin" style="border-left:3px solid #06b6d4">🌐 Plateforme Vercel</button>
+<button class="nb" data-t="apercu" data-role="admin" style="border-left:3px solid #E8650A">👁️ Aperçu Plateforme</button>
 <button class="nb" data-t="avis" data-role="admin" style="border-left:3px solid var(--or)">⭐ Avis clients</button>
 <button class="nb" data-t="qrcode" style="border-left:3px solid #06b6d4">🔲 QR Code animal</button>
 </div>
@@ -4331,7 +4332,57 @@ document.getElementById('q_contrat_pec').addEventListener('change',function(){
 </div></div>
 </div></section>
 
-<!-- PARAMS -->
+<!-- 👁️ APERÇU PLATEFORME — Ce que voient tes clients -->
+<section class="tab" id="apercu"><div class="sp">
+<div class="card"><div class="hd"><h3>👁️ Aperçu Plateforme — Vue Client (lecture seule, 100% sécurisé)</h3></div><div class="bd">
+
+<div style="padding:14px;background:linear-gradient(135deg,rgba(232,101,10,.1),rgba(11,29,58,.1));border:1px solid rgba(232,101,10,.4);border-radius:8px;margin-bottom:14px">
+  <div style="font-size:13px;font-weight:700;color:#E8650A;margin-bottom:6px">🐾 Cathy Pets — Vue Client</div>
+  <div style="font-size:12px;color:var(--mt);line-height:1.6">
+    Ceci est <b>exactement ce que voient tes clients</b> sur la plateforme publique.<br>
+    🛡️ Les données privées (prix, marges, noms complets, adresses) <b>NE SONT JAMAIS</b> affichées ici.<br>
+    🔄 Cette vue est synchronisée en temps réel avec Firebase.
+  </div>
+</div>
+
+<!-- Boutons -->
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+  <button class="btn" onclick="rApercu()" style="background:#1a2a3a;border-color:#2a4a6f;color:#8ec8ff;padding:10px 18px;font-size:13px">🔄 Rafraîchir la vue</button>
+  <button class="btn gn" onclick="republishAllToPlatform(false)" style="padding:10px 18px;font-size:13px;font-weight:700">⬆️ Publier mes changements</button>
+  <button class="btn" onclick="window.open('https://cathydelormepets-source-cathy-pets.vercel.app/','_blank')" style="background:#fff5e6;border-color:#E8650A;color:#E8650A;padding:10px 18px;font-size:13px">🌐 Ouvrir la plateforme publique</button>
+</div>
+
+<!-- KPIs façon plateforme -->
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px">
+  <div style="padding:14px;background:linear-gradient(135deg,#0B1D3A,#162a4e);color:#FAF6EE;border-radius:10px;text-align:center">
+    <div style="font-size:10px;text-transform:uppercase;opacity:.8">🚗 Trajets ce mois</div>
+    <div style="font-size:26px;font-weight:900;color:#fcd34d" id="apTrajets">—</div>
+  </div>
+  <div style="padding:14px;background:linear-gradient(135deg,#0B1D3A,#162a4e);color:#FAF6EE;border-radius:10px;text-align:center">
+    <div style="font-size:10px;text-transform:uppercase;opacity:.8">📋 Routes à pourvoir</div>
+    <div style="font-size:26px;font-weight:900;color:#fcd34d" id="apRoutes">—</div>
+  </div>
+  <div style="padding:14px;background:linear-gradient(135deg,#0B1D3A,#162a4e);color:#FAF6EE;border-radius:10px;text-align:center">
+    <div style="font-size:10px;text-transform:uppercase;opacity:.8">🏡 Gardes prévues</div>
+    <div style="font-size:26px;font-weight:900;color:#fcd34d" id="apGardes">—</div>
+  </div>
+  <div style="padding:14px;background:linear-gradient(135deg,#0B1D3A,#162a4e);color:#FAF6EE;border-radius:10px;text-align:center">
+    <div style="font-size:10px;text-transform:uppercase;opacity:.8">📅 Synchro</div>
+    <div style="font-size:14px;font-weight:700;color:#22d3ee;margin-top:6px" id="apSync">⏳ ...</div>
+  </div>
+</div>
+
+<!-- Container apperçu routes -->
+<div style="background:#FAF6EE;border-radius:14px;padding:20px;min-height:400px">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;border-bottom:2px solid rgba(232,101,10,.2);padding-bottom:10px">
+    <h3 style="color:#0B1D3A;font-size:20px;font-family:Georgia,serif;margin:0">📋 Routes prévues — Co-voiturage animaux</h3>
+    <span style="background:#E8650A;color:white;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700" id="apRoutesCount">0</span>
+  </div>
+  <div id="apContainer"></div>
+</div>
+
+</div></div>
+</div></section>
 <section class="tab" id="param"><div class="sp">
 
 <!-- COLONNE GAUCHE -->
@@ -10401,7 +10452,7 @@ function tLegs(t){
 function rAll(){try{fixCounters()}catch(e){}
   try{bSel()}catch(e){console.error('bSel',e)}
   try{updateAddrList()}catch(e){console.error('addrList',e)}
-  var fns=['rCli','rAni','rTrp','rGrd2','rDev2','rFac2','rCol2','rNut2','rDash','rPlan','rRoute','rMulti','rTres','rPL','rStat','rHist','rDrv','rSet','rMails','bSelMail','bSelCliHist','bSelFac','rGcal','rMission','rCarbu','initRapport','rCerfrance','rContrats','rIntlTbl','bSelVitrine','artRender','rPlateforme'];
+  var fns=['rCli','rAni','rTrp','rGrd2','rDev2','rFac2','rCol2','rNut2','rDash','rPlan','rRoute','rMulti','rTres','rPL','rStat','rHist','rDrv','rSet','rMails','bSelMail','bSelCliHist','bSelFac','rGcal','rMission','rCarbu','initRapport','rCerfrance','rContrats','rIntlTbl','bSelVitrine','artRender','rPlateforme','rApercu'];
   fns.forEach(function(fn){try{window[fn]()}catch(e){console.error(fn,e)}});
   $('synI').textContent=(fbConnected?'☁️ Cloud':'💾 Local')+' · '+new Date().toLocaleString('fr-FR');
 }
@@ -13515,6 +13566,73 @@ function copyVercelConfig(){
 
 // rendre rPlatform compatible avec rAll
 function rPlateforme(){if(document.getElementById('platList'))renderPlatformList()}
+
+// ═══════════════════════════════════════════════════════
+// 👁️ APERÇU PLATEFORME — Vue identique à ce que voit le client
+// Lecture seule depuis Firebase site_public (100% sécurisé)
+// ═══════════════════════════════════════════════════════
+function rApercu(){
+  if(!document.getElementById('apContainer'))return;
+  if(!fbConnected){
+    document.getElementById('apContainer').innerHTML='<div style="text-align:center;padding:40px;color:#dc2626;font-weight:700">⚠️ Firebase n\'est pas connecté.<br><span style="font-weight:400;font-size:12px;color:#6b7280">Va dans Paramètres → Firebase</span></div>';
+    return;
+  }
+  document.getElementById('apContainer').innerHTML='<div style="text-align:center;padding:40px;color:#6b7280">⏳ Chargement depuis Firebase...</div>';
+  
+  // Lecture publique de site_public/cathypets-default/trajets et /gardes
+  fbDb.ref('site_public/cathypets-default/trajets').once('value').then(function(snap){
+    var data=snap.val()||{};
+    var trajets=data.trajets||[];
+    var updatedAt=data.updatedAt||0;
+    
+    // Stats
+    var nbDispo=trajets.filter(function(t){return t.statut==='dispo'}).length;
+    var nbConfirme=trajets.filter(function(t){return t.statut==='confirme'}).length;
+    document.getElementById('apTrajets').textContent=nbConfirme;
+    document.getElementById('apRoutes').textContent=nbDispo;
+    document.getElementById('apRoutesCount').textContent=trajets.length;
+    
+    // Date sync
+    if(updatedAt){
+      var d=new Date(updatedAt);
+      document.getElementById('apSync').textContent='✅ '+d.toLocaleDateString('fr-FR')+' '+d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+    }
+    
+    // Affichage routes au style plateforme client
+    var h='';
+    if(trajets.length===0){
+      h='<div style="text-align:center;padding:60px 20px;color:#6b7280"><div style="font-size:48px;margin-bottom:12px">🌱</div><h3 style="color:#0B1D3A;margin-bottom:8px">Aucune route publiée</h3><p style="font-size:13px">Clique sur "⬆️ Publier mes changements" pour publier tes devis.</p></div>';
+    } else {
+      h='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px">';
+      trajets.forEach(function(t){
+        var isConfirme=t.statut==='confirme';
+        var statusBg=isConfirme?'#dcfce7':'#fef3c7';
+        var statusColor=isConfirme?'#166534':'#92400e';
+        var statusLabel=isConfirme?'✅ Confirmé':'📋 À pourvoir';
+        var borderColor=isConfirme?'#22c55e':'#E8650A';
+        h+='<div style="background:white;border-radius:12px;padding:14px;box-shadow:0 4px 12px rgba(11,29,58,.08);border-left:4px solid '+borderColor+'">';
+        h+='<span style="display:inline-block;padding:3px 10px;border-radius:12px;font-size:10px;font-weight:700;background:'+statusBg+';color:'+statusColor+';margin-bottom:8px">'+statusLabel+'</span>';
+        h+='<div style="font-size:16px;font-weight:800;color:#0B1D3A;margin:6px 0">📍 '+esc(t.depart||'?')+' <span style="color:#E8650A;font-size:13px">➡️</span> '+esc(t.arrivee||'?')+'</div>';
+        if(t.arrets)h+='<div style="font-size:11px;color:#6b7280;margin-bottom:6px">🛣️ '+esc(t.arrets)+'</div>';
+        h+='<div style="font-size:12px;color:#6b7280;margin:6px 0">📅 '+esc(t.date||'—')+'</div>';
+        if(t.animaux)h+='<div style="font-size:12px;color:#1F4F4A;font-style:italic">🐾 '+esc(t.animaux)+'</div>';
+        if(t.km)h+='<div style="font-size:11px;color:#6b7280;margin-top:4px">📏 '+esc(t.km)+' km</div>';
+        h+='</div>';
+      });
+      h+='</div>';
+    }
+    document.getElementById('apContainer').innerHTML=h;
+  }).catch(function(err){
+    document.getElementById('apContainer').innerHTML='<div style="text-align:center;padding:40px;color:#dc2626">❌ Erreur : '+esc(err.message)+'</div>';
+  });
+  
+  // Gardes
+  fbDb.ref('site_public/cathypets-default/gardes').once('value').then(function(snap){
+    var data=snap.val()||{};
+    var gardes=data.gardes||[];
+    document.getElementById('apGardes').textContent=gardes.length;
+  }).catch(function(){});
+}
 function reconcilierToutesFactures(){
   var corrigees=0,intactes=0,vidées=0;
   var details=[];
