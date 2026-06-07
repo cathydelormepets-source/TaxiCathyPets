@@ -9,7 +9,7 @@
 <meta http-equiv="Content-Language" content="fr">
 <script>
 /* ═══ MODE OFFLINE — Cache direct (compatible GitHub Pages single-file) ═══ */
-var CP_CACHE_VERSION='cathypets-v77zh';
+var CP_CACHE_VERSION='cathypets-v77zi';
 (function(){
   // Purger TOUS les anciens caches d'abord
   if(typeof caches!=='undefined'){
@@ -12891,7 +12891,7 @@ function _anonymizeCli(cliId){
   return initialeNom||'Client';
 }
 
-// Construit l'objet public à partir d'un transport
+// Construit l'objet public à partir d'un transport (FORMAT PLATEFORME VERCEL)
 function _trToPublicObj(t){
   var wps=t.waypoints||t.wps||[];
   var depart='',arrivee='';
@@ -12899,44 +12899,128 @@ function _trToPublicObj(t){
   if(wps.length>=2)arrivee=(wps[wps.length-1].label||wps[wps.length-1].address||'').split(',')[0].trim();
   if(!depart&&t.departCity)depart=t.departCity;
   if(!arrivee&&t.arriveeCity)arrivee=t.arriveeCity;
-  // Animaux
-  var anis=[];
-  (t.animalIds||(t.animalId?[t.animalId]:[])).forEach(function(aid){
-    var a=db.animaux.find(function(x){return x.id===aid});
-    if(a)anis.push({nom:a.nom,espece:a.espece,race:a.race||''});
-  });
+  // Étapes intermédiaires
+  var arrets='';
+  if(wps.length>2){
+    arrets=wps.slice(1,-1).map(function(w){
+      return (w.label||w.address||'').split(',')[0].trim();
+    }).filter(Boolean).join(', ');
+  }
+  // Animaux (texte libre)
+  var anisStr='';
+  var aniIds=t.animalIds||(t.animalId?[t.animalId]:[]);
+  if(aniIds.length){
+    anisStr=aniIds.map(function(aid){
+      var a=db.animaux.find(function(x){return x.id===aid});
+      return a?(a.espece||'animal'):'';
+    }).filter(Boolean).join(', ');
+  } else {
+    anisStr='Tous animaux';
+  }
+  // Date formatée
+  var dateFR='';
+  if(t.date){
+    try{
+      var d=new Date(t.date);
+      dateFR=d.toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'}).toUpperCase();
+    }catch(e){dateFR=t.date}
+  }
   return {
-    type:'transport',
-    ref:t.ref,
-    date:t.date,
-    depart_ville:depart,
-    arrivee_ville:arrivee,
-    nb_etapes:wps.length,
-    client_initiale:_anonymizeCli(t.clientId),
-    animaux:anis,
-    km:E(t.kmManual||t.km)||0,
-    status:t.status||'planifié',
-    publiéLe:new Date().toISOString()
+    animaux:anisStr,
+    arrets:arrets,
+    arrivee:arrivee,
+    date:dateFR,
+    depart:depart,
+    duree:t.duree||'',
+    km:String(t.kmManual||t.km||''),
+    statut:'dispo',
+    stops:wps.length>2?wps.map(function(w){return (w.label||w.address||'').split(',')[0].trim()}).filter(Boolean):''
   };
 }
 
-// Construit l'objet public à partir d'une garde
+// Construit l'objet public à partir d'une garde (FORMAT PLATEFORME VERCEL)
 function _grdToPublicObj(g){
-  var anis=[];
-  (g.animalIds||(g.animalId?[g.animalId]:[])).forEach(function(aid){
-    var a=db.animaux.find(function(x){return x.id===aid});
-    if(a)anis.push({nom:a.nom,espece:a.espece,race:a.race||''});
-  });
+  var anisStr='';
+  var aniIds=g.animalIds||(g.animalId?[g.animalId]:[]);
+  if(aniIds.length){
+    anisStr=aniIds.map(function(aid){
+      var a=db.animaux.find(function(x){return x.id===aid});
+      return a?(a.espece||'animal'):'';
+    }).filter(Boolean).join(', ');
+  } else {
+    anisStr='Tous animaux';
+  }
+  var dateFR='';
+  if(g.start){
+    try{
+      var d1=new Date(g.start);
+      var d2=g.end?new Date(g.end):null;
+      dateFR='Du '+d1.toLocaleDateString('fr-FR',{day:'numeric',month:'long'})+(d2?' au '+d2.toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'}).toUpperCase():'');
+    }catch(e){dateFR=g.start}
+  }
   return {
-    type:'garde',
-    ref:g.ref,
-    date_debut:g.start?g.start.slice(0,10):'',
-    date_fin:g.end?g.end.slice(0,10):'',
-    client_initiale:_anonymizeCli(g.clientId),
-    animaux:anis,
-    nb_jours:g.start&&g.end?Math.ceil((new Date(g.end)-new Date(g.start))/864e5):0,
-    status:g.status||'planifié',
-    publiéLe:new Date().toISOString()
+    animaux:anisStr,
+    arrets:'',
+    arrivee:'Garde à domicile',
+    date:dateFR,
+    depart:'Cathy Pets',
+    duree:'',
+    km:'',
+    statut:'garde',
+    stops:''
+  };
+}
+
+// Construit l'objet public à partir d'un devis (FORMAT PLATEFORME VERCEL — route co-voiturage)
+function _devToPublicObj(q){
+  var wps=q.waypoints||q.segments||[];
+  var depart='',arrivee='';
+  if(wps.length>=1){var p1=wps[0];depart=(p1.label||p1.address||p1.ville||p1.from||'').split(',')[0].trim()}
+  if(wps.length>=2){var p2=wps[wps.length-1];arrivee=(p2.label||p2.address||p2.ville||p2.to||'').split(',')[0].trim()}
+  if(!depart)depart='À définir';
+  if(!arrivee)arrivee='À définir';
+  // Étapes intermédiaires
+  var arrets='';
+  if(wps.length>2){
+    arrets=wps.slice(1,-1).map(function(w){
+      return (w.label||w.address||w.ville||'').split(',')[0].trim();
+    }).filter(Boolean).join(', ');
+  }
+  // Animaux
+  var anisStr='';
+  var aniIds=q.animalIds||(q.animalId?[q.animalId]:[]);
+  if(aniIds.length){
+    anisStr=aniIds.map(function(aid){
+      var a=db.animaux.find(function(x){return x.id===aid});
+      return a?(a.espece||'animal'):'';
+    }).filter(Boolean).join(', ');
+  } else {
+    anisStr='Tous animaux';
+  }
+  // Date formatée
+  var datePrevue=q.dateDebut||q.dateTransport||q.dateLivraison||q.dateExec||q.date;
+  var dateFR='';
+  if(datePrevue){
+    try{
+      var d=new Date(datePrevue);
+      dateFR=d.toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'}).toUpperCase();
+    }catch(e){dateFR=datePrevue}
+  }
+  // Statut adapté à la plateforme
+  var statut='dispo';
+  if(q.status==='accepté'||q.status==='accepte'||q.status==='signe')statut='confirme';
+  else if(q.status==='brouillon')statut='dispo';
+  else if(q.status==='envoyé')statut='dispo';
+  return {
+    animaux:anisStr,
+    arrets:arrets,
+    arrivee:arrivee,
+    date:dateFR,
+    depart:depart,
+    duree:'',
+    km:'',
+    statut:statut,
+    stops:wps.length>2?wps.map(function(w){return (w.label||w.address||w.ville||'').split(',')[0].trim()}).filter(Boolean):''
   };
 }
 
@@ -13007,48 +13091,6 @@ function unpublishGrdFromPlatform(id){
 }
 
 // Construit l'objet public à partir d'un devis (ROUTE PRÉVUE pour co-voiturage)
-function _devToPublicObj(q){
-  var cl=db.clients.find(function(c){return c.id===q.clientId})||{};
-  var anis=[];
-  (q.animalIds||(q.animalId?[q.animalId]:[])).forEach(function(aid){
-    var a=db.animaux.find(function(x){return x.id===aid});
-    if(a)anis.push({nom:a.nom,espece:a.espece,race:a.race||''});
-  });
-  // Récupérer le trajet depuis les waypoints du devis
-  var wps=q.waypoints||q.segments||[];
-  var depart='',arrivee='';
-  if(wps.length>=1){var p1=wps[0];depart=(p1.label||p1.address||p1.ville||p1.from||'').split(',')[0].trim()}
-  if(wps.length>=2){var p2=wps[wps.length-1];arrivee=(p2.label||p2.address||p2.ville||p2.to||'').split(',')[0].trim()}
-  // Date prestation
-  var datePrevue=q.dateDebut||q.dateTransport||q.dateLivraison||q.dateExec||'';
-  // Mapping statut → statut public
-  var statusMap={
-    'brouillon':'À valider',
-    'envoyé':'À pourvoir',
-    'accepté':'Confirmé ✅',
-    'accepte':'Confirmé ✅',
-    'signe':'Confirmé ✅',
-    'facturé':'Réalisé'
-  };
-  return {
-    type:'route',
-    source:'devis',
-    ref:q.ref,
-    date_prevue:datePrevue||(q.date?q.date.slice(0,10):''),
-    depart_ville:depart,
-    arrivee_ville:arrivee,
-    nb_etapes:wps.length,
-    client_initiale:_anonymizeCli(q.clientId),
-    objet:q.objet||'Transport animalier',
-    nb_animaux:anis.length,
-    animaux:anis,
-    status_public:statusMap[q.status]||q.status||'À pourvoir',
-    status_raw:q.status||'brouillon',
-    co_voiturage_possible:q.status!=='refusé'&&q.status!=='annulé'&&q.status!=='facturé',
-    publiéLe:new Date().toISOString()
-  };
-}
-
 // Publier un devis vers Firebase site_public/cathypets-default/routes/
 function publishDevToPlatform(id){
   if(!fbConnected){alert('⚠️ Firebase n\'est pas connecté');return}
@@ -13083,39 +13125,61 @@ function unpublishDevFromPlatform(id){
 function publishAllToPlatform(){
   if(!fbConnected){alert('⚠️ Firebase n\'est pas connecté');return}
   var today=tdy();
-  var trsAFuturs=act(db.transports).filter(function(t){return t.date&&t.date>=today&&!t._publiéLePlateforme});
-  var grdsAFuturs=act(db.gardes).filter(function(g){return g.start&&g.start.slice(0,10)>=today&&!g._publiéLePlateforme});
-  // Devis "en attente" = pas encore facturés ni refusés (brouillon, envoyé, accepté, signé)
-  var devsAttente=act(db.devis).filter(function(q){return q.status!=='facturé'&&q.status!=='refusé'&&q.status!=='annulé'&&!q._publiéLePlateforme});
-  var total=trsAFuturs.length+grdsAFuturs.length+devsAttente.length;
-  if(!total){alert('✅ Tout est déjà publié ou rien à publier');return}
-  if(!confirm('Publier '+total+' élément(s) sur la plateforme ?\n\n'+trsAFuturs.length+' transports + '+grdsAFuturs.length+' gardes + '+devsAttente.length+' devis en attente'))return;
-  var done=0;var errors=0;
-  function onDone(){
-    done++;
-    if(done===total){
-      sav(false);
-      alert('✅ '+done+' élément(s) publié(s)'+(errors>0?' ('+errors+' erreurs)':''));
-      renderPlatformList();
-    }
-  }
-  trsAFuturs.forEach(function(t){
+  var trsAFuturs=act(db.transports).filter(function(t){return t.date&&t.date>=today});
+  var grdsAFuturs=act(db.gardes).filter(function(g){return g.start&&g.start.slice(0,10)>=today});
+  var devsRoutes=act(db.devis).filter(function(q){
+    return q.status!=='refusé'&&q.status!=='annulé'&&q.status!=='facturé';
+  });
+  var total=trsAFuturs.length+grdsAFuturs.length+devsRoutes.length;
+  if(!total){alert('✅ Rien à publier');return}
+  if(!confirm('Publier sur la plateforme Vercel :\n\n'+trsAFuturs.length+' trajet(s) confirmé(s)\n'+devsRoutes.length+' route(s) en devis\n'+grdsAFuturs.length+' garde(s)\n\nTotal : '+total+' éléments\n\nFormat compatible avec ta plateforme existante.'))return;
+  
+  // Construire un TABLEAU au format attendu par ta plateforme Vercel
+  var trajetsArray=[];
+  trsAFuturs.forEach(function(t,idx){
     var obj=_trToPublicObj(t);
-    fbDb.ref('site_public/cathypets-default/trajets/'+t.id).set(obj).then(function(){
-      t._publiéLePlateforme=new Date().toISOString();stamp(t);onDone();
-    }).catch(function(){errors++;onDone()});
+    obj.ordre=trajetsArray.length;
+    trajetsArray.push(obj);
+    t._publiéLePlateforme=new Date().toISOString();
+    stamp(t);
   });
-  grdsAFuturs.forEach(function(g){
-    var obj=_grdToPublicObj(g);
-    fbDb.ref('site_public/cathypets-default/gardes/'+g.id).set(obj).then(function(){
-      g._publiéLePlateforme=new Date().toISOString();stamp(g);onDone();
-    }).catch(function(){errors++;onDone()});
-  });
-  devsAttente.forEach(function(q){
+  devsRoutes.forEach(function(q){
     var obj=_devToPublicObj(q);
-    fbDb.ref('site_public/cathypets-default/routes/'+q.id).set(obj).then(function(){
-      q._publiéLePlateforme=new Date().toISOString();stamp(q);onDone();
-    }).catch(function(){errors++;onDone()});
+    obj.ordre=trajetsArray.length;
+    trajetsArray.push(obj);
+    q._publiéLePlateforme=new Date().toISOString();
+    stamp(q);
+  });
+  var gardesArray=[];
+  grdsAFuturs.forEach(function(g,idx){
+    var obj=_grdToPublicObj(g);
+    obj.ordre=idx;
+    gardesArray.push(obj);
+    g._publiéLePlateforme=new Date().toISOString();
+    stamp(g);
+  });
+  
+  var updatedAt=Date.now();
+  var promises=[];
+  // Format exact attendu par la plateforme : { trajets: [...], updatedAt }
+  promises.push(fbDb.ref('site_public/cathypets-default/trajets').set({
+    trajets:trajetsArray,
+    updatedAt:updatedAt
+  }));
+  if(gardesArray.length){
+    promises.push(fbDb.ref('site_public/cathypets-default/gardes').set({
+      gardes:gardesArray,
+      updatedAt:updatedAt
+    }));
+  }
+  
+  Promise.all(promises).then(function(){
+    sav(false);
+    showToast('✅ '+total+' éléments publiés');
+    renderPlatformList();
+    alert('✅ Publication réussie !\n\n'+trajetsArray.length+' trajets+routes publiés\n'+gardesArray.length+' gardes publiées\n\n👉 Va sur ta plateforme Vercel et rafraîchis la page (Ctrl+F5) pour voir le résultat !');
+  }).catch(function(err){
+    alert('❌ Erreur publication : '+err.message);
   });
 }
 
