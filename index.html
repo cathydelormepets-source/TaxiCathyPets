@@ -9,7 +9,7 @@
 <meta http-equiv="Content-Language" content="fr">
 <script>
 /* ═══ MODE OFFLINE — Cache direct (compatible GitHub Pages single-file) ═══ */
-var CP_CACHE_VERSION='cathypets-v77zn';
+var CP_CACHE_VERSION='cathypets-v77zp';
 (function(){
   // Purger TOUS les anciens caches d'abord
   if(typeof caches!=='undefined'){
@@ -13505,14 +13505,15 @@ function renderPlatformList(){
       h+='<div style="flex:1"><b>'+esc(q.ref)+'</b> · <span style="color:'+(statusColors[q.status]||'var(--mt)')+';font-size:10px;font-weight:700">'+(statusLabels[q.status]||q.status)+'</span>';
       h+='<br><span style="font-size:12px;font-weight:700;color:'+(noCity?'#f59e0b':'#06b6d4')+'">'+esc(dep)+' → '+esc(arr)+'</span>';
       if(noCity){
-        h+='<br><span style="font-size:10px;color:#f59e0b">💡 Édite ce devis et écris la route dans l\'objet, ex: "Paris → Marseille"</span>';
+        h+='<br><span style="font-size:10px;color:#f59e0b">💡 Clique 🏙️ pour ajouter les villes en 5 secondes</span>';
       }
       h+='<br><span style="font-size:10px;color:var(--mt)">'+(dt?new Date(dt).toLocaleDateString('fr-FR'):'⚠️ pas de date')+' · '+cN(q.clientId)+(pub?' · <b style="color:var(--bl)">📡 Publié</b>':'')+'</span>';
       h+='</div>';
       h+='<div style="display:flex;gap:4px;align-items:flex-start">';
       if(noCity){
-        h+='<button class="btn sm" onclick="eDev(\''+q.id+'\')" title="Éditer le devis" style="background:#3d2c0a;border-color:#6d5a2a;color:#fcd77a;font-size:11px">✏️</button>';
+        h+='<button class="btn sm gn" onclick="quickAddVilles(\''+q.id+'\')" title="Ajouter villes rapidement" style="font-size:11px;font-weight:700">🏙️ Ajouter villes</button>';
       }
+      h+='<button class="btn sm" onclick="eDev(\''+q.id+'\')" title="Éditer le devis complet" style="background:#1a2a3a;border-color:#2a4a6f;color:#8ec8ff;font-size:11px">✏️</button>';
       if(pub){
         h+='<button class="btn sm" onclick="publishDevToPlatform(\''+q.id+'\')" title="Mettre à jour" style="background:#3d2c0a;border-color:#6d5a2a;color:#fcd77a;font-size:11px">🔄</button>';
         h+='<button class="btn sm rd" onclick="unpublishDevFromPlatform(\''+q.id+'\')" title="Dépublier" style="font-size:11px">🗑️</button>';
@@ -13572,6 +13573,100 @@ function copyVercelConfig(){
     var bd='<textarea readonly style="width:100%;min-height:400px;font-family:monospace;font-size:11px;padding:10px;background:#0a1825;color:#7bf0b0;border:1px solid var(--ln);border-radius:8px">'+esc(code)+'</textarea>';
     oMo('📋 Code Vercel à copier', bd, '<button class="btn" onclick="cMo()">Fermer</button>');
   }
+}
+
+// 🏙️ MINI-FORMULAIRE — Ajouter villes rapidement à un devis sans ouvrir l'éditeur complet
+function quickAddVilles(devId){
+  var q=db.devis.find(function(x){return x.id===devId});
+  if(!q){alert('Devis introuvable');return}
+  
+  // Pré-remplir si villes existantes (édition)
+  var depActuel='',arrActuel='';
+  var wps=q.waypoints||q.segments||[];
+  if(wps.length>=1)depActuel=wps[0].address||wps[0].adresse||wps[0].ville||q.departCity||'';
+  if(wps.length>=2)arrActuel=wps[wps.length-1].address||wps[wps.length-1].adresse||wps[wps.length-1].ville||q.arriveeCity||'';
+  if(!depActuel)depActuel=q.departCity||q.departAddress||'';
+  if(!arrActuel)arrActuel=q.arriveeCity||q.arriveeAddress||'';
+  
+  var dt=q.dateDebut||q.dateTransport||q.date||'';
+  var bd='<div style="font-size:11px;color:var(--mt);margin-bottom:14px;padding:8px;background:rgba(245,158,11,.08);border-radius:6px">';
+  bd+='📋 <b>'+esc(q.ref)+'</b> · '+cN(q.clientId)+(dt?' · '+new Date(dt).toLocaleDateString('fr-FR'):'')+'<br>';
+  bd+='💡 Tape juste les <b>noms des villes</b> (ex: Paris, Marseille)';
+  bd+='</div>';
+  
+  bd+='<div style="margin-bottom:12px">';
+  bd+='<label style="font-size:11px;font-weight:700;color:var(--gd);display:block;margin-bottom:4px">🏠 Ville de départ</label>';
+  bd+='<input id="qav_dep" type="text" value="'+esc(depActuel)+'" placeholder="Ex: Paris" style="width:100%;padding:10px;font-size:14px;border:1px solid var(--ln);background:var(--pn);color:var(--tx);border-radius:8px" autofocus>';
+  bd+='</div>';
+  
+  bd+='<div style="margin-bottom:12px">';
+  bd+='<label style="font-size:11px;font-weight:700;color:var(--gd);display:block;margin-bottom:4px">🏁 Ville d\'arrivée</label>';
+  bd+='<input id="qav_arr" type="text" value="'+esc(arrActuel)+'" placeholder="Ex: Marseille" style="width:100%;padding:10px;font-size:14px;border:1px solid var(--ln);background:var(--pn);color:var(--tx);border-radius:8px">';
+  bd+='</div>';
+  
+  bd+='<div style="margin-bottom:14px">';
+  bd+='<label style="font-size:11px;font-weight:700;color:var(--mt);display:block;margin-bottom:4px">🛣️ Étapes intermédiaires (optionnel, séparées par des virgules)</label>';
+  var arretsActuels='';
+  if(wps.length>2){
+    arretsActuels=wps.slice(1,-1).map(function(w){return w.address||w.adresse||w.ville||''}).filter(Boolean).join(', ');
+  }
+  bd+='<input id="qav_etapes" type="text" value="'+esc(arretsActuels)+'" placeholder="Ex: Lyon, Avignon" style="width:100%;padding:10px;font-size:14px;border:1px solid var(--ln);background:var(--pn);color:var(--tx);border-radius:8px">';
+  bd+='</div>';
+  
+  oMo('🏙️ Ajouter les villes — '+q.ref, bd,
+    '<button class="btn" onclick="cMo()" style="background:#1a2a3a;border-color:#2a4a6f;color:#8ec8ff">✕ Annuler</button> '+
+    '<button class="btn gn" onclick="saveQuickVilles(\''+devId+'\')" style="font-weight:700;padding:10px 24px">✅ Enregistrer & publier</button>'
+  );
+  
+  // Focus auto sur le 1er champ
+  setTimeout(function(){var f=$('qav_dep');if(f)f.focus();},100);
+}
+
+// Sauvegarder les villes du mini-formulaire
+function saveQuickVilles(devId){
+  var q=db.devis.find(function(x){return x.id===devId});
+  if(!q){alert('Devis introuvable');cMo();return}
+  
+  var dep=($('qav_dep')||{}).value||'';
+  var arr=($('qav_arr')||{}).value||'';
+  var etapes=($('qav_etapes')||{}).value||'';
+  
+  dep=dep.trim();arr=arr.trim();etapes=etapes.trim();
+  
+  if(!dep||!arr){alert('⚠️ Ville de départ et arrivée obligatoires');return}
+  
+  // Construire les waypoints
+  var newWps=[];
+  newWps.push({label:'🏠 Base départ',address:dep});
+  if(etapes){
+    etapes.split(',').forEach(function(et,i){
+      et=et.trim();
+      if(et)newWps.push({label:'📍 Étape '+(i+1),address:et});
+    });
+  }
+  newWps.push({label:'🏁 Destination',address:arr});
+  
+  // Mettre à jour le devis
+  q.waypoints=newWps;
+  q.departCity=dep;
+  q.departAddress=dep;
+  q.arriveeCity=arr;
+  q.arriveeAddress=arr;
+  stamp(q);
+  
+  lH('edit','Villes ajoutées: '+q.ref+' ('+dep+' → '+arr+')');
+  sav();
+  cMo();
+  
+  showToast('✅ Villes ajoutées : '+dep+' → '+arr);
+  
+  // Re-publier automatiquement (Firebase + Supabase)
+  setTimeout(function(){
+    if(typeof republishAllToPlatform==='function'){
+      republishAllToPlatform(true);
+    }
+    if(typeof renderPlatformList==='function')renderPlatformList();
+  },200);
 }
 
 // rendre rPlatform compatible avec rAll
@@ -13713,13 +13808,13 @@ function _trToSupabaseObj(t){
   };
 }
 
-// Synchroniser tous les trajets V77 vers Supabase
+// Synchroniser tous les trajets V77 vers Supabase (MODE MERGE - ne touche pas aux trajets créés sur la plateforme)
 function syncSupabase(silent){
   silent=silent===true;
-  // Construire liste trajets
-  var trips=[];
+  
+  // 1. Construire les trajets V77 (avec marqueur source='v77')
+  var v77Trips=[];
   var today=tdy();
-  // Devis futurs non refusés
   act(db.devis).forEach(function(q){
     if(q.status==='refusé'||q.status==='annulé'||q.status==='facturé')return;
     var datePrevue=q.dateDebut||q.dateTransport||q.dateLivraison||q.dateExec||q.date;
@@ -13727,42 +13822,65 @@ function syncSupabase(silent){
       try{if(new Date(datePrevue).toISOString().slice(0,10)<today)return}catch(e){}
     }
     var obj=_devToSupabaseObj(q);
-    if(obj)trips.push(obj);
+    if(obj){
+      obj.source='v77';
+      obj.v77Id=q.id;
+      v77Trips.push(obj);
+    }
   });
-  // Transports futurs
   act(db.transports).forEach(function(t){
     if(!t.date||t.date<today)return;
     var obj=_trToSupabaseObj(t);
-    if(obj)trips.push(obj);
+    if(obj){
+      obj.source='v77';
+      obj.v77Id=t.id;
+      v77Trips.push(obj);
+    }
   });
   
-  if(trips.length===0){
-    if(!silent)showToast('⚠️ Aucun trajet futur avec villes à synchroniser');
+  if(v77Trips.length===0){
+    if(!silent)showToast('⚠️ Aucun trajet V77 futur avec villes à synchroniser');
     return Promise.resolve();
   }
   
-  // PATCH Supabase
-  return fetch(SUPABASE_URL+'/rest/v1/app_data?key=eq.'+SUPABASE_TRIPS_KEY,{
-    method:'PATCH',
+  // 2. LIRE les trajets actuels de Supabase pour MERGER
+  return fetch(SUPABASE_URL+'/rest/v1/app_data?key=eq.'+SUPABASE_TRIPS_KEY+'&select=value',{
     headers:{
       'apikey':SUPABASE_KEY,
-      'Authorization':'Bearer '+SUPABASE_KEY,
-      'Content-Type':'application/json',
-      'Prefer':'return=minimal'
-    },
-    body:JSON.stringify({value:trips,updated_at:new Date().toISOString()})
-  }).then(function(r){
-    if(r.ok){
-      if(silent){
-        showToast('🌐 Plateforme Vercel synchronisée ('+trips.length+' trajets)');
-      } else {
-        showToast('✅ Supabase : '+trips.length+' trajets publiés sur la plateforme');
-      }
-      console.log('✅ Supabase synchronisé : '+trips.length+' trajets');
-    } else {
-      console.error('Erreur Supabase sync:',r.status);
-      if(!silent)showToast('❌ Erreur Supabase : code '+r.status);
+      'Authorization':'Bearer '+SUPABASE_KEY
     }
+  }).then(function(r){return r.json()}).then(function(data){
+    var existingTrips=(data[0]||{}).value||[];
+    
+    // 3. Garder UNIQUEMENT les trajets créés directement sur la plateforme (PAS source='v77')
+    var nonV77Trips=existingTrips.filter(function(t){return t.source!=='v77'});
+    
+    // 4. Fusionner : trajets plateforme + nouveaux V77
+    var allTrips=nonV77Trips.concat(v77Trips);
+    
+    // 5. PATCH Supabase avec tout
+    return fetch(SUPABASE_URL+'/rest/v1/app_data?key=eq.'+SUPABASE_TRIPS_KEY,{
+      method:'PATCH',
+      headers:{
+        'apikey':SUPABASE_KEY,
+        'Authorization':'Bearer '+SUPABASE_KEY,
+        'Content-Type':'application/json',
+        'Prefer':'return=minimal'
+      },
+      body:JSON.stringify({value:allTrips,updated_at:new Date().toISOString()})
+    }).then(function(r){
+      if(r.ok){
+        if(silent){
+          showToast('🌐 Plateforme Vercel synchronisée ('+v77Trips.length+' V77 + '+nonV77Trips.length+' plateforme)');
+        } else {
+          showToast('✅ Supabase synchronisé : '+v77Trips.length+' V77 + '+nonV77Trips.length+' originaux conservés');
+        }
+        console.log('✅ Sync OK : V77='+v77Trips.length+', Plateforme='+nonV77Trips.length+', Total='+allTrips.length);
+      } else {
+        console.error('Erreur Supabase sync:',r.status);
+        if(!silent)showToast('❌ Erreur Supabase : code '+r.status);
+      }
+    });
   }).catch(function(err){
     console.error('Erreur Supabase sync:',err);
     if(!silent)showToast('❌ Erreur Supabase : '+err.message);
