@@ -9,7 +9,7 @@
 <meta http-equiv="Content-Language" content="fr">
 <script>
 /* ═══ MODE OFFLINE — Cache direct (compatible GitHub Pages single-file) ═══ */
-var CP_CACHE_VERSION='cathypets-v77zp';
+var CP_CACHE_VERSION='cathypets-v77zq';
 (function(){
   // Purger TOUS les anciens caches d'abord
   if(typeof caches!=='undefined'){
@@ -13838,27 +13838,70 @@ function syncSupabase(silent){
     }
   });
   
-  if(v77Trips.length===0){
-    if(!silent)showToast('⚠️ Aucun trajet V77 futur avec villes à synchroniser');
-    return Promise.resolve();
-  }
-  
-  // 2. LIRE les trajets actuels de Supabase pour MERGER
-  return fetch(SUPABASE_URL+'/rest/v1/app_data?key=eq.'+SUPABASE_TRIPS_KEY+'&select=value',{
-    headers:{
-      'apikey':SUPABASE_KEY,
-      'Authorization':'Bearer '+SUPABASE_KEY
-    }
-  }).then(function(r){return r.json()}).then(function(data){
-    var existingTrips=(data[0]||{}).value||[];
+  // 2. LIRE les trajets actuels + les demandes en parallèle
+  return Promise.all([
+    fetch(SUPABASE_URL+'/rest/v1/app_data?key=eq.'+SUPABASE_TRIPS_KEY+'&select=value',{
+      headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}
+    }).then(function(r){return r.json()}),
+    fetch(SUPABASE_URL+'/rest/v1/app_data?key=eq.cathy-pets-v4:requests&select=value',{
+      headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}
+    }).then(function(r){return r.json()})
+  ]).then(function(results){
+    var existingTrips=(results[0][0]||{}).value||[];
+    var requests=(results[1][0]||{}).value||[];
     
-    // 3. Garder UNIQUEMENT les trajets créés directement sur la plateforme (PAS source='v77')
-    var nonV77Trips=existingTrips.filter(function(t){return t.source!=='v77'});
+    // 3. Garder UNIQUEMENT les trajets créés directement sur la plateforme (PAS source='v77' et PAS source='request')
+    var nonV77Trips=existingTrips.filter(function(t){return t.source!=='v77'&&t.source!=='request'});
     
-    // 4. Fusionner : trajets plateforme + nouveaux V77
-    var allTrips=nonV77Trips.concat(v77Trips);
+    // 4. CONVERTIR les demandes directes en trajets (les "trajets souhaités")
+    // → Permet à d'autres clients de se coller dessus = co-voiturage = double bénéfice
+    var requestTrips=[];
+    requests.forEach(function(req){
+      // Filtre : demandes directes (tripId null) avec statut actif et date future
+      if(req.tripId)return; // skip si liée à un trajet existant
+      if(req.status==='completed'||req.status==='cancelled'||req.status==='refused')return;
+      if(!req.date||!req.origin||!req.destination)return;
+      // Skip si dans le passé
+      try{if(new Date(req.date).toISOString().slice(0,10)<today)return}catch(e){return}
+      
+      // Nettoyer origin/destination (enlever code postal)
+      function cleanCity(s){
+        if(!s)return '';
+        return String(s).replace(/^\d{4,5}\s+/,'').trim();
+      }
+      var origin=cleanCity(req.origin);
+      var destination=cleanCity(req.destination);
+      if(!origin||!destination)return;
+      
+      requestTrips.push({
+        id:req.id.substring(0,9),
+        date:req.date,
+        notes:'Trajet ouvert au co-voiturage',
+        stops:[],
+        origin:origin,
+        status:'available',
+        endDate:null,
+        vehicle:'',
+        capacity:'',
+        tourZone:null,
+        tripType:'simple',
+        basePrice:null,
+        createdAt:req.createdAt||new Date().toISOString(),
+        tourTitle:null,
+        cargoTypes:[req.cargoType||'animal'],
+        totalSeats:null,
+        destination:destination,
+        pricePerAnimal:null,
+        pricePerParcel:null,
+        source:'request',
+        requestId:req.id
+      });
+    });
     
-    // 5. PATCH Supabase avec tout
+    // 5. Fusionner : trajets plateforme + demandes converties + nouveaux V77
+    var allTrips=nonV77Trips.concat(requestTrips).concat(v77Trips);
+    
+    // 6. PATCH Supabase
     return fetch(SUPABASE_URL+'/rest/v1/app_data?key=eq.'+SUPABASE_TRIPS_KEY,{
       method:'PATCH',
       headers:{
@@ -13870,12 +13913,13 @@ function syncSupabase(silent){
       body:JSON.stringify({value:allTrips,updated_at:new Date().toISOString()})
     }).then(function(r){
       if(r.ok){
+        var msg='✅ '+v77Trips.length+' V77 + '+requestTrips.length+' demandes + '+nonV77Trips.length+' originaux = '+allTrips.length+' trajets';
         if(silent){
-          showToast('🌐 Plateforme Vercel synchronisée ('+v77Trips.length+' V77 + '+nonV77Trips.length+' plateforme)');
+          showToast('🌐 Plateforme Vercel synchronisée');
         } else {
-          showToast('✅ Supabase synchronisé : '+v77Trips.length+' V77 + '+nonV77Trips.length+' originaux conservés');
+          showToast(msg);
         }
-        console.log('✅ Sync OK : V77='+v77Trips.length+', Plateforme='+nonV77Trips.length+', Total='+allTrips.length);
+        console.log('✅ Sync OK :', {v77:v77Trips.length, requests:requestTrips.length, plateforme:nonV77Trips.length, total:allTrips.length});
       } else {
         console.error('Erreur Supabase sync:',r.status);
         if(!silent)showToast('❌ Erreur Supabase : code '+r.status);
