@@ -9,7 +9,7 @@
 <meta http-equiv="Content-Language" content="fr">
 <script>
 /* ═══ MODE OFFLINE — Cache direct (compatible GitHub Pages single-file) ═══ */
-var CP_CACHE_VERSION='cathypets-v77zg';
+var CP_CACHE_VERSION='cathypets-v77zh';
 (function(){
   // Purger TOUS les anciens caches d'abord
   if(typeof caches!=='undefined'){
@@ -13157,8 +13157,13 @@ function renderPlatformList(){
   $('platLastSync').textContent=lastSync?new Date(lastSync).toLocaleDateString('fr-FR')+' '+new Date(lastSync).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):'Jamais';
   
   if(!trs.length&&!grds.length){
-    listEl.innerHTML='<div style="text-align:center;padding:30px;color:var(--mt)">Aucun trajet ni garde à venir</div>';
-    return;
+    // Vérifier s'il y a des devis avant de dire "rien à afficher"
+    var hasAnyDev=act(db.devis).filter(function(q){return q.status!=='refusé'&&q.status!=='annulé'&&q.status!=='facturé'}).length>0;
+    if(!hasAnyDev){
+      listEl.innerHTML='<div style="text-align:center;padding:30px;color:var(--mt)">Aucun trajet, garde ni devis à venir</div>';
+      return;
+    }
+    // Sinon on continue pour afficher les devis/routes en bas
   }
   
   var h='';
