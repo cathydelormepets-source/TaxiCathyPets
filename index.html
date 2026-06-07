@@ -9,7 +9,7 @@
 <meta http-equiv="Content-Language" content="fr">
 <script>
 /* ═══ MODE OFFLINE — Cache direct (compatible GitHub Pages single-file) ═══ */
-var CP_CACHE_VERSION='cathypets-v77zi';
+var CP_CACHE_VERSION='cathypets-v77zj';
 (function(){
   // Purger TOUS les anciens caches d'abord
   if(typeof caches!=='undefined'){
@@ -12894,17 +12894,41 @@ function _anonymizeCli(cliId){
 // Construit l'objet public à partir d'un transport (FORMAT PLATEFORME VERCEL)
 function _trToPublicObj(t){
   var wps=t.waypoints||t.wps||[];
+  // Helper : extraire la VILLE depuis address (priorité) ou label (fallback)
+  function extractCity(w){
+    if(!w)return '';
+    // 1. Essayer l'adresse complète (ex: "12 rue X, 75001 Paris" → "Paris")
+    var addr=w.address||w.adresse||w.ville||'';
+    if(addr){
+      // Prendre le dernier segment après virgule, sinon le 1er mot
+      var parts=addr.split(',').map(function(s){return s.trim()}).filter(Boolean);
+      if(parts.length>1){
+        // Dernier segment = souvent ville + code postal → extraire la ville
+        var last=parts[parts.length-1];
+        // Enlever code postal (5 chiffres)
+        var cleaned=last.replace(/\d{5}/g,'').trim();
+        if(cleaned)return cleaned;
+        return last;
+      }
+      // Si pas de virgule, prendre tout le champ et enlever code postal
+      return addr.replace(/\d{5}/g,'').trim();
+    }
+    // 2. Sinon utiliser le label (mais ignorer les labels génériques)
+    var lb=w.label||'';
+    if(lb&&!lb.match(/Base départ|Destination|Prise en charge|Retour base|Étape \d/i)){
+      return lb.split(',')[0].trim();
+    }
+    return '';
+  }
   var depart='',arrivee='';
-  if(wps.length>=1)depart=(wps[0].label||wps[0].address||'').split(',')[0].trim();
-  if(wps.length>=2)arrivee=(wps[wps.length-1].label||wps[wps.length-1].address||'').split(',')[0].trim();
+  if(wps.length>=1)depart=extractCity(wps[0]);
+  if(wps.length>=2)arrivee=extractCity(wps[wps.length-1]);
   if(!depart&&t.departCity)depart=t.departCity;
   if(!arrivee&&t.arriveeCity)arrivee=t.arriveeCity;
   // Étapes intermédiaires
   var arrets='';
   if(wps.length>2){
-    arrets=wps.slice(1,-1).map(function(w){
-      return (w.label||w.address||'').split(',')[0].trim();
-    }).filter(Boolean).join(', ');
+    arrets=wps.slice(1,-1).map(extractCity).filter(Boolean).join(', ');
   }
   // Animaux (texte libre)
   var anisStr='';
@@ -12928,13 +12952,13 @@ function _trToPublicObj(t){
   return {
     animaux:anisStr,
     arrets:arrets,
-    arrivee:arrivee,
+    arrivee:arrivee||'À définir',
     date:dateFR,
-    depart:depart,
+    depart:depart||'À définir',
     duree:t.duree||'',
     km:String(t.kmManual||t.km||''),
     statut:'dispo',
-    stops:wps.length>2?wps.map(function(w){return (w.label||w.address||'').split(',')[0].trim()}).filter(Boolean):''
+    stops:wps.length>2?wps.map(extractCity).filter(Boolean):''
   };
 }
 
@@ -12974,17 +12998,85 @@ function _grdToPublicObj(g){
 // Construit l'objet public à partir d'un devis (FORMAT PLATEFORME VERCEL — route co-voiturage)
 function _devToPublicObj(q){
   var wps=q.waypoints||q.segments||[];
+  // Helper : extraire la VILLE depuis address (priorité) ou label
+  function extractCity(w){
+    if(!w)return '';
+    var addr=w.address||w.adresse||w.ville||w.from||w.to||'';
+    if(addr){
+      var parts=addr.split(',').map(function(s){return s.trim()}).filter(Boolean);
+      if(parts.length>1){
+        var last=parts[parts.length-1];
+        var cleaned=last.replace(/\d{5}/g,'').trim();
+        if(cleaned)return cleaned;
+        return last;
+      }
+      return addr.replace(/\d{5}/g,'').trim();
+    }
+    var lb=w.label||'';
+    if(lb&&!lb.match(/Base départ|Destination|Prise en charge|Retour base|Étape \d/i)){
+      return lb.split(',')[0].trim();
+    }
+    return '';
+  }
+  // 1. Essayer les waypoints
   var depart='',arrivee='';
-  if(wps.length>=1){var p1=wps[0];depart=(p1.label||p1.address||p1.ville||p1.from||'').split(',')[0].trim()}
-  if(wps.length>=2){var p2=wps[wps.length-1];arrivee=(p2.label||p2.address||p2.ville||p2.to||'').split(',')[0].trim()}
-  if(!depart)depart='À définir';
-  if(!arrivee)arrivee='À définir';
+  if(wps.length>=1)depart=extractCity(wps[0]);
+  if(wps.length>=2)arrivee=extractCity(wps[wps.length-1]);
+  
+  // 2. FALLBACK : champs directs du devis
+  if(!depart){
+    depart=q.departCity||q.departAddress||q.depart||q.villeDepart||'';
+    if(depart){
+      // Nettoyer
+      var dParts=depart.split(',').map(function(s){return s.trim()}).filter(Boolean);
+      if(dParts.length>1)depart=dParts[dParts.length-1].replace(/\d{5}/g,'').trim();
+      else depart=depart.replace(/\d{5}/g,'').trim();
+    }
+  }
+  if(!arrivee){
+    arrivee=q.arriveeCity||q.arriveeAddress||q.arrivee||q.villeArrivee||'';
+    if(arrivee){
+      var aParts=arrivee.split(',').map(function(s){return s.trim()}).filter(Boolean);
+      if(aParts.length>1)arrivee=aParts[aParts.length-1].replace(/\d{5}/g,'').trim();
+      else arrivee=arrivee.replace(/\d{5}/g,'').trim();
+    }
+  }
+  
+  // 3. FALLBACK BIS : essayer dans les segments du devis (mode multi-étapes)
+  if(!depart&&q.segments&&q.segments.length){
+    var s1=q.segments[0];
+    depart=s1.from||s1.depart||s1.ville_depart||'';
+  }
+  if(!arrivee&&q.segments&&q.segments.length){
+    var sn=q.segments[q.segments.length-1];
+    arrivee=sn.to||sn.arrivee||sn.ville_arrivee||'';
+  }
+  
+  // 4. SUPER FALLBACK : extraire les villes depuis l'objet/lignes du devis
+  // Exemples acceptés : "Paris → Marseille", "Paris - Marseille", "de Paris à Marseille", "Paris vers Marseille"
+  if(!depart||!arrivee){
+    var allText=(q.objet||'')+' '+(q.lignes||[]).map(function(lg){return (lg.article||'')+' '+(lg.desc||'')}).join(' ');
+    // Patterns possibles : "VILLE → VILLE", "VILLE - VILLE", "VILLE vers VILLE", "de VILLE à VILLE"
+    var patterns=[
+      /([A-ZÀÂÄÉÈÊËÎÏÔÖÙÛÜŸÇ][a-zàâäéèêëîïôöùûüÿç\-' ]{2,30})\s*[→➡]\s*([A-ZÀÂÄÉÈÊËÎÏÔÖÙÛÜŸÇ][a-zàâäéèêëîïôöùûüÿç\-' ]{2,30})/,
+      /([A-ZÀÂÄÉÈÊËÎÏÔÖÙÛÜŸÇ][a-zàâäéèêëîïôöùûüÿç\-' ]{2,30})\s*-\s*([A-ZÀÂÄÉÈÊËÎÏÔÖÙÛÜŸÇ][a-zàâäéèêëîïôöùûüÿç\-' ]{2,30})/,
+      /([A-ZÀÂÄÉÈÊËÎÏÔÖÙÛÜŸÇ][a-zàâäéèêëîïôöùûüÿç\-' ]{2,30})\s+vers\s+([A-ZÀÂÄÉÈÊËÎÏÔÖÙÛÜŸÇ][a-zàâäéèêëîïôöùûüÿç\-' ]{2,30})/i,
+      /de\s+([A-ZÀÂÄÉÈÊËÎÏÔÖÙÛÜŸÇ][a-zàâäéèêëîïôöùûüÿç\-' ]{2,30})\s+à\s+([A-ZÀÂÄÉÈÊËÎÏÔÖÙÛÜŸÇ][a-zàâäéèêëîïôöùûüÿç\-' ]{2,30})/i
+    ];
+    for(var pi=0;pi<patterns.length;pi++){
+      var m=allText.match(patterns[pi]);
+      if(m){
+        if(!depart)depart=m[1].trim();
+        if(!arrivee)arrivee=m[2].trim();
+        break;
+      }
+    }
+  }
+  
   // Étapes intermédiaires
   var arrets='';
   if(wps.length>2){
-    arrets=wps.slice(1,-1).map(function(w){
-      return (w.label||w.address||w.ville||'').split(',')[0].trim();
-    }).filter(Boolean).join(', ');
+    arrets=wps.slice(1,-1).map(extractCity).filter(Boolean).join(', ');
   }
   // Animaux
   var anisStr='';
@@ -13014,13 +13106,13 @@ function _devToPublicObj(q){
   return {
     animaux:anisStr,
     arrets:arrets,
-    arrivee:arrivee,
+    arrivee:arrivee||'À définir',
     date:dateFR,
-    depart:depart,
+    depart:depart||'À définir',
     duree:'',
     km:'',
     statut:statut,
-    stops:wps.length>2?wps.map(function(w){return (w.label||w.address||w.ville||'').split(',')[0].trim()}).filter(Boolean):''
+    stops:wps.length>2?wps.map(extractCity).filter(Boolean):''
   };
 }
 
@@ -13275,9 +13367,52 @@ function renderPlatformList(){
     devs.forEach(function(q){
       var pub=!!q._publiéLePlateforme;
       var wps=q.waypoints||q.segments||[];
-      var dep='?',arr='?';
-      if(wps.length>=1)dep=(wps[0].label||wps[0].address||wps[0].ville||'').split(',')[0].trim()||'?';
-      if(wps.length>=2)arr=(wps[wps.length-1].label||wps[wps.length-1].address||wps[wps.length-1].ville||'').split(',')[0].trim()||'?';
+      function _extractCityList(w){
+        if(!w)return '';
+        var addr=w.address||w.adresse||w.ville||w.from||w.to||'';
+        if(addr){
+          var parts=addr.split(',').map(function(s){return s.trim()}).filter(Boolean);
+          if(parts.length>1){
+            var last=parts[parts.length-1];
+            var cleaned=last.replace(/\d{5}/g,'').trim();
+            if(cleaned)return cleaned;
+            return last;
+          }
+          return addr.replace(/\d{5}/g,'').trim();
+        }
+        var lb=w.label||'';
+        if(lb&&!lb.match(/Base départ|Destination|Prise en charge|Retour base|Étape \d/i)){
+          return lb.split(',')[0].trim();
+        }
+        return '';
+      }
+      var dep='',arr='';
+      // 1. Waypoints
+      if(wps.length>=1)dep=_extractCityList(wps[0]);
+      if(wps.length>=2)arr=_extractCityList(wps[wps.length-1]);
+      // 2. Champs directs
+      if(!dep)dep=q.departCity||q.departAddress||q.depart||'';
+      if(!arr)arr=q.arriveeCity||q.arriveeAddress||q.arrivee||'';
+      // 3. Extraction depuis objet/lignes du devis
+      if(!dep||!arr){
+        var allText=(q.objet||'')+' '+(q.lignes||[]).map(function(lg){return (lg.article||'')+' '+(lg.desc||'')}).join(' ');
+        var patterns=[
+          /([A-ZÀÂÄÉÈÊËÎÏÔÖÙÛÜŸÇ][a-zàâäéèêëîïôöùûüÿç\-' ]{2,30})\s*[→➡]\s*([A-ZÀÂÄÉÈÊËÎÏÔÖÙÛÜŸÇ][a-zàâäéèêëîïôöùûüÿç\-' ]{2,30})/,
+          /([A-ZÀÂÄÉÈÊËÎÏÔÖÙÛÜŸÇ][a-zàâäéèêëîïôöùûüÿç\-' ]{2,30})\s*-\s*([A-ZÀÂÄÉÈÊËÎÏÔÖÙÛÜŸÇ][a-zàâäéèêëîïôöùûüÿç\-' ]{2,30})/,
+          /([A-ZÀÂÄÉÈÊËÎÏÔÖÙÛÜŸÇ][a-zàâäéèêëîïôöùûüÿç\-' ]{2,30})\s+vers\s+([A-ZÀÂÄÉÈÊËÎÏÔÖÙÛÜŸÇ][a-zàâäéèêëîïôöùûüÿç\-' ]{2,30})/i,
+          /de\s+([A-ZÀÂÄÉÈÊËÎÏÔÖÙÛÜŸÇ][a-zàâäéèêëîïôöùûüÿç\-' ]{2,30})\s+à\s+([A-ZÀÂÄÉÈÊËÎÏÔÖÙÛÜŸÇ][a-zàâäéèêëîïôöùûüÿç\-' ]{2,30})/i
+        ];
+        for(var pi=0;pi<patterns.length;pi++){
+          var m=allText.match(patterns[pi]);
+          if(m){
+            if(!dep)dep=m[1].trim();
+            if(!arr)arr=m[2].trim();
+            break;
+          }
+        }
+      }
+      if(!dep)dep='⚠️ pas de ville';
+      if(!arr)arr='⚠️ pas de ville';
       var dt=q.dateDebut||q.dateTransport||q.date||'';
       var statusColors={'brouillon':'var(--mt)','envoyé':'var(--or)','accepté':'var(--a2)','signe':'var(--a2)'};
       var statusLabels={'brouillon':'⏳ À valider','envoyé':'📤 À pourvoir','accepté':'✅ Confirmé','signe':'✅ Signé','accepte':'✅ Confirmé'};
