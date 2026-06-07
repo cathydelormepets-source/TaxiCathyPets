@@ -9,7 +9,7 @@
 <meta http-equiv="Content-Language" content="fr">
 <script>
 /* ═══ MODE OFFLINE — Cache direct (compatible GitHub Pages single-file) ═══ */
-var CP_CACHE_VERSION='cathypets-v77ze';
+var CP_CACHE_VERSION='cathypets-v77zf';
 (function(){
   // Purger TOUS les anciens caches d'abord
   if(typeof caches!=='undefined'){
@@ -4270,16 +4270,22 @@ document.getElementById('q_contrat_pec').addEventListener('change',function(){
 <div class="card"><div class="hd"><h3>🌐 Passerelle vers la Plateforme Client (Vercel)</h3></div><div class="bd">
 
 <div style="padding:14px;background:rgba(6,182,212,.06);border:1px solid rgba(6,182,212,.3);border-radius:8px;margin-bottom:14px">
-  <div style="font-size:13px;font-weight:700;color:#06b6d4;margin-bottom:6px">ℹ️ Comment ça marche</div>
+  <div style="font-size:13px;font-weight:700;color:#06b6d4;margin-bottom:6px">ℹ️ Comment ça marche — Co-voiturage animaux 🐾</div>
   <div style="font-size:12px;color:var(--mt);line-height:1.6">
-    1. Tu publies tes <b>trajets et gardes</b> sur la plateforme client via Firebase<br>
-    2. Tes clients voient les infos publiques sur <a href="https://cathydelormepets-source-cathy-pets-platform-fnfaena5n.vercel.app/" target="_blank" style="color:#06b6d4">la plateforme Vercel</a><br>
-    3. Seuls les <b>champs publics</b> sont partagés (pas les prix, ni les notes internes)
+    1. Tu crées un <b>devis</b> avec un trajet (ex: Paris → Marseille le 15 juin)<br>
+    2. Tu le publies sur la plateforme (même non signé) → il apparaît comme <b>"route disponible"</b><br>
+    3. D'autres clients voient cette route et peuvent te <b>contacter pour partager</b> le trajet<br>
+    4. Tu remplis ton véhicule → meilleure rentabilité ✨<br>
+    <br>
+    <b style="color:#fff">3 chemins Firebase utilisés :</b><br>
+    • <code style="background:#0a1825;padding:2px 6px;border-radius:4px;color:#7bf0b0">public/trajets/</code> = transports confirmés<br>
+    • <code style="background:#0a1825;padding:2px 6px;border-radius:4px;color:#7bf0b0">public/gardes/</code> = gardes futures<br>
+    • <code style="background:#0a1825;padding:2px 6px;border-radius:4px;color:#7bf0b0">public/routes/</code> = devis = routes prévues pour co-voiturage
   </div>
 </div>
 
 <!-- KPI publication -->
-<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px">
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px">
   <div style="padding:12px;background:rgba(34,166,147,.08);border:1px solid var(--a2);border-radius:8px;text-align:center">
     <div style="font-size:10px;color:var(--mt)">🚗 TRAJETS PUBLIÉS</div>
     <div style="font-size:22px;font-weight:900;color:var(--a2)" id="platPubTr">—</div>
@@ -4287,6 +4293,10 @@ document.getElementById('q_contrat_pec').addEventListener('change',function(){
   <div style="padding:12px;background:rgba(252,211,77,.08);border:1px solid var(--gd);border-radius:8px;text-align:center">
     <div style="font-size:10px;color:var(--mt)">🏡 GARDES PUBLIÉES</div>
     <div style="font-size:22px;font-weight:900;color:var(--gd)" id="platPubGd">—</div>
+  </div>
+  <div style="padding:12px;background:rgba(59,130,246,.08);border:1px solid var(--bl);border-radius:8px;text-align:center">
+    <div style="font-size:10px;color:var(--mt)">📋 ROUTES PRÉVUES</div>
+    <div style="font-size:22px;font-weight:900;color:var(--bl)" id="platPubDev">—</div>
   </div>
   <div style="padding:12px;background:rgba(6,182,212,.08);border:1px solid #06b6d4;border-radius:8px;text-align:center">
     <div style="font-size:10px;color:var(--mt)">📅 DERNIÈRE SYNC</div>
@@ -12996,15 +13006,90 @@ function unpublishGrdFromPlatform(id){
   }catch(e){alert('❌ Erreur : '+e.message)}
 }
 
-// Publier en masse tous les transports et gardes futurs non publiés
+// Construit l'objet public à partir d'un devis (ROUTE PRÉVUE pour co-voiturage)
+function _devToPublicObj(q){
+  var cl=db.clients.find(function(c){return c.id===q.clientId})||{};
+  var anis=[];
+  (q.animalIds||(q.animalId?[q.animalId]:[])).forEach(function(aid){
+    var a=db.animaux.find(function(x){return x.id===aid});
+    if(a)anis.push({nom:a.nom,espece:a.espece,race:a.race||''});
+  });
+  // Récupérer le trajet depuis les waypoints du devis
+  var wps=q.waypoints||q.segments||[];
+  var depart='',arrivee='';
+  if(wps.length>=1){var p1=wps[0];depart=(p1.label||p1.address||p1.ville||p1.from||'').split(',')[0].trim()}
+  if(wps.length>=2){var p2=wps[wps.length-1];arrivee=(p2.label||p2.address||p2.ville||p2.to||'').split(',')[0].trim()}
+  // Date prestation
+  var datePrevue=q.dateDebut||q.dateTransport||q.dateLivraison||q.dateExec||'';
+  // Mapping statut → statut public
+  var statusMap={
+    'brouillon':'À valider',
+    'envoyé':'À pourvoir',
+    'accepté':'Confirmé ✅',
+    'accepte':'Confirmé ✅',
+    'signe':'Confirmé ✅',
+    'facturé':'Réalisé'
+  };
+  return {
+    type:'route',
+    source:'devis',
+    ref:q.ref,
+    date_prevue:datePrevue||(q.date?q.date.slice(0,10):''),
+    depart_ville:depart,
+    arrivee_ville:arrivee,
+    nb_etapes:wps.length,
+    client_initiale:_anonymizeCli(q.clientId),
+    objet:q.objet||'Transport animalier',
+    nb_animaux:anis.length,
+    animaux:anis,
+    status_public:statusMap[q.status]||q.status||'À pourvoir',
+    status_raw:q.status||'brouillon',
+    co_voiturage_possible:q.status!=='refusé'&&q.status!=='annulé'&&q.status!=='facturé',
+    publiéLe:new Date().toISOString()
+  };
+}
+
+// Publier un devis vers Firebase public/routes/
+function publishDevToPlatform(id){
+  if(!fbConnected){alert('⚠️ Firebase n\'est pas connecté');return}
+  var q=db.devis.find(function(x){return x.id===id});if(!q)return;
+  var obj=_devToPublicObj(q);
+  try{
+    fbDb.ref('public/routes/'+id).set(obj).then(function(){
+      q._publiéLePlateforme=new Date().toISOString();
+      stamp(q);sav(false);
+      showToast('✅ Devis '+q.ref+' publié comme route disponible');
+      renderPlatformList();
+    }).catch(function(err){
+      alert('❌ Erreur publication : '+err.message);
+    });
+  }catch(e){alert('❌ Erreur : '+e.message)}
+}
+
+function unpublishDevFromPlatform(id){
+  if(!fbConnected){alert('⚠️ Firebase n\'est pas connecté');return}
+  var q=db.devis.find(function(x){return x.id===id});if(!q)return;
+  if(!confirm('Retirer la route '+q.ref+' de la plateforme ?'))return;
+  try{
+    fbDb.ref('public/routes/'+id).remove().then(function(){
+      delete q._publiéLePlateforme;
+      stamp(q);sav(false);
+      showToast('🗑️ Route '+q.ref+' retirée');
+      renderPlatformList();
+    });
+  }catch(e){alert('❌ Erreur : '+e.message)}
+}
+
 function publishAllToPlatform(){
   if(!fbConnected){alert('⚠️ Firebase n\'est pas connecté');return}
   var today=tdy();
   var trsAFuturs=act(db.transports).filter(function(t){return t.date&&t.date>=today&&!t._publiéLePlateforme});
   var grdsAFuturs=act(db.gardes).filter(function(g){return g.start&&g.start.slice(0,10)>=today&&!g._publiéLePlateforme});
-  var total=trsAFuturs.length+grdsAFuturs.length;
+  // Devis "en attente" = pas encore facturés ni refusés (brouillon, envoyé, accepté, signé)
+  var devsAttente=act(db.devis).filter(function(q){return q.status!=='facturé'&&q.status!=='refusé'&&q.status!=='annulé'&&!q._publiéLePlateforme});
+  var total=trsAFuturs.length+grdsAFuturs.length+devsAttente.length;
   if(!total){alert('✅ Tout est déjà publié ou rien à publier');return}
-  if(!confirm('Publier '+total+' élément(s) ('+trsAFuturs.length+' transports + '+grdsAFuturs.length+' gardes) sur la plateforme ?'))return;
+  if(!confirm('Publier '+total+' élément(s) sur la plateforme ?\n\n'+trsAFuturs.length+' transports + '+grdsAFuturs.length+' gardes + '+devsAttente.length+' devis en attente'))return;
   var done=0;var errors=0;
   function onDone(){
     done++;
@@ -13026,18 +13111,25 @@ function publishAllToPlatform(){
       g._publiéLePlateforme=new Date().toISOString();stamp(g);onDone();
     }).catch(function(){errors++;onDone()});
   });
+  devsAttente.forEach(function(q){
+    var obj=_devToPublicObj(q);
+    fbDb.ref('public/routes/'+q.id).set(obj).then(function(){
+      q._publiéLePlateforme=new Date().toISOString();stamp(q);onDone();
+    }).catch(function(){errors++;onDone()});
+  });
 }
 
 // Dépublier tous
 function unpublishAllFromPlatform(){
   if(!fbConnected){alert('⚠️ Firebase n\'est pas connecté');return}
-  if(!confirm('⚠️ Retirer TOUS les éléments de la plateforme ?\n\nLes clients ne verront plus rien jusqu\'à ce que tu republies.'))return;
+  if(!confirm('⚠️ Retirer TOUS les éléments de la plateforme ?\n\nTrajets + Gardes + Routes prévues seront tous supprimés.\nLes clients ne verront plus rien jusqu\'à ce que tu republies.'))return;
   try{
     fbDb.ref('public/trajets').remove();
     fbDb.ref('public/gardes').remove();
-    // Effacer les marqueurs locaux
+    fbDb.ref('public/routes').remove();
     db.transports.forEach(function(t){delete t._publiéLePlateforme});
     db.gardes.forEach(function(g){delete g._publiéLePlateforme});
+    db.devis.forEach(function(q){delete q._publiéLePlateforme});
     sav(false);
     showToast('🗑️ Plateforme vidée');
     renderPlatformList();
@@ -13053,8 +13145,10 @@ function renderPlatformList(){
   
   var nbPubTr=act(db.transports).filter(function(t){return t._publiéLePlateforme}).length;
   var nbPubGd=act(db.gardes).filter(function(g){return g._publiéLePlateforme}).length;
+  var nbPubDev=act(db.devis).filter(function(q){return q._publiéLePlateforme}).length;
   $('platPubTr').textContent=nbPubTr;
   $('platPubGd').textContent=nbPubGd;
+  var pdev=$('platPubDev');if(pdev)pdev.textContent=nbPubDev;
   // Dernière sync
   var lastSync=0;
   [].concat(db.transports||[],db.gardes||[]).forEach(function(x){
@@ -13100,6 +13194,39 @@ function renderPlatformList(){
       h+='</div></div>';
     });
   }
+  // ROUTES PRÉVUES (devis = trajets BlaBlaCar style)
+  var devs=act(db.devis).filter(function(q){return q.status!=='refusé'&&q.status!=='annulé'&&q.status!=='facturé'}).sort(function(a,b){
+    var d1=a.dateDebut||a.dateTransport||a.date||'';
+    var d2=b.dateDebut||b.dateTransport||b.date||'';
+    return d1.localeCompare(d2);
+  });
+  if(devs.length){
+    h+='<div style="font-size:11px;color:var(--bl);font-weight:700;text-transform:uppercase;margin:14px 0 6px">📋 Routes prévues — co-voiturage animaux ('+devs.length+')</div>';
+    h+='<div style="font-size:10px;color:var(--mt);margin-bottom:8px;font-style:italic">💡 Publie ces routes pour que d\'autres clients puissent demander un partage de trajet</div>';
+    devs.forEach(function(q){
+      var pub=!!q._publiéLePlateforme;
+      var wps=q.waypoints||q.segments||[];
+      var dep='?',arr='?';
+      if(wps.length>=1)dep=(wps[0].label||wps[0].address||wps[0].ville||'').split(',')[0].trim()||'?';
+      if(wps.length>=2)arr=(wps[wps.length-1].label||wps[wps.length-1].address||wps[wps.length-1].ville||'').split(',')[0].trim()||'?';
+      var dt=q.dateDebut||q.dateTransport||q.date||'';
+      var statusColors={'brouillon':'var(--mt)','envoyé':'var(--or)','accepté':'var(--a2)','signe':'var(--a2)'};
+      var statusLabels={'brouillon':'⏳ À valider','envoyé':'📤 À pourvoir','accepté':'✅ Confirmé','signe':'✅ Signé','accepte':'✅ Confirmé'};
+      h+='<div style="display:flex;justify-content:space-between;align-items:center;padding:10px;margin-bottom:5px;background:rgba(255,255,255,.02);border-left:3px solid '+(pub?'var(--bl)':'var(--ln)')+';border-radius:6px">';
+      h+='<div style="flex:1"><b>'+esc(q.ref)+'</b> · <span style="color:'+(statusColors[q.status]||'var(--mt)')+';font-size:10px;font-weight:700">'+(statusLabels[q.status]||q.status)+'</span>';
+      h+='<br><span style="font-size:12px;font-weight:700;color:#06b6d4">'+esc(dep)+' → '+esc(arr)+'</span>';
+      h+='<br><span style="font-size:10px;color:var(--mt)">'+(dt?new Date(dt).toLocaleDateString('fr-FR'):'⚠️ pas de date')+' · '+cN(q.clientId)+(pub?' · <b style="color:var(--bl)">📡 Publié</b>':'')+'</span>';
+      h+='</div>';
+      h+='<div style="display:flex;gap:4px">';
+      if(pub){
+        h+='<button class="btn sm" onclick="publishDevToPlatform(\''+q.id+'\')" title="Mettre à jour" style="background:#3d2c0a;border-color:#6d5a2a;color:#fcd77a;font-size:11px">🔄</button>';
+        h+='<button class="btn sm rd" onclick="unpublishDevFromPlatform(\''+q.id+'\')" title="Dépublier" style="font-size:11px">🗑️</button>';
+      } else {
+        h+='<button class="btn sm gn" onclick="publishDevToPlatform(\''+q.id+'\')" style="font-size:11px">⬆️ Publier route</button>';
+      }
+      h+='</div></div>';
+    });
+  }
   listEl.innerHTML=h;
 }
 
@@ -13131,6 +13258,14 @@ function copyVercelConfig(){
   code+='onValue(gardesRef, (snapshot) => {\n';
   code+='  const gardes = snapshot.val();\n';
   code+='  console.log("Gardes reçues :", gardes);\n';
+  code+='});\n\n';
+  code+='// Lire les ROUTES PRÉVUES (devis pour co-voiturage)\n';
+  code+='const routesRef = ref(db, "public/routes");\n';
+  code+='onValue(routesRef, (snapshot) => {\n';
+  code+='  const routes = snapshot.val();\n';
+  code+='  console.log("Routes prévues :", routes);\n';
+  code+='  // Affiche les trajets disponibles "BlaBlaCar"\n';
+  code+='  // Avec leur status_public : À pourvoir / Confirmé / etc.\n';
   code+='});\n';
   
   try{
