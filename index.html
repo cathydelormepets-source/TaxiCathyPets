@@ -9,7 +9,7 @@
 <meta http-equiv="Content-Language" content="fr">
 <script>
 /* ═══ MODE OFFLINE — Cache direct (compatible GitHub Pages single-file) ═══ */
-var CP_CACHE_VERSION='cathypets-v77zd';
+var CP_CACHE_VERSION='cathypets-v77ze';
 (function(){
   // Purger TOUS les anciens caches d'abord
   if(typeof caches!=='undefined'){
@@ -597,6 +597,7 @@ body.nuit .card{border-color:#0a1520}
 <button class="nb" data-t="alertes" data-role="admin" style="border-left:3px solid #ef4444">🔔 Alertes auto</button>
 <button class="nb" data-t="retour" data-role="admin" style="border-left:3px solid #3b82f6">🔄 Retour client</button>
 <button class="nb" data-t="vitrine" data-role="admin" style="border-left:3px solid var(--pu)">🔗 Vitrine client</button>
+<button class="nb" data-t="plateforme" data-role="admin" style="border-left:3px solid #06b6d4">🌐 Plateforme Vercel</button>
 <button class="nb" data-t="avis" data-role="admin" style="border-left:3px solid var(--or)">⭐ Avis clients</button>
 <button class="nb" data-t="qrcode" style="border-left:3px solid #06b6d4">🔲 QR Code animal</button>
 </div>
@@ -4263,6 +4264,62 @@ document.getElementById('q_contrat_pec').addEventListener('change',function(){
 </div>
 </div>
 </section>
+
+<!-- 🌐 PLATEFORME VERCEL -->
+<section class="tab" id="plateforme"><div class="sp">
+<div class="card"><div class="hd"><h3>🌐 Passerelle vers la Plateforme Client (Vercel)</h3></div><div class="bd">
+
+<div style="padding:14px;background:rgba(6,182,212,.06);border:1px solid rgba(6,182,212,.3);border-radius:8px;margin-bottom:14px">
+  <div style="font-size:13px;font-weight:700;color:#06b6d4;margin-bottom:6px">ℹ️ Comment ça marche</div>
+  <div style="font-size:12px;color:var(--mt);line-height:1.6">
+    1. Tu publies tes <b>trajets et gardes</b> sur la plateforme client via Firebase<br>
+    2. Tes clients voient les infos publiques sur <a href="https://cathydelormepets-source-cathy-pets-platform-fnfaena5n.vercel.app/" target="_blank" style="color:#06b6d4">la plateforme Vercel</a><br>
+    3. Seuls les <b>champs publics</b> sont partagés (pas les prix, ni les notes internes)
+  </div>
+</div>
+
+<!-- KPI publication -->
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px">
+  <div style="padding:12px;background:rgba(34,166,147,.08);border:1px solid var(--a2);border-radius:8px;text-align:center">
+    <div style="font-size:10px;color:var(--mt)">🚗 TRAJETS PUBLIÉS</div>
+    <div style="font-size:22px;font-weight:900;color:var(--a2)" id="platPubTr">—</div>
+  </div>
+  <div style="padding:12px;background:rgba(252,211,77,.08);border:1px solid var(--gd);border-radius:8px;text-align:center">
+    <div style="font-size:10px;color:var(--mt)">🏡 GARDES PUBLIÉES</div>
+    <div style="font-size:22px;font-weight:900;color:var(--gd)" id="platPubGd">—</div>
+  </div>
+  <div style="padding:12px;background:rgba(6,182,212,.08);border:1px solid #06b6d4;border-radius:8px;text-align:center">
+    <div style="font-size:10px;color:var(--mt)">📅 DERNIÈRE SYNC</div>
+    <div style="font-size:14px;font-weight:700;color:#06b6d4;margin-top:4px" id="platLastSync">Jamais</div>
+  </div>
+</div>
+
+<!-- Actions principales -->
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+  <button class="btn gn" onclick="publishAllToPlatform()" style="flex:1;padding:14px;font-size:14px;font-weight:800">⬆️ Publier TOUS les trajets/gardes futurs</button>
+  <button class="btn" onclick="renderPlatformList()" style="background:#1a2a3a;border-color:#2a4a6f;color:#8ec8ff;padding:14px">🔄 Rafraîchir</button>
+  <button class="btn rd" onclick="unpublishAllFromPlatform()" style="padding:14px;font-size:13px" title="Retire tous les éléments de la plateforme">🗑️ Tout dépublier</button>
+</div>
+
+<!-- Configuration -->
+<details style="margin-bottom:14px;padding:10px;background:rgba(255,255,255,.02);border:1px solid var(--ln);border-radius:8px">
+  <summary style="cursor:pointer;font-weight:700;font-size:12px">⚙️ Configuration de la plateforme (avancé)</summary>
+  <div style="padding:10px 0;font-size:11px;color:var(--mt);line-height:1.7">
+    <b style="color:#fff">Pour que la plateforme Vercel lise les données</b> :<br>
+    1. Sur Vercel, configure les variables d'environnement Firebase identiques à V77<br>
+    2. La plateforme lit depuis le chemin Firebase : <code style="background:#0a1825;padding:2px 6px;border-radius:4px;color:#7bf0b0">public/trajets/</code> et <code style="background:#0a1825;padding:2px 6px;border-radius:4px;color:#7bf0b0">public/gardes/</code><br>
+    3. URL plateforme : <a href="https://cathydelormepets-source-cathy-pets-platform-fnfaena5n.vercel.app/" target="_blank" style="color:#06b6d4;word-break:break-all">https://cathydelormepets-source-cathy-pets-platform-fnfaena5n.vercel.app/</a><br>
+    <br>
+    <button class="btn sm" onclick="copyVercelConfig()" style="background:#1a2a3a;border-color:#2a4a6f;color:#8ec8ff;font-size:11px">📋 Copier le code JS pour Vercel</button>
+  </div>
+</details>
+
+<!-- Liste publiable -->
+<div style="font-weight:700;color:var(--gd);margin-bottom:8px;font-size:13px">📋 Éléments publiables</div>
+<div id="platList"></div>
+
+</div></div>
+</div></section>
 
 <!-- PARAMS -->
 <section class="tab" id="param"><div class="sp">
@@ -10325,7 +10382,7 @@ function tLegs(t){
 function rAll(){try{fixCounters()}catch(e){}
   try{bSel()}catch(e){console.error('bSel',e)}
   try{updateAddrList()}catch(e){console.error('addrList',e)}
-  var fns=['rCli','rAni','rTrp','rGrd2','rDev2','rFac2','rCol2','rNut2','rDash','rPlan','rRoute','rMulti','rTres','rPL','rStat','rHist','rDrv','rSet','rMails','bSelMail','bSelCliHist','bSelFac','rGcal','rMission','rCarbu','initRapport','rCerfrance','rContrats','rIntlTbl','bSelVitrine','artRender'];
+  var fns=['rCli','rAni','rTrp','rGrd2','rDev2','rFac2','rCol2','rNut2','rDash','rPlan','rRoute','rMulti','rTres','rPL','rStat','rHist','rDrv','rSet','rMails','bSelMail','bSelCliHist','bSelFac','rGcal','rMission','rCarbu','initRapport','rCerfrance','rContrats','rIntlTbl','bSelVitrine','artRender','rPlateforme'];
   fns.forEach(function(fn){try{window[fn]()}catch(e){console.error(fn,e)}});
   $('synI').textContent=(fbConnected?'☁️ Cloud':'💾 Local')+' · '+new Date().toLocaleString('fr-FR');
 }
@@ -12804,7 +12861,291 @@ function calcPenalitesRetard(f){
   var totalPenalites=Math.round((interets+forfait)*100)/100;
   return {joursRetard:joursRetard,resteDu:resteDu,tauxAnnuel:tauxAnnuel,interets:interets,forfait:forfait,totalPenalites:totalPenalites,echeance:echeance,totalAvecPenalites:Math.round((resteDu+totalPenalites)*100)/100};
 }
-// Réconciliation TVA/Totaux de TOUTES les factures
+// ═══════════════════════════════════════════════════════
+// 🌐 PASSERELLE VERS LA PLATEFORME VERCEL (espace clients)
+// ═══════════════════════════════════════════════════════
+// Publie les trajets/gardes dans Firebase au chemin "public/"
+// La plateforme Vercel lit ce chemin pour afficher au client
+// Seuls les champs PUBLICS sont partagés (pas les prix internes)
+
+// Anonymise le nom client (M. D. au lieu de Martin Dupont)
+function _anonymizeCli(cliId){
+  var cl=db.clients.find(function(c){return c.id===cliId});
+  if(!cl)return 'Client';
+  var civ=cl.civilite||'';
+  var prenom=(cl.prenom||'').trim();
+  var nom=(cl.nom||'').trim();
+  var initialeNom=nom?nom.charAt(0).toUpperCase()+'.':'';
+  if(civ)return civ+' '+initialeNom;
+  if(prenom)return prenom.charAt(0).toUpperCase()+'. '+initialeNom;
+  return initialeNom||'Client';
+}
+
+// Construit l'objet public à partir d'un transport
+function _trToPublicObj(t){
+  var wps=t.waypoints||t.wps||[];
+  var depart='',arrivee='';
+  if(wps.length>=1)depart=(wps[0].label||wps[0].address||'').split(',')[0].trim();
+  if(wps.length>=2)arrivee=(wps[wps.length-1].label||wps[wps.length-1].address||'').split(',')[0].trim();
+  if(!depart&&t.departCity)depart=t.departCity;
+  if(!arrivee&&t.arriveeCity)arrivee=t.arriveeCity;
+  // Animaux
+  var anis=[];
+  (t.animalIds||(t.animalId?[t.animalId]:[])).forEach(function(aid){
+    var a=db.animaux.find(function(x){return x.id===aid});
+    if(a)anis.push({nom:a.nom,espece:a.espece,race:a.race||''});
+  });
+  return {
+    type:'transport',
+    ref:t.ref,
+    date:t.date,
+    depart_ville:depart,
+    arrivee_ville:arrivee,
+    nb_etapes:wps.length,
+    client_initiale:_anonymizeCli(t.clientId),
+    animaux:anis,
+    km:E(t.kmManual||t.km)||0,
+    status:t.status||'planifié',
+    publiéLe:new Date().toISOString()
+  };
+}
+
+// Construit l'objet public à partir d'une garde
+function _grdToPublicObj(g){
+  var anis=[];
+  (g.animalIds||(g.animalId?[g.animalId]:[])).forEach(function(aid){
+    var a=db.animaux.find(function(x){return x.id===aid});
+    if(a)anis.push({nom:a.nom,espece:a.espece,race:a.race||''});
+  });
+  return {
+    type:'garde',
+    ref:g.ref,
+    date_debut:g.start?g.start.slice(0,10):'',
+    date_fin:g.end?g.end.slice(0,10):'',
+    client_initiale:_anonymizeCli(g.clientId),
+    animaux:anis,
+    nb_jours:g.start&&g.end?Math.ceil((new Date(g.end)-new Date(g.start))/864e5):0,
+    status:g.status||'planifié',
+    publiéLe:new Date().toISOString()
+  };
+}
+
+// Publier un transport vers Firebase public/trajets/
+function publishTrToPlatform(id){
+  if(!fbConnected){alert('⚠️ Firebase n\'est pas connecté.\n\nVa dans Paramètres → Firebase et clique 🔌 Connecter pour activer la passerelle.');return}
+  var t=db.transports.find(function(x){return x.id===id});if(!t)return;
+  var obj=_trToPublicObj(t);
+  try{
+    var ref=fbDb.ref('public/trajets/'+id);
+    ref.set(obj).then(function(){
+      t._publiéLePlateforme=new Date().toISOString();
+      stamp(t);sav(false);
+      showToast('✅ Trajet '+t.ref+' publié sur la plateforme');
+      renderPlatformList();
+    }).catch(function(err){
+      alert('❌ Erreur publication : '+err.message);
+    });
+  }catch(e){alert('❌ Erreur : '+e.message)}
+}
+
+// Publier une garde vers Firebase public/gardes/
+function publishGrdToPlatform(id){
+  if(!fbConnected){alert('⚠️ Firebase n\'est pas connecté');return}
+  var g=db.gardes.find(function(x){return x.id===id});if(!g)return;
+  var obj=_grdToPublicObj(g);
+  try{
+    var ref=fbDb.ref('public/gardes/'+id);
+    ref.set(obj).then(function(){
+      g._publiéLePlateforme=new Date().toISOString();
+      stamp(g);sav(false);
+      showToast('✅ Garde '+g.ref+' publiée sur la plateforme');
+      renderPlatformList();
+    }).catch(function(err){
+      alert('❌ Erreur publication : '+err.message);
+    });
+  }catch(e){alert('❌ Erreur : '+e.message)}
+}
+
+// Retirer un transport de la plateforme
+function unpublishTrFromPlatform(id){
+  if(!fbConnected){alert('⚠️ Firebase n\'est pas connecté');return}
+  var t=db.transports.find(function(x){return x.id===id});if(!t)return;
+  if(!confirm('Retirer le trajet '+t.ref+' de la plateforme ?'))return;
+  try{
+    fbDb.ref('public/trajets/'+id).remove().then(function(){
+      delete t._publiéLePlateforme;
+      stamp(t);sav(false);
+      showToast('🗑️ Trajet '+t.ref+' retiré de la plateforme');
+      renderPlatformList();
+    });
+  }catch(e){alert('❌ Erreur : '+e.message)}
+}
+
+// Retirer une garde
+function unpublishGrdFromPlatform(id){
+  if(!fbConnected){alert('⚠️ Firebase n\'est pas connecté');return}
+  var g=db.gardes.find(function(x){return x.id===id});if(!g)return;
+  if(!confirm('Retirer la garde '+g.ref+' de la plateforme ?'))return;
+  try{
+    fbDb.ref('public/gardes/'+id).remove().then(function(){
+      delete g._publiéLePlateforme;
+      stamp(g);sav(false);
+      showToast('🗑️ Garde '+g.ref+' retirée de la plateforme');
+      renderPlatformList();
+    });
+  }catch(e){alert('❌ Erreur : '+e.message)}
+}
+
+// Publier en masse tous les transports et gardes futurs non publiés
+function publishAllToPlatform(){
+  if(!fbConnected){alert('⚠️ Firebase n\'est pas connecté');return}
+  var today=tdy();
+  var trsAFuturs=act(db.transports).filter(function(t){return t.date&&t.date>=today&&!t._publiéLePlateforme});
+  var grdsAFuturs=act(db.gardes).filter(function(g){return g.start&&g.start.slice(0,10)>=today&&!g._publiéLePlateforme});
+  var total=trsAFuturs.length+grdsAFuturs.length;
+  if(!total){alert('✅ Tout est déjà publié ou rien à publier');return}
+  if(!confirm('Publier '+total+' élément(s) ('+trsAFuturs.length+' transports + '+grdsAFuturs.length+' gardes) sur la plateforme ?'))return;
+  var done=0;var errors=0;
+  function onDone(){
+    done++;
+    if(done===total){
+      sav(false);
+      alert('✅ '+done+' élément(s) publié(s)'+(errors>0?' ('+errors+' erreurs)':''));
+      renderPlatformList();
+    }
+  }
+  trsAFuturs.forEach(function(t){
+    var obj=_trToPublicObj(t);
+    fbDb.ref('public/trajets/'+t.id).set(obj).then(function(){
+      t._publiéLePlateforme=new Date().toISOString();stamp(t);onDone();
+    }).catch(function(){errors++;onDone()});
+  });
+  grdsAFuturs.forEach(function(g){
+    var obj=_grdToPublicObj(g);
+    fbDb.ref('public/gardes/'+g.id).set(obj).then(function(){
+      g._publiéLePlateforme=new Date().toISOString();stamp(g);onDone();
+    }).catch(function(){errors++;onDone()});
+  });
+}
+
+// Dépublier tous
+function unpublishAllFromPlatform(){
+  if(!fbConnected){alert('⚠️ Firebase n\'est pas connecté');return}
+  if(!confirm('⚠️ Retirer TOUS les éléments de la plateforme ?\n\nLes clients ne verront plus rien jusqu\'à ce que tu republies.'))return;
+  try{
+    fbDb.ref('public/trajets').remove();
+    fbDb.ref('public/gardes').remove();
+    // Effacer les marqueurs locaux
+    db.transports.forEach(function(t){delete t._publiéLePlateforme});
+    db.gardes.forEach(function(g){delete g._publiéLePlateforme});
+    sav(false);
+    showToast('🗑️ Plateforme vidée');
+    renderPlatformList();
+  }catch(e){alert('❌ Erreur : '+e.message)}
+}
+
+// Affichage de la liste publiable
+function renderPlatformList(){
+  var listEl=$('platList');if(!listEl)return;
+  var today=tdy();
+  var trs=act(db.transports).filter(function(t){return t.date&&t.date>=today}).sort(function(a,b){return(a.date||'').localeCompare(b.date||'')});
+  var grds=act(db.gardes).filter(function(g){return g.start&&g.start.slice(0,10)>=today}).sort(function(a,b){return(a.start||'').localeCompare(b.start||'')});
+  
+  var nbPubTr=act(db.transports).filter(function(t){return t._publiéLePlateforme}).length;
+  var nbPubGd=act(db.gardes).filter(function(g){return g._publiéLePlateforme}).length;
+  $('platPubTr').textContent=nbPubTr;
+  $('platPubGd').textContent=nbPubGd;
+  // Dernière sync
+  var lastSync=0;
+  [].concat(db.transports||[],db.gardes||[]).forEach(function(x){
+    if(x._publiéLePlateforme){var t=new Date(x._publiéLePlateforme).getTime();if(t>lastSync)lastSync=t}
+  });
+  $('platLastSync').textContent=lastSync?new Date(lastSync).toLocaleDateString('fr-FR')+' '+new Date(lastSync).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):'Jamais';
+  
+  if(!trs.length&&!grds.length){
+    listEl.innerHTML='<div style="text-align:center;padding:30px;color:var(--mt)">Aucun trajet ni garde à venir</div>';
+    return;
+  }
+  
+  var h='';
+  if(trs.length){
+    h+='<div style="font-size:11px;color:var(--mt);font-weight:700;text-transform:uppercase;margin:10px 0 6px">🚗 Trajets à venir ('+trs.length+')</div>';
+    trs.forEach(function(t){
+      var pub=!!t._publiéLePlateforme;
+      h+='<div style="display:flex;justify-content:space-between;align-items:center;padding:10px;margin-bottom:5px;background:rgba(255,255,255,.02);border-left:3px solid '+(pub?'var(--a2)':'var(--ln)')+';border-radius:6px">';
+      h+='<div><b>'+esc(t.ref)+'</b> · '+cN(t.clientId)+' · '+(t.date?new Date(t.date).toLocaleDateString('fr-FR'):'')+'<br><span style="font-size:10px;color:var(--mt)">'+esc(t.departCity||'')+' → '+esc(t.arriveeCity||'')+(pub?' · <b style="color:var(--a2)">📡 Publié</b>':'')+'</span></div>';
+      h+='<div style="display:flex;gap:4px">';
+      if(pub){
+        h+='<button class="btn sm" onclick="publishTrToPlatform(\''+t.id+'\')" title="Mettre à jour" style="background:#3d2c0a;border-color:#6d5a2a;color:#fcd77a;font-size:11px">🔄</button>';
+        h+='<button class="btn sm rd" onclick="unpublishTrFromPlatform(\''+t.id+'\')" title="Dépublier" style="font-size:11px">🗑️</button>';
+      } else {
+        h+='<button class="btn sm gn" onclick="publishTrToPlatform(\''+t.id+'\')" style="font-size:11px">⬆️ Publier</button>';
+      }
+      h+='</div></div>';
+    });
+  }
+  if(grds.length){
+    h+='<div style="font-size:11px;color:var(--mt);font-weight:700;text-transform:uppercase;margin:14px 0 6px">🏡 Gardes à venir ('+grds.length+')</div>';
+    grds.forEach(function(g){
+      var pub=!!g._publiéLePlateforme;
+      h+='<div style="display:flex;justify-content:space-between;align-items:center;padding:10px;margin-bottom:5px;background:rgba(255,255,255,.02);border-left:3px solid '+(pub?'var(--gd)':'var(--ln)')+';border-radius:6px">';
+      h+='<div><b>'+esc(g.ref)+'</b> · '+cN(g.clientId)+'<br><span style="font-size:10px;color:var(--mt)">'+(g.start?new Date(g.start).toLocaleDateString('fr-FR'):'')+' → '+(g.end?new Date(g.end).toLocaleDateString('fr-FR'):'')+(pub?' · <b style="color:var(--gd)">📡 Publié</b>':'')+'</span></div>';
+      h+='<div style="display:flex;gap:4px">';
+      if(pub){
+        h+='<button class="btn sm" onclick="publishGrdToPlatform(\''+g.id+'\')" title="Mettre à jour" style="background:#3d2c0a;border-color:#6d5a2a;color:#fcd77a;font-size:11px">🔄</button>';
+        h+='<button class="btn sm rd" onclick="unpublishGrdFromPlatform(\''+g.id+'\')" title="Dépublier" style="font-size:11px">🗑️</button>';
+      } else {
+        h+='<button class="btn sm gn" onclick="publishGrdToPlatform(\''+g.id+'\')" style="font-size:11px">⬆️ Publier</button>';
+      }
+      h+='</div></div>';
+    });
+  }
+  listEl.innerHTML=h;
+}
+
+// Copier le code JS prêt à coller sur Vercel
+function copyVercelConfig(){
+  var cfg=db.settings.fbConfig||{};
+  var code='// === CODE À METTRE DANS TA PLATEFORME VERCEL ===\n';
+  code+='// 1. Installe Firebase : npm install firebase\n';
+  code+='// 2. Crée un fichier firebase-config.js avec ce code :\n\n';
+  code+='import { initializeApp } from "firebase/app";\n';
+  code+='import { getDatabase, ref, onValue } from "firebase/database";\n\n';
+  code+='const firebaseConfig = {\n';
+  code+='  apiKey: "'+(db.settings.fbApiKey||'TON_API_KEY')+'",\n';
+  code+='  authDomain: "'+(db.settings.fbProjectId||'taxicathypets')+'.firebaseapp.com",\n';
+  code+='  databaseURL: "'+(db.settings.fbDatabaseUrl||'TA_DATABASE_URL')+'",\n';
+  code+='  projectId: "'+(db.settings.fbProjectId||'taxicathypets')+'"\n';
+  code+='};\n\n';
+  code+='const app = initializeApp(firebaseConfig);\n';
+  code+='const db = getDatabase(app);\n\n';
+  code+='// Lire les trajets publics\n';
+  code+='const trajetsRef = ref(db, "public/trajets");\n';
+  code+='onValue(trajetsRef, (snapshot) => {\n';
+  code+='  const trajets = snapshot.val();\n';
+  code+='  console.log("Trajets reçus :", trajets);\n';
+  code+='  // Mettre à jour ton interface ici\n';
+  code+='});\n\n';
+  code+='// Lire les gardes publiques\n';
+  code+='const gardesRef = ref(db, "public/gardes");\n';
+  code+='onValue(gardesRef, (snapshot) => {\n';
+  code+='  const gardes = snapshot.val();\n';
+  code+='  console.log("Gardes reçues :", gardes);\n';
+  code+='});\n';
+  
+  try{
+    navigator.clipboard.writeText(code).then(function(){
+      showToast('✅ Code copié dans le presse-papier — colle-le sur Vercel');
+    });
+  }catch(e){
+    // Fallback : afficher dans modal
+    var bd='<textarea readonly style="width:100%;min-height:400px;font-family:monospace;font-size:11px;padding:10px;background:#0a1825;color:#7bf0b0;border:1px solid var(--ln);border-radius:8px">'+esc(code)+'</textarea>';
+    oMo('📋 Code Vercel à copier', bd, '<button class="btn" onclick="cMo()">Fermer</button>');
+  }
+}
+
+// rendre rPlatform compatible avec rAll
+function rPlateforme(){if(document.getElementById('platList'))renderPlatformList()}
 function reconcilierToutesFactures(){
   var corrigees=0,intactes=0,vidées=0;
   var details=[];
