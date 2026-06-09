@@ -9,7 +9,7 @@
 <meta http-equiv="Content-Language" content="fr">
 <script>
 /* ═══ MODE OFFLINE — Cache direct (compatible GitHub Pages single-file) ═══ */
-var CP_CACHE_VERSION='cathypets-v77zq';
+var CP_CACHE_VERSION='cathypets-v77zr';
 (function(){
   // Purger TOUS les anciens caches d'abord
   if(typeof caches!=='undefined'){
@@ -7727,6 +7727,10 @@ function addDev(){
   if(fbConnected&&typeof republishAllToPlatform==='function'){
     setTimeout(function(){republishAllToPlatform(true)},500);
   }
+  // 📅 AUTO-SYNC vers Google Agenda (si connecté + date)
+  if(_gcToken&&(q.dateDebut||q.date)){
+    try{gcAutoExportDevis(q)}catch(e){console.error('Erreur sync Agenda:',e)}
+  }
   // Reset formulaire pour en créer un autre
   resetFormDevis();
 }
@@ -9948,6 +9952,18 @@ function sDev(id){var q=db.devis.find(function(x){return x.id===id});if(!q)retur
   if(fbConnected&&q.status!=='refusé'&&q.status!=='annulé'&&q.status!=='facturé'){
     setTimeout(function(){republishAllToPlatform(true)},300);
   }
+  // 📅 AUTO-SYNC Google Agenda
+  if(_gcToken){
+    try{
+      if(q.status==='refusé'||q.status==='annulé'){
+        // Supprimer de l'agenda si annulé/refusé
+        if(q.gcEventId)gcDeleteDevis(q);
+      } else if(q.dateDebut||q.date){
+        // Mettre à jour (ou créer)
+        gcAutoExportDevis(q);
+      }
+    }catch(e){console.error('Erreur sync Agenda:',e)}
+  }
 }
 // ═══ RENUMÉROTATION SÉQUENTIELLE — Format CERFRANCE 2026 ═══
 function renumDev(){
@@ -10499,6 +10515,7 @@ function rDev2(){rTbl('dvTbl',['Réf','Client','Mode','Trajet','Total','Statut',
   '<button class="btn sm og" onclick="printDevisPro(\''+q.id+'\')" title="Voir PDF">🖨️ PDF</button>'+
   '<button class="btn sm at" onclick="quickMail(\'conf_dev\',\''+q.clientId+'\',\''+q.id+'\')" title="Envoyer par mail">📧</button>'+
   '<button class="btn sm" style="background:#1a3a2a;border-color:#2a6040;color:#7bf0b0" onclick="genLienAcompte(\''+q.id+'\')" title="Lien acompte en ligne">💳</button>'+
+  '<button class="btn sm" style="background:#1a3a3a;border-color:#2a6060;color:#7bcfee" onclick="exportDevToGCal(\''+q.id+'\')" title="📅 Vers Google Agenda">📅</button>'+
   (q.status!=='facturé'?'<button class="btn sm" style="background:#1a2a3a;border-color:#2a4060;color:#9bc" onclick="devToTr(\''+q.id+'\')" title="→ Transport">🚗</button>':'')+
   (q.status==='envoyé'?'<button class="btn sm" style="background:#1a3020;border-color:#2a6030;color:#7bf0a0;font-size:10px" onclick="contratValide(\''+q.id+'\')" title="Contrat signé reçu → accepter + créer mission + calendrier">📋 Contrat reçu</button>':'')+
   (q.status==='envoyé'||q.status==='brouillon'?'<button class="btn sm gn" onclick="quickAcceptDev(\''+q.id+'\')" title="Valider ce devis" style="font-size:10px">✅ Valider</button>':'')+
@@ -22388,6 +22405,126 @@ function gcAutoExportGarde(g){
   }).catch(function(){});
 }
 
+// ═══════════════════════════════════════════════════════
+// 📋 EXPORT DEVIS VERS GOOGLE AGENDA (création ET mise à jour)
+// ═══════════════════════════════════════════════════════
+function gcAutoExportDevis(q){
+  if(!_gcToken)return;
+  var dateEvent=q.dateDebut||q.dateTransport||q.dateLivraison||q.dateExec||q.date;
+  if(!dateEvent)return;
+  
+  var calId=encodeURIComponent(db.settings.gcCalendarId||'primary');
+  var cl=db.clients.find(function(c){return c.id===q.clientId;});
+  var aids=getAniIds(q);
+  var an=aids.length?db.animaux.find(function(a){return a.id===aids[0]}):null;
+  var wps=q.waypoints||[];
+  var legs=wps.map(function(w){return w.address||w.adresse||w.label||''}).filter(Boolean);
+  
+  var dateEndEvent=q.dateFin||dateEvent;
+  if(dateEvent.length>10)dateEvent=dateEvent.slice(0,10);
+  if(dateEndEvent.length>10)dateEndEvent=dateEndEvent.slice(0,10);
+  
+  var statusLabels={
+    'brouillon':'📝 Brouillon',
+    'envoyé':'📤 Envoyé','envoye':'📤 Envoyé',
+    'accepté':'✅ Accepté','accepte':'✅ Accepté',
+    'signe':'✍️ Signé',
+    'refusé':'❌ Refusé',
+    'annulé':'🚫 Annulé',
+    'facturé':'💶 Facturé'
+  };
+  var statusLbl=statusLabels[q.status]||q.status||'';
+  
+  var waMsg='';
+  if(cl&&cl.tel){
+    var waTel=cl.tel.replace(/^0/,'').replace(/\s/g,'');
+    waMsg='https://wa.me/33'+waTel+'?text='+encodeURIComponent('Bonjour '+(cl.nom||'')+', concernant votre devis '+q.ref+'. Cathy Pets 07.81.30.41.10');
+  }
+  
+  var desc='📋 DEVIS Cathy Pets — '+statusLbl+'\n\n';
+  desc+='👤 Client: '+(cl?cl.nom+' '+(cl.prenom||''):'?')+'\n';
+  if(cl&&cl.tel)desc+='📞 '+cl.tel+'\n';
+  if(cl&&cl.email)desc+='✉️ '+cl.email+'\n';
+  if(an)desc+='\n🐾 Animal: '+an.nom+' ('+(an.espece||'')+(an.race?' '+an.race:'')+')\n';
+  if(legs.length>=2)desc+='\n📍 Trajet: '+legs.join(' → ')+'\n';
+  desc+='\n💰 Montant: '+euro(q.total)+' TTC\n';
+  if(q.objet)desc+='\n📋 Objet: '+q.objet+'\n';
+  if(q.notes)desc+='\n📝 Notes:\n'+q.notes+'\n';
+  desc+='\n'+ENT('entNom')+' — '+ENT('entTel1');
+  if(waMsg)desc+='\n💬 WhatsApp: '+waMsg;
+  
+  var evData={
+    summary:'📋 DEVIS '+q.ref+' — '+(cl?cl.nom:'Client'),
+    description:desc,
+    location:legs.length>=1?legs[0]:'',
+    start:{dateTime:dateEvent+'T08:00:00',timeZone:'Europe/Paris'},
+    end:{dateTime:dateEndEvent+'T18:00:00',timeZone:'Europe/Paris'},
+    colorId:'5',
+    reminders:{useDefault:false,overrides:[{method:'popup',minutes:1440},{method:'popup',minutes:60}]}
+  };
+  
+  // Si l'événement existe déjà, on le MET À JOUR (PATCH)
+  if(q.gcEventId){
+    fetch('https://www.googleapis.com/calendar/v3/calendars/'+calId+'/events/'+q.gcEventId,{
+      method:'PATCH',headers:{'Authorization':'Bearer '+_gcToken,'Content-Type':'application/json'},
+      body:JSON.stringify(evData)
+    }).then(function(r){
+      if(r.ok){gcLog('📅 Devis '+q.ref+' mis à jour dans Agenda','ok');}
+      else if(r.status===404){
+        // Event supprimé manuellement dans Google → recréer
+        q.gcEventId=null;
+        gcAutoExportDevis(q);
+      }
+    }).catch(function(){});
+  } else {
+    fetch('https://www.googleapis.com/calendar/v3/calendars/'+calId+'/events',{
+      method:'POST',headers:{'Authorization':'Bearer '+_gcToken,'Content-Type':'application/json'},
+      body:JSON.stringify(evData)
+    }).then(function(r){return r.json();}).then(function(d){
+      if(d.id){
+        q.gcEventId=d.id;
+        safeSave();
+        gcLog('📅 Devis '+q.ref+' ajouté à Google Agenda','ok');
+      }
+    }).catch(function(){});
+  }
+}
+
+// Supprimer le devis de Google Agenda (utile pour la suppression d'un devis ou annulation)
+function gcDeleteDevis(q){
+  if(!_gcToken||!q.gcEventId)return;
+  var calId=encodeURIComponent(db.settings.gcCalendarId||'primary');
+  fetch('https://www.googleapis.com/calendar/v3/calendars/'+calId+'/events/'+q.gcEventId,{
+    method:'DELETE',headers:{'Authorization':'Bearer '+_gcToken}
+  }).then(function(){
+    q.gcEventId=null;
+    safeSave();
+    gcLog('🗑️ Devis '+q.ref+' retiré de Agenda','ok');
+  }).catch(function(){});
+}
+
+// Exporter un devis vers Google Agenda (depuis liste)
+function exportDevToGCal(devId){
+  var q=db.devis.find(function(x){return x.id===devId});
+  if(!q){showToast('Devis introuvable');return}
+  if(!_gcToken){
+    if(confirm('⚠️ Google Agenda non connecté.\n\nVoulez-vous le connecter maintenant ?\n(va dans 📅 Google Agenda → Connecter)')){
+      sw('gcal');
+    }
+    return;
+  }
+  if(!q.dateDebut&&!q.date){
+    alert('⚠️ Ce devis n\'a pas de date — impossible d\'ajouter à l\'Agenda\n\nModifie le devis et ajoute une date d\'exécution');
+    return;
+  }
+  try{
+    gcAutoExportDevis(q);
+    showToast('📅 Devis '+q.ref+' envoyé vers Google Agenda');
+  }catch(e){
+    alert('❌ Erreur : '+e.message);
+  }
+}
+
 function gcUpdateTransport(trId){
   var t=db.transports.find(function(x){return x.id===trId;});
   if(!t||!_gcToken){showToast('Connecte Google Agenda d\'abord');return;}
@@ -24868,21 +25005,49 @@ function loadGCalEvents(){
 }
 
 window.syncNowGCal = function(){
-  if(!db.gcalConfig || !db.gcalConfig.connected){
+  if(!_gcToken){
     alert('⚠️ Connectez d\'abord Google Agenda');
     return;
   }
   
   var count = 0;
+  var today = new Date().toISOString().slice(0,10);
   
-  // Sync transports
-  if($('gcal_transport').checked){
-    count += act(db.transports).filter(function(t){ return new Date(t.date) >= new Date(); }).length;
+  // Sync transports futurs
+  if($('gcal_transport') && $('gcal_transport').checked){
+    act(db.transports).filter(function(t){ 
+      return t.date && t.date >= today;
+    }).forEach(function(t){
+      try{
+        if(t.gcEventId){
+          gcUpdateTransport(t.id);
+        } else {
+          gcAutoExportTransport(t);
+        }
+        count++;
+      }catch(e){console.error('Erreur sync transport:',e)}
+    });
   }
   
-  // Sync gardes
-  if($('gcal_garde').checked){
-    count += act(db.gardes).filter(function(g){ return new Date(g.dateDebut) >= new Date(); }).length;
+  // Sync gardes futures
+  if($('gcal_garde') && $('gcal_garde').checked){
+    act(db.gardes).filter(function(g){ 
+      var d = g.start || g.dateDebut;
+      return d && d.slice(0,10) >= today;
+    }).forEach(function(g){
+      try{gcAutoExportGarde(g);count++}catch(e){console.error('Erreur sync garde:',e)}
+    });
+  }
+  
+  // 📋 Sync DEVIS futurs (NOUVEAU)
+  if($('gcal_rdv') && $('gcal_rdv').checked){
+    act(db.devis).filter(function(q){ 
+      if(q.status==='refusé'||q.status==='annulé'||q.status==='facturé')return false;
+      var d = q.dateDebut||q.date;
+      return d && d.slice(0,10) >= today;
+    }).forEach(function(q){
+      try{gcAutoExportDevis(q);count++}catch(e){console.error('Erreur sync devis:',e)}
+    });
   }
   
   // Log
@@ -24894,8 +25059,11 @@ window.syncNowGCal = function(){
   });
   sav();
   
-  alert('✅ '+count+' événements synchronisés avec Google Agenda !');
-  renderGCalLog();
+  showToast('🔄 Synchronisation de '+count+' éléments avec Google Agenda...');
+  setTimeout(function(){
+    showToast('✅ '+count+' événements synchronisés avec Google Agenda !');
+    renderGCalLog();
+  },1500);
 };
 
 window.exportToGCal = function(){
