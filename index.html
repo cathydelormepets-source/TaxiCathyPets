@@ -9,7 +9,7 @@
 <meta http-equiv="Content-Language" content="fr">
 <script>
 /* ═══ MODE OFFLINE — Cache direct (compatible GitHub Pages single-file) ═══ */
-var CP_CACHE_VERSION='cathypets-v77zs';
+var CP_CACHE_VERSION='cathypets-v77zt';
 (function(){
   // Purger TOUS les anciens caches d'abord
   if(typeof caches!=='undefined'){
@@ -4361,6 +4361,19 @@ document.getElementById('q_contrat_pec').addEventListener('change',function(){
   <button class="btn" onclick="filterPecRecus('nouveau')" id="pecFilterNouveau" style="background:#3d2c0a;border-color:#6d5a2a;color:#fcd77a">🆕 Nouveaux</button>
   <button class="btn" onclick="filterPecRecus('traite')" id="pecFilterTraite" style="background:#1a3a2a;border-color:#2a6040;color:#7bf0b0">✅ Traités</button>
   <button class="btn" onclick="filterPecRecus('archive')" id="pecFilterArchive" style="background:#3a1a3a;border-color:#6a2a6a;color:#e0a0e0">📦 Archivés</button>
+</div>
+
+<!-- Récupération anciens contrats -->
+<div style="padding:12px;background:rgba(245,158,11,.08);border:1px dashed #f59e0b;border-radius:8px;margin-bottom:14px">
+  <div style="font-size:12px;font-weight:700;color:#f59e0b;margin-bottom:8px">📥 Récupérer les contrats reçus AVANT la mise à jour</div>
+  <div style="font-size:11px;color:var(--mt);line-height:1.5;margin-bottom:8px">
+    Les contrats signés <b>avant aujourd'hui</b> sont dans tes emails Gmail. Tu peux les ajouter manuellement à V77 :
+  </div>
+  <div style="display:flex;gap:6px;flex-wrap:wrap">
+    <button class="btn sm gn" onclick="openPecImportEmail()" style="padding:8px 14px;font-weight:700">📋 Coller depuis email FormSubmit</button>
+    <button class="btn sm" onclick="openPecManualForm()" style="background:#1a2a3a;border-color:#2a4a6f;color:#8ec8ff;padding:8px 14px">✏️ Saisir manuellement</button>
+    <button class="btn sm" onclick="window.open('https://mail.google.com/mail/u/0/#search/Contrat+PEC+SIGNE','_blank')" style="background:#3d2c0a;border-color:#6d5a2a;color:#fcd77a;padding:8px 14px">📧 Ouvrir Gmail (rechercher PEC)</button>
+  </div>
 </div>
 
 <!-- KPIs -->
@@ -14076,6 +14089,311 @@ function deletePec(pecId){
       renderPecList();
     }
   }).catch(function(){showToast('❌ Erreur suppression')});
+}
+
+// ═══════════════════════════════════════════════════════
+// 📋 IMPORT PEC depuis email FormSubmit (copier-coller)
+// ═══════════════════════════════════════════════════════
+function openPecImportEmail(){
+  var bd='<div style="margin-bottom:12px;padding:10px;background:rgba(245,158,11,.1);border-left:3px solid #f59e0b;border-radius:6px">';
+  bd+='<div style="font-size:12px;font-weight:700;color:#f59e0b;margin-bottom:4px">📧 Comment faire :</div>';
+  bd+='<div style="font-size:11px;color:var(--mt);line-height:1.6">';
+  bd+='1. Va sur ta boîte Gmail<br>';
+  bd+='2. Ouvre un email "✅ Contrat PEC SIGNE — ..."<br>';
+  bd+='3. <b>Sélectionne tout le texte</b> (Ctrl+A) dans le corps de l\'email<br>';
+  bd+='4. <b>Copie</b> (Ctrl+C)<br>';
+  bd+='5. <b>Colle ici</b> (Ctrl+V) → je parse automatiquement !';
+  bd+='</div></div>';
+  bd+='<label style="font-size:11px;font-weight:700;color:var(--gd);display:block;margin-bottom:4px">📋 Texte de l\'email</label>';
+  bd+='<textarea id="pec_email_text" placeholder="Colle ici le contenu complet de l\'email FormSubmit..." style="width:100%;min-height:280px;padding:10px;font-size:11px;font-family:monospace;border:1px solid var(--ln);background:var(--pn);color:var(--tx);border-radius:8px"></textarea>';
+  
+  oMo('📥 Importer contrat PEC depuis email', bd,
+    '<button class="btn" onclick="cMo()" style="background:#1a2a3a;border-color:#2a4a6f;color:#8ec8ff">✕ Annuler</button> '+
+    '<button class="btn gn" onclick="parsePecEmail()" style="font-weight:700">✅ Analyser et importer</button>'
+  );
+  setTimeout(function(){var f=$('pec_email_text');if(f)f.focus();},100);
+}
+
+function parsePecEmail(){
+  var txt=($('pec_email_text')||{}).value||'';
+  if(!txt.trim()){alert('⚠️ Colle d\'abord le texte de l\'email');return}
+  
+  // Parser le texte FormSubmit
+  // Format type : "Nom: X\nAdresse: Y\nTél: Z\nEmail: W\n... etc"
+  function extract(pattern, t){
+    var m=t.match(pattern);
+    return m?m[1].trim():'';
+  }
+  
+  // Code et devis
+  var code=extract(/Code:\s*([^\n\r]+)/i, txt);
+  var devisRef=extract(/Devis:\s*([^\n\r]+)/i, txt);
+  var dateSignature=extract(/Date signature:\s*([^\n\r]+)/i, txt);
+  
+  // Client
+  // Format possible: "Nom: Dupont Jean" ou "Nom: Dupont" puis "Prénom: Jean"
+  var nomComplet=extract(/Nom:\s*([^\n\r]+)/i, txt);
+  var nom='', prenom='';
+  if(nomComplet){
+    var parts=nomComplet.split(/\s+/);
+    nom=parts[0]||'';
+    prenom=parts.slice(1).join(' ')||'';
+  }
+  var prenomExtract=extract(/Prénom:\s*([^\n\r]+)/i, txt);
+  if(prenomExtract)prenom=prenomExtract;
+  
+  var adresse=extract(/Adresse:\s*([^\n\r]+)/i, txt);
+  var tel=extract(/T[ée]l:\s*([^\n\r]+)/i, txt);
+  var email=extract(/Email:\s*([^\n\r]+)/i, txt);
+  
+  // Animaux : recherche "Animal N: nom | espece | race | ..."
+  var animaux=[];
+  var aniRegex=/Animal\s*\d+:\s*([^\n\r]+)/gi;
+  var aniMatch;
+  while((aniMatch=aniRegex.exec(txt))!==null){
+    var parts=aniMatch[1].split('|').map(function(s){return s.trim()});
+    var puce='';
+    var puceMatch=aniMatch[1].match(/Puce:\s*([^\s|]+)/i);
+    if(puceMatch)puce=puceMatch[1];
+    animaux.push({
+      nom:parts[0]||'',
+      espece:parts[1]||'',
+      race:parts[2]||'',
+      sexe:parts[3]||'',
+      age:parts[4]||'',
+      poids:(parts[5]||'').replace(/kg/i,'').trim(),
+      puce:puce,
+      couleur:'',
+      cites:''
+    });
+  }
+  
+  // Santé
+  var sante={
+    vaccins:/Vaccins\s*(?:OK|à jour):\s*OUI/i.test(txt),
+    contagion:/Pas contagion:\s*OUI/i.test(txt),
+    comportement:/Pas trouble comportement:\s*OUI/i.test(txt),
+    apte:/Apte transport:\s*OUI/i.test(txt),
+    carnet:/Carnet remis:\s*OUI/i.test(txt),
+    traitements:extract(/Traitements:\s*([^\n\r]+)/i, txt),
+    allergies:extract(/Allergies:\s*([^\n\r]+)/i, txt),
+    problemes:extract(/Probl[èe]mes:\s*([^\n\r]+)/i, txt)
+  };
+  if(sante.traitements==='Aucun')sante.traitements='';
+  if(sante.allergies==='Aucune')sante.allergies='';
+  if(sante.problemes==='Aucun')sante.problemes='';
+  
+  // Trajet
+  var trajet={
+    depart:extract(/D[ée]part:\s*([^\n\r]+)/i, txt),
+    arrivee:extract(/Arriv[ée]e:\s*([^\n\r]+)/i, txt),
+    date:extract(/Date:\s*([^\n\r]+)/i, txt),
+    heure:extract(/Heure:\s*([^\n\r]+)/i, txt),
+    contact:''
+  };
+  
+  // Validation minimale
+  if(!nom&&!email){
+    alert('⚠️ Impossible d\'extraire les infos.\n\nVérifie que tu as bien copié le contenu de l\'email FormSubmit.');
+    return;
+  }
+  
+  // Pré-remplir le formulaire manuel avec ces données
+  cMo();
+  setTimeout(function(){
+    openPecManualForm({
+      code:code,
+      devisRef:devisRef,
+      dateSignature:dateSignature,
+      client:{nom:nom,prenom:prenom,adresse:adresse,tel:tel,email:email},
+      animaux:animaux,
+      sante:sante,
+      trajet:trajet,
+      _fromEmail:true
+    });
+  },200);
+}
+
+// ═══════════════════════════════════════════════════════
+// 📋 SAISIE MANUELLE PEC (formulaire vide ou pré-rempli)
+// ═══════════════════════════════════════════════════════
+function openPecManualForm(prefill){
+  prefill=prefill||{};
+  var cl=prefill.client||{};
+  var aniData=prefill.animaux&&prefill.animaux[0]||{};
+  var sante=prefill.sante||{};
+  var trajet=prefill.trajet||{};
+  
+  var bd='<div style="max-height:70vh;overflow-y:auto">';
+  
+  if(prefill._fromEmail){
+    bd+='<div style="padding:8px;background:rgba(16,185,129,.1);border-left:3px solid #10b981;border-radius:6px;margin-bottom:12px;font-size:11px;color:#10b981">';
+    bd+='✅ Données pré-remplies depuis l\'email. Vérifie et complète si nécessaire.';
+    bd+='</div>';
+  }
+  
+  // Code et devis
+  bd+='<div class="row">';
+  bd+='<div class="c6 fd"><label>Code contrat</label><input id="pecf_code" value="'+esc(prefill.code||'')+'" placeholder="Auto"></div>';
+  bd+='<div class="c6 fd"><label>Ref devis lié (ex: CP-DEV-2026-XX)</label><input id="pecf_devisRef" value="'+esc(prefill.devisRef||'')+'" placeholder="Optionnel"></div>';
+  bd+='</div>';
+  
+  // Client
+  bd+='<h4 style="color:var(--gd);margin:12px 0 6px">👤 Propriétaire</h4>';
+  bd+='<div class="row">';
+  bd+='<div class="c6 fd"><label>Nom *</label><input id="pecf_nom" value="'+esc(cl.nom||'')+'" required></div>';
+  bd+='<div class="c6 fd"><label>Prénom</label><input id="pecf_prenom" value="'+esc(cl.prenom||'')+'"></div>';
+  bd+='</div>';
+  bd+='<div class="row"><div class="fd"><label>Adresse</label><input id="pecf_adresse" value="'+esc(cl.adresse||'')+'"></div></div>';
+  bd+='<div class="row">';
+  bd+='<div class="c6 fd"><label>Téléphone *</label><input id="pecf_tel" value="'+esc(cl.tel||'')+'" required></div>';
+  bd+='<div class="c6 fd"><label>Email *</label><input id="pecf_email" type="email" value="'+esc(cl.email||'')+'" required></div>';
+  bd+='</div>';
+  
+  // Animal principal (simplifié)
+  bd+='<h4 style="color:var(--gd);margin:12px 0 6px">🐾 Animal principal</h4>';
+  bd+='<div class="row">';
+  bd+='<div class="c6 fd"><label>Nom de l\'animal</label><input id="pecf_ani_nom" value="'+esc(aniData.nom||'')+'"></div>';
+  bd+='<div class="c6 fd"><label>Espèce</label><input id="pecf_ani_esp" value="'+esc(aniData.espece||'')+'" placeholder="Chien/Chat/..."></div>';
+  bd+='</div>';
+  bd+='<div class="row">';
+  bd+='<div class="c4 fd"><label>Race</label><input id="pecf_ani_race" value="'+esc(aniData.race||'')+'"></div>';
+  bd+='<div class="c4 fd"><label>Sexe</label><input id="pecf_ani_sexe" value="'+esc(aniData.sexe||'')+'"></div>';
+  bd+='<div class="c4 fd"><label>Poids (kg)</label><input id="pecf_ani_poids" value="'+esc(aniData.poids||'')+'"></div>';
+  bd+='</div>';
+  bd+='<div class="row">';
+  bd+='<div class="c6 fd"><label>Âge</label><input id="pecf_ani_age" value="'+esc(aniData.age||'')+'"></div>';
+  bd+='<div class="c6 fd"><label>N° puce</label><input id="pecf_ani_puce" value="'+esc(aniData.puce||'')+'"></div>';
+  bd+='</div>';
+  
+  // Santé
+  bd+='<h4 style="color:var(--gd);margin:12px 0 6px">💊 Santé (cochez si OK)</h4>';
+  bd+='<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;font-size:11px">';
+  bd+='<label><input type="checkbox" id="pecf_s_vac" '+(sante.vaccins?'checked':'')+'> Vaccins à jour</label>';
+  bd+='<label><input type="checkbox" id="pecf_s_cont" '+(sante.contagion?'checked':'')+'> Pas de contagion</label>';
+  bd+='<label><input type="checkbox" id="pecf_s_comp" '+(sante.comportement?'checked':'')+'> Pas trouble comportement</label>';
+  bd+='<label><input type="checkbox" id="pecf_s_apte" '+(sante.apte?'checked':'')+'> Apte transport</label>';
+  bd+='<label><input type="checkbox" id="pecf_s_carnet" '+(sante.carnet?'checked':'')+'> Carnet remis</label>';
+  bd+='</div>';
+  bd+='<div class="row" style="margin-top:6px"><div class="fd"><label>Traitements / Allergies / Problèmes</label><textarea id="pecf_s_notes" style="min-height:50px">'+esc([sante.traitements,sante.allergies,sante.problemes].filter(Boolean).join(' · '))+'</textarea></div></div>';
+  
+  // Trajet
+  bd+='<h4 style="color:var(--gd);margin:12px 0 6px">📍 Trajet</h4>';
+  bd+='<div class="row">';
+  bd+='<div class="c6 fd"><label>Départ</label><input id="pecf_t_dep" value="'+esc(trajet.depart||'')+'"></div>';
+  bd+='<div class="c6 fd"><label>Arrivée</label><input id="pecf_t_arr" value="'+esc(trajet.arrivee||'')+'"></div>';
+  bd+='</div>';
+  bd+='<div class="row">';
+  bd+='<div class="c6 fd"><label>Date</label><input id="pecf_t_dt" type="date" value="'+esc(trajet.date||'')+'"></div>';
+  bd+='<div class="c6 fd"><label>Heure</label><input id="pecf_t_h" value="'+esc(trajet.heure||'')+'"></div>';
+  bd+='</div>';
+  
+  // Date signature
+  var sigDate=prefill.dateSignature||new Date().toISOString().slice(0,10);
+  bd+='<div class="row" style="margin-top:8px"><div class="fd"><label>Date de signature</label><input id="pecf_sigdate" type="date" value="'+esc(sigDate.slice(0,10))+'"></div></div>';
+  
+  bd+='</div>';
+  
+  oMo('✏️ Saisir un contrat PEC reçu', bd,
+    '<button class="btn" onclick="cMo()" style="background:#1a2a3a;border-color:#2a4a6f;color:#8ec8ff">✕ Annuler</button> '+
+    '<button class="btn gn" onclick="savePecManual()" style="font-weight:700;padding:10px 24px">✅ Enregistrer</button>'
+  );
+}
+
+function savePecManual(){
+  var nom=($('pecf_nom')||{}).value||'';
+  var tel=($('pecf_tel')||{}).value||'';
+  var email=($('pecf_email')||{}).value||'';
+  
+  if(!nom||!tel||!email){alert('⚠️ Nom, téléphone et email obligatoires');return}
+  
+  var santeNotes=($('pecf_s_notes')||{}).value||'';
+  
+  var contrat={
+    id:'pec-manual-'+Date.now()+'-'+Math.random().toString(36).substr(2,6),
+    code:($('pecf_code')||{}).value||'',
+    devisRef:($('pecf_devisRef')||{}).value||'',
+    type:'transport',
+    status:'nouveau',
+    source:'manuel',
+    client:{
+      nom:nom,
+      prenom:($('pecf_prenom')||{}).value||'',
+      adresse:($('pecf_adresse')||{}).value||'',
+      tel:tel,
+      email:email
+    },
+    animaux:[{
+      nom:($('pecf_ani_nom')||{}).value||'',
+      espece:($('pecf_ani_esp')||{}).value||'',
+      race:($('pecf_ani_race')||{}).value||'',
+      sexe:($('pecf_ani_sexe')||{}).value||'',
+      age:($('pecf_ani_age')||{}).value||'',
+      poids:($('pecf_ani_poids')||{}).value||'',
+      puce:($('pecf_ani_puce')||{}).value||'',
+      couleur:'',
+      cites:''
+    }],
+    sante:{
+      vaccins:($('pecf_s_vac')||{}).checked||false,
+      contagion:($('pecf_s_cont')||{}).checked||false,
+      comportement:($('pecf_s_comp')||{}).checked||false,
+      apte:($('pecf_s_apte')||{}).checked||false,
+      carnet:($('pecf_s_carnet')||{}).checked||false,
+      traitements:santeNotes,
+      allergies:'',
+      problemes:''
+    },
+    trajet:{
+      depart:($('pecf_t_dep')||{}).value||'',
+      arrivee:($('pecf_t_arr')||{}).value||'',
+      date:($('pecf_t_dt')||{}).value||'',
+      heure:($('pecf_t_h')||{}).value||'',
+      contact:''
+    },
+    signature:'',
+    dateSignature:($('pecf_sigdate')||{}).value||new Date().toISOString().slice(0,10),
+    timestamp:new Date().toISOString(),
+    receivedAt:new Date().toISOString()
+  };
+  
+  // Ajouter au cache et sauver
+  _pecCache.unshift(contrat);
+  
+  fetch(SUPABASE_URL+'/rest/v1/app_data?key=eq.cathy-pets-v4:contrats-pec',{
+    headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}
+  }).then(function(r){return r.json()}).then(function(arr){
+    var method='PATCH';
+    var url=SUPABASE_URL+'/rest/v1/app_data?key=eq.cathy-pets-v4:contrats-pec';
+    var body={value:_pecCache,updated_at:new Date().toISOString()};
+    
+    if(!arr[0]){
+      method='POST';
+      url=SUPABASE_URL+'/rest/v1/app_data';
+      body={key:'cathy-pets-v4:contrats-pec',value:_pecCache,updated_at:new Date().toISOString()};
+    }
+    
+    return fetch(url,{
+      method:method,
+      headers:{
+        'apikey':SUPABASE_KEY,
+        'Authorization':'Bearer '+SUPABASE_KEY,
+        'Content-Type':'application/json',
+        'Prefer':'return=minimal'
+      },
+      body:JSON.stringify(body)
+    });
+  }).then(function(r){
+    if(r&&r.ok){
+      cMo();
+      showToast('✅ Contrat '+nom+' enregistré');
+      renderPecList();
+    } else {
+      alert('❌ Erreur de sauvegarde');
+    }
+  }).catch(function(err){
+    alert('❌ Erreur : '+err.message);
+  });
 }
 
 // ═══════════════════════════════════════════════════════
