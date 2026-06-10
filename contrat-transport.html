@@ -556,7 +556,12 @@ function sendContratEmail(data) {
   body += '--- SIGNATURE ---\n';
   body += 'Signé le ' + new Date().toLocaleDateString('fr-FR') + '\n';
   
-  // Envoi automatique via FormSubmit
+  // ═══════════════════════════════════════════════════════
+  // 🌐 ENVOI VERS SUPABASE (pour V77 - récupération automatique)
+  // ═══════════════════════════════════════════════════════
+  saveContratToSupabase(data);
+  
+  // Envoi automatique via FormSubmit (email - en parallèle)
   var subjectEnc='\u2705 Contrat PEC SIGNE \u2014 '+data.client.nom+' '+data.client.prenom;
   var submitBtn=document.getElementById('submitBtn');
   if(submitBtn){submitBtn.textContent='\u23f3 Envoi en cours...';submitBtn.disabled=true}
@@ -573,6 +578,83 @@ function sendContratEmail(data) {
     }
   }).catch(function(){
     window.location.href='mailto:cathydelormepets@gmail.com?subject='+encodeURIComponent(subjectEnc)+'&body='+encodeURIComponent(body);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 🌐 SAUVEGARDE AUTOMATIQUE VERS SUPABASE (pour V77 - récupération)
+// ═══════════════════════════════════════════════════════════════
+function saveContratToSupabase(data) {
+  var SUPABASE_URL = 'https://lwbebblanpnslwdztxzu.supabase.co';
+  var SUPABASE_KEY = 'sb_publishable_POmi_s0QF8lp5a2Kg5GHnA_crn9C2d3';
+  var KEY = 'cathy-pets-v4:contrats-pec';
+  
+  // Préparer l'entrée du contrat
+  var contratEntry = {
+    id: 'pec-' + Date.now() + '-' + Math.random().toString(36).substr(2, 6),
+    code: data.code || '',
+    devisRef: data.devisRef || '',
+    type: 'transport',
+    status: 'nouveau', // nouveau / lu / traite / archive
+    client: data.client,
+    animaux: data.animaux,
+    sante: data.sante,
+    trajet: data.trajet,
+    signature: data.signature,
+    dateSignature: data.dateSignature,
+    timestamp: data.timestamp || new Date().toISOString(),
+    receivedAt: new Date().toISOString()
+  };
+  
+  // 1. Lire les contrats existants
+  fetch(SUPABASE_URL + '/rest/v1/app_data?key=eq.' + KEY + '&select=value', {
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': 'Bearer ' + SUPABASE_KEY
+    }
+  }).then(function(r){return r.json()}).then(function(arr){
+    var existing = (arr[0] && arr[0].value) || [];
+    if (!Array.isArray(existing)) existing = [];
+    
+    // 2. Ajouter le nouveau contrat
+    existing.unshift(contratEntry); // Ajouter au début (plus récent en premier)
+    
+    // 3. Soit PATCH (clé existe) soit POST (nouvelle clé)
+    if (arr[0]) {
+      // PATCH
+      fetch(SUPABASE_URL + '/rest/v1/app_data?key=eq.' + KEY, {
+        method: 'PATCH',
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': 'Bearer ' + SUPABASE_KEY,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal'
+        },
+        body: JSON.stringify({value: existing, updated_at: new Date().toISOString()})
+      }).then(function(r){
+        console.log('Contrat PEC sauvegardé dans Supabase:', r.ok);
+      }).catch(function(e){
+        console.error('Erreur sauvegarde Supabase:', e);
+      });
+    } else {
+      // POST (créer la clé)
+      fetch(SUPABASE_URL + '/rest/v1/app_data', {
+        method: 'POST',
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': 'Bearer ' + SUPABASE_KEY,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal'
+        },
+        body: JSON.stringify({key: KEY, value: existing, updated_at: new Date().toISOString()})
+      }).then(function(r){
+        console.log('Contrat PEC sauvegardé (1er):', r.ok);
+      }).catch(function(e){
+        console.error('Erreur création Supabase:', e);
+      });
+    }
+  }).catch(function(e){
+    console.error('Erreur lecture Supabase:', e);
   });
 }
 
