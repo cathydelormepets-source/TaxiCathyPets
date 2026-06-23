@@ -9,7 +9,7 @@
 <meta http-equiv="Content-Language" content="fr">
 <script>
 /* ═══ MODE OFFLINE — Cache direct (compatible GitHub Pages single-file) ═══ */
-var CP_CACHE_VERSION='cathypets-v77zt';
+var CP_CACHE_VERSION='cathypets-v77zu';
 (function(){
   // Purger TOUS les anciens caches d'abord
   if(typeof caches!=='undefined'){
@@ -1898,7 +1898,7 @@ Tel : 06 12 34 56 78
 <!-- TAB 3 : DESCRIPTION -->
 <div id="devT3" style="display:none">
   <div style="font-size:11px;font-weight:800;color:var(--mt);text-transform:uppercase;letter-spacing:.1em;margin:4px 0 6px">📝 Description du devis</div>
-  <div class="fd"><label>Objet / titre du devis</label><input id="q_obj" placeholder="Ex: Transport canin Paris → Lyon" style="font-size:14px;padding:10px"></div>
+  <div class="fd"><label style="font-size:13px;font-weight:700;color:var(--gd)">📝 Objet / titre du devis *</label><input id="q_obj" placeholder="Ex: Transport canin Paris → Lyon le 22/03/2026 — Rex (Golden Retriever)" style="font-size:14px;padding:10px;font-weight:600;color:#fff;background:#0a1825;border:2px solid var(--ac)"><div style="font-size:10px;color:var(--mt);margin-top:3px">Ce texte apparaîtra en bandeau sur le devis PDF</div></div>
   <div class="row">
     <div class="c6 fd"><label>📅 Date de prestation prévue</label><input id="q_dateDebut" type="date" style="font-size:13px;padding:8px" title="Date à laquelle la prestation aura lieu (pour le prévisionnel CA)"></div>
     <div class="c6 fd"><label>📅 Date de fin (optionnel)</label><input id="q_dateFin" type="date" style="font-size:13px;padding:8px" title="Pour une garde de plusieurs jours"></div>
@@ -7717,7 +7717,12 @@ function addDev(){
   var tvaRate=((document.getElementById('q_tva')||{}).value!==''&&(document.getElementById('q_tva')||{}).value!==undefined?parseFloat((document.getElementById('q_tva')||{}).value):20);
   var remiseRate=parseFloat((document.getElementById('q_remise')||{}).value||0)||0;
   var q={id:uid('q'),ref:'CP-DEV-'+_Y+'-'+db.settings.nextQuote,mode:V('q_mo'),clientId:V('q_cl'),animalIds:aniIds,animalId:aniIds[0]||'',accompagnants:accs,bienEtre:be,segments:segs,sigPec:sigs.sigPec||'',sigDep:sigs.sigDep||'',total:E(V('q_to')),objet:V('q_obj'),notes:V('q_no'),conditions:V('q_cond'),notesInternes:V('q_notes_int'),lignes:devLignes,tva:tvaRate,remise:remiseRate,waypoints:wps,hotel:V('q_htl'),hotelNuits:E(V('q_htn')),hotelCost:E(V('q_htc')),multiModal:V('q_mm'),mmCompagnie:V('q_mmc'),mmRef:V('q_mmr'),mmCost:E(V('q_mmx')),dateDebut:V('q_dateDebut')||'',dateFin:V('q_dateFin')||'',status:'brouillon',date:new Date().toISOString()};
-  if(!q.clientId||!q.total){alert('Client+montant requis');return}
+  if(!q.clientId||!q.total){alert('⚠️ Client et montant requis');return}
+  if(!q.objet||!q.objet.trim()){
+    alert('⚠️ L\'objet / titre du devis est OBLIGATOIRE.\n\nEx: "Transport canin Paris → Lyon le 22/03/2026"');
+    var f=document.getElementById('q_obj');if(f){f.focus();f.style.borderColor='#dc2626'};
+    return;
+  }
   db.settings.nextQuote++;stamp(q);db.devis.push(q);lH('devis','Devis: '+q.ref+' ('+wps.length+' étapes, '+devLignes.length+' article(s))');sav();
   var dz=$('q_aniZone');if(dz)dz.innerHTML='';
   var da=$('q_accZone');if(da)da.innerHTML='';
@@ -8274,9 +8279,14 @@ function addFacDirecte(andPrint,payNow){
   var obj = ((document.getElementById('fd_obj')||{}).value||'').trim();
   var lignes = fdGetLignes();
   var ttc = parseFloat((document.getElementById('fd_total')||{}).value||0)||0;
-  if(!cliId){ alert('Client requis'); return; }
-  if(!obj && !lignes.length){ alert('Objet ou au moins une ligne requise'); return; }
-  if(!ttc){ alert('Le total TTC est 0 — ajoute au moins une ligne avec un prix'); return; }
+  if(!cliId){ alert('⚠️ Client requis'); return; }
+  if(!obj){ 
+    alert('⚠️ L\'objet / description de la facture est OBLIGATOIRE.\n\nEx: "Transport animalier Paris → Lyon le 22/03/2026 — Rex (Golden Retriever)"');
+    var f=document.getElementById('fd_obj'); if(f){f.focus();f.style.borderColor='#dc2626'};
+    return;
+  }
+  if(!lignes.length){ alert('⚠️ Au moins une ligne de facturation requise'); return; }
+  if(!ttc){ alert('⚠️ Le total TTC est 0 — ajoute au moins une ligne avec un prix'); return; }
   var tva = ((document.getElementById('fd_tva')||{}).value!==''&&(document.getElementById('fd_tva')||{}).value!==undefined?parseFloat((document.getElementById('fd_tva')||{}).value):20);
   var remise = parseFloat((document.getElementById('fd_remise')||{}).value||0)||0;
   var acompte = parseFloat((document.getElementById('fd_acompte')||{}).value||0)||0;
@@ -12919,6 +12929,15 @@ function printDevisPro(id) {
   if(q.objet) html += '<tr><td><strong>Objet:</strong></td><td style="font-weight:bold">' + esc(q.objet) + '</td></tr>';
   html += '<tr><td><strong>Date:</strong></td><td>' + dateStr + '</td></tr>';
   html += '<tr><td><strong>Validité:</strong></td><td>' + validiteStr + '</td></tr></table></div>';
+  
+  // 📝 OBJET - Bandeau visible
+  if(q.objet){
+    html += '<div style="margin:0 0 16px 0;padding:12px 16px;background:#f0f7f5;border-left:4px solid #1a7a6e;border-radius:4px">';
+    html += '<div style="font-size:10px;font-weight:bold;color:#1a7a6e;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">📝 Objet du devis</div>';
+    html += '<div style="font-size:13px;font-weight:600;color:#000;line-height:1.5">' + esc(q.objet).replace(/\n/g,'<br>') + '</div>';
+    html += '</div>';
+  }
+  
   if(q.notes){ html += '<div style="margin-bottom:14px;padding:10px 12px;background:#f8f9fa;border-left:3px solid #1a7a6e;border-radius:4px;font-size:11px;line-height:1.6"><strong style="color:#1a7a6e">Description:</strong><br>' + esc(q.notes).replace(/\n/g,'<br>') + '</div>'; }
   if(q.conditions){ html += '<div style="margin-bottom:14px;padding:10px 12px;background:#fff8f0;border-left:3px solid #e67e22;border-radius:4px;font-size:11px;line-height:1.6"><strong style="color:#e67e22">Conditions particulières:</strong><br>' + esc(q.conditions).replace(/\n/g,'<br>') + '</div>'; }
   // V77 : Tableau articles pro devis (Qté | Article | Description | PU TTC | Rem. | HT | TVA | Total TTC)
@@ -14852,6 +14871,15 @@ function printFacturePro(id) {
     html += '<p style="font-size:11px;margin:0">'+aniNames.join('<br>')+'</p></div>';
   }
   html += '<h4 style="font-size:12px;font-weight:bold;margin:0 0 4px 0">Facture ' + f.ref + '</h4><p style="font-size:11px">Date: ' + dateStr + '</p></div></div>';
+  
+  // 📝 OBJET / DESCRIPTION - Bandeau visible
+  if(f.objet){
+    html += '<div style="margin:0 0 20px 0;padding:12px 16px;background:#f0f7f5;border-left:4px solid #1a7a6e;border-radius:4px">';
+    html += '<div style="font-size:10px;font-weight:bold;color:#1a7a6e;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">📝 Objet de la facture</div>';
+    html += '<div style="font-size:12px;font-weight:600;color:#000;line-height:1.5">' + esc(f.objet).replace(/\n/g,'<br>') + '</div>';
+    html += '</div>';
+  }
+  
   // V77 : Tableau articles pro facture (Qté | Article | Description | PU TTC | Rem. | HT | TVA | Total TTC)
   html += '<div style="margin:20px 0;border:1px solid #999"><table style="width:100%;border-collapse:collapse;font-size:11px"><tr style="background:#ddd">';
   html += '<th style="border:1px solid #999;padding:6px;width:30px;text-align:center;font-size:10px">Qté</th>';
