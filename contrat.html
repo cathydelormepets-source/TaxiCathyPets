@@ -1823,6 +1823,8 @@ async function loadFromCode(code) {
       }
     } catch(e) {}
 
+    if (!fbApiKey) fbApiKey = FB_CONFIG.apiKey;
+    if (!fbUrl) fbUrl = FB_CONFIG.databaseURL;
     if (!fbApiKey || !fbUrl) throw new Error('Firebase non configuré');
 
     const db = initContratFB({ apiKey: fbApiKey, databaseURL: fbUrl });
@@ -1936,8 +1938,8 @@ function closeOverlay(){
 // ── CONFIG ──
 const CONTRACT_URL = 'https://cathydelormepets-source.github.io/TaxiCathyPets/contrat.html';
 const FB_CONFIG = {
-  apiKey: "AIzaSyDummyKeyWillBeOverridden",
-  databaseURL: ""
+  apiKey: "AIzaSyBuIIZyZZ1KumBeiLSvZFvxFh8ala8NwOw",
+  databaseURL: "https://taxicathypets-default-rtdb.europe-west1.firebasedatabase.app"
 };
 
 // ── Firebase init (lecture/écriture contrats clients) ──

@@ -20133,7 +20133,7 @@ function rObjectifs(){
       diff=diffDevis+30; // Devis créé il y a 5j → prestation prévue J+25
       dateSource='estimation date devis+30j';
     }
-    if(diff<0)diff=0;
+    if(diff<0)return;
     placerDansTranche(E(q.total), diff);
     console.log('[Devis '+q.ref+'] '+q.status+' · '+euro(q.total)+' · diff:'+diff+'j ('+dateSource+')');
   });
