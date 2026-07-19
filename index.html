@@ -696,6 +696,16 @@ body.nuit .card{border-color:#0a1520}
     </div>
   </div>
 
+  <!-- A FACTURER -->
+  <div id="aFacturerCard" style="margin-top:12px;padding:10px;background:#0a1822;border-radius:8px;border:1px solid var(--or);display:none">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+      <div style="font-size:10px;color:var(--or);font-weight:800;text-transform:uppercase">A facturer — prestations realisees</div>
+      <div id="aFacturerTotal" style="font-size:17px;font-weight:900;color:var(--or)">—</div>
+    </div>
+    <div id="aFacturerNb" style="font-size:9px;color:var(--mt);margin-bottom:4px"></div>
+    <div id="aFacturerList"></div>
+  </div>
+
   <!-- HISTORIQUE 6 DERNIERS MOIS -->
   <div style="margin-top:12px;padding:10px;background:#0a1822;border-radius:8px;border:1px solid var(--ln)">
     <div style="font-size:10px;font-weight:700;color:var(--mt);text-transform:uppercase;margin-bottom:8px">📊 Historique 6 derniers mois (CA TTC)</div>
@@ -10605,6 +10615,55 @@ function quickAcceptDev(id){
   setTimeout(function(){eDev(id)},300);
 }
 
+// ── VUE "À FACTURER" — prestations réalisées non facturées ──
+function _afDate(q){
+  var trLie=act(db.transports).find(function(t){return t.devisId===q.id||t.quoteId===q.id});
+  if(trLie&&trLie.date) return new Date(trLie.date);
+  var grLie=act(db.gardes).find(function(g){return g.devisId===q.id||g.quoteId===q.id});
+  if(grLie&&grLie.start) return new Date(grLie.start);
+  if(q.dateDebut) return new Date(q.dateDebut);
+  if(q.dateTransport) return new Date(q.dateTransport);
+  if(q.dateLivraison) return new Date(q.dateLivraison);
+  if(q.dateExec) return new Date(q.dateExec);
+  return null;
+}
+function renderAFacturer(){
+  var card=document.getElementById('aFacturerCard');
+  var list=document.getElementById('aFacturerList');
+  var totEl=document.getElementById('aFacturerTotal');
+  var nbEl=document.getElementById('aFacturerNb');
+  if(!card||!list) return;
+  var today=new Date();today.setHours(0,0,0,0);
+  var items=[];
+  act(db.devis).forEach(function(q){
+    if(q.status!=='accepté'&&q.status!=='accepte'&&q.status!=='signe') return;
+    if(act(db.factures).some(function(f){return f.quoteId===q.id})) return;
+    var d=_afDate(q);
+    if(!d||isNaN(d.getTime())) return;
+    d.setHours(0,0,0,0);
+    var retard=Math.floor((today-d)/864e5);
+    if(retard<=0) return;
+    items.push({q:q,d:d,retard:retard});
+  });
+  if(!items.length){card.style.display='none';return}
+  items.sort(function(a,b){return b.retard-a.retard});
+  var tot=0;items.forEach(function(it){tot+=E(it.q.total)});
+  card.style.display='block';
+  if(totEl) totEl.textContent=euro(tot);
+  if(nbEl) nbEl.textContent=items.length+(items.length>1?' prestations':' prestation');
+  var h='';
+  items.forEach(function(it){
+    var col=it.retard>60?'var(--rd)':it.retard>30?'var(--or)':'var(--mt)';
+    h+='<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:7px 0;border-top:1px solid var(--ln)">';
+    h+='<div style="min-width:0;flex:1"><div style="font-size:12px;font-weight:700">'+it.q.ref+' — '+cN(it.q.clientId)+'</div>';
+    h+='<div style="font-size:10px;color:'+col+';font-weight:700">'+it.d.toLocaleDateString('fr-FR')+' · retard '+it.retard+' j</div></div>';
+    h+='<div style="font-size:13px;font-weight:900;color:var(--a2);white-space:nowrap">'+euro(it.q.total)+'</div>';
+    h+='<button class="btn sm og" style="font-size:10px;padding:6px 10px;white-space:nowrap" onclick="devToFacDirect(\''+it.q.id+'\')">Facturer</button>';
+    h+='</div>';
+  });
+  list.innerHTML=h;
+}
+
 function devToFacDirect(id){
   var q=db.devis.find(function(x){return x.id===id;});
   if(!q)return;
@@ -20144,6 +20203,7 @@ function rObjectifs(){
   if(e30) e30.textContent=euro(p30);
   if(e60) e60.textContent=euro(p60);
   if(e90) e90.textContent=euro(p90);
+  renderAFacturer();
 
   // HISTORIQUE 6 DERNIERS MOIS
   var histoEl=document.getElementById('histoMois');
