@@ -21753,7 +21753,8 @@ function rContrats(){
   var nbSigne=list.filter(function(c){return c.status==='signé'}).length;
   var nbEnvoye=list.filter(function(c){return c.status==='envoyé'}).length;
   var nbPaye=list.filter(function(c){return c.status==='payé'}).length;
-  if(stats) stats.textContent=list.length+' contrat(s) · '+nbSigne+' signé(s) · '+nbEnvoye+' en attente · '+nbPaye+' payé(s)';
+  var totAc=list.filter(function(c){return c.status!=='payé'&&c.status!=='annulé'}).reduce(function(s,c){return s+E(c.acompte)},0);
+  if(stats) stats.textContent=list.length+' contrat(s) · '+nbSigne+' signé(s) · '+nbEnvoye+' en attente · '+nbPaye+' payé(s)'+(totAc>0?' · 💰 Acomptes reçus : '+euro(totAc):'');
   
   var h='<table><thead><tr><th>Réf</th><th>Client</th><th>Période</th><th>Type</th><th>Montant</th><th>Statut</th><th></th></tr></thead><tbody>';
   h+=list.slice().reverse().map(function(c){
@@ -21778,6 +21779,9 @@ function rContrats(){
     if(c.status==='signé'){
       btns+='<button class="btn sm gn" onclick="ctSetStatus(\''+c.id+'\',\'payé\')" title="Marquer payé">💰 Payé</button> ';
     }
+    if(c.status==='envoyé'||c.status==='signé'){
+      btns+='<button class="btn sm" onclick="ctAcompteModal(\''+c.id+'\')" title="'+(E(c.acompte)>0?'Modifier l\'acompte':'Enregistrer un acompte')+'" style="background:#1a2a10;border-color:#3a6a10;color:#9d6;font-size:10px">💰 Ac.</button> ';
+    }
     if(c.status==='payé'){
       btns+='<span style="color:var(--a2);font-size:11px">✅</span> ';
     }
@@ -21797,7 +21801,15 @@ function rContrats(){
       '<td>'+cN(c.clientId)+(aniNames?' <div style="font-size:10px;color:var(--or)">🐾 '+aniNames+'</div>':'')+'</td>'+
       '<td style="font-size:11px">'+periode+'</td>'+
       '<td style="font-size:11px">'+(c.type||'—')+'</td>'+
-      '<td>'+euro(c.montant||0)+'</td>'+
+      '<td>'+euro(c.montant||0)+(function(){
+        var ac=E(c.acompte);
+        if(ac<=0)return '';
+        var totalC=E(c.total)||E(c.tarif)||E(c.montant)||0;
+        var resteC=Math.max(0,totalC-ac);
+        var h2='<div style="font-size:10px;color:#9d6">💰 Ac. '+euro(ac)+(c.acompteDate?' · '+new Date(c.acompteDate).toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit'}):'')+'</div>';
+        if(c.status!=='payé'&&resteC>0)h2+='<div style="font-size:10px;color:var(--or)">Reste '+euro(resteC)+'</div>';
+        return h2;
+      })()+'</td>'+
       '<td><span class="pill '+pillClass+'">'+c.status+(needRelance?' ⚠️':'')+'</span></td>'+
       '<td style="white-space:nowrap">'+btns+'</td></tr>';
   }).join('');
@@ -21837,7 +21849,8 @@ function rattrapageContratsPayes(){
       contratId:ct.id,
       objet:'Contrat '+ct.ref+(ct.type?' — '+ct.type:''),
       lignes:lignes,total:totalCt,tva:tva,remise:0,
-      acompte:0,paiement:'virement',
+      acompte:E(ct.acompte)||0,dateAcompte:ct.acompteDate||'',paiementAcompte:ct.acompteMode||'',
+      paiement:'virement',
       notes:'Facture créée par rattrapage (contrat '+ct.ref+' déjà payé)',
       date:dateFac,
       datePaiement:dateFac,paiementDate:dateFac,
@@ -21859,6 +21872,69 @@ function rattrapageContratsPayes(){
   alert(msg);
 }
 
+// ── V78 : Acompte sur contrat ──
+function ctAcompteModal(id){
+  var ct=(db.contrats||[]).find(function(c){return c.id===id});
+  if(!ct)return;
+  var total=E(ct.total)||E(ct.tarif)||E(ct.montant)||0;
+  var old=document.getElementById('ctAcModal');if(old)old.remove();
+  var ov=document.createElement('div');
+  ov.id='ctAcModal';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px';
+  ov.innerHTML='<div style="background:var(--bg2,#0d1b2e);border:1px solid var(--ln,#1e3a5f);border-radius:14px;padding:20px;max-width:380px;width:100%">'
+    +'<h3 style="color:#9d6;margin:0 0 4px 0">💰 Acompte — '+ct.ref+'</h3>'
+    +'<p style="font-size:12px;color:var(--mt);margin:0 0 12px 0">'+cN(ct.clientId)+' · Contrat de '+euro(total)+(E(ct.acompte)>0?' · Acompte actuel : '+euro(ct.acompte):'')+'</p>'
+    +'<div class="fd"><label class="lb">Montant de l\'acompte (€)</label><input class="inp" id="ctac_m" type="number" step="0.01" value="'+(E(ct.acompte)||'')+'" placeholder="0.00"></div>'
+    +'<div style="display:flex;gap:6px;margin:6px 0 10px 0">'
+      +'<button class="btn sm" onclick="document.getElementById(\'ctac_m\').value='+(Math.round(total*0.3*100)/100)+'" style="font-size:11px">30% ('+euro(total*0.3)+')</button>'
+      +'<button class="btn sm" onclick="document.getElementById(\'ctac_m\').value='+(Math.round(total*0.5*100)/100)+'" style="font-size:11px">50% ('+euro(total*0.5)+')</button>'
+    +'</div>'
+    +'<div class="row"><div class="c6 fd"><label class="lb">Date de réception</label><input class="inp" id="ctac_d" type="date" value="'+(ct.acompteDate||tdy())+'"></div>'
+    +'<div class="c6 fd"><label class="lb">Mode</label><select class="inp" id="ctac_p"><option value="virement"'+(ct.acompteMode==='virement'?' selected':'')+'>Virement</option><option value="especes"'+(ct.acompteMode==='especes'?' selected':'')+'>Espèces</option><option value="cheque"'+(ct.acompteMode==='cheque'?' selected':'')+'>Chèque</option><option value="cb"'+(ct.acompteMode==='cb'?' selected':'')+'>CB</option><option value="paypal"'+(ct.acompteMode==='paypal'?' selected':'')+'>PayPal</option></select></div></div>'
+    +'<div style="display:flex;gap:8px;margin-top:14px">'
+      +'<button class="btn gn" onclick="ctAcompteSave(\''+id+'\')" style="flex:1;padding:12px">💾 Enregistrer</button>'
+      +(E(ct.acompte)>0?'<button class="btn rd" onclick="ctAcompteRemove(\''+id+'\')" style="padding:12px" title="Supprimer l\'acompte">🗑️</button>':'')
+      +'<button class="btn" onclick="document.getElementById(\'ctAcModal\').remove()" style="padding:12px">Annuler</button>'
+    +'</div></div>';
+  document.body.appendChild(ov);
+}
+function ctAcompteSave(id){
+  var ct=(db.contrats||[]).find(function(c){return c.id===id});
+  if(!ct)return;
+  var m=E((document.getElementById('ctac_m')||{}).value);
+  if(m<=0){alert('Montant invalide');return}
+  var total=E(ct.total)||E(ct.tarif)||E(ct.montant)||0;
+  if(total>0&&m>total){if(!confirm('L\'acompte ('+euro(m)+') dépasse le montant du contrat ('+euro(total)+'). Continuer ?'))return}
+  var ancien=E(ct.acompte);
+  ct.acompte=m;
+  ct.acompteDate=(document.getElementById('ctac_d')||{}).value||tdy();
+  ct.acompteMode=(document.getElementById('ctac_p')||{}).value||'virement';
+  stamp(ct);
+  // Trésorerie : enregistrer la différence (évite les doublons si on modifie)
+  var delta=m-ancien;
+  if(delta!==0){
+    db.tresorerie.unshift({id:uid('ca'),type:'recette',label:'Acompte contrat '+ct.ref+' — '+cN(ct.clientId),amount:delta,date:new Date(ct.acompteDate).toISOString()});
+  }
+  // Synchroniser la facture liée si elle existe
+  var fac=act(db.factures).find(function(f){return f.contratId===id});
+  if(fac){fac.acompte=m;fac.dateAcompte=ct.acompteDate;fac.paiementAcompte=ct.acompteMode;stamp(fac)}
+  var mo=document.getElementById('ctAcModal');if(mo)mo.remove();
+  lH('contrat','Acompte '+euro(m)+' sur contrat '+ct.ref);
+  sav(false);rContrats();try{rFac2()}catch(e){}
+  showToast('💰 Acompte '+euro(m)+' enregistré sur '+ct.ref);
+}
+function ctAcompteRemove(id){
+  var ct=(db.contrats||[]).find(function(c){return c.id===id});
+  if(!ct||!E(ct.acompte))return;
+  if(!confirm('Supprimer l\'acompte de '+euro(ct.acompte)+' sur '+ct.ref+' ?'))return;
+  db.tresorerie.unshift({id:uid('ca'),type:'recette',label:'Annulation acompte contrat '+ct.ref,amount:-E(ct.acompte),date:new Date().toISOString()});
+  var fac=act(db.factures).find(function(f){return f.contratId===id});
+  if(fac&&E(fac.acompte)===E(ct.acompte)){fac.acompte=0;delete fac.dateAcompte;delete fac.paiementAcompte;stamp(fac)}
+  ct.acompte=0;delete ct.acompteDate;delete ct.acompteMode;stamp(ct);
+  var mo=document.getElementById('ctAcModal');if(mo)mo.remove();
+  sav(false);rContrats();try{rFac2()}catch(e){}
+  showToast('🗑️ Acompte supprimé');
+}
 function ctSetStatus(id,status){
   var ct=(db.contrats||[]).find(function(c){return c.id===id});
   if(!ct)return;
@@ -21901,7 +21977,8 @@ function ctSetStatus(id,status){
         contratId:ct.id,
         objet:'Contrat '+ct.ref+(ct.type?' — '+ct.type:''),
         lignes:lignes,total:totalCt,tva:tva,remise:0,
-        acompte:0,paiement:'virement',
+        acompte:E(ct.acompte)||0,dateAcompte:ct.acompteDate||'',paiementAcompte:ct.acompteMode||'',
+        paiement:'virement',
         notes:'Facture générée automatiquement depuis le contrat '+ct.ref,
         date:tdy(),
         datePaiement:tdy(),paiementDate:tdy(),
@@ -21909,7 +21986,8 @@ function ctSetStatus(id,status){
         status:'payée'
       };
       stamp(fac2);db.factures.push(fac2);
-      db.tresorerie.unshift({id:uid('ca'),type:'recette',label:'Facture '+ref+' — '+cN(ct.clientId)+' (contrat '+ct.ref+')',amount:totalCt,date:new Date().toISOString()});
+      var soldeCt=Math.max(0,totalCt-(E(ct.acompte)||0));
+      db.tresorerie.unshift({id:uid('ca'),type:'recette',label:'Facture '+ref+' — '+cN(ct.clientId)+' (contrat '+ct.ref+(E(ct.acompte)>0?', solde après acompte':'')+')',amount:soldeCt,date:new Date().toISOString()});
       showToast('✅ Contrat '+ct.ref+' payé · Facture '+ref+' créée automatiquement ('+euro(totalCt)+')');
     }
   } else if(status==='impayé'){
