@@ -9718,7 +9718,7 @@ function eCli(id){var c=db.clients.find(function(x){return x.id===id});if(!c)ret
   var cGrds=act(db.gardes).filter(function(g){return g.clientId===id});
   var caTotal=cFacs.reduce(function(s,f){return s+E(f.total)},0);
   var caPaye=cFacs.filter(function(f){return f.status==='payée'}).reduce(function(s,f){return s+E(f.total)},0);
-  var caImpaye=cFacs.filter(function(f){return f.status!=='payée'&&f.status!=='avoir'}).reduce(function(s,f){return s+E(f.total)-E(f.acompte)},0);
+  var caImpaye=cFacs.reduce(function(s,f){return s+resteDuFac(f)},0);
   var nbMissions=cTrs.length+cGrds.length;
   var anis=act(db.animaux).filter(function(a){return a.clientId===id});
   var statsHtml='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:10px 0;padding:10px;background:rgba(26,122,110,.06);border:1px solid rgba(26,122,110,.15);border-radius:8px">';
@@ -10059,6 +10059,15 @@ function renumDev(){
   db.devis=sorted;
 }
 // ═══ NUMÉROTATION AUTO FACTURES ═══
+function avoirsSur(f){
+  if(!f)return 0;
+  return act(db.factures).filter(function(a){return a.id!==f.id&&(a.mode==='avoir'||a.status==='avoir')&&(a.factureOrigineId===f.id||(f.ref&&a.factureOrigine===f.ref))}).reduce(function(s,a){return s+Math.abs(E(a.total))},0);
+}
+function resteDuFac(f){
+  if(!f)return 0;
+  if(f.mode==='avoir'||f.status==='avoir'||f.status==='payée'||f.status==='annulee')return 0;
+  return Math.max(0,E(f.total)-E(f.acompte)-avoirsSur(f));
+}
 function nextFacRef(isAvoir){
   var yr=new Date().getFullYear();
   var prefix=isAvoir?'CP-AV-':'CP-FAC-';
@@ -10480,7 +10489,7 @@ function confirmAvoir(facId){
     date:tdy(),
     activityType:f.activityType||'autre',
     mode:'avoir',
-    status:'emise',
+    status:'avoir',
     factureOrigine:f.ref,
     factureOrigineId:facId
   };
@@ -10491,10 +10500,15 @@ function confirmAvoir(facId){
   if(!f.avoirs)f.avoirs=[];
   f.avoirs.push(ref);
 
+  // Solder la facture d'origine si les avoirs couvrent le reste dû
+  stamp(f);
+  var soldee=false;
+  if(E(f.total)-E(f.acompte)-avoirsSur(f)<=0.005){f.status='annulee';soldee=true}
+
   var modal=document.getElementById('avoirModal');if(modal)modal.remove();
-  lH('avoir','Avoir '+ref+' sur '+f.ref+' — '+euro(montantAvoir)+' — '+motif);
+  lH('avoir','Avoir '+ref+' sur '+f.ref+' — '+euro(montantAvoir)+' — '+motif+(soldee?' — facture annulée':''));
   sav(false);rFac2();
-  showToast('📄 Avoir '+ref+' créé — '+euro(montantAvoir));
+  showToast(soldee?'📄 Avoir '+ref+' créé — '+f.ref+' annulée, sortie des impayés':'📄 Avoir '+ref+' créé — '+euro(montantAvoir)+' (solde restant sur '+f.ref+')');
 }
 
 function hardDelFac(id){var f=db.factures.find(function(x){return x.id===id});if(!f)return;if(!confirm('Supprimer définitivement la facture '+f.ref+' ?'))return;stamp(f);f._deleted=true;f._deletedAt=new Date().toISOString();renumFac();lH('del','Facture supprimée: '+f.ref);sav();rFac2();showToast('🗑️ Supprimée — factures renumérotées')}
@@ -10766,7 +10780,7 @@ function rFac2(){
   var facs=all.filter(function(f){
     if(sFlt && f.status!==sFlt) return false;
     if(isSubImpayee && f.status!=='impayée' && f.status!=='retard' && f.status!=='emise') return false;
-    if(isSubImpayee && f.status==='payée') return false;
+    if(isSubImpayee && (f.status==='payée'||f.mode==='avoir'||resteDuFac(f)<=0)) return false;
     if(isSubAvoir && f.activityType!=='avoir') return false;
     var fd=new Date(f.date||Date.now());
     if(pFlt){
@@ -10799,12 +10813,18 @@ function rFac2(){
   rTbl('fcTbl',['Réf','Type','Client','Date','Objet','Total TTC','Acompte','Reste dû','Statut','Actions'],facs.map(function(f){
     var typeLabels={transport:'🚗',garde:'🏡',colis:'📦',nutrica:'🦴',veterinaire:'🩺',avoir:'📄',autre:'📋'};
     var typeLabel=typeLabels[f.activityType||'autre']||'📋';
-    var sc=f.status==='payée'?'gt':f.status==='retard'?'rt':f.status==='impayée'?'rt':'bt';
     var ac=E(f.acompte);
-    var reste=Math.max(0,E(f.total)-ac);
+    var avr=avoirsSur(f);
+    var annule=f.status==='annulee'||(avr>0&&f.status!=='payée'&&E(f.total)-ac-avr<=0.005);
+    var sc=f.status==='payée'?'gt':annule?'bt':f.status==='retard'?'rt':f.status==='impayée'?'rt':'bt';
+    var reste=(f.mode==='avoir'||f.status==='avoir')?0:Math.max(0,E(f.total)-ac-avr);
     var obj=(f.objet||'').slice(0,35)+(f.objet&&f.objet.length>35?'…':'');
     var datePay='';
-    if(f.status==='payée'&&f.datePaiement){
+    if(annule&&f.status!=='payée'){
+      datePay='<br><span style="font-size:10px;color:var(--mt)">📄 Annulée par avoir'+(f.avoirs&&f.avoirs.length?' ('+f.avoirs.join(', ')+')':'')+'</span>';
+    } else if(avr>0&&f.status!=='payée'){
+      datePay='<br><span style="font-size:10px;color:#e0a0d8">📄 Avoir '+euro(avr)+' — reste dû '+euro(reste)+'</span>';
+    } else if(f.status==='payée'&&f.datePaiement){
       datePay='<br><span style="font-size:10px;color:var(--a2)">💰 Payé le '+new Date(f.datePaiement).toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'2-digit'})+'</span>';
     } else if(f.status==='impayée'||f.status==='retard'){
       datePay='<br><span style="font-size:10px;color:var(--rd)">⚠️ Impayée'+(f.echeance?' — Éch. '+new Date(f.echeance).toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'2-digit'}):'')+'</span>';
@@ -10829,7 +10849,7 @@ function rFac2(){
         return html;
       })()+'</td>'
       +'<td style="font-weight:700;color:'+(reste>0?'var(--or)':'var(--a2)')+'">'+euro(reste)+'</td>'
-      +'<td><span class="pill '+sc+'">'+f.status+'</span>'+datePay+'</td>'
+      +'<td><span class="pill '+sc+'">'+(annule&&f.status!=='payée'?'annulée':f.status)+'</span>'+datePay+'</td>'
       +'<td style="white-space:nowrap;display:flex;gap:3px">'
         +'<button class="btn sm bu" onclick="eFac(\''+fid+'\')" title="Modifier">✏️</button>'
         +'<button class="btn sm og" onclick="printFacturePro(\''+fid+'\')" title="PDF">🖨️</button>'
@@ -10850,7 +10870,7 @@ function rFac2(){
   var facs=act(db.factures).filter(function(f){return f.clientId===cliId;});
   var devs=act(db.devis).filter(function(q){return q.clientId===cliId;});
   var caTotal=facs.reduce(function(s,f){return s+E(f.total);},0);
-  var impayes=facs.filter(function(f){return f.status!=='payée';}).reduce(function(s,f){return s+E(f.total)-E(f.acompte);},0);
+  var impayes=facs.reduce(function(s,f){return s+resteDuFac(f);},0);
   var paye=facs.filter(function(f){return f.status==='payée';}).reduce(function(s,f){return s+E(f.total);},0);
   var h='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px">'
     +'<div style="background:rgba(26,122,110,.12);border:1px solid rgba(26,122,110,.3);border-radius:10px;padding:10px;text-align:center"><div style="font-size:10px;color:var(--mt)">CA Total</div><div style="font-size:18px;font-weight:900;color:var(--a2)">'+euro(caTotal)+'</div></div>'
@@ -11768,7 +11788,7 @@ function rStat(){
 
   // --- SYNTHÈSE OPÉRATIONNELLE ---
   var facPaid=act(db.factures).filter(function(f){return f.status==='payée';}).reduce(function(s,f){return s+E(f.total);},0);
-  var facUnpaid=act(db.factures).filter(function(f){return f.status!=='payée';}).reduce(function(s,f){return s+E(f.total);},0);
+  var facUnpaid=act(db.factures).reduce(function(s,f){return s+resteDuFac(f);},0);
   var devAccept=act(db.devis).filter(function(q){return q.status==='accepté'||q.status==='facturé';}).length;
   var devTotal=act(db.devis).length;
   var tauxConv=devTotal>0?Math.round(devAccept/devTotal*100):0;
@@ -16696,7 +16716,7 @@ function rRapportMois(dt){
 
   // Récap
   var paye=moisFacs.filter(function(f){return f.status==='payée'}).reduce(function(s,f){return s+E(f.total)},0);
-  var impaye=moisFacs.filter(function(f){return f.status!=='payée'}).reduce(function(s,f){return s+E(f.total)},0);
+  var impaye=moisFacs.reduce(function(s,f){return s+resteDuFac(f)},0);
   h+='<div class="card" style="padding:10px;margin-top:10px;background:rgba(26,122,110,.08);border-color:var(--ac);font-size:12px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px">';
   h+='<span>CA: <b style="color:var(--a2)">'+euro(caTotal)+'</b></span>';
   h+='<span>Paye: <b style="color:var(--a2)">'+euro(paye)+'</b></span>';
@@ -19342,8 +19362,7 @@ function rFinancierTempsReel(){
   });
   // 3. Factures émises non payées (à encaisser)
   act(db.factures).forEach(function(f){
-    if(f.status==='payée'||f.status==='avoir')return;
-    var reste=Math.max(E(f.total)-E(f.acompte||0),0);
+    var reste=resteDuFac(f);
     if(reste>0){prevCA+=reste;prevNb++}
   });
   // 4. Devis acceptés non encore facturés
@@ -19355,8 +19374,9 @@ function rFinancierTempsReel(){
   // --- FACTURES IMPAYÉES ---
   var impayes=0, impayesNb=0, imp7=0, imp15=0, imp30=0;
   act(db.factures).forEach(function(f){
-    if(f.status==='emise'||f.status==='impayée'||f.status==='retard'){
-      var resteDu=E(f.total)-E(f.acompte);
+    if((f.status==='emise'||f.status==='impayée'||f.status==='retard')&&f.mode!=='avoir'){
+      var resteDu=resteDuFac(f);
+      if(resteDu<=0)return;
       impayes+=resteDu; impayesNb++;
       var age=Math.floor((now-new Date(f.date||now))/(1000*86400));
       if(age>=7)  imp7+=resteDu;
@@ -19827,8 +19847,8 @@ function cfBilanAnnuel(){
   var totalKm=trs.reduce(function(s,t){return s+E(t.kmManual)},0);
   var fuelTot=act(db.carburant||[]).filter(function(c){return c.date&&c.date.startsWith(yr)}).reduce(function(s,c){return s+E(c.prix)},0);
   var facPayees=facs.filter(function(f){return f.status==='payée'}).length;
-  var facImpayees=facs.filter(function(f){return f.status!=='payée'}).length;
-  var impayesMontant=facs.filter(function(f){return f.status!=='payée'}).reduce(function(s,f){return s+E(f.total)},0);
+  var facImpayees=facs.filter(function(f){return resteDuFac(f)>0}).length;
+  var impayesMontant=facs.reduce(function(s,f){return s+resteDuFac(f)},0);
   // Par mois
   var moisData=[];
   for(var m=1;m<=12;m++){
