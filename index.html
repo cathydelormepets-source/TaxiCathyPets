@@ -10066,7 +10066,14 @@ function renumDev(){
 // ═══ NUMÉROTATION AUTO FACTURES ═══
 function avoirsSur(f){
   if(!f)return 0;
-  return act(db.factures).filter(function(a){return a.id!==f.id&&(a.mode==='avoir'||a.status==='avoir')&&(a.factureOrigineId===f.id||(f.ref&&a.factureOrigine===f.ref))}).reduce(function(s,a){return s+Math.abs(E(a.total))},0);
+  return act(db.factures).filter(function(a){
+    if(a.id===f.id)return false;
+    if(a.mode!=='avoir'&&a.status!=='avoir')return false;
+    // Rattachement STRICT par identifiant interne (jamais renuméroté)
+    if(a.factureOrigineId)return a.factureOrigineId===f.id;
+    // Fallback par numéro uniquement pour les anciens avoirs sans ID
+    return !!(f.ref&&a.factureOrigine===f.ref);
+  }).reduce(function(s,a){return s+Math.abs(E(a.total))},0);
 }
 function resteDuFac(f){
   if(!f)return 0;
@@ -10181,6 +10188,23 @@ function renumFac(){
   // Recombiner
   db.factures=factures.concat(avoirs).concat(deleted).sort(function(a,b){
     return (a.date||'9999').localeCompare(b.date||'9999');
+  });
+  // Resynchroniser les liens avoir ↔ facture d'origine après renumérotation
+  act(db.factures).forEach(function(a){
+    if(a.mode!=='avoir'&&a.status!=='avoir')return;
+    if(!a.factureOrigineId)return;
+    var orig=db.factures.find(function(x){return x.id===a.factureOrigineId});
+    if(orig&&orig.ref&&a.factureOrigine!==orig.ref){
+      a.factureOrigine=orig.ref;
+      a.objet='AVOIR sur '+orig.ref+(a.objet&&a.objet.indexOf('—')>=0?' —'+a.objet.split('—').slice(1).join('—'):'');
+      stamp(a);
+    }
+  });
+  // Resynchroniser les listes f.avoirs des factures d'origine
+  act(db.factures).forEach(function(f){
+    if(f.mode==='avoir'||f.status==='avoir')return;
+    var mesAvoirs=act(db.factures).filter(function(a){return (a.mode==='avoir'||a.status==='avoir')&&a.factureOrigineId===f.id}).map(function(a){return a.ref});
+    if(mesAvoirs.length&&JSON.stringify(f.avoirs||[])!==JSON.stringify(mesAvoirs)){f.avoirs=mesAvoirs;stamp(f)}
   });
   // Réaligner les compteurs atomiques sur les nouveaux maxima
   try{
