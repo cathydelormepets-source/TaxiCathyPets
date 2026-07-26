@@ -2128,6 +2128,8 @@ document.getElementById('q_contrat_pec').addEventListener('change',function(){
 <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">
   <button class="btn sm rd" onclick="batchRelance()" style="font-size:11px">📧 Relancer toutes les impayées >30j</button>
   <button class="btn sm" onclick="reconcilierToutesFactures()" style="font-size:11px;background:#3d2c0a;border-color:#6d5a2a;color:#fcd77a" title="Recalcule les totaux et supprime les lignes vides">🔧 Réconcilier TVA & Totaux</button>
+  <button class="btn sm" onclick="exportCerfrance()" style="font-size:11px;background:#0a2c3d;border-color:#2a5a6d;color:#7ad7fc" title="Export CSV des factures pour la plateforme agréée / comptable">📤 Export Cerfrance (CSV)</button>
+  <button class="btn sm" onclick="exportFacturXZip()" style="font-size:11px;background:#1a0a3d;border-color:#4a2a8d;color:#b09afc" title="Export ZIP des factures au format Factur-X (XML EN 16931)">📑 Export Factur-X (ZIP)</button>
 </div>
 <div style="display:flex;flex-direction:column;gap:14px">
 <div class="card"><div class="hd"><h3>Factures</h3><span id="fcStats" style="font-size:11px;color:var(--mt)"></span></div><div class="bd">
@@ -6240,6 +6242,8 @@ function fbConnect(){
     function afterAuth(){
       fbRef=fbDb.ref('salons/'+room+'/data');
       fbConnected=true;
+      // Charger les compteurs de numérotation atomiques
+      try{fbDb.ref('salons/'+room+'/counters').once('value').then(function(s){var v=s.val();if(v){db.settings._facCounters=v;safeSave()}}).catch(function(){})}catch(e){}
       syncUI('on','Cloud connecté ('+room+')');
       var authSt=$('fbAuthStatus');
       if(authSt){
@@ -6258,6 +6262,7 @@ function fbConnect(){
           var localBefore=JSON.stringify(db);
           var merged=mergeData(db,remote);
           db=merged;
+          try{fixDupFacRefs()}catch(e){console.error('dedup',e)}
           safeSave();
           rAll();
           syncUI('on','Sync OK — '+new Date().toLocaleTimeString('fr-FR'));
@@ -10078,8 +10083,62 @@ function nextFacRef(isAvoir){
     var match=f.ref.match(new RegExp('^'+prefix.replace('-','\\-')+yr+'-(\\d+)$'));
     if(match){var n=parseInt(match[1],10);if(n>maxNum)maxNum=n;}
   });
+  // Compteur cloud (réservations atomiques d'autres appareils)
+  var cc=E(((db.settings._facCounters||{})[prefix+yr]));
+  if(cc>maxNum)maxNum=cc;
   var ref=prefix+yr+'-'+String(maxNum+1).padStart(3,'0');
+  // Réserver ce numéro dans le cloud (atomique) — si collision, renumérotation auto
+  setTimeout(function(){claimFacRef(ref)},800);
   return ref;
+}
+// ── V78 : Réservation atomique du numéro de facture (anti-collision multi-appareils) ──
+function claimFacRef(ref){
+  try{
+    if(!fbConnected||!fbDb)return;
+    var f=act(db.factures).find(function(x){return x.ref===ref});
+    if(!f)return; // création annulée
+    var m=ref.match(/^(CP-(?:FAC|AV))-(\d{4})-(\d+)$/);
+    if(!m)return;
+    var key=m[1]+'-'+m[2], num=parseInt(m[3],10);
+    var room=db.settings.fbRoom||'cathypets-default';
+    fbDb.ref('salons/'+room+'/counters/'+key).transaction(function(cur){
+      cur=parseInt(cur,10)||0;
+      return cur>=num?cur+1:num;
+    },function(err,committed,snap){
+      if(err||!committed||!snap)return;
+      var granted=snap.val();
+      db.settings._facCounters=db.settings._facCounters||{};
+      db.settings._facCounters[key]=granted;
+      if(granted!==num){
+        // Collision détectée — un autre appareil a pris ce numéro
+        var old=f.ref;
+        f.ref=key+'-'+String(granted).padStart(3,'0');
+        stamp(f);
+        lH('fix','Collision numéro évitée: '+old+' → '+f.ref);
+        sav(false);
+        try{rFac2()}catch(e){}
+        showToast('🔢 Numéro ajusté: '+f.ref+' (collision multi-appareils évitée)');
+      }else{
+        safeSave();
+      }
+    });
+  }catch(e){console.error('claimFacRef',e)}
+}
+// ── V78 : Détection et correction des doublons de numéros après synchro ──
+function fixDupFacRefs(){
+  var seen={},changed=false;
+  act(db.factures).slice().sort(function(a,b){return (a._updatedAt||'').localeCompare(b._updatedAt||'')}).forEach(function(f){
+    if(!f.ref)return;
+    if(seen[f.ref]){
+      var old=f.ref;
+      f.ref=nextFacRef(old.indexOf('CP-AV')===0);
+      stamp(f);changed=true;
+      lH('fix','Doublon de numéro corrigé: '+old+' → '+f.ref);
+    }
+    seen[f.ref]=true;
+  });
+  if(changed){try{rFac2()}catch(e){};showToast('🔢 Doublon(s) de numéro corrigé(s) automatiquement')}
+  return changed;
 }
 
 function renumFac(){
@@ -10123,6 +10182,16 @@ function renumFac(){
   db.factures=factures.concat(avoirs).concat(deleted).sort(function(a,b){
     return (a.date||'9999').localeCompare(b.date||'9999');
   });
+  // Réaligner les compteurs atomiques sur les nouveaux maxima
+  try{
+    var maxima={};
+    act(db.factures).forEach(function(f){
+      var m=(f.ref||'').match(/^(CP-(?:FAC|AV))-(\d{4})-(\d+)$/);
+      if(m){var k=m[1]+'-'+m[2];var n=parseInt(m[3],10);if(!maxima[k]||n>maxima[k])maxima[k]=n}
+    });
+    db.settings._facCounters=maxima;
+    if(fbConnected&&fbDb){var room=db.settings.fbRoom||'cathypets-default';fbDb.ref('salons/'+room+'/counters').set(maxima)}
+  }catch(e){}
 }
 function hardDelDev(id){var q=db.devis.find(function(x){return x.id===id});if(!q)return;if(!confirm('Supprimer définitivement le devis '+q.ref+' ?'))return;stamp(q);q._deleted=true;q._deletedAt=new Date().toISOString();renumDev();lH('del','Devis supprimé: '+q.ref);sav();rDev2();showToast('🗑️ Supprimé — devis renumérotés')}
 function purgeAllDev(){var n=db.devis.length;if(!n){alert('Aucun devis à supprimer');return}if(!confirm('⚠️ Supprimer DÉFINITIVEMENT les '+n+' devis ?\n\nCette action est irréversible !'))return;if(!confirm('Vraiment sûr ? '+n+' devis seront perdus.'))return;db.devis=[];db.settings.nextQuote=1;lH('purge','Tous les devis purgés ('+n+')');sav();rDev2();showToast('🗑️ '+n+' devis purgés — compteur remis à 1')}
@@ -10512,7 +10581,7 @@ function confirmAvoir(facId){
 }
 
 function hardDelFac(id){var f=db.factures.find(function(x){return x.id===id});if(!f)return;if(!confirm('Supprimer définitivement la facture '+f.ref+' ?'))return;stamp(f);f._deleted=true;f._deletedAt=new Date().toISOString();renumFac();lH('del','Facture supprimée: '+f.ref);sav();rFac2();showToast('🗑️ Supprimée — factures renumérotées')}
-function purgeAllFac(){var n=db.factures.length;if(!n){alert('Aucune facture à supprimer');return}if(!confirm('⚠️ Supprimer DÉFINITIVEMENT les '+n+' factures ?\n\nCette action est irréversible !'))return;if(!confirm('Vraiment sûr ? '+n+' factures seront perdues.'))return;db.factures=[];db.settings.nextInvoice=1;lH('purge','Toutes les factures purgées ('+n+')');sav();rFac2();showToast('🗑️ '+n+' factures purgées — compteur remis à 1')}
+function purgeAllFac(){var n=db.factures.length;if(!n){alert('Aucune facture à supprimer');return}if(!confirm('⚠️ Supprimer DÉFINITIVEMENT les '+n+' factures ?\n\nCette action est irréversible !'))return;if(!confirm('Vraiment sûr ? '+n+' factures seront perdues.'))return;db.factures=[];db.settings.nextInvoice=1;db.settings._facCounters={};try{if(fbConnected&&fbDb){var room=db.settings.fbRoom||'cathypets-default';fbDb.ref('salons/'+room+'/counters').remove()}}catch(e){}lH('purge','Toutes les factures purgées ('+n+')');sav();rFac2();showToast('🗑️ '+n+' factures purgées — compteur remis à 1')}
 
 function renumFacManual(){
   var n=act(db.factures).length;
@@ -10853,6 +10922,7 @@ function rFac2(){
       +'<td style="white-space:nowrap;display:flex;gap:3px">'
         +'<button class="btn sm bu" onclick="eFac(\''+fid+'\')" title="Modifier">✏️</button>'
         +'<button class="btn sm og" onclick="printFacturePro(\''+fid+'\')" title="PDF">🖨️</button>'
+        +'<button class="btn sm" onclick="dlFacturX(\''+fid+'\')" title="Factur-X (XML)" style="font-size:10px;background:#0a2c3d;border-color:#2a5a6d;color:#7ad7fc">📑</button>'
         +'<button class="btn sm at" onclick="quickMail(\'envoi_fac\',\''+cid+'\',\''+fid+'\')" title="Mail">📧</button>'
         +(f.status==='emise'?'<button class="btn sm" onclick="quickMail(\'relance_fac\',\''+cid+'\',\''+fid+'\')" title="Relance impayée" style="background:#2a1010;border-color:#6a2020;color:#ff8a8a;font-size:10px">📨</button>':'')
         +'<button class="btn sm" onclick="marquerAcompte(\''+fid+'\')" title="'+(ac>0?'Modifier acompte':'Ajouter acompte')+'" style="font-size:10px;background:#1a2a10;border-color:#3a6a10;color:#9d6">💰 Ac.</button>'+(f.status!=='payée'?'<button class="btn sm gn" onclick="marquerPayeeModal(\''+fid+'\')" title="Marquer payée" style="font-size:10px">✅</button>':'')
@@ -14940,8 +15010,16 @@ function printFacturePro(id) {
     html += '<div style="border:1px solid #999;padding:12px;background:#f5f5f5"><h4 style="font-size:10px;font-weight:bold;margin:0 0 8px 0">CLIENT</h4>';
     html += '<p style="font-size:11px;margin:2px 0"><strong>' + (cl.nom + ' ' + (cl.prenom || '')).trim() + '</strong></p>';
     if (cl.adresse) html += '<p style="font-size:11px;margin:2px 0">' + cl.adresse + '</p>';
+    if (cl.cp||cl.ville) html += '<p style="font-size:11px;margin:2px 0">' + ((cl.cp||'')+' '+(cl.ville||'')).trim() + '</p>';
+    // Facturation électronique : SIREN/SIRET + TVA du client professionnel (mention obligatoire B2B)
+    if (cl.type && cl.type!=='particulier' && cl.siret) {
+      html += '<p style="font-size:10px;margin:4px 0 0 0;color:#333"><strong>SIREN/SIRET :</strong> ' + esc(cl.siret) + '</p>';
+    }
     html += '</div>';
   }
+  // Facturation électronique : catégorie d'opération (mention obligatoire)
+  var catOp = (f.activityType==='nutrica') ? 'Livraison de biens' : 'Prestation de services';
+  html += '<p style="font-size:9px;color:#666;margin:4px 0 0 0">Catégorie d\'opération : ' + catOp + '</p>';
   // Animaux
   var facAniIds = f.animalIds || (f.animalId ? [f.animalId] : []);
   if(facAniIds.length){
@@ -27146,6 +27224,187 @@ function dupContrat(id){
   editContrat(newC.id);
 }
 
+// ── V78 : Export CSV factures pour plateforme agréée (Cerfrance) — facturation électronique ──
+function exportCerfrance(){
+  var facs=act(db.factures).slice().sort(function(a,b){return (a.date||'').localeCompare(b.date||'')});
+  if(!facs.length){alert('Aucune facture à exporter');return}
+  var annees={};facs.forEach(function(f){var y=(f.date||'').slice(0,4);if(y)annees[y]=1});
+  var listeAnnees=Object.keys(annees).sort();
+  var choix=prompt('Année à exporter ('+listeAnnees.join(', ')+') ou "tout" :',String(new Date().getFullYear()));
+  if(choix===null)return;
+  choix=choix.trim().toLowerCase();
+  if(choix!=='tout'&&choix!=='toutes'){facs=facs.filter(function(f){return (f.date||'').slice(0,4)===choix})}
+  if(!facs.length){alert('Aucune facture pour '+choix);return}
+  var sep=';';
+  var lignes=['Reference'+sep+'Type piece'+sep+'Date emission'+sep+'Client'+sep+'Type client'+sep+'SIREN/SIRET client'+sep+'Categorie operation'+sep+'Objet'+sep+'Total HT'+sep+'Taux TVA %'+sep+'Montant TVA'+sep+'Total TTC'+sep+'Acompte'+sep+'Avoirs lies'+sep+'Reste du'+sep+'Statut'+sep+'Date paiement'+sep+'Mode paiement'+sep+'Facture origine'];
+  var fr=function(n){return (Math.round(E(n)*100)/100).toFixed(2).replace('.',',')};
+  var clean=function(s){return String(s||'').replace(/[;\r\n]+/g,' ').trim()};
+  facs.forEach(function(f){
+    var cl=db.clients.find(function(x){return x.id===f.clientId})||{};
+    var isAvoir=(f.mode==='avoir'||f.status==='avoir'||(f.ref||'').indexOf('CP-AV')===0);
+    var ttc=E(f.total);
+    var taux=E(f.tva);if(f.tva===undefined||f.tva===null)taux=20;
+    var ht=taux>0?ttc/(1+taux/100):ttc;
+    var catOp=(f.activityType==='nutrica')?'Livraison de biens':'Prestation de services';
+    var statut=f.status==='payée'?'Payee':f.status==='annulee'?'Annulee (avoir)':isAvoir?'Avoir':resteDuFac(f)>0?'Impayee':'Emise';
+    lignes.push([
+      clean(f.ref), isAvoir?'Avoir':'Facture',
+      (f.date||'').slice(0,10),
+      clean((cl.nom||'')+' '+(cl.prenom||'')),
+      clean(cl.type||'particulier'),
+      clean(cl.siret||''),
+      catOp,
+      clean(f.objet),
+      fr(ht), String(taux).replace('.',','), fr(ttc-ht), fr(ttc),
+      fr(f.acompte),
+      fr(avoirsSur(f)),
+      fr(resteDuFac(f)),
+      statut,
+      f.datePaiement?(f.datePaiement||'').slice(0,10):'',
+      clean(f.paiement||''),
+      clean(f.factureOrigine||'')
+    ].join(sep));
+  });
+  var csv='\ufeff'+lignes.join('\r\n');
+  var b=new Blob([csv],{type:'text/csv;charset=utf-8'});
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(b);
+  a.download='CathyPets_Export_Factures_'+(choix==='tout'||choix==='toutes'?'TOUT':choix)+'.csv';
+  a.click();
+  lH('export','Export Cerfrance CSV — '+facs.length+' pièce(s)');
+  showToast('📤 '+facs.length+' pièce(s) exportée(s) — à transmettre à Cerfrance');
+}
+// ── V78 : Générateur Factur-X — XML CII profil EN 16931 ──
+function _fxN(n){return (Math.round(Math.abs(E(n))*100)/100).toFixed(2)}
+function _fxE(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function _fxD(d){var x=d?new Date(d):new Date();return x.getFullYear()+String(x.getMonth()+1).padStart(2,'0')+String(x.getDate()).padStart(2,'0')}
+function facturXml(fid){
+  var f=db.factures.find(function(x){return x.id===fid});
+  if(!f)return null;
+  var cl=db.clients.find(function(x){return x.id===f.clientId})||{};
+  var isAvoir=(f.mode==='avoir'||f.status==='avoir'||(f.ref||'').indexOf('CP-AV')===0);
+  var tva=(f.tva!==undefined&&f.tva!==null)?E(f.tva):20;
+  var remGlob=E(f.remise)||0, rf=1-remGlob/100;
+  // Reconstruire les lignes exactement comme la facture PDF
+  var lignes=(f.lignes&&f.lignes.length?f.lignes:[{desc:f.objet||'Prestation',qty:1,pu:E(f.total)}]).filter(function(lg){
+    return (E(lg.qty)||1)>0&&(E(lg.pu||lg.montant)||0)!==0;
+  });
+  if(!lignes.length)lignes=[{desc:f.objet||'Prestation',qty:1,pu:E(f.total)}];
+  var totHT=0,totTVA=0,totTTC=0,taxGroups={},lignesXml='';
+  lignes.forEach(function(lg,i){
+    var qty=E(lg.qty)||1, pu=E(lg.pu||lg.montant)||0, rem=E(lg.remise)||0;
+    var mntTTC=qty*pu*(1-rem/100)*rf;
+    var taux=lg.noTva?0:tva;
+    var ht=lg.noTva?mntTTC:mntTTC/(1+tva/100);
+    var tv=mntTTC-ht;
+    totHT+=ht;totTVA+=tv;totTTC+=mntTTC;
+    var k=lg.noTva?'E':'S'+taux;
+    if(!taxGroups[k])taxGroups[k]={cat:lg.noTva?'E':'S',taux:taux,basis:0,tax:0};
+    taxGroups[k].basis+=ht;taxGroups[k].tax+=tv;
+    var puHT=qty?Math.abs(ht)/qty:0;
+    lignesXml+='<ram:IncludedSupplyChainTradeLineItem>'
+      +'<ram:AssociatedDocumentLineDocument><ram:LineID>'+(i+1)+'</ram:LineID></ram:AssociatedDocumentLineDocument>'
+      +'<ram:SpecifiedTradeProduct><ram:Name>'+_fxE(lg.article||lg.desc||'Prestation')+'</ram:Name>'+(lg.article&&lg.desc?'<ram:Description>'+_fxE(lg.desc)+'</ram:Description>':'')+'</ram:SpecifiedTradeProduct>'
+      +'<ram:SpecifiedLineTradeAgreement><ram:NetPriceProductTradePrice><ram:ChargeAmount>'+puHT.toFixed(4)+'</ram:ChargeAmount></ram:NetPriceProductTradePrice></ram:SpecifiedLineTradeAgreement>'
+      +'<ram:SpecifiedLineTradeDelivery><ram:BilledQuantity unitCode="C62">'+qty+'</ram:BilledQuantity></ram:SpecifiedLineTradeDelivery>'
+      +'<ram:SpecifiedLineTradeSettlement>'
+        +'<ram:ApplicableTradeTax><ram:TypeCode>VAT</ram:TypeCode><ram:CategoryCode>'+(lg.noTva?'E':'S')+'</ram:CategoryCode><ram:RateApplicablePercent>'+taux+'</ram:RateApplicablePercent></ram:ApplicableTradeTax>'
+        +'<ram:SpecifiedTradeSettlementLineMonetarySummation><ram:LineTotalAmount>'+_fxN(ht)+'</ram:LineTotalAmount></ram:SpecifiedTradeSettlementLineMonetarySummation>'
+      +'</ram:SpecifiedLineTradeSettlement>'
+      +'</ram:IncludedSupplyChainTradeLineItem>';
+  });
+  var sirenV=(ENT('entSiret')||'').replace(/\D/g,'').slice(0,9);
+  var clSiren=(cl.siret||'').replace(/\D/g,'');
+  var clTvaNum=(cl.siret||'').match(/FR\s*[0-9A-Z]{2}\s*\d{9}/i);
+  var payCode={virement:'30',especes:'10',cheque:'20',cb:'48',paypal:'68'}[f.paiement]||'30';
+  var taxXml='';
+  Object.keys(taxGroups).forEach(function(k){
+    var g=taxGroups[k];
+    taxXml+='<ram:ApplicableTradeTax><ram:CalculatedAmount>'+_fxN(g.tax)+'</ram:CalculatedAmount><ram:TypeCode>VAT</ram:TypeCode>'
+      +(g.cat==='E'?'<ram:ExemptionReason>Exonération de TVA</ram:ExemptionReason>':'')
+      +'<ram:BasisAmount>'+_fxN(g.basis)+'</ram:BasisAmount><ram:CategoryCode>'+g.cat+'</ram:CategoryCode><ram:RateApplicablePercent>'+g.taux+'</ram:RateApplicablePercent></ram:ApplicableTradeTax>';
+  });
+  var acompte=isAvoir?0:E(f.acompte);
+  var due=Math.max(0,Math.abs(totTTC)-acompte);
+  var xml='<?xml version="1.0" encoding="UTF-8"?>'
+  +'<rsm:CrossIndustryInvoice xmlns:rsm="urn:un:unece:uncefact:data:standard:CrossIndustryInvoice:100" xmlns:ram="urn:un:unece:uncefact:data:standard:ReusableAggregateBusinessInformationEntity:100" xmlns:udt="urn:un:unece:uncefact:data:standard:UnqualifiedDataType:100">'
+  +'<rsm:ExchangedDocumentContext><ram:GuidelineSpecifiedDocumentContextParameter><ram:ID>urn:cen.eu:en16931:2017</ram:ID></ram:GuidelineSpecifiedDocumentContextParameter></rsm:ExchangedDocumentContext>'
+  +'<rsm:ExchangedDocument><ram:ID>'+_fxE(f.ref)+'</ram:ID><ram:TypeCode>'+(isAvoir?'381':'380')+'</ram:TypeCode>'
+  +'<ram:IssueDateTime><udt:DateTimeString format="102">'+_fxD(f.date)+'</udt:DateTimeString></ram:IssueDateTime>'
+  +(f.objet?'<ram:IncludedNote><ram:Content>'+_fxE(f.objet)+'</ram:Content></ram:IncludedNote>':'')
+  +'</rsm:ExchangedDocument>'
+  +'<rsm:SupplyChainTradeTransaction>'
+  +lignesXml
+  +'<ram:ApplicableHeaderTradeAgreement>'
+    +'<ram:SellerTradeParty><ram:Name>'+_fxE(ENT('entNom')||'CATHY PETS SAS')+'</ram:Name>'
+    +'<ram:SpecifiedLegalOrganization><ram:ID schemeID="0002">'+sirenV+'</ram:ID></ram:SpecifiedLegalOrganization>'
+    +'<ram:PostalTradeAddress><ram:PostcodeCode>02470</ram:PostcodeCode><ram:LineOne>'+_fxE(ENT('entAdresse')||'6 Chemin Du Lavoir')+'</ram:LineOne><ram:CityName>Neuilly-Saint-Front</ram:CityName><ram:CountryID>FR</ram:CountryID></ram:PostalTradeAddress>'
+    +'<ram:SpecifiedTaxRegistration><ram:ID schemeID="VA">'+_fxE((ENT('entTva')||'FR65928564269').replace(/\s/g,''))+'</ram:ID></ram:SpecifiedTaxRegistration>'
+    +'</ram:SellerTradeParty>'
+    +'<ram:BuyerTradeParty><ram:Name>'+_fxE(((cl.nom||'')+' '+(cl.prenom||'')).trim()||'Client')+'</ram:Name>'
+    +(clSiren.length>=9?'<ram:SpecifiedLegalOrganization><ram:ID schemeID="0002">'+clSiren.slice(0,9)+'</ram:ID></ram:SpecifiedLegalOrganization>':'')
+    +'<ram:PostalTradeAddress>'+(cl.cp?'<ram:PostcodeCode>'+_fxE(cl.cp)+'</ram:PostcodeCode>':'')+(cl.adresse?'<ram:LineOne>'+_fxE(cl.adresse)+'</ram:LineOne>':'')+(cl.ville?'<ram:CityName>'+_fxE(cl.ville)+'</ram:CityName>':'')+'<ram:CountryID>FR</ram:CountryID></ram:PostalTradeAddress>'
+    +(clTvaNum?'<ram:SpecifiedTaxRegistration><ram:ID schemeID="VA">'+_fxE(clTvaNum[0].replace(/\s/g,'').toUpperCase())+'</ram:ID></ram:SpecifiedTaxRegistration>':'')
+    +'</ram:BuyerTradeParty>'
+  +'</ram:ApplicableHeaderTradeAgreement>'
+  +'<ram:ApplicableHeaderTradeDelivery/>'
+  +'<ram:ApplicableHeaderTradeSettlement>'
+    +'<ram:InvoiceCurrencyCode>EUR</ram:InvoiceCurrencyCode>'
+    +'<ram:SpecifiedTradeSettlementPaymentMeans><ram:TypeCode>'+payCode+'</ram:TypeCode></ram:SpecifiedTradeSettlementPaymentMeans>'
+    +taxXml
+    +'<ram:SpecifiedTradePaymentTerms>'+(f.echeance?'<ram:DueDateDateTime><udt:DateTimeString format="102">'+_fxD(f.echeance)+'</udt:DateTimeString></ram:DueDateDateTime>':'<ram:Description>Paiement à réception</ram:Description>')+'</ram:SpecifiedTradePaymentTerms>'
+    +'<ram:SpecifiedTradeSettlementHeaderMonetarySummation>'
+      +'<ram:LineTotalAmount>'+_fxN(totHT)+'</ram:LineTotalAmount>'
+      +'<ram:TaxBasisTotalAmount>'+_fxN(totHT)+'</ram:TaxBasisTotalAmount>'
+      +'<ram:TaxTotalAmount currencyID="EUR">'+_fxN(totTVA)+'</ram:TaxTotalAmount>'
+      +'<ram:GrandTotalAmount>'+_fxN(totTTC)+'</ram:GrandTotalAmount>'
+      +'<ram:TotalPrepaidAmount>'+_fxN(acompte)+'</ram:TotalPrepaidAmount>'
+      +'<ram:DuePayableAmount>'+_fxN(due)+'</ram:DuePayableAmount>'
+    +'</ram:SpecifiedTradeSettlementHeaderMonetarySummation>'
+    +(isAvoir&&f.factureOrigine?'<ram:InvoiceReferencedDocument><ram:IssuerAssignedID>'+_fxE(f.factureOrigine)+'</ram:IssuerAssignedID></ram:InvoiceReferencedDocument>':'')
+  +'</ram:ApplicableHeaderTradeSettlement>'
+  +'</rsm:SupplyChainTradeTransaction>'
+  +'</rsm:CrossIndustryInvoice>';
+  return {xml:xml,name:(f.ref||'facture').replace(/[^A-Za-z0-9_-]/g,'_')+'_facturx.xml'};
+}
+function dlFacturX(fid){
+  var r=facturXml(fid);
+  if(!r){alert('Facture introuvable');return}
+  var b=new Blob([r.xml],{type:'application/xml'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=r.name;a.click();
+  showToast('📑 '+r.name+' téléchargé');
+}
+function _loadJSZip(cb){
+  if(window.JSZip)return cb();
+  var s=document.createElement('script');
+  s.src='https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+  s.onload=cb;s.onerror=function(){alert('Impossible de charger le module ZIP — vérifie ta connexion')};
+  document.head.appendChild(s);
+}
+function exportFacturXZip(){
+  var facs=act(db.factures).slice().sort(function(a,b){return (a.date||'').localeCompare(b.date||'')});
+  if(!facs.length){alert('Aucune facture');return}
+  var annees={};facs.forEach(function(f){var y=(f.date||'').slice(0,4);if(y)annees[y]=1});
+  var choix=prompt('Année à exporter en Factur-X ('+Object.keys(annees).sort().join(', ')+') ou "tout" :',String(new Date().getFullYear()));
+  if(choix===null)return;
+  choix=choix.trim().toLowerCase();
+  if(choix!=='tout'&&choix!=='toutes'){facs=facs.filter(function(f){return (f.date||'').slice(0,4)===choix})}
+  if(!facs.length){alert('Aucune facture pour '+choix);return}
+  showToast('📦 Génération de '+facs.length+' fichier(s) Factur-X…');
+  _loadJSZip(function(){
+    var zip=new JSZip();
+    var n=0;
+    facs.forEach(function(f){var r=facturXml(f.id);if(r){zip.file(r.name,r.xml);n++}});
+    zip.generateAsync({type:'blob'}).then(function(blob){
+      var a=document.createElement('a');
+      a.href=URL.createObjectURL(blob);
+      a.download='CathyPets_FacturX_'+(choix==='tout'||choix==='toutes'?'TOUT':choix)+'.zip';
+      a.click();
+      lH('export','Export Factur-X ZIP — '+n+' pièce(s)');
+      showToast('📑 ZIP Factur-X prêt — '+n+' pièce(s) pour Cerfrance');
+    });
+  });
+}
 function batchRelance(){
   var impayees=act(db.factures).filter(function(f){
     if(f.status==='payée'||f.status==='avoir')return false;
