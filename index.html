@@ -4711,7 +4711,8 @@ document.getElementById('q_contrat_pec').addEventListener('change',function(){
 <input type="hidden" id="rb_arr" value="">
 <div class="grid" style="grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
 <div><label class="lb">Distance aller (km)</label><input type="number" class="inp" id="rb_km" placeholder="Ex: 450" oninput="calcRenta()"></div>
-<div><label class="lb">Péages aller (€)</label><input type="number" class="inp" id="rb_peages" value="0" oninput="calcRenta()"></div>
+<div><label class="lb">Péages aller (€)</label><input type="number" class="inp" id="rb_peages" value="0" oninput="calcRenta()"><div id="rb_autoroute_info" style="font-size:10px;color:var(--mt);margin-top:2px"></div></div>
+<div><label class="lb">Classe péage véhicule</label><select class="inp" id="rb_classe" onchange="calcRenta()"><option value="0.11" selected>Classe 1 — VL (~0,11 €/km)</option><option value="0.17">Classe 2 — fourgon haut (~0,17 €/km)</option></select></div>
 </div>
 <div class="grid" style="grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
 <div><label class="lb">Retour à vide ?</label><select class="inp" id="rb_retour" onchange="calcRenta()"><option value="oui">Oui - Retour à vide</option><option value="non">Non - Client retour trouvé</option><option value="partiel">Partiel - Sur une partie</option></select></div>
@@ -4743,7 +4744,12 @@ document.getElementById('q_contrat_pec').addEventListener('change',function(){
 <option value="gpl">GPL</option>
 </select></div>
 <div><label class="lb">Conso (L/100km ou kWh/100)</label><input type="number" step="0.1" class="inp" id="rb_conso" value="8" oninput="calcRenta()"></div>
-<div><label class="lb">Prix au L (€)</label><input type="number" step="0.001" class="inp" id="rb_prixL" value="1.65" oninput="calcRenta()"></div>
+<div><label class="lb">Prix au L (€)</label><input type="number" step="0.001" class="inp" id="rb_prixL" value="1.65" oninput="calcRenta()">
+<div style="display:flex;gap:4px;margin-top:4px">
+<button type="button" class="btn sm" style="font-size:10px;padding:3px 8px;background:#1a3a1a;border-color:#2a6a2a;color:#8fc" onclick="document.getElementById('rb_prixL').value=0.90;document.getElementById('rb_conso').value=9.5;calcRenta()" title="E85 : ~0,90€/L, conso +25%">🌽 E85</button>
+<button type="button" class="btn sm" style="font-size:10px;padding:3px 8px" onclick="document.getElementById('rb_prixL').value=1.85;document.getElementById('rb_conso').value=8;calcRenta()" title="Sans-plomb 95">⛽ SP95</button>
+<button type="button" class="btn sm" style="font-size:10px;padding:3px 8px" onclick="document.getElementById('rb_prixL').value=1.75;document.getElementById('rb_conso').value=6.5;calcRenta()" title="Diesel">🛢️ Diesel</button>
+</div></div>
 </div>
 <h4 style="margin:16px 0 12px;color:var(--gd)">💵 Tarification</h4>
 <div class="grid" style="grid-template-columns:1fr 1fr;gap:10px">
@@ -4779,6 +4785,7 @@ document.getElementById('q_contrat_pec').addEventListener('change',function(){
 <div class="renta-row"><span>🔧 Usure véhicule (0.05€/km)</span><span id="rb_cUsure">0.00€</span></div>
 <div class="renta-row"><span id="rb_cTemps_lbl">⏱️ Coût temps (15€/h)</span><span id="rb_cTemps">0.00€</span></div>
 <div class="renta-row" style="border-top:1px solid var(--ln);margin-top:6px;padding-top:6px;font-weight:700"><span>TOTAL COÛTS</span><span id="rb_cTotal" style="color:var(--rd)">0.00€</span></div>
+<div class="renta-row" style="font-size:12px"><span>💶 Frais refacturables au client (carbu + péages, +10%)</span><span id="rb_refact" style="color:var(--gd);font-weight:700">—</span></div>
 </div>
 <div class="renta-verdict" id="rentaVerdict">
 <span style="font-size:2rem">🤔</span>
@@ -15443,8 +15450,11 @@ function openNewCliModal(targetSelectId){
     '<div class="c6 fd"><label>Prénom</label><input id="ncl_pn" placeholder="Prénom"></div>'+
     '<div class="c6 fd"><label>Téléphone</label><input id="ncl_tl" type="tel" placeholder="06..."></div>'+
     '<div class="c6 fd"><label>Email</label><input id="ncl_em" type="email" placeholder="@"></div>'+
-    '<div class="c6 fd"><label>Ville</label><input id="ncl_vi" placeholder="Ville"></div>'+
-    '<div class="c6 fd"><label>Type</label><select id="ncl_tp"><option value="particulier">Particulier</option><option value="professionnel">Professionnel</option></select></div>'+
+    '<div class="c6 fd"><label>Adresse</label><input id="ncl_ad" placeholder="N° et rue"></div>'+
+    '<div class="c3 fd"><label>CP</label><input id="ncl_cp" placeholder="02470"></div>'+
+    '<div class="c3 fd"><label>Ville</label><input id="ncl_vi" placeholder="Ville"></div>'+
+    '<div class="c6 fd"><label>Type</label><select id="ncl_tp" onchange="var p=document.getElementById(\'ncl_pro_box\');if(p)p.style.display=this.value===\'particulier\'?\'none\':\'block\'"><option value="particulier">Particulier</option><option value="professionnel">Professionnel</option><option value="veterinaire">Vétérinaire</option><option value="eleveur">Éleveur</option><option value="refuge">Refuge / Association</option></select></div>'+
+    '<div class="c6 fd" id="ncl_pro_box" style="display:none"><label>SIRET / N° TVA intracom.</label><input id="ncl_si" placeholder="123 456 789 00012 ou FR12345678901"><div style="font-size:10px;color:var(--mt)">Obligatoire pour la facturation électronique B2B</div></div>'+
     '</div>',
     '<button class="btn gn" onclick="saveNewCli(\''+targetSelectId+'\')">✅ Créer et sélectionner</button>'
   );
@@ -15460,8 +15470,11 @@ function saveNewCli(targetSelectId){
     prenom:((document.getElementById('ncl_pn')||{}).value||'').trim(),
     tel:((document.getElementById('ncl_tl')||{}).value||'').trim(),
     email:((document.getElementById('ncl_em')||{}).value||'').trim(),
+    adresse:((document.getElementById('ncl_ad')||{}).value||'').trim(),
+    cp:((document.getElementById('ncl_cp')||{}).value||'').trim(),
     ville:((document.getElementById('ncl_vi')||{}).value||'').trim(),
-    type:(document.getElementById('ncl_tp')||{}).value||'particulier'
+    type:(document.getElementById('ncl_tp')||{}).value||'particulier',
+    siret:((document.getElementById('ncl_si')||{}).value||'').trim()
   };
   stamp(c);db.clients.push(c);
   lH('client','Nouveau client: '+c.nom+' '+c.prenom);
@@ -24474,6 +24487,9 @@ window.calcRenta=function(){
   $('rb_cTemps').textContent=cTemps.toFixed(2)+'€';
   var lblTemps=$('rb_cTemps_lbl');if(lblTemps)lblTemps.textContent='⏱️ Coût temps ('+tauxH+'€/h)';
   $('rb_cTotal').textContent=total.toFixed(2)+'€';
+  // Frais réels refacturables au client : (carburant + péages) + 10% (règle interne)
+  var refact=$('rb_refact');
+  if(refact)refact.textContent=((cCarbu+cPeages)*1.10).toFixed(2)+'€';
   var valEl=$('rentaVal');
   valEl.textContent=(marge>=0?'+':'')+marge.toFixed(0)+'€';
   valEl.className='renta-value '+(marge>50?'pos':(marge>0?'warn':'neg'));
@@ -27186,19 +27202,37 @@ function rbCalcRoute(){
           if(valid.length<2){alert('❌ Impossible de géocoder certaines villes');return}
           // Construire l'URL OSRM avec toutes les étapes
           var coordStr=valid.map(function(c){return c[0]+','+c[1]}).join(';');
-          fetch('https://router.project-osrm.org/route/v1/driving/'+coordStr+'?overview=false')
+          fetch('https://router.project-osrm.org/route/v1/driving/'+coordStr+'?overview=false&steps=true')
             .then(function(r){return r.json()})
             .then(function(route){
               if(route&&route.routes&&route.routes[0]){
-                var distKm=Math.round(route.routes[0].distance/1000);
-                var dureeH=Math.round(route.routes[0].duration/3600*10)/10;
-                // Estimation péages (~0.105€/km autoroute, ~70% du trajet sur autoroute)
-                var peagesEstim=Math.round(distKm*0.7*0.105);
+                var rt=route.routes[0];
+                var distKm=Math.round(rt.distance/1000);
+                var dureeH=Math.round(rt.duration/3600*10)/10;
+                // V78 : détection RÉELLE des km d'autoroute tronçon par tronçon (refs A1, A26...)
+                var kmAutoroute=0;
+                try{
+                  (rt.legs||[]).forEach(function(leg){
+                    (leg.steps||[]).forEach(function(st){
+                      var ref=(st.ref||'')+' '+(st.name||'');
+                      if(/\bA\s?\d{1,3}\b/.test(ref))kmAutoroute+=st.distance/1000;
+                    });
+                  });
+                }catch(e){}
+                kmAutoroute=Math.round(kmAutoroute);
+                // Tarif péage selon classe véhicule (Tourneo Connect = classe 1)
+                var clSel=$('rb_classe');
+                var tarifPeage=clSel?(parseFloat(clSel.value)||0.11):0.11;
+                var peagesEstim=Math.round(kmAutoroute*tarifPeage);
+                // Fallback si détection vide mais long trajet
+                if(kmAutoroute===0&&distKm>150)peagesEstim=Math.round(distKm*0.7*tarifPeage);
                 $('rb_km').value=distKm;
                 $('rb_peages').value=peagesEstim;
                 $('rb_temps').value=dureeH;
+                var infoA=$('rb_autoroute_info');
+                if(infoA)infoA.textContent=kmAutoroute>0?'🛣️ '+kmAutoroute+' km d\'autoroute détectés sur '+distKm+' km':'';
                 calcRenta();
-                showToast('✅ Route calculée : '+distKm+'km · '+dureeH+'h · ~'+peagesEstim+'€ péages');
+                showToast('✅ '+distKm+' km ('+kmAutoroute+' km autoroute) · '+dureeH+'h · ~'+peagesEstim+'€ péages');
               } else {
                 alert('❌ Erreur de calcul d\'itinéraire');
               }
