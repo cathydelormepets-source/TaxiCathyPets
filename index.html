@@ -2119,6 +2119,7 @@ document.getElementById('q_contrat_pec').addEventListener('change',function(){
 <div class="il" style="margin-top:10px;padding-top:10px;border-top:1px solid var(--ln)">
   <button class="btn og" onclick="printFac()">🖨️ Impression rapide</button>
   <button class="btn at" onclick="printFacturePro(null)">📄 PDF Pro toutes</button>
+  <button class="btn" onclick="openReleveClientModal()" style="background:#0a2c3d;border-color:#2a5a6d;color:#7ad7fc">🧾 Relevé par client (payées / impayées / avoirs)</button>
 </div>
 </div></div>
 </div><!-- fin facTab-creer-panel -->
@@ -8367,6 +8368,168 @@ function addFacFromDevis(){
   showToast('✅ Facture '+inv.ref+' créée depuis '+q.ref+' — '+facLignes.length+' ligne(s)');
 }
 function printFac(){var h=act(db.factures).map(function(f){var typeLabels={transport:'Transport animalier',garde:'Garde à domicile',colis:'Colis / Livraison',nutrica:'Vente produits',veterinaire:'Vétérinaire',autre:'Prestation'};var typeLbl=typeLabels[f.activityType||'autre']||'Prestation';return '<div style="page-break-after:always;font-family:Arial;padding:24px"><h1>'+f.ref+'</h1><h3 style="color:#1a7a6e;margin-top:-10px">'+typeLbl+'</h3><p><b>'+ENT('entNom')+'</b><br>SIRET: '+ENT('entSiret')+' · RCS '+ENT('entRcs')+' · TVA: '+ENT('entTva')+'<br>RC Pro: '+ENT('entRcpro')+'<br>'+ENT('entAdresse')+'</p><p><b>Client:</b> '+cN(f.clientId)+'</p><p><b>Date:</b> '+new Date(f.date).toLocaleDateString('fr-FR')+'</p><p><b>Total TTC:</b> '+euro(f.total)+'</p><p style="font-size:11px;color:#666;margin-top:24px">Paiement à réception. Indemnité 40€ retard (Art. D441-5 C.Com).</p></div>'}).join('');openHtmlBlob(h,'Factures_CathyPets.html')}
+// ══════ V79 : RELEVÉ DE COMPTE CLIENT — factures par statut + détail des mouvements ══════
+function _rcEsc(v){return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function _rcD(d){if(!d)return '—';try{return new Date(d).toLocaleDateString('fr-FR')}catch(e){return d}}
+function _rcStatut(f){
+  if(f.mode==='avoir'||f.status==='avoir')return{l:'Avoir',c:'#7c3aed',bg:'#f3e8ff'};
+  if(f.status==='annulee')return{l:'Annulée',c:'#6b7280',bg:'#f3f4f6'};
+  if(f.status==='payée')return{l:'Payée',c:'#1a7a6e',bg:'#d1fae5'};
+  if(resteDuFac(f)>0)return{l:'Impayée',c:'#dc2626',bg:'#fee2e2'};
+  return{l:'Émise',c:'#d97706',bg:'#fef3c7'};
+}
+function _rcMatch(f,filt){
+  var isAv=(f.mode==='avoir'||f.status==='avoir');
+  if(filt==='avoirs')return isAv;
+  if(isAv)return filt==='toutes';
+  if(filt==='payees')return f.status==='payée';
+  if(filt==='impayees')return f.status!=='payée'&&f.status!=='annulee'&&resteDuFac(f)>0;
+  return f.status!=='annulee'||filt==='toutes';
+}
+function _rcInPeriod(d,d1,d2){d=(d||'').slice(0,10);return(!d1||d>=d1)&&(!d2||d<=d2)}
+// Mouvements chronologiques d'un client : facture (débit) / acompte, paiement, avoir (crédits)
+function _rcMouvements(clientId,d1,d2){
+  var evs=[];
+  act(db.factures).filter(function(f){return f.clientId===clientId}).forEach(function(f){
+    var dt=(f.date||'').slice(0,10);
+    if(f.mode==='avoir'||f.status==='avoir'){
+      if(_rcInPeriod(dt,d1,d2))evs.push({d:dt,lbl:'Avoir '+f.ref+(f.factureOrigine?' (sur '+f.factureOrigine+')':''),deb:0,cre:Math.abs(E(f.total))});
+      return;
+    }
+    if(f.status==='annulee')return;
+    if(_rcInPeriod(dt,d1,d2)){
+      evs.push({d:dt,lbl:'Facture '+f.ref+(f.objet?' — '+f.objet:''),deb:E(f.total),cre:0});
+      if(E(f.acompte)>0)evs.push({d:dt,lbl:'Acompte reçu sur '+f.ref+(f.paiementAcompte?' ('+f.paiementAcompte+')':''),deb:0,cre:E(f.acompte)});
+    }
+    if(f.status==='payée'){
+      var dp=(f.datePaiement||f.paiementDate||f.date||'').slice(0,10);
+      var mnt=Math.max(E(f.total)-E(f.acompte)-avoirsSur(f),0);
+      if(mnt>0&&_rcInPeriod(dp,d1,d2))evs.push({d:dp,lbl:'Paiement reçu — '+f.ref+(f.paiement?' ('+f.paiement+')':''),deb:0,cre:mnt});
+    }
+  });
+  evs.sort(function(a,b){return(a.d||'').localeCompare(b.d||'')});
+  return evs;
+}
+function _rcHead(){
+  var l1=(typeof LOGO_B64!=='undefined'&&LOGO_B64)?'<img src="'+LOGO_B64+'" style="width:90px;height:auto;border-radius:6px">':'';
+  var l2=(typeof LOGO_GARDE_B64!=='undefined'&&LOGO_GARDE_B64)?'<img src="'+LOGO_GARDE_B64+'" style="width:90px;height:auto;border-radius:6px">':'';
+  return '<table style="width:100%;margin-bottom:14px;border-bottom:3px solid #1a7a6e;padding-bottom:10px"><tr>'
+    +'<td style="width:100px;vertical-align:middle">'+l1+'</td>'
+    +'<td style="text-align:center;vertical-align:middle;padding:0 12px">'
+    +'<div style="font-size:20px;font-weight:900;color:#1a7a6e">CATHY PETS SAS</div>'
+    +'<div style="font-size:10px;color:#555;margin-top:3px">Transport &amp; Garde d&#39;animaux — Toutes espèces</div>'
+    +'<div style="font-size:9px;color:#888;margin-top:2px">SIRET 928 564 269 — RCS Soissons — TVA FR65928564269</div>'
+    +'<div style="font-size:9px;color:#888">RC Pro Hiscox HSXIN320028640M — Agrément FR02146T2</div>'
+    +'<div style="font-size:9px;color:#888">6 Chemin Du Lavoir, 02470 Neuilly-Saint-Front</div>'
+    +'<div style="font-size:9px;color:#888">Tél: 07.81.30.41.10 / 07.83.43.63.06 — cathypetsitter.com</div>'
+    +'</td><td style="width:100px;vertical-align:middle;text-align:right">'+l2+'</td></tr></table>';
+}
+function _rcBlocClient(c,filt,d1,d2,withMvt){
+  var facs=act(db.factures).filter(function(f){return f.clientId===c.id&&_rcMatch(f,filt)&&_rcInPeriod(f.date,d1,d2)})
+    .sort(function(a,b){return(a.date||'').localeCompare(b.date||'')});
+  var mvts=withMvt?_rcMouvements(c.id,d1,d2):[];
+  if(!facs.length&&!mvts.length)return '';
+  var typeLabels={transport:'Transport',garde:'Garde',colis:'Colis',nutrica:'Produits',veterinaire:'Vétérinaire',autre:'Autre'};
+  var th='padding:6px 8px;border-bottom:2px solid #1a7a6e;text-align:left;font-size:10px;color:#1a7a6e;text-transform:uppercase';
+  var td='padding:6px 8px;border-bottom:1px solid #e5e7eb;font-size:11px;color:#111';
+  var h='<div style="page-break-after:always;padding:4px 0">'+_rcHead();
+  h+='<h1 style="font-size:22px;margin:6px 0 2px 0;color:#000">RELEVÉ DE COMPTE CLIENT</h1>';
+  h+='<div style="font-size:11px;color:#555;margin-bottom:10px">Édité le '+_rcD(tdy())
+    +(d1||d2?' — Période : '+(d1?_rcD(d1):'début')+' → '+(d2?_rcD(d2):'ce jour'):'')
+    +' — Filtre : '+({toutes:'Toutes les factures',payees:'Factures payées',impayees:'Factures impayées',avoirs:'Avoirs'}[filt]||filt)+'</div>';
+  h+='<div style="background:#f0fdf9;border:1px solid #1a7a6e;border-radius:8px;padding:10px 14px;margin-bottom:12px">'
+    +'<div style="font-size:14px;font-weight:800;color:#000">'+_rcEsc((c.nom+' '+(c.prenom||'')).trim())+'</div>'
+    +'<div style="font-size:10px;color:#555">'+_rcEsc([c.adresse,c.cp,c.ville].filter(Boolean).join(', '))
+    +(c.tel?' · Tél : '+_rcEsc(c.tel):'')+(c.email?' · '+_rcEsc(c.email):'')
+    +(c.siret?' · SIRET : '+_rcEsc(c.siret):'')+'</div></div>';
+  // ── Tableau des factures filtrées ──
+  var tFac=0,tAc=0,tAv=0,tReste=0;
+  h+='<h2 style="font-size:13px;color:#1a7a6e;margin:10px 0 4px 0">📄 Factures ('+facs.length+')</h2>';
+  if(facs.length){
+    h+='<table style="width:100%;border-collapse:collapse"><tr><th style="'+th+'">Réf</th><th style="'+th+'">Date</th><th style="'+th+'">Objet</th><th style="'+th+'">Type</th><th style="'+th+';text-align:right">Total TTC</th><th style="'+th+';text-align:right">Acompte</th><th style="'+th+';text-align:right">Avoirs</th><th style="'+th+';text-align:right">Reste dû</th><th style="'+th+'">Statut</th><th style="'+th+'">Payée le</th></tr>';
+    facs.forEach(function(f){
+      var isAv=(f.mode==='avoir'||f.status==='avoir');var st=_rcStatut(f);
+      var av=isAv?0:avoirsSur(f),reste=resteDuFac(f);
+      if(isAv){tAv+=Math.abs(E(f.total))}else if(f.status!=='annulee'){tFac+=E(f.total);tAc+=E(f.acompte);tReste+=reste}
+      h+='<tr><td style="'+td+';font-weight:700">'+_rcEsc(f.ref)+'</td><td style="'+td+'">'+_rcD(f.date)+'</td>'
+        +'<td style="'+td+'">'+_rcEsc(f.objet||'—')+'</td><td style="'+td+'">'+(typeLabels[f.activityType]||'—')+'</td>'
+        +'<td style="'+td+';text-align:right;font-weight:700">'+(isAv?'-':'')+euro(Math.abs(E(f.total)))+'</td>'
+        +'<td style="'+td+';text-align:right">'+(E(f.acompte)>0?euro(f.acompte):'—')+'</td>'
+        +'<td style="'+td+';text-align:right">'+(av>0?'-'+euro(av):'—')+'</td>'
+        +'<td style="'+td+';text-align:right;font-weight:700;color:'+(reste>0?'#dc2626':'#1a7a6e')+'">'+euro(reste)+'</td>'
+        +'<td style="'+td+'"><span style="background:'+st.bg+';color:'+st.c+';padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700">'+st.l+'</span></td>'
+        +'<td style="'+td+'">'+(f.status==='payée'?_rcD(f.datePaiement||f.paiementDate):'—')+'</td></tr>';
+    });
+    h+='<tr><td colspan="4" style="'+td+';font-weight:800;border-top:2px solid #1a7a6e">TOTAUX</td>'
+      +'<td style="'+td+';text-align:right;font-weight:800;border-top:2px solid #1a7a6e">'+euro(tFac)+'</td>'
+      +'<td style="'+td+';text-align:right;font-weight:800;border-top:2px solid #1a7a6e">'+(tAc>0?euro(tAc):'—')+'</td>'
+      +'<td style="'+td+';text-align:right;font-weight:800;border-top:2px solid #1a7a6e">'+(tAv>0?'-'+euro(tAv):'—')+'</td>'
+      +'<td style="'+td+';text-align:right;font-weight:800;border-top:2px solid #1a7a6e;color:'+(tReste>0?'#dc2626':'#1a7a6e')+'">'+euro(tReste)+'</td>'
+      +'<td colspan="2" style="'+td+';border-top:2px solid #1a7a6e"></td></tr></table>';
+  }else{
+    h+='<div style="font-size:11px;color:#888;padding:8px 0">Aucune facture pour ce filtre / cette période.</div>';
+  }
+  // ── Détail des mouvements ──
+  if(withMvt){
+    h+='<h2 style="font-size:13px;color:#1a7a6e;margin:16px 0 4px 0">📒 Détail des mouvements (toutes factures de la période)</h2>';
+    if(mvts.length){
+      var solde=0,totD=0,totC=0;
+      h+='<table style="width:100%;border-collapse:collapse"><tr><th style="'+th+'">Date</th><th style="'+th+'">Opération</th><th style="'+th+';text-align:right">Débit (facturé)</th><th style="'+th+';text-align:right">Crédit (encaissé/avoir)</th><th style="'+th+';text-align:right">Solde dû</th></tr>';
+      mvts.forEach(function(m){
+        solde+=m.deb-m.cre;totD+=m.deb;totC+=m.cre;
+        h+='<tr><td style="'+td+'">'+_rcD(m.d)+'</td><td style="'+td+'">'+_rcEsc(m.lbl)+'</td>'
+          +'<td style="'+td+';text-align:right">'+(m.deb>0?euro(m.deb):'—')+'</td>'
+          +'<td style="'+td+';text-align:right;color:#1a7a6e">'+(m.cre>0?euro(m.cre):'—')+'</td>'
+          +'<td style="'+td+';text-align:right;font-weight:700;color:'+(solde>0.005?'#dc2626':'#1a7a6e')+'">'+euro(solde)+'</td></tr>';
+      });
+      h+='<tr><td colspan="2" style="'+td+';font-weight:800;border-top:2px solid #1a7a6e">TOTAUX</td>'
+        +'<td style="'+td+';text-align:right;font-weight:800;border-top:2px solid #1a7a6e">'+euro(totD)+'</td>'
+        +'<td style="'+td+';text-align:right;font-weight:800;border-top:2px solid #1a7a6e;color:#1a7a6e">'+euro(totC)+'</td>'
+        +'<td style="'+td+';text-align:right;font-weight:800;border-top:2px solid #1a7a6e;color:'+(solde>0.005?'#dc2626':'#1a7a6e')+'">'+euro(solde)+'</td></tr></table>';
+      h+='<div style="margin-top:10px;padding:10px 14px;border-radius:8px;background:'+(solde>0.005?'#fee2e2':'#d1fae5')+';font-size:13px;font-weight:800;color:'+(solde>0.005?'#dc2626':'#065f46')+'">'
+        +(solde>0.005?'⚠️ Solde restant dû par le client : '+euro(solde):'✅ Compte soldé — aucun montant dû ('+euro(solde)+')')+'</div>';
+    }else{
+      h+='<div style="font-size:11px;color:#888;padding:8px 0">Aucun mouvement sur la période.</div>';
+    }
+  }
+  h+='<div style="font-size:9px;color:#999;margin-top:14px;border-top:1px solid #e5e7eb;padding-top:6px">Relevé non contractuel édité par Cathy Pets SAS. Paiement à réception. Pénalités de retard : 7,86% annuel + indemnité forfaitaire de 40 € (Art. D441-5 C. Com).</div>';
+  h+='</div>';
+  return h;
+}
+function openReleveClientModal(){
+  var opts='<option value="__ALL__">— Tous les clients —</option>'+act(db.clients).slice()
+    .sort(function(a,b){return(a.nom||'').localeCompare(b.nom||'')})
+    .map(function(c){return '<option value="'+c.id+'">'+esc((c.nom+' '+(c.prenom||'')).trim())+'</option>'}).join('');
+  var bd='<div style="display:flex;flex-direction:column;gap:10px">'
+    +'<div><label class="lb">Client</label><select class="inp" id="rc_cli">'+opts+'</select></div>'
+    +'<div><label class="lb">Factures à afficher</label><select class="inp" id="rc_statut">'
+    +'<option value="toutes">Toutes (payées + impayées + avoirs)</option>'
+    +'<option value="payees">✅ Payées uniquement</option>'
+    +'<option value="impayees">🔴 Impayées uniquement</option>'
+    +'<option value="avoirs">🟣 Avoirs uniquement</option></select></div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">'
+    +'<div><label class="lb">Du (optionnel)</label><input type="date" class="inp" id="rc_d1"></div>'
+    +'<div><label class="lb">Au (optionnel)</label><input type="date" class="inp" id="rc_d2"></div></div>'
+    +'<label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer"><input type="checkbox" id="rc_mvt" checked> Inclure le détail des mouvements (débits / crédits / solde)</label>'
+    +'<div style="font-size:10px;color:var(--mt)">💡 Avec « Tous les clients », un relevé est généré par client (1 page chacun). Ouvre la page puis « Enregistrer en PDF » pour imprimer.</div>'
+    +'</div>';
+  oMo('🧾 Relevé de compte client','<div>'+bd+'</div>','<button class="btn og" onclick="genReleveClient()">🖨️ Générer le relevé</button>');
+}
+function genReleveClient(){
+  var cid=V('rc_cli'),filt=V('rc_statut')||'toutes',d1=V('rc_d1'),d2=V('rc_d2');
+  var withMvt=$('rc_mvt')?$('rc_mvt').checked:true;
+  var clients=cid==='__ALL__'?act(db.clients).slice().sort(function(a,b){return(a.nom||'').localeCompare(b.nom||'')}):act(db.clients).filter(function(c){return c.id===cid});
+  if(!clients.length){showToast('⚠️ Aucun client sélectionné');return}
+  var blocs=clients.map(function(c){return _rcBlocClient(c,filt,d1,d2,withMvt)}).filter(Boolean);
+  if(!blocs.length){showToast('⚠️ Aucune facture ne correspond à ce filtre / cette période');return}
+  cMo();
+  var html='<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Relevés clients — Cathy Pets</title>'
+    +'<style>body{font-family:Arial,Helvetica,sans-serif;margin:24px;color:#111}@media print{.noprint{display:none}body{margin:10px}}</style></head><body>'
+    +'<div class="noprint" style="text-align:right;margin-bottom:10px"><button onclick="window.print()" style="background:#1a7a6e;color:#fff;border:none;border-radius:8px;padding:10px 18px;font-size:14px;font-weight:700;cursor:pointer">🖨️ Imprimer / Enregistrer en PDF</button></div>'
+    +blocs.join('')+'</body></html>';
+  openHtmlBlob(html,'Releves_Clients_CathyPets_'+tdy()+'.html');
+  lH('facture','Relevé client généré ('+blocs.length+' client'+(blocs.length>1?'s':'')+', filtre: '+filt+')');
+}
 function addCli(){var c={id:uid('c'),nom:V('c_nm'),prenom:V('c_pn'),tel:V('c_tl'),email:V('c_em'),adresse:V('c_ad'),cp:V('c_cp'),ville:V('c_vi'),type:V('c_tp'),pro:V('c_si'),notes:V('c_no')};if(!c.nom){alert('Nom requis');return}stamp(c);db.clients.push(c);lH('client','Client: '+c.nom);sav();clr(['c_nm','c_pn','c_tl','c_em','c_ad','c_cp','c_vi','c_si','c_no'])}
 // addAni → défini plus bas avec couleur, sexe, vaccins
 function addCol(){var p={id:uid('p'),clientId:V('p_cl'),type:V('p_ty'),weight:E(V('p_wt')),dimensions:V('p_dm'),cost:E(V('p_co')),price:E(V('p_pr')),notes:V('p_no'),date:new Date().toISOString()};if(!p.clientId||!p.type){alert('Client+type requis');return}db.colis.push(p);lH('colis','Colis: '+p.type);sav();clr(['p_ty','p_wt','p_dm','p_co','p_pr','p_no'])}
@@ -10420,6 +10583,21 @@ function saveAcompte(id){
   lH('facture','Acompte: '+f.ref+' — '+euro(montant)+' ('+dateAc+')');
 }
 
+// ── V79 : Bloc pénalités de retard dans le modal d'encaissement ──
+function _payPenBloc(f){
+  if(f.penalitesAppliquees)return '<div style="font-size:11px;color:#9d6;margin:8px 0">✅ Pénalités de retard déjà intégrées à cette facture.</div>';
+  var pen=calcPenalitesRetard(f);
+  if(!pen)return '';
+  return '<div style="background:#2a1010;border:1px solid #6a2a2a;border-radius:10px;padding:10px 12px;margin:10px 0">'
+    +'<div style="font-size:12px;font-weight:800;color:#ff8888;margin-bottom:6px">⚠️ Facture en retard de '+pen.joursRetard+' jours (échéance '+pen.echeance.toLocaleDateString('fr-FR')+')</div>'
+    +'<div style="font-size:11px;color:#dbb;display:flex;justify-content:space-between"><span>Reste dû (hors pénalités)</span><b>'+euro(pen.resteDu)+'</b></div>'
+    +'<div style="font-size:11px;color:#dbb;display:flex;justify-content:space-between"><span>Intérêts de retard ('+pen.tauxAnnuel+'% annuel × '+pen.joursRetard+' j)</span><b>'+euro(pen.interets)+'</b></div>'
+    +'<div style="font-size:11px;color:#dbb;display:flex;justify-content:space-between"><span>Indemnité forfaitaire (Art. D441-5)</span><b>'+euro(pen.forfait)+'</b></div>'
+    +'<div style="font-size:12px;color:#ffb0b0;display:flex;justify-content:space-between;border-top:1px solid #6a2a2a;margin-top:6px;padding-top:6px"><span style="font-weight:800">TOTAL DÛ AVEC PÉNALITÉS</span><b style="font-size:14px">'+euro(pen.totalAvecPenalites)+'</b></div>'
+    +'<label style="display:flex;align-items:center;gap:8px;font-size:12px;color:#fff;cursor:pointer;margin-top:8px"><input type="checkbox" id="pay_pen" checked style="width:auto"> Ajouter les pénalités à la facture (+'+euro(pen.totalPenalites)+')</label>'
+    +'<div style="font-size:10px;color:#a88;margin-top:4px">Décochez si vous encaissez seulement '+euro(pen.resteDu)+' (geste commercial).</div>'
+    +'</div>';
+}
 function marquerPayeeModal(id){
   var f=db.factures.find(function(x){return x.id===id;});
   if(!f)return;
@@ -10429,8 +10607,9 @@ function marquerPayeeModal(id){
   overlay.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px';
   overlay.innerHTML='<div style="background:#0d1520;border:1px solid #1e3a58;border-radius:16px;padding:24px;max-width:380px;width:100%">'+
     '<h3 style="color:#22a693;margin-bottom:12px">✅ Marquer '+f.ref+' comme payée</h3>'+
-    '<div style="font-size:12px;color:#8ac;margin-bottom:10px">'+cN(f.clientId)+' — '+euro(f.total)+' TTC</div>'+
+    '<div style="font-size:12px;color:#8ac;margin-bottom:10px">'+cN(f.clientId)+' — '+euro(f.total)+' TTC'+(resteDuFac(f)<E(f.total)?' · Reste dû : <b style="color:#fff">'+euro(resteDuFac(f))+'</b>':'')+'</div>'+
     '<div style="font-size:12px;color:#8ac;margin-bottom:4px">📅 Date émission : '+new Date(f.date||Date.now()).toLocaleDateString('fr-FR')+'</div>'+
+    _payPenBloc(f)+
     '<div style="margin:10px 0"><label style="font-size:11px;font-weight:700;color:#b0c8df;display:block;margin-bottom:4px">📅 Date de paiement reçu *</label><input id="pay_date" type="date" value="'+tdy()+'" style="'+ist+'"></div>'+
     '<div style="margin:10px 0"><label style="font-size:11px;font-weight:700;color:#b0c8df;display:block;margin-bottom:4px">💳 Mode de paiement</label>'+
     '<select id="pay_mode" style="'+ist+'">'+
@@ -10449,12 +10628,25 @@ function marquerPayeeModal(id){
 function confirmPayee(id){
   var f=db.factures.find(function(x){return x.id===id;});
   if(!f)return;stamp(f);
+  // ── V79 : Application des pénalités de retard si cochées ──
+  var penChk=$('pay_pen');
+  if(penChk&&penChk.checked&&!f.penalitesAppliquees){
+    var pen=calcPenalitesRetard(f);
+    if(pen&&pen.totalPenalites>0){
+      f.lignes=f.lignes||[];
+      f.lignes.push({desc:'Pénalités de retard — '+pen.joursRetard+' j (intérêts '+pen.tauxAnnuel+'% annuel : '+euro(pen.interets)+' + indemnité forfaitaire 40 €, Art. L441-10 & D441-5 C.Com)',qty:1,pu:pen.totalPenalites,remise:0,noTva:true,montant:pen.totalPenalites,total:pen.totalPenalites});
+      f.total=Math.round((E(f.total)+pen.totalPenalites)*100)/100;
+      f.penalitesAppliquees=true;
+      f.penalitesMontant=pen.totalPenalites;
+      lH('facture','Pénalités retard ajoutées sur '+f.ref+' : +'+euro(pen.totalPenalites)+' ('+pen.joursRetard+' j)');
+    }
+  }
   f.status='payée';
   f.datePaiement=V('pay_date')||tdy();
   f.paiement=V('pay_mode')||f.paiement||'virement';
   var modal=document.getElementById('payModal');if(modal)modal.remove();
   lH('facture','Payée: '+f.ref+' le '+new Date(f.datePaiement).toLocaleDateString('fr-FR'));
-  sav();showToast('✅ '+f.ref+' payée le '+new Date(f.datePaiement).toLocaleDateString('fr-FR')+' — '+euro(E(f.total)));
+  sav();showToast('✅ '+f.ref+' payée le '+new Date(f.datePaiement).toLocaleDateString('fr-FR')+' — '+euro(E(f.total))+(f.penalitesMontant?' (dont '+euro(f.penalitesMontant)+' de pénalités)':''));
   cMo();rFac2();try{rDash()}catch(e){}try{rFinancierTempsReel()}catch(e){}
 }
 function marquerPayee(id){
@@ -11212,7 +11404,7 @@ function rBriefing(){
     impayees.forEach(function(f){
       var jours=Math.floor((Date.now()-new Date(f.date))/864e5);
       var urgence=jours>=30?'var(--rd)':jours>=15?'var(--or)':'var(--mt)';
-      var penalite=jours>=30?Math.round((E(f.total)-E(f.acompte))*0.0786*100)/100+40:0;
+      var _pR=calcPenalitesRetard(f);var penalite=_pR?_pR.totalPenalites:0;
       h+='<div style="padding:3px 0;font-size:11px;display:flex;justify-content:space-between"><span>'+f.ref+' — '+cN(f.clientId)+(f.acompteRecu?' <span style="color:#9d6;font-size:9px">[Ac✅]</span>':'')+'</span><span style="color:'+urgence+'"><b>'+euro(E(f.total)-E(f.acompte))+'</b> · '+jours+'j'+(penalite>0?' · <span style="color:var(--rd);font-weight:800">+'+euro(penalite)+' pénalités</span>':'')+'</span></div>';
     });
     h+='</div>';
@@ -13219,11 +13411,13 @@ function printDevisPro(id) {
 }
 
 function calcPenalitesRetard(f){
+  // V79 : paiement à réception → échéance = date de la facture (sauf échéance explicite).
+  // Les pénalités courent dès le 1er jour de retard ; l'application reste au choix de l'utilisateur (case à cocher).
   var now2=new Date();
   var dateFac=new Date(f.date||now2);
-  var echeance=f.echeance?new Date(f.echeance):new Date(dateFac.getTime()+30*86400000);
+  var echeance=f.echeance?new Date(f.echeance):dateFac;
   var joursRetard=Math.floor((now2-echeance)/(1000*86400));
-  if(joursRetard<15||f.status==='payée') return null;
+  if(joursRetard<1||f.status==='payée') return null;
   var resteDu=Math.max(0,E(f.total)-E(f.acompte));
   if(resteDu<=0) return null;
   var tauxAnnuel=7.86;
