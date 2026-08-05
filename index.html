@@ -10584,12 +10584,12 @@ function saveAcompte(id){
 }
 
 // ── V79 : Bloc pénalités de retard dans le modal d'encaissement ──
-function _payPenBloc(f){
+function _payPenBloc(f,dateRef){
   if(f.penalitesAppliquees)return '<div style="font-size:11px;color:#9d6;margin:8px 0">✅ Pénalités de retard déjà intégrées à cette facture.</div>';
-  var pen=calcPenalitesRetard(f);
+  var pen=calcPenalitesRetard(f,dateRef);
   if(!pen)return '';
   return '<div style="background:#2a1010;border:1px solid #6a2a2a;border-radius:10px;padding:10px 12px;margin:10px 0">'
-    +'<div style="font-size:12px;font-weight:800;color:#ff8888;margin-bottom:6px">⚠️ Facture en retard de '+pen.joursRetard+' jours (échéance '+pen.echeance.toLocaleDateString('fr-FR')+')</div>'
+    +'<div style="font-size:12px;font-weight:800;color:#ff8888;margin-bottom:6px">⚠️ Retard de '+pen.joursRetard+' jours à la date de paiement (échéance '+pen.echeance.toLocaleDateString('fr-FR')+' → payée le '+(dateRef?new Date(dateRef):new Date()).toLocaleDateString('fr-FR')+')</div>'
     +'<div style="font-size:11px;color:#dbb;display:flex;justify-content:space-between"><span>Reste dû (hors pénalités)</span><b>'+euro(pen.resteDu)+'</b></div>'
     +'<div style="font-size:11px;color:#dbb;display:flex;justify-content:space-between"><span>Intérêts de retard ('+pen.tauxAnnuel+'% annuel × '+pen.joursRetard+' j)</span><b>'+euro(pen.interets)+'</b></div>'
     +'<div style="font-size:11px;color:#dbb;display:flex;justify-content:space-between"><span>Indemnité forfaitaire (Art. D441-5)</span><b>'+euro(pen.forfait)+'</b></div>'
@@ -10597,6 +10597,14 @@ function _payPenBloc(f){
     +'<label style="display:flex;align-items:center;gap:8px;font-size:12px;color:#fff;cursor:pointer;margin-top:8px"><input type="checkbox" id="pay_pen" checked style="width:auto"> Ajouter les pénalités à la facture (+'+euro(pen.totalPenalites)+')</label>'
     +'<div style="font-size:10px;color:#a88;margin-top:4px">Décochez si vous encaissez seulement '+euro(pen.resteDu)+' (geste commercial).</div>'
     +'</div>';
+}
+function _payPenRefresh(id){
+  var f=db.factures.find(function(x){return x.id===id});
+  var w=$('payPenWrap');
+  if(!f||!w)return;
+  var was=$('pay_pen')?$('pay_pen').checked:true;
+  w.innerHTML=_payPenBloc(f,V('pay_date')||null);
+  if($('pay_pen'))$('pay_pen').checked=was;
 }
 function marquerPayeeModal(id){
   var f=db.factures.find(function(x){return x.id===id;});
@@ -10609,8 +10617,8 @@ function marquerPayeeModal(id){
     '<h3 style="color:#22a693;margin-bottom:12px">✅ Marquer '+f.ref+' comme payée</h3>'+
     '<div style="font-size:12px;color:#8ac;margin-bottom:10px">'+cN(f.clientId)+' — '+euro(f.total)+' TTC'+(resteDuFac(f)<E(f.total)?' · Reste dû : <b style="color:#fff">'+euro(resteDuFac(f))+'</b>':'')+'</div>'+
     '<div style="font-size:12px;color:#8ac;margin-bottom:4px">📅 Date émission : '+new Date(f.date||Date.now()).toLocaleDateString('fr-FR')+'</div>'+
-    _payPenBloc(f)+
-    '<div style="margin:10px 0"><label style="font-size:11px;font-weight:700;color:#b0c8df;display:block;margin-bottom:4px">📅 Date de paiement reçu *</label><input id="pay_date" type="date" value="'+tdy()+'" style="'+ist+'"></div>'+
+    '<div id="payPenWrap">'+_payPenBloc(f,tdy())+'</div>'+
+    '<div style="margin:10px 0"><label style="font-size:11px;font-weight:700;color:#b0c8df;display:block;margin-bottom:4px">📅 Date de paiement reçu *</label><input id="pay_date" type="date" value="'+tdy()+'" onchange="_payPenRefresh(\''+id+'\')" style="'+ist+'"></div>'+
     '<div style="margin:10px 0"><label style="font-size:11px;font-weight:700;color:#b0c8df;display:block;margin-bottom:4px">💳 Mode de paiement</label>'+
     '<select id="pay_mode" style="'+ist+'">'+
     '<option value="virement"'+(f.paiement==='virement'?' selected':'')+'>🏦 Virement</option>'+
@@ -10631,7 +10639,7 @@ function confirmPayee(id){
   // ── V79 : Application des pénalités de retard si cochées ──
   var penChk=$('pay_pen');
   if(penChk&&penChk.checked&&!f.penalitesAppliquees){
-    var pen=calcPenalitesRetard(f);
+    var pen=calcPenalitesRetard(f,V('pay_date')||null);
     if(pen&&pen.totalPenalites>0){
       f.lignes=f.lignes||[];
       f.lignes.push({desc:'Pénalités de retard — '+pen.joursRetard+' j (intérêts '+pen.tauxAnnuel+'% annuel : '+euro(pen.interets)+' + indemnité forfaitaire 40 €, Art. L441-10 & D441-5 C.Com)',qty:1,pu:pen.totalPenalites,remise:0,noTva:true,montant:pen.totalPenalites,total:pen.totalPenalites});
@@ -13410,10 +13418,11 @@ function printDevisPro(id) {
   openHtmlBlob(html,'Devis_'+q.ref+'.html');
 }
 
-function calcPenalitesRetard(f){
+function calcPenalitesRetard(f,dateRef){
   // V79 : paiement à réception → échéance = date de la facture (sauf échéance explicite).
   // Les pénalités courent dès le 1er jour de retard ; l'application reste au choix de l'utilisateur (case à cocher).
-  var now2=new Date();
+  // dateRef (optionnel) = date de référence du calcul (ex: date réelle du paiement) ; par défaut aujourd'hui.
+  var now2=dateRef?new Date(dateRef):new Date();
   var dateFac=new Date(f.date||now2);
   var echeance=f.echeance?new Date(f.echeance):dateFac;
   var joursRetard=Math.floor((now2-echeance)/(1000*86400));
