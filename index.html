@@ -13361,7 +13361,7 @@ function buildMailPro(type,id){
       type==='relance'?'Facture '+doc.ref+' du '+dDoc+' — Reste à régler : '+euro(reste)+(pen?' ('+pen.joursRetard+' j de retard, pénalités à ce jour : '+euro(pen.totalPenalites)+')':'')+'\nMerci de régulariser sous 8 jours.':
       'Facture '+doc.ref+' du '+dDoc+' — Total : '+euro(total)+' TTC'+(reste!==total?' — Reste à régler : '+euro(reste):'')+'\nRèglement à réception (virement, chèque ou espèces).')
     +'\n\nBien cordialement,\nCathy — Cathy Pets\nTaxi animalier : 07 81 30 41 10 · Garde : 07 83 43 63 06\ncathypetsitter.com · cathydelormepets@gmail.com';
-  return {to:cl.email||'',subject:subject,html:html,text:text,clientNom:nomCl,isDev:isDev,docId:id};
+  return {to:cl.email||'',subject:subject,html:html,text:text,clientNom:nomCl,isDev:isDev,docId:id,noPdf:(type==='pec')};
 }
 function openMailPro(type,id){
   var cur=buildMailPro(type,id);
@@ -13384,12 +13384,140 @@ function openMailPro(type,id){
     +'<div style="padding:8px 16px;font-size:12px;color:#8ba3c7;border-bottom:1px solid #1a2435"><b style="color:#fff">À :</b> '+(cur.to?_mpEsc(cur.to):'<span style="color:#ff8a8a">⚠️ pas d\'email client enregistré</span>')+' &nbsp;·&nbsp; <b style="color:#fff">Objet :</b> '+_mpEsc(cur.subject)+'</div>'
     +'<iframe id="mpFrame" style="flex:1;border:0;background:#fff;min-height:400px;width:100%"></iframe>'
     +'<div style="padding:12px 16px;border-top:1px solid #2a3a50;display:flex;gap:8px;flex-wrap:wrap">'
-    +'<button class="btn og" onclick="mpCopyHTML()" style="font-size:13px">📋 Copier l\'email (coller dans Gmail)</button>'
+    +'<button class="btn gn" onclick="mpSend()" style="font-size:13px;font-weight:800">🚀 Envoyer maintenant</button>'
+    +'<button class="btn og" onclick="mpCopyHTML()" style="font-size:13px">📋 Copier l\'email</button>'
     +'<button class="btn" onclick="mpCopyText()" style="font-size:13px">📝 Copier version texte</button>'
     +'<button class="btn at" onclick="mpMailto()" style="font-size:13px">📧 Ouvrir la messagerie</button>'
     +'</div></div>';
   document.body.appendChild(ov);
   document.getElementById('mpFrame').srcdoc='<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body style="margin:0">'+cur.html+'</body></html>';
+}
+// ── V79 : envoi direct via l'API Gmail (connexion Google déjà en place) ──
+function _mpB64(str){return btoa(unescape(encodeURIComponent(str)))}
+function _mpWrap(s){return s.replace(/(.{76})/g,'$1\r\n')}
+function _loadHtml2Pdf(cb){
+  if(window.html2pdf)return cb();
+  var s=document.createElement('script');
+  s.src='https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+  s.onload=function(){cb()};s.onerror=function(){cb('err')};
+  document.head.appendChild(s);
+}
+// Génère le PDF (facture ou devis) en arrière-plan et le renvoie en base64
+function _genDocPDF(cb){
+  var c=window._mpCur;
+  if(!c||!c.docId||c.noPdf){cb(null);return}
+  var genFn=null,ref='';
+  if(c.isDev){
+    var q=db.devis.find(function(x){return x.id===c.docId});
+    if(!q||typeof printDevisPro!=='function'){cb(null);return}
+    genFn=printDevisPro;ref=q.ref;
+  }else{
+    var f=db.factures.find(function(x){return x.id===c.docId});
+    if(!f||typeof printFacturePro!=='function'){cb(null);return}
+    genFn=printFacturePro;ref=f.ref;
+  }
+  // 1. Capturer le HTML du document sans ouvrir de fenêtre
+  window._pdfCaptureHTML=null;window._pdfCapture=true;
+  try{genFn(c.docId)}catch(e){}
+  window._pdfCapture=false;
+  var cap=window._pdfCaptureHTML;
+  if(!cap||!cap.html){cb(null);return}
+  // 2. Charger html2pdf puis convertir
+  _loadHtml2Pdf(function(err){
+    if(err){cb(null);return}
+    var host=document.createElement('div');
+    host.style.cssText='position:fixed;left:-12000px;top:0;width:794px;background:#fff;z-index:-1';
+    host.innerHTML='<style>.noprint,button{display:none!important}body{margin:0}</style>'+cap.html;
+    document.body.appendChild(host);
+    var fn=(c.isDev?'Devis_':'Facture_')+ref.replace(/[^A-Za-z0-9_-]/g,'-')+'_CathyPets.pdf';
+    try{
+      html2pdf().set({
+        margin:[6,6,6,6],
+        image:{type:'jpeg',quality:0.92},
+        html2canvas:{scale:2,useCORS:true,logging:false},
+        jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},
+        pagebreak:{mode:['css','legacy']}
+      }).from(host).outputPdf('datauristring').then(function(uri){
+        host.remove();
+        var b64=(uri.split(',')[1]||'');
+        cb(b64?{b64:b64,fn:fn}:null);
+      }).catch(function(){host.remove();cb(null)});
+    }catch(e){host.remove();cb(null)}
+  });
+}
+function mpSend(){
+  var c=window._mpCur;
+  if(!c){showToast('⚠️ Aucun email en cours');return}
+  if(!c.to){showToast('⚠️ Pas d\'email enregistré pour ce client — ajoutez-le dans sa fiche');return}
+  if(!_gcToken){
+    if(confirm('🔑 Connexion Google requise (une seule fois).\n\nAutorise l\'envoi Gmail : la fenêtre Google va s\'ouvrir.\nEnsuite, reclique sur 🚀 Envoyer.')){gcConnect()}
+    return;
+  }
+  showToast('📎 Préparation du PDF...');
+  _genDocPDF(function(pdf){
+    _mpSendRaw(pdf);
+  });
+}
+function _mpSendRaw(pdf){
+  var c=window._mpCur;
+  showToast('📤 Envoi en cours...');
+  var html=c.html,att='';
+  var B='cpmail_'+Date.now();
+  try{
+    if(typeof LOGO_B64!=='undefined'&&LOGO_B64&&html.indexOf(LOGO_B64)>=0){
+      var parts=LOGO_B64.split(',');
+      var mime=(parts[0].match(/data:([^;]+);/)||[])[1]||'image/jpeg';
+      html=html.split(LOGO_B64).join('cid:logocp');
+      att='--'+B+'\r\nContent-Type: '+mime+'\r\nContent-Transfer-Encoding: base64\r\nContent-ID: <logocp>\r\nContent-Disposition: inline; filename="logo.jpg"\r\n\r\n'+_mpWrap(parts[1])+'\r\n';
+    }
+  }catch(e){}
+  var related='--'+B+'\r\nContent-Type: text/html; charset=UTF-8\r\nContent-Transfer-Encoding: base64\r\n\r\n'
+    +_mpWrap(_mpB64('<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body style="margin:0">'+html+'</body></html>'))+'\r\n'
+    +att
+    +'--'+B+'--';
+  var mimeMsg;
+  if(pdf&&pdf.b64){
+    var M='cpmix_'+Date.now();
+    mimeMsg='To: '+c.to+'\r\n'
+      +'Subject: =?UTF-8?B?'+_mpB64(c.subject)+'?=\r\n'
+      +'MIME-Version: 1.0\r\n'
+      +'Content-Type: multipart/mixed; boundary="'+M+'"\r\n\r\n'
+      +'--'+M+'\r\nContent-Type: multipart/related; boundary="'+B+'"\r\n\r\n'
+      +related+'\r\n'
+      +'--'+M+'\r\nContent-Type: application/pdf; name="'+pdf.fn+'"\r\nContent-Transfer-Encoding: base64\r\nContent-Disposition: attachment; filename="'+pdf.fn+'"\r\n\r\n'
+      +_mpWrap(pdf.b64)+'\r\n'
+      +'--'+M+'--';
+  }else{
+    mimeMsg='To: '+c.to+'\r\n'
+      +'Subject: =?UTF-8?B?'+_mpB64(c.subject)+'?=\r\n'
+      +'MIME-Version: 1.0\r\n'
+      +'Content-Type: multipart/related; boundary="'+B+'"\r\n\r\n'
+      +related;
+  }
+  var raw=_mpB64(mimeMsg).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+  fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send',{
+    method:'POST',
+    headers:{'Authorization':'Bearer '+_gcToken,'Content-Type':'application/json'},
+    body:JSON.stringify({raw:raw})
+  }).then(function(r){
+    if(r.ok){
+      showToast('🚀 Email envoyé à '+c.to+(pdf&&pdf.b64?' avec PDF joint 📎':'')+' !');
+      lH('email','Mail Pro envoyé via Gmail : '+c.subject+' → '+c.to);
+      sav(false);
+      var m=document.getElementById('mailProModal');if(m)m.remove();
+    }else{
+      return r.json().then(function(j){
+        var msg=(j&&j.error&&j.error.message)||('HTTP '+r.status);
+        if(r.status===401||r.status===403){
+          if(confirm('🔑 Autorisation Gmail expirée ou manquante.\n\nReconnecter Google maintenant ? (la fenêtre Google va s\'ouvrir, accepte l\'envoi d\'emails, puis reclique 🚀 Envoyer)')){gcConnect()}
+        }else{
+          alert('❌ Envoi impossible : '+msg+'\n\nUtilisez le bouton 📋 Copier l\'email en attendant.');
+        }
+      });
+    }
+  }).catch(function(e){
+    alert('❌ Erreur réseau : '+e.message+'\n\nUtilisez 📋 Copier l\'email.');
+  });
 }
 function mpCopyFallback(){
   var d=document.createElement('div');d.contentEditable='true';d.style.cssText='position:fixed;left:-9999px;top:0';d.innerHTML=window._mpCur.html;document.body.appendChild(d);
@@ -15983,6 +16111,8 @@ function qClChange(){
 
 // ---- FIN CRÉATION RAPIDE ----
 function openHtmlBlob(h,filename){
+  // V79 : mode capture (génération PDF pour pièce jointe email) — n'ouvre pas de fenêtre
+  if(window._pdfCapture){window._pdfCaptureHTML={html:h,name:filename||'document.html'};return}
   try{
     // Ouvrir dans un nouvel onglet pour pouvoir imprimer/enregistrer en PDF
     var w=window.open('','_blank');
@@ -17914,7 +18044,7 @@ function gcInitClient(clientId){
   try{
     var client = google.accounts.oauth2.initTokenClient({
       client_id: clientId,
-      scope: 'https://www.googleapis.com/auth/calendar',
+      scope: 'https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/gmail.send',
       callback: function(resp){
         if(resp.error){
           document.getElementById('gcAuthStatus').innerHTML = '🔴 Erreur: '+resp.error;
@@ -17924,7 +18054,7 @@ function gcInitClient(clientId){
         _gcToken = resp.access_token;
         db.settings.gcToken = _gcToken;
         sav(false);
-        document.getElementById('gcAuthStatus').innerHTML = '🟢 Connecté à Google Agenda !';
+        document.getElementById('gcAuthStatus').innerHTML = '🟢 Connecté à Google Agenda + Gmail (envoi) !';
         document.getElementById('gcK1').textContent = '✅ Connecté';
         document.getElementById('gcK1').style.color = 'var(--a2)';
         gcLog('✅ Connexion Google réussie', 'ok');
