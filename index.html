@@ -610,7 +610,7 @@ body.nuit .card{border-color:#0a1520}
 </div>
 </aside>
 <main class="main">
-<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
+<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V79.4</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
 <div class="cnt">
 
 <!-- DASHBOARD -->
@@ -6198,6 +6198,22 @@ function autoSav(){
     if(fbConnected)fbPush(true);
   },1000);
 }
+// V79.4 : toute erreur JS silencieuse s'affiche à l'écran (diagnostic à distance)
+window.addEventListener('error',function(ev){
+  try{
+    var m=(ev&&ev.message)||'Erreur inconnue';
+    if(/ResizeObserver|Script error/i.test(m))return;
+    var t=document.getElementById('aToast');
+    showToast('❌ ERREUR : '+String(m).slice(0,140));
+    console.error('[CathyPets]',ev.error||m);
+  }catch(e){}
+});
+window.addEventListener('unhandledrejection',function(ev){
+  try{
+    var m=(ev&&ev.reason&&(ev.reason.message||ev.reason))||'Promesse rejetée';
+    showToast('❌ ERREUR : '+String(m).slice(0,140));
+  }catch(e){}
+});
 function showToast(msg){
   var t=$('aToast');t.textContent=msg;t.classList.add('show');
   clearTimeout(_asTstTmr);_asTstTmr=setTimeout(function(){t.classList.remove('show')},1800);
@@ -13469,7 +13485,7 @@ function mpSend(){
   if(!c){showToast('⚠️ Aucun email en cours');return}
   if(!c.to){showToast('⚠️ Pas d\'email enregistré pour ce client — ajoutez-le dans sa fiche');return}
   if(!_gcToken){
-    if(confirm('🔑 Connexion Google requise (une seule fois).\n\nAutorise l\'envoi Gmail : la fenêtre Google va s\'ouvrir.\nEnsuite, reclique sur 🚀 Envoyer.')){gcConnect()}
+    if(confirm('🔑 Connexion Google requise (une seule fois).\n\nLa fenêtre Google va s\'ouvrir : connecte-toi et accepte l\'envoi d\'emails.\nL\'envoi repartira automatiquement ensuite.')){window._mpPendingSend=true;gcConnect()}
     return;
   }
   showToast('📎 Préparation du PDF...');
@@ -13528,7 +13544,7 @@ function _mpSendRaw(pdf){
       return r.json().then(function(j){
         var msg=(j&&j.error&&j.error.message)||('HTTP '+r.status);
         if(r.status===401||r.status===403){
-          if(confirm('🔑 Autorisation Gmail expirée ou manquante.\n\nReconnecter Google maintenant ? (la fenêtre Google va s\'ouvrir, accepte l\'envoi d\'emails, puis reclique 🚀 Envoyer)')){gcConnect()}
+          if(confirm('🔑 Autorisation Gmail expirée ou manquante.\n\nReconnecter Google maintenant ? (accepte l\'envoi d\'emails — l\'envoi repartira tout seul ensuite)')){window._mpPendingSend=true;gcConnect()}
         }else{
           alert('❌ Envoi impossible : '+msg+'\n\nUtilisez le bouton 📋 Copier l\'email en attendant.');
         }
@@ -17988,12 +18004,13 @@ function initRapport(){
 // =================== FIN V16 ===================
 
 // =================== GOOGLE AGENDA V17 ===================
+function _gcEl(id){return document.getElementById(id)||{innerHTML:'',textContent:'',style:{},value:''}}
 var _gcToken = null;
 var _gcAutoTmr = null;
 var _gcSyncing = false;
 
 function gcLog(msg, type){
-  var log = document.getElementById('gcSyncLog');
+  var log = _gcEl('gcSyncLog');
   if(!log) return;
   var cl = type==='ok'?'border-left:3px solid var(--a2)':type==='err'?'border-left:3px solid var(--rd)':'border-left:3px solid var(--mt)';
   var d = document.createElement('div');
@@ -18005,10 +18022,11 @@ function gcLog(msg, type){
 }
 
 function gcSaveConfig(){
-  db.settings.gcClientId = document.getElementById('gc_cid') ? document.getElementById('gc_cid').value.trim() : '';
-  db.settings.gcCalendarId = document.getElementById('gc_cal') ? document.getElementById('gc_cal').value.trim() || 'primary' : 'primary';
-  db.settings.gcRange = document.getElementById('gc_range') ? parseInt(document.getElementById('gc_range').value) : 60;
-  db.settings.gcAutoSync = document.getElementById('gc_auto') ? parseInt(document.getElementById('gc_auto').value) : 0;
+  // V79 : ne modifier la config QUE si les champs sont présents à l'écran (sinon on écrasait le Client ID !)
+  var e=document.getElementById('gc_cid');if(e&&e.value.trim())db.settings.gcClientId=e.value.trim();
+  var c=document.getElementById('gc_cal');if(c)db.settings.gcCalendarId=c.value.trim()||'primary';
+  var r=document.getElementById('gc_range');if(r)db.settings.gcRange=parseInt(r.value)||60;
+  var a=document.getElementById('gc_auto');if(a)db.settings.gcAutoSync=parseInt(a.value)||0;
 }
 
 function saveGcSettings(){
@@ -18029,7 +18047,7 @@ function rGcal(){
   if(auto && db.settings.gcAutoSync !== undefined) auto.value = db.settings.gcAutoSync||0;
 
   if(_gcToken){
-    document.getElementById('gcAuthStatus').innerHTML = '🟢 Connecté à Google';
+    _gcEl('gcAuthStatus').innerHTML = '🟢 Connecté à Google';
     document.getElementById('gcK1').textContent = '✅ Connecté';
     document.getElementById('gcK1').style.color = 'var(--a2)';
   }
@@ -18043,7 +18061,7 @@ function gcConnect(){
   var clientId = db.settings.gcClientId;
   if(!clientId){ alert('Entre ton Client ID Google OAuth d\'abord !'); return; }
 
-  document.getElementById('gcAuthStatus').innerHTML = '⏳ Connexion en cours...';
+  _gcEl('gcAuthStatus').innerHTML = '⏳ Connexion en cours...';
 
   // Load Google Identity Services
   if(!window.google || !window.google.accounts){
@@ -18051,7 +18069,7 @@ function gcConnect(){
     script.src = 'https://accounts.google.com/gsi/client';
     script.onload = function(){ gcInitClient(clientId); };
     script.onerror = function(){ 
-      document.getElementById('gcAuthStatus').innerHTML = '🔴 Erreur chargement Google SDK';
+      _gcEl('gcAuthStatus').innerHTML = '🔴 Erreur chargement Google SDK';
     };
     document.head.appendChild(script);
   } else {
@@ -18066,14 +18084,16 @@ function gcInitClient(clientId){
       scope: 'https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/gmail.send',
       callback: function(resp){
         if(resp.error){
-          document.getElementById('gcAuthStatus').innerHTML = '🔴 Erreur: '+resp.error;
+          _gcEl('gcAuthStatus').innerHTML = '🔴 Erreur: '+resp.error;
           gcLog('Erreur auth: '+resp.error, 'err');
           return;
         }
         _gcToken = resp.access_token;
         db.settings.gcToken = _gcToken;
         sav(false);
-        document.getElementById('gcAuthStatus').innerHTML = '🟢 Connecté à Google Agenda + Gmail (envoi) !';
+        // V79 : si un envoi Mail Pro était en attente, le relancer automatiquement
+        if(window._mpPendingSend){window._mpPendingSend=false;if(document.getElementById('mailProModal'))setTimeout(function(){mpSend()},400);}
+        _gcEl('gcAuthStatus').innerHTML = '🟢 Connecté à Google Agenda + Gmail (envoi) !';
         document.getElementById('gcK1').textContent = '✅ Connecté';
         document.getElementById('gcK1').style.color = 'var(--a2)';
         gcLog('✅ Connexion Google réussie', 'ok');
@@ -18084,7 +18104,7 @@ function gcInitClient(clientId){
     });
     client.requestAccessToken();
   }catch(e){
-    document.getElementById('gcAuthStatus').innerHTML = '🔴 Erreur: '+e.message;
+    _gcEl('gcAuthStatus').innerHTML = '🔴 Erreur: '+e.message;
     gcLog('Erreur init: '+e.message, 'err');
   }
 }
@@ -18094,10 +18114,10 @@ function gcDisconnect(){
   db.settings.gcToken = '';
   sav(false);
   clearInterval(_gcAutoTmr);
-  document.getElementById('gcAuthStatus').innerHTML = '⚪ Non connecté';
+  _gcEl('gcAuthStatus').innerHTML = '⚪ Non connecté';
   document.getElementById('gcK1').textContent = '—';
   document.getElementById('gcK1').style.color = 'var(--mt)';
-  document.getElementById('gcEvents').innerHTML = '<div class="nt">Connecte Google Agenda pour voir tes événements ici.</div>';
+  _gcEl('gcEvents').innerHTML = '<div class="nt">Connecte Google Agenda pour voir tes événements ici.</div>';
   gcLog('Déconnecté', 'info');
   showToast('⛔ Google Agenda déconnecté');
 }
@@ -18129,7 +18149,7 @@ function gcImport(){
     headers: { 'Authorization': 'Bearer '+_gcToken, 'Content-Type': 'application/json' }
   })
   .then(function(r){
-    if(r.status===401){ _gcToken=null; document.getElementById('gcAuthStatus').innerHTML='🔴 Token expiré — reconnecte-toi'; gcLog('Token expiré', 'err'); _gcSyncing=false; return null; }
+    if(r.status===401){ _gcToken=null; _gcEl('gcAuthStatus').innerHTML='🔴 Token expiré — reconnecte-toi'; gcLog('Token expiré', 'err'); _gcSyncing=false; return null; }
     return r.json();
   })
   .then(function(data){
@@ -18175,7 +18195,7 @@ function gcImport(){
 }
 
 function gcRenderEvents(events){
-  var el = document.getElementById('gcEvents');
+  var el = _gcEl('gcEvents');
   if(!events || !events.length){ el.innerHTML='<div class="nt">Aucun événement trouvé.</div>'; return; }
   var today = tdy();
   var h = '';
@@ -18275,7 +18295,7 @@ function gcSyncAll(){
 }
 
 function gcRenderTrList(){
-  var el = document.getElementById('gcTrList');
+  var el = _gcEl('gcTrList');
   if(!el) return;
   var upcoming = act(db.transports).filter(function(t){ return t.date>=tdy(); }).slice(0,10);
   if(!upcoming.length){ el.innerHTML='<div class="itm" style="color:var(--mt)">Aucun transport à venir</div>'; return; }
@@ -18286,7 +18306,7 @@ function gcRenderTrList(){
 }
 
 function gcRenderGrdList(){
-  var el = document.getElementById('gcGrdList');
+  var el = _gcEl('gcGrdList');
   if(!el) return;
   var upcoming = act(db.gardes).filter(function(g){ return g.end && g.end.slice(0,10)>=tdy(); }).slice(0,10);
   if(!upcoming.length){ el.innerHTML='<div class="itm" style="color:var(--mt)">Aucune garde en cours ou à venir</div>'; return; }
@@ -18351,7 +18371,7 @@ function gcAutoRestore(){
   if(db.settings.gcClientId && db.settings.gcToken){
     _gcToken = db.settings.gcToken;
     setTimeout(function(){
-      document.getElementById('gcAuthStatus').innerHTML = '🟢 Reconnecté automatiquement';
+      _gcEl('gcAuthStatus').innerHTML = '🟢 Reconnecté automatiquement';
       document.getElementById('gcK1').textContent = '✅ Connecté';
       document.getElementById('gcK1').style.color = 'var(--a2)';
       gcLog('🔄 Token restauré automatiquement', 'ok');
