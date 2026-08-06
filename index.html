@@ -2131,6 +2131,7 @@ document.getElementById('q_contrat_pec').addEventListener('change',function(){
   <button class="btn sm" onclick="reconcilierToutesFactures()" style="font-size:11px;background:#3d2c0a;border-color:#6d5a2a;color:#fcd77a" title="Recalcule les totaux et supprime les lignes vides">🔧 Réconcilier TVA & Totaux</button>
   <button class="btn sm" onclick="exportCerfrance()" style="font-size:11px;background:#0a2c3d;border-color:#2a5a6d;color:#7ad7fc" title="Export CSV des factures pour la plateforme agréée / comptable">📤 Export Cerfrance (CSV)</button>
   <button class="btn sm" onclick="exportFacturXZip()" style="font-size:11px;background:#1a0a3d;border-color:#4a2a8d;color:#b09afc" title="Export ZIP des factures au format Factur-X (XML EN 16931)">📑 Export Factur-X (ZIP)</button>
+  <button class="btn sm" onclick="openReleveClientModal()" style="font-size:11px;background:#0a2c3d;border-color:#2a5a6d;color:#7ad7fc" title="Relevé de compte par client : factures payées / impayées / avoirs + détail des mouvements">🧾 Relevé par client</button>
 </div>
 <div style="display:flex;flex-direction:column;gap:14px">
 <div class="card"><div class="hd"><h3>Factures</h3><span id="fcStats" style="font-size:11px;color:var(--mt)"></span></div><div class="bd">
