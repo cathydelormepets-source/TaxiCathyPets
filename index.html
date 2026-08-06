@@ -7817,6 +7817,7 @@ function addDev(){
     showToast('✅ Devis '+q.ref+' + contrat PEC créé');
   } else {
     showToast('✅ Devis '+q.ref+' créé avec '+devLignes.length+' article(s)');
+    proposeMailPro('devis',q.id);
   }
   // 🌐 AUTO-SYNC vers plateforme Vercel
   if(fbConnected&&typeof republishAllToPlatform==='function'){
@@ -8372,6 +8373,7 @@ function addFacFromDevis(){
   db.tresorerie.unshift({id:uid('ca'),type:'recette',label:'Facture '+inv.ref,amount:inv.total,date:new Date().toISOString()});
   lH('facture','Facture depuis devis: '+inv.ref+' ('+facLignes.length+' lignes)');sav();
   showToast('✅ Facture '+inv.ref+' créée depuis '+q.ref+' — '+facLignes.length+' ligne(s)');
+  proposeMailPro('facture',inv.id);
 }
 function printFac(){var h=act(db.factures).map(function(f){var typeLabels={transport:'Transport animalier',garde:'Garde à domicile',colis:'Colis / Livraison',nutrica:'Vente produits',veterinaire:'Vétérinaire',autre:'Prestation'};var typeLbl=typeLabels[f.activityType||'autre']||'Prestation';return '<div style="page-break-after:always;font-family:Arial;padding:24px"><h1>'+f.ref+'</h1><h3 style="color:#1a7a6e;margin-top:-10px">'+typeLbl+'</h3><p><b>'+ENT('entNom')+'</b><br>SIRET: '+ENT('entSiret')+' · RCS '+ENT('entRcs')+' · TVA: '+ENT('entTva')+'<br>RC Pro: '+ENT('entRcpro')+'<br>'+ENT('entAdresse')+'</p><p><b>Client:</b> '+cN(f.clientId)+'</p><p><b>Date:</b> '+new Date(f.date).toLocaleDateString('fr-FR')+'</p><p><b>Total TTC:</b> '+euro(f.total)+'</p><p style="font-size:11px;color:#666;margin-top:24px">Paiement à réception. Indemnité 40€ retard (Art. D441-5 C.Com).</p></div>'}).join('');openHtmlBlob(h,'Factures_CathyPets.html')}
 // ══════ V79 : RELEVÉ DE COMPTE CLIENT — factures par statut + détail des mouvements ══════
@@ -9350,6 +9352,7 @@ function facExpressFromTr(id){
   lH('facture','Express transport: '+inv.ref+' — '+euro(total));
   sav();rTrp();rFac2();
   showToast('✅ Facture '+inv.ref+' créée express — '+euro(total));
+  proposeMailPro('facture',inv.id);
 }
 
 function facExpressFromGrd(id){
@@ -9378,6 +9381,7 @@ function facExpressFromGrd(id){
   lH('facture','Express garde: '+inv.ref+' — '+euro(g.price));
   sav();rGrd2();rFac2();
   showToast('✅ Facture '+inv.ref+' créée express — '+euro(g.price));
+  proposeMailPro('facture',inv.id);
 }
 
 // ═══ FACTURATION EN MASSE — Historique ═══
@@ -11162,6 +11166,7 @@ function execDevToFac(id,payNow){
   lH('facture','Depuis devis: '+inv.ref+' — '+euro(inv.total)+(payNow?' [PAYÉE]':'')+' (date: '+dateFac+')');
   sav();cMo();rAll();
   showToast(payNow?'💶 Facture '+inv.ref+' créée et ENCAISSÉE — '+euro(inv.total)+' (date: '+new Date(dateFac).toLocaleDateString('fr-FR')+')':'📄 Facture '+inv.ref+' créée — '+euro(inv.total)+' (date: '+new Date(dateFac).toLocaleDateString('fr-FR')+')');
+  proposeMailPro('facture',inv.id);
 }
 function fcSubTab(v){
   var btns=['all','emise','impayee','payee','retard','avoir'];
@@ -13395,6 +13400,20 @@ function openMailPro(type,id){
 // ── V79 : envoi direct via l'API Gmail (connexion Google déjà en place) ──
 function _mpB64(str){return btoa(unescape(encodeURIComponent(str)))}
 function _mpWrap(s){return s.replace(/(.{76})/g,'$1\r\n')}
+// ── V79 : proposition d'envoi immédiat après création d'un devis / d'une facture ──
+function proposeMailPro(type,id){
+  try{
+    var doc=(type==='devis'?db.devis:db.factures).find(function(x){return x.id===id});
+    if(!doc)return;
+    var cl=db.clients.find(function(x){return x.id===doc.clientId});
+    if(!cl||!cl.email)return;
+    setTimeout(function(){
+      if(confirm('✉️ Envoyer '+(type==='devis'?'le devis':'la facture')+' '+doc.ref+' par email à '+cl.email+' maintenant ?\n\n(Email pro avec logo + PDF joint — envoi en 1 clic 🚀)')){
+        openMailPro(type,id);
+      }
+    },400);
+  }catch(e){}
+}
 function _loadHtml2Pdf(cb){
   if(window.html2pdf)return cb();
   var s=document.createElement('script');
@@ -19838,6 +19857,7 @@ function ttGenFac(andPrint){
   }
   showToast('✅ Facture '+inv.ref+' créée pour '+cN(clientId));
   if(andPrint) setTimeout(function(){ttPrintFacTerrain(inv.id);},300);
+  else proposeMailPro('facture',inv.id);
 }
 
 function _ttGetSig(){
