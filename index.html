@@ -8394,18 +8394,18 @@ function _rcMouvements(clientId,d1,d2){
   act(db.factures).filter(function(f){return f.clientId===clientId}).forEach(function(f){
     var dt=(f.date||'').slice(0,10);
     if(f.mode==='avoir'||f.status==='avoir'){
-      if(_rcInPeriod(dt,d1,d2))evs.push({d:dt,lbl:'Avoir '+f.ref+(f.factureOrigine?' (sur '+f.factureOrigine+')':''),deb:0,cre:Math.abs(E(f.total))});
+      if(_rcInPeriod(dt,d1,d2))evs.push({d:dt,lbl:'Avoir '+f.ref+(f.factureOrigine?' (sur '+f.factureOrigine+')':''),deb:0,cre:Math.abs(E(f.total)),t:'avoir'});
       return;
     }
     if(f.status==='annulee')return;
     if(_rcInPeriod(dt,d1,d2)){
-      evs.push({d:dt,lbl:'Facture '+f.ref+(f.objet?' — '+f.objet:''),deb:E(f.total),cre:0});
-      if(E(f.acompte)>0)evs.push({d:dt,lbl:'Acompte reçu sur '+f.ref+(f.paiementAcompte?' ('+f.paiementAcompte+')':''),deb:0,cre:E(f.acompte)});
+      evs.push({d:dt,lbl:'Facture '+f.ref+(f.objet?' — '+f.objet:''),deb:E(f.total),cre:0,t:'fac'});
+      if(E(f.acompte)>0)evs.push({d:dt,lbl:'Acompte reçu sur '+f.ref+(f.paiementAcompte?' ('+f.paiementAcompte+')':''),deb:0,cre:E(f.acompte),t:'enc'});
     }
     if(f.status==='payée'){
       var dp=(f.datePaiement||f.paiementDate||f.date||'').slice(0,10);
       var mnt=Math.max(E(f.total)-E(f.acompte)-avoirsSur(f),0);
-      if(mnt>0&&_rcInPeriod(dp,d1,d2))evs.push({d:dp,lbl:'Paiement reçu — '+f.ref+(f.paiement?' ('+f.paiement+')':''),deb:0,cre:mnt});
+      if(mnt>0&&_rcInPeriod(dp,d1,d2))evs.push({d:dp,lbl:'Paiement reçu — '+f.ref+(f.paiement?' ('+f.paiement+')':''),deb:0,cre:mnt,t:'enc'});
     }
   });
   evs.sort(function(a,b){return(a.d||'').localeCompare(b.d||'')});
@@ -8474,20 +8474,29 @@ function _rcBlocClient(c,filt,d1,d2,withMvt){
   if(withMvt){
     h+='<h2 style="font-size:13px;color:#1a7a6e;margin:16px 0 4px 0">📒 Détail des mouvements (toutes factures de la période)</h2>';
     if(mvts.length){
-      var solde=0,totD=0,totC=0;
-      h+='<table style="width:100%;border-collapse:collapse"><tr><th style="'+th+'">Date</th><th style="'+th+'">Opération</th><th style="'+th+';text-align:right">Débit (facturé)</th><th style="'+th+';text-align:right">Crédit (encaissé/avoir)</th><th style="'+th+';text-align:right">Solde dû</th></tr>';
+      var solde=0,totD=0,totEnc=0,totAv=0;
+      h+='<table style="width:100%;border-collapse:collapse"><tr><th style="'+th+'">Date</th><th style="'+th+'">Opération</th><th style="'+th+';text-align:right">Débit (facturé)</th><th style="'+th+';text-align:right">💶 Encaissé (banque)</th><th style="'+th+';text-align:right;color:#7c3aed">Avoir</th><th style="'+th+';text-align:right">Solde dû</th></tr>';
       mvts.forEach(function(m){
-        solde+=m.deb-m.cre;totD+=m.deb;totC+=m.cre;
-        h+='<tr><td style="'+td+'">'+_rcD(m.d)+'</td><td style="'+td+'">'+_rcEsc(m.lbl)+'</td>'
+        var enc=(m.t==='enc')?m.cre:0,av=(m.t==='avoir')?m.cre:0;
+        solde+=m.deb-m.cre;totD+=m.deb;totEnc+=enc;totAv+=av;
+        h+='<tr'+(m.t==='avoir'?' style="background:#faf5ff"':'')+'><td style="'+td+'">'+_rcD(m.d)+'</td><td style="'+td+'">'+_rcEsc(m.lbl)+'</td>'
           +'<td style="'+td+';text-align:right">'+(m.deb>0?euro(m.deb):'—')+'</td>'
-          +'<td style="'+td+';text-align:right;color:#1a7a6e">'+(m.cre>0?euro(m.cre):'—')+'</td>'
+          +'<td style="'+td+';text-align:right;color:#1a7a6e;font-weight:700">'+(enc>0?euro(enc):'—')+'</td>'
+          +'<td style="'+td+';text-align:right;color:#7c3aed;font-weight:700">'+(av>0?'-'+euro(av):'—')+'</td>'
           +'<td style="'+td+';text-align:right;font-weight:700;color:'+(solde>0.005?'#dc2626':'#1a7a6e')+'">'+euro(solde)+'</td></tr>';
       });
       h+='<tr><td colspan="2" style="'+td+';font-weight:800;border-top:2px solid #1a7a6e">TOTAUX</td>'
         +'<td style="'+td+';text-align:right;font-weight:800;border-top:2px solid #1a7a6e">'+euro(totD)+'</td>'
-        +'<td style="'+td+';text-align:right;font-weight:800;border-top:2px solid #1a7a6e;color:#1a7a6e">'+euro(totC)+'</td>'
+        +'<td style="'+td+';text-align:right;font-weight:800;border-top:2px solid #1a7a6e;color:#1a7a6e">'+euro(totEnc)+'</td>'
+        +'<td style="'+td+';text-align:right;font-weight:800;border-top:2px solid #1a7a6e;color:#7c3aed">'+(totAv>0?'-'+euro(totAv):'—')+'</td>'
         +'<td style="'+td+';text-align:right;font-weight:800;border-top:2px solid #1a7a6e;color:'+(solde>0.005?'#dc2626':'#1a7a6e')+'">'+euro(solde)+'</td></tr></table>';
-      h+='<div style="margin-top:10px;padding:10px 14px;border-radius:8px;background:'+(solde>0.005?'#fee2e2':'#d1fae5')+';font-size:13px;font-weight:800;color:'+(solde>0.005?'#dc2626':'#065f46')+'">'
+      h+='<div style="margin-top:10px;display:grid;grid-template-columns:repeat(4,1fr);gap:8px">'
+        +'<div style="border:1px solid #e5e7eb;border-radius:8px;padding:8px 10px"><div style="font-size:9px;color:#888;text-transform:uppercase">Total facturé</div><div style="font-size:14px;font-weight:800;color:#111">'+euro(totD)+'</div></div>'
+        +'<div style="border:1px solid #1a7a6e;background:#f0fdf9;border-radius:8px;padding:8px 10px"><div style="font-size:9px;color:#1a7a6e;text-transform:uppercase">💶 Total perçu en banque</div><div style="font-size:14px;font-weight:800;color:#1a7a6e">'+euro(totEnc)+'</div><div style="font-size:8px;color:#888">= à pointer avec le relevé bancaire</div></div>'
+        +'<div style="border:1px solid #7c3aed;background:#faf5ff;border-radius:8px;padding:8px 10px"><div style="font-size:9px;color:#7c3aed;text-transform:uppercase">Avoirs émis</div><div style="font-size:14px;font-weight:800;color:#7c3aed">'+(totAv>0?'-'+euro(totAv):euro(0))+'</div><div style="font-size:8px;color:#888">écritures sans mouvement bancaire</div></div>'
+        +'<div style="border:1px solid '+(solde>0.005?'#dc2626':'#1a7a6e')+';background:'+(solde>0.005?'#fee2e2':'#d1fae5')+';border-radius:8px;padding:8px 10px"><div style="font-size:9px;color:'+(solde>0.005?'#dc2626':'#065f46')+';text-transform:uppercase">Solde dû</div><div style="font-size:14px;font-weight:800;color:'+(solde>0.005?'#dc2626':'#065f46')+'">'+euro(solde)+'</div></div>'
+        +'</div>';
+      h+='<div style="margin-top:8px;padding:10px 14px;border-radius:8px;background:'+(solde>0.005?'#fee2e2':'#d1fae5')+';font-size:13px;font-weight:800;color:'+(solde>0.005?'#dc2626':'#065f46')+'">'
         +(solde>0.005?'⚠️ Solde restant dû par le client : '+euro(solde):'✅ Compte soldé — aucun montant dû ('+euro(solde)+')')+'</div>';
     }else{
       h+='<div style="font-size:11px;color:#888;padding:8px 0">Aucun mouvement sur la période.</div>';
