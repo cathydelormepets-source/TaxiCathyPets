@@ -2168,7 +2168,9 @@ document.getElementById('q_contrat_pec').addEventListener('change',function(){
     <option value="">Toutes années</option>
   </select>
   <button class="btn sm" onclick="document.getElementById('fc_search').value='';document.getElementById('fc_statut').value='';document.getElementById('fc_periode').value='';document.getElementById('fc_mois').value='';document.getElementById('fc_annee').value='';rFac2()" style="background:#1a2030;border-color:#2a3a50;color:#8ec8ff">✕ Tout voir</button>
-  <button class="btn sm og" onclick="renumFacManual()" title="Renuméroter toutes les factures dans l'ordre chronologique">🔄 Renuméroter</button>
+  <button class="btn sm" onclick="openClotureModal()" style="background:#1a2a10;border-color:#4a6a2a;color:#b8e986" title="Verrouiller définitivement les numéros de facture jusqu'à une date (à faire après chaque envoi Cerfrance)">🔒 Clôture</button>
+  <button class="btn sm" onclick="controleNumerotation()" style="background:#0a1a3d;border-color:#2a4a8d;color:#9ab8fc" title="Rapport d'intégrité : trous, doublons, ordre chronologique">🔎 Contrôler n°</button>
+  <button class="btn sm og" onclick="renumFacManual()" title="Renuméroter les factures NON verrouillées — interdit sur factures déjà transmises">🔄 Renuméroter</button>
   <button class="btn sm" onclick="exportFacCSV()" title="Export CSV pour comptable" style="background:#1a2a4a;border-color:#2a4a6a;color:#8ac;font-size:10px">📊 Export CSV</button>
   <button class="btn sm rd" onclick="purgeAllFac()" title="Supprimer TOUTES les factures définitivement">🗑️ Purger tout</button>
   <button class="btn sm gn" onclick="facturerHistoriqueMasse()" title="Facturer tous les transports et gardes non facturés">💶 Facturer historique</button>
@@ -6715,7 +6717,12 @@ function cMo(){
 }
 // Echap pour fermer les modaux
 document.addEventListener('keydown',function(e){if(e.key==='Escape')cMo()});
-function delRec(col,id,lb){if(!confirm('Supprimer '+lb+' ?'))return;var item=(db[col]||[]).find(function(x){return x.id===id});if(item){stamp(item);item._deleted=true;item._deletedAt=new Date().toISOString()}else{db[col]=db[col].filter(function(x){return x.id!==id})}if(col==='devis')renumDev();if(col==='factures')renumFac();lH('del','Supprimé: '+lb);sav();cMo()}
+function delRec(col,id,lb){
+  if(col==='factures'){
+    var _lf=(db.factures||[]).find(function(x){return x.id===id});
+    if(_lf&&isFacLocked(_lf)){alert('🔒 '+_lf.ref+' est VERROUILLÉE (clôture comptable au '+new Date(facLockDate()).toLocaleDateString('fr-FR')+').\n\nUne facture émise ne se supprime jamais : créez un AVOIR (bouton violet).');return}
+  }
+  if(!confirm('Supprimer '+lb+' ?'))return;var item=(db[col]||[]).find(function(x){return x.id===id});if(item){stamp(item);item._deleted=true;item._deletedAt=new Date().toISOString()}else{db[col]=db[col].filter(function(x){return x.id!==id})}if(col==='devis')renumDev();/* V79: plus de renumérotation auto des factures à la suppression — numéros figés */lH('del','Supprimé: '+lb);sav();cMo()}
 
 // SELECTS
 function oLst(arr,fn){return '<option value="">—</option>'+arr.map(function(i){return '<option value="'+i.id+'">'+fn(i)+'</option>'}).join('')}
@@ -10349,6 +10356,11 @@ function renumFac(){
   var avoirs=act(db.factures).filter(function(f){return f.mode==='avoir' || (f.ref||'').match(/CP-AV/)});
   // Garder aussi les supprimées (soft-delete) sans les renuméroter
   var deleted=db.factures.filter(function(f){return f._deleted});
+  // V79 : les factures VERROUILLÉES (clôture comptable) ne bougent JAMAIS
+  var lockedFac=factures.filter(function(f){return isFacLocked(f)});
+  var lockedAv=avoirs.filter(function(f){return isFacLocked(f)});
+  factures=factures.filter(function(f){return !isFacLocked(f)});
+  avoirs=avoirs.filter(function(f){return !isFacLocked(f)});
 
   // Trier par date d'émission (chronologique)
   factures.sort(function(a,b){
@@ -10358,8 +10370,9 @@ function renumFac(){
     return (a.date||'9999').localeCompare(b.date||'9999');
   });
 
-  // Renuméroter les factures — séquence continue par année
+  // Renuméroter les factures — séquence continue par année (en repartant APRÈS les numéros verrouillés)
   var facCountByYear={};
+  lockedFac.forEach(function(f){var m=(f.ref||'').match(/^CP-FAC-(\d{4})-(\d+)$/);if(m){var y=+m[1],nn=+m[2];if(!facCountByYear[y]||nn>facCountByYear[y])facCountByYear[y]=nn}});
   factures.forEach(function(f){
     var yr=f.date?new Date(f.date).getFullYear():new Date().getFullYear();
     if(!facCountByYear[yr])facCountByYear[yr]=0;
@@ -10369,8 +10382,9 @@ function renumFac(){
     if(oldRef!==f.ref)stamp(f);
   });
 
-  // Renuméroter les avoirs — séquence continue par année
+  // Renuméroter les avoirs — séquence continue par année (en repartant APRÈS les numéros verrouillés)
   var avCountByYear={};
+  lockedAv.forEach(function(f){var m=(f.ref||'').match(/^CP-AV-(\d{4})-(\d+)$/);if(m){var y=+m[1],nn=+m[2];if(!avCountByYear[y]||nn>avCountByYear[y])avCountByYear[y]=nn}});
   avoirs.forEach(function(f){
     var yr=f.date?new Date(f.date).getFullYear():new Date().getFullYear();
     if(!avCountByYear[yr])avCountByYear[yr]=0;
@@ -10380,8 +10394,8 @@ function renumFac(){
     if(oldRef!==f.ref)stamp(f);
   });
 
-  // Recombiner
-  db.factures=factures.concat(avoirs).concat(deleted).sort(function(a,b){
+  // Recombiner (verrouillées incluses, intactes)
+  db.factures=factures.concat(avoirs).concat(lockedFac).concat(lockedAv).concat(deleted).sort(function(a,b){
     return (a.date||'9999').localeCompare(b.date||'9999');
   });
   // Resynchroniser les liens avoir ↔ facture d'origine après renumérotation
@@ -10427,7 +10441,7 @@ function eFac(id){
   var h='<div style="background:#0d1520;border:1px solid #1e3a58;border-radius:16px;padding:24px;max-width:700px;width:100%;max-height:90vh;overflow-y:auto">'
     +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px"><h3 style="color:#fff;font-size:16px">✏️ Modifier Facture '+esc(f.ref)+'</h3><button onclick="document.getElementById(\'facEditModal\').remove()" style="background:none;border:none;color:#fff;font-size:22px;cursor:pointer">✕</button></div>'
     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">'
-    +'<div><label style="font-size:11px;color:#b0c8df;display:block;margin-bottom:3px">N° Facture</label><input id="ef_ref" value="'+esc(f.ref)+'" style="'+ist+'"></div>'
+    +'<div><label style="font-size:11px;color:#b0c8df;display:block;margin-bottom:3px">N° Facture'+(isFacLocked(f)?' 🔒 <span style="color:#fbbf24;font-size:10px">(verrouillé — clôture)</span>':'')+'</label><input id="ef_ref" value="'+esc(f.ref)+'"'+(isFacLocked(f)?' readonly':'')+' style="'+ist+(isFacLocked(f)?';opacity:.55;cursor:not-allowed':'')+'"></div>'
     +'<div><label style="font-size:11px;color:#b0c8df;display:block;margin-bottom:3px">Date facture</label><input id="ef_dt" type="date" value="'+(f.date?f.date.slice(0,10):'')+'" style="'+ist+'"></div>'
     +'</div>'
     +'<div style="margin:10px 0"><label style="font-size:13px;color:var(--gd);font-weight:700;display:block;margin-bottom:5px">📝 Objet / description</label><textarea id="ef_obj" style="'+ist+';min-height:70px;font-size:14px;font-weight:600;color:#fff;background:#0a1825;border:2px solid var(--ac);padding:12px">'+esc(f.objet||'')+'</textarea></div>'
@@ -10518,7 +10532,11 @@ function efCalcTotal(){
 }
 function sFac(id){
   var f=db.factures.find(function(x){return x.id===id;});if(!f)return;stamp(f);
-  var nr=V('ef_ref');if(nr&&nr.trim())f.ref=nr.trim();
+  var nr=V('ef_ref');
+  if(nr&&nr.trim()&&nr.trim()!==f.ref){
+    if(isFacLocked(f)){showToast('🔒 Numéro verrouillé (clôture comptable) — modification ignorée')}
+    else{f.ref=nr.trim()}
+  }
   f.status=V('ef_s');
   f.acompte=E(V('ef_ac'));
   f.dateAcompte=V('ef_dac')||f.dateAcompte||'';
@@ -10836,13 +10854,90 @@ function confirmAvoir(facId){
   showToast(soldee?'📄 Avoir '+ref+' créé — '+f.ref+' annulée, sortie des impayés':'📄 Avoir '+ref+' créé — '+euro(montantAvoir)+' (solde restant sur '+f.ref+')');
 }
 
-function hardDelFac(id){var f=db.factures.find(function(x){return x.id===id});if(!f)return;if(!confirm('Supprimer définitivement la facture '+f.ref+' ?'))return;stamp(f);f._deleted=true;f._deletedAt=new Date().toISOString();renumFac();lH('del','Facture supprimée: '+f.ref);sav();rFac2();showToast('🗑️ Supprimée — factures renumérotées')}
-function purgeAllFac(){var n=db.factures.length;if(!n){alert('Aucune facture à supprimer');return}if(!confirm('⚠️ Supprimer DÉFINITIVEMENT les '+n+' factures ?\n\nCette action est irréversible !'))return;if(!confirm('Vraiment sûr ? '+n+' factures seront perdues.'))return;db.factures=[];db.settings.nextInvoice=1;db.settings._facCounters={};try{if(fbConnected&&fbDb){var room=db.settings.fbRoom||'cathypets-default';fbDb.ref('salons/'+room+'/counters').remove()}}catch(e){}lH('purge','Toutes les factures purgées ('+n+')');sav();rFac2();showToast('🗑️ '+n+' factures purgées — compteur remis à 1')}
+function hardDelFac(id){var f=db.factures.find(function(x){return x.id===id});if(!f)return;
+  if(isFacLocked(f)){alert('🔒 '+f.ref+' est VERROUILLÉE (clôture comptable au '+new Date(facLockDate()).toLocaleDateString('fr-FR')+').\n\nCréez un AVOIR à la place.');return}
+  if(!confirm('Supprimer définitivement la facture '+f.ref+' ?\n\n⚠️ Son numéro ne sera PAS réutilisé (les autres numéros ne bougent plus).'))return;
+  stamp(f);f._deleted=true;f._deletedAt=new Date().toISOString();lH('del','Facture supprimée: '+f.ref);sav();rFac2();showToast('🗑️ Supprimée — les autres numéros sont inchangés')}
+function purgeAllFac(){
+  if(facLockDate()){alert('🔒 Clôture comptable active au '+new Date(facLockDate()).toLocaleDateString('fr-FR')+' — purge INTERDITE.\n\nRetirez d\'abord la clôture (bouton 🔒 Clôture) si vraiment nécessaire.');return}
+  var n=db.factures.length;if(!n){alert('Aucune facture à supprimer');return}if(!confirm('⚠️ Supprimer DÉFINITIVEMENT les '+n+' factures ?\n\nCette action est irréversible !'))return;if(!confirm('Vraiment sûr ? '+n+' factures seront perdues.'))return;db.factures=[];db.settings.nextInvoice=1;db.settings._facCounters={};try{if(fbConnected&&fbDb){var room=db.settings.fbRoom||'cathypets-default';fbDb.ref('salons/'+room+'/counters').remove()}}catch(e){}lH('purge','Toutes les factures purgées ('+n+')');sav();rFac2();showToast('🗑️ '+n+' factures purgées — compteur remis à 1')}
 
+// ══════ V79 : CLÔTURE COMPTABLE — verrouillage définitif des numéros de facture ══════
+function facLockDate(){return (db.settings&&db.settings.facLockDate)||''}
+function isFacLocked(f){var ld=facLockDate();return !!ld&&!!f&&(f.date||'').slice(0,10)<=ld}
+function openClotureModal(){
+  var cur=facLockDate();
+  oMo('🔒 Clôture comptable des factures',
+    '<div style="display:flex;flex-direction:column;gap:10px">'
+    +'<div style="font-size:12px;color:#b0c8df;line-height:1.55">Verrouille <b>définitivement</b> les numéros de toutes les factures et avoirs émis jusqu\'à la date choisie : plus aucune renumérotation, suppression ou modification de numéro possible (numérotation continue et inaltérable — Art. 242 nonies A, ann. II du CGI).<br><br>💡 <b>À faire après chaque envoi à Cerfrance</b> (ex : clôture mensuelle ou trimestrielle).</div>'
+    +(cur?'<div style="font-size:12px;color:#9d6">Clôture actuelle : jusqu\'au <b>'+new Date(cur).toLocaleDateString('fr-FR')+'</b> inclus</div>':'<div style="font-size:12px;color:#fbbf24">⚠️ Aucune clôture active — les numéros sont encore modifiables.</div>')
+    +'<div><label class="lb">Verrouiller jusqu\'au (inclus)</label><input type="date" class="inp" id="clo_date" value="'+(cur||tdy())+'"></div>'
+    +'</div>',
+    '<button class="btn og" onclick="setClotureDate()">🔒 Verrouiller</button>'+(cur?'<button class="btn rd" onclick="removeCloture()">🔓 Retirer la clôture</button>':''));
+}
+function setClotureDate(){
+  var d=V('clo_date');if(!d){showToast('⚠️ Choisissez une date');return}
+  var prev=facLockDate();
+  if(prev&&d<prev&&!confirm('⚠️ La nouvelle date ('+new Date(d).toLocaleDateString('fr-FR')+') est ANTÉRIEURE à la clôture actuelle ('+new Date(prev).toLocaleDateString('fr-FR')+') : cela DÉVERROUILLE des factures.\n\nContinuer ?'))return;
+  db.settings.facLockDate=d;
+  var n=act(db.factures).filter(function(f){return (f.date||'').slice(0,10)<=d}).length;
+  lH('cloture','🔒 Clôture comptable au '+new Date(d).toLocaleDateString('fr-FR')+' — '+n+' factures/avoirs verrouillés');
+  sav();cMo();try{rFac2()}catch(e){}
+  showToast('🔒 '+n+' factures/avoirs verrouillés jusqu\'au '+new Date(d).toLocaleDateString('fr-FR'));
+}
+function removeCloture(){
+  if(!confirm('⚠️ Retirer la clôture comptable ?\n\nTous les numéros redeviendront modifiables. À ne faire QUE sur demande expresse de Cerfrance.'))return;
+  db.settings.facLockDate='';lH('cloture','🔓 Clôture comptable retirée');sav();cMo();try{rFac2()}catch(e){}
+  showToast('🔓 Clôture retirée — numéros à nouveau modifiables');
+}
+// ── Contrôle d'intégrité de la numérotation (rapport imprimable pour Cerfrance) ──
+function controleNumerotation(){
+  var series={},bad=[];
+  var byRef={};
+  act(db.factures).forEach(function(f){
+    var m=(f.ref||'').match(/^(CP-(?:FAC|AV))-(\d{4})-(\d+)$/);
+    if(!m){bad.push((f.ref||'(sans réf)')+' — '+_rcD(f.date));return}
+    var k=m[1]+'-'+m[2];series[k]=series[k]||[];
+    series[k].push({n:parseInt(m[3],10),ref:f.ref,date:(f.date||'').slice(0,10),cli:cN(f.clientId)});
+    byRef[f.ref]=(byRef[f.ref]||0)+1;
+  });
+  var th='padding:5px 8px;border-bottom:2px solid #1a7a6e;text-align:left;font-size:10px;color:#1a7a6e;text-transform:uppercase';
+  var td='padding:5px 8px;border-bottom:1px solid #e5e7eb;font-size:11px;color:#111';
+  var h='<div style="padding:4px 0">'+_rcHead()
+    +'<h1 style="font-size:20px;margin:6px 0 2px 0;color:#000">CONTRÔLE DE NUMÉROTATION DES FACTURES</h1>'
+    +'<div style="font-size:11px;color:#555;margin-bottom:12px">Édité le '+_rcD(tdy())+(facLockDate()?' — 🔒 Clôture comptable active jusqu\'au '+_rcD(facLockDate()):' — ⚠️ Aucune clôture comptable active')+'</div>';
+  var totalPb=0;
+  Object.keys(series).sort().forEach(function(k){
+    var arr=series[k].slice().sort(function(a,b){return a.n-b.n});
+    var min=arr[0].n,max=arr[arr.length-1].n;
+    var manquants=[],doublons=[],chrono=[];
+    var seen={};
+    arr.forEach(function(x){if(seen[x.n])doublons.push(x.ref);seen[x.n]=1});
+    for(var i=min;i<=max;i++){if(!seen[i])manquants.push(k+'-'+String(i).padStart(3,'0'))}
+    for(var j=1;j<arr.length;j++){if(arr[j].date&&arr[j-1].date&&arr[j].date<arr[j-1].date)chrono.push(arr[j].ref+' ('+_rcD(arr[j].date)+') émise avant '+arr[j-1].ref+' ('+_rcD(arr[j-1].date)+')')}
+    totalPb+=manquants.length+doublons.length+chrono.length;
+    var ok=!manquants.length&&!doublons.length&&!chrono.length;
+    h+='<div style="border:1px solid '+(ok?'#1a7a6e':'#dc2626')+';border-radius:8px;padding:10px 14px;margin-bottom:10px;background:'+(ok?'#f0fdf9':'#fff5f5')+'">'
+      +'<div style="font-size:13px;font-weight:800;color:'+(ok?'#1a7a6e':'#dc2626')+'">'+(ok?'✅':'⚠️')+' Série '+k+' — '+arr.length+' documents, du n° '+String(min).padStart(3,'0')+' au n° '+String(max).padStart(3,'0')+'</div>';
+    if(manquants.length)h+='<div style="font-size:11px;color:#dc2626;margin-top:5px"><b>Numéros manquants ('+manquants.length+') :</b> '+manquants.join(', ')+'</div>';
+    if(doublons.length)h+='<div style="font-size:11px;color:#dc2626;margin-top:5px"><b>Doublons ('+doublons.length+') :</b> '+doublons.join(', ')+'</div>';
+    if(chrono.length)h+='<div style="font-size:11px;color:#b45309;margin-top:5px"><b>Anomalies chronologiques ('+chrono.length+') :</b><br>'+chrono.join('<br>')+'</div>';
+    if(ok)h+='<div style="font-size:11px;color:#1a7a6e;margin-top:4px">Séquence continue, sans doublon, ordre chronologique respecté.</div>';
+    h+='</div>';
+  });
+  if(bad.length){totalPb+=bad.length;h+='<div style="border:1px solid #dc2626;border-radius:8px;padding:10px 14px;margin-bottom:10px;background:#fff5f5"><div style="font-size:12px;font-weight:800;color:#dc2626">⚠️ Références hors format ('+bad.length+') :</div><div style="font-size:11px;color:#555">'+bad.join('<br>')+'</div></div>'}
+  h+='<div style="margin-top:12px;padding:12px 14px;border-radius:8px;background:'+(totalPb?'#fee2e2':'#d1fae5')+';font-size:13px;font-weight:800;color:'+(totalPb?'#dc2626':'#065f46')+'">'+(totalPb?'⚠️ '+totalPb+' anomalie(s) détectée(s) — à corriger AVANT clôture / envoi Cerfrance':'✅ Numérotation conforme : continue, chronologique, sans doublon')+'</div>';
+  h+='<div style="font-size:9px;color:#999;margin-top:14px;border-top:1px solid #e5e7eb;padding-top:6px">Rapport de contrôle interne — Cathy Pets SAS — Exigence de numérotation : Art. 242 nonies A, annexe II du CGI.</div></div>';
+  var html='<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Contrôle numérotation — Cathy Pets</title><style>body{font-family:Arial,Helvetica,sans-serif;margin:24px;color:#111}@media print{.noprint{display:none}body{margin:10px}}</style></head><body>'
+    +'<div class="noprint" style="text-align:right;margin-bottom:10px"><button onclick="window.print()" style="background:#1a7a6e;color:#fff;border:none;border-radius:8px;padding:10px 18px;font-size:14px;font-weight:700;cursor:pointer">🖨️ Imprimer / PDF</button></div>'+h+'</body></html>';
+  openHtmlBlob(html,'Controle_Numerotation_CathyPets_'+tdy()+'.html');
+  lH('controle','Contrôle numérotation généré');
+}
 function renumFacManual(){
   var n=act(db.factures).length;
   if(!n){alert('Aucune facture');return}
-  if(!confirm('🔄 Renuméroter les '+n+' factures dans l\'ordre chronologique ?\n\nLes factures seront CP-FAC-YYYY-001, 002, 003...\nLes avoirs seront CP-AV-YYYY-001, 002...\n\nLes numéros se suivront sans trou.'))return;
+  var nLock=act(db.factures).filter(function(f){return isFacLocked(f)}).length;
+  if(!confirm('🔄 Renuméroter les factures NON verrouillées dans l\'ordre chronologique ?\n\n'+(nLock?'🔒 '+nLock+' facture(s) verrouillée(s) par la clôture comptable ne bougeront PAS.\n\n':'⚠️ AUCUNE clôture active : TOUS les numéros peuvent changer. Ne faites JAMAIS cela sur des factures déjà envoyées aux clients ou à Cerfrance (Art. 242 nonies A CGI).\n\n')+'Continuer ?'))return;
   renumFac();
   lH('renum','Factures renumérotées ('+n+')');
   sav();rFac2();
@@ -10933,7 +11028,8 @@ function rGrd2(){var typeIcons={garde_domicile:'🏡',garde_famille:'👨‍👩
 function rDev2(){rTbl('dvTbl',['Réf','Client','Mode','Trajet','Total','Statut','Actions'],act(db.devis).map(function(q){var sc=q.status==='facturé'?'gt':q.status==='accepté'?'bt':q.status==='refusé'?'rt':'gy';var wps=q.waypoints||[];var tr=wps.length>=2?(wps[0].address+' → ... → '+wps[wps.length-1].address):wps.length===1?wps[0].address:'—';return '<tr><td>'+q.ref+'</td><td>'+cN(q.clientId)+'</td><td>'+(q.mode||'km')+'</td><td style="font-size:11px;max-width:160px">'+tr+'</td><td>'+euro(q.total)+'</td><td><span class="pill '+sc+'">'+q.status+'</span></td><td style="white-space:nowrap;display:flex;gap:3px;flex-wrap:wrap">'+
   '<button class="btn sm bu" onclick="eDev(\''+q.id+'\')" title="Modifier">✏️</button>'+
   '<button class="btn sm og" onclick="printDevisPro(\''+q.id+'\')" title="Voir PDF">🖨️ PDF</button>'+
-  '<button class="btn sm at" onclick="quickMail(\'conf_dev\',\''+q.clientId+'\',\''+q.id+'\')" title="Envoyer par mail">📧</button>'+
+  '<button class="btn sm at" onclick="quickMail(\'conf_dev\',\''+q.clientId+'\',\''+q.id+'\')" title="Mail texte rapide">📧</button>'+
+  '<button class="btn sm" onclick="openMailPro(\'devis\',\''+q.id+'\')" title="Mail Pro HTML avec logo" style="background:#2a1a05;border-color:#8a5a1a;color:#f0b060;font-size:10px">✉️ Pro</button>'+
   '<button class="btn sm" style="background:#1a3a2a;border-color:#2a6040;color:#7bf0b0" onclick="genLienAcompte(\''+q.id+'\')" title="Lien acompte en ligne">💳</button>'+
   '<button class="btn sm" style="background:#1a3a3a;border-color:#2a6060;color:#7bcfee" onclick="exportDevToGCal(\''+q.id+'\')" title="📅 Vers Google Agenda">📅</button>'+
   (q.status!=='facturé'?'<button class="btn sm" style="background:#1a2a3a;border-color:#2a4060;color:#9bc" onclick="devToTr(\''+q.id+'\')" title="→ Transport">🚗</button>':'')+
@@ -11179,7 +11275,8 @@ function rFac2(){
         +'<button class="btn sm bu" onclick="eFac(\''+fid+'\')" title="Modifier">✏️</button>'
         +'<button class="btn sm og" onclick="printFacturePro(\''+fid+'\')" title="PDF">🖨️</button>'
         +'<button class="btn sm" onclick="dlFacturX(\''+fid+'\')" title="Factur-X (XML)" style="font-size:10px;background:#0a2c3d;border-color:#2a5a6d;color:#7ad7fc">📑</button>'
-        +'<button class="btn sm at" onclick="quickMail(\'envoi_fac\',\''+cid+'\',\''+fid+'\')" title="Mail">📧</button>'
+        +'<button class="btn sm at" onclick="quickMail(\'envoi_fac\',\''+cid+'\',\''+fid+'\')" title="Mail texte rapide">📧</button>'
+        +'<button class="btn sm" onclick="openMailPro(\''+(reste>0&&f.status!=='payée'?'relance':'facture')+'\',\''+fid+'\')" title="Mail Pro HTML avec logo" style="background:#2a1a05;border-color:#8a5a1a;color:#f0b060;font-size:10px">✉️ Pro</button>'
         +(f.status==='emise'?'<button class="btn sm" onclick="quickMail(\'relance_fac\',\''+cid+'\',\''+fid+'\')" title="Relance impayée" style="background:#2a1010;border-color:#6a2020;color:#ff8a8a;font-size:10px">📨</button>':'')
         +'<button class="btn sm" onclick="marquerAcompte(\''+fid+'\')" title="'+(ac>0?'Modifier acompte':'Ajouter acompte')+'" style="font-size:10px;background:#1a2a10;border-color:#3a6a10;color:#9d6">💰 Ac.</button>'+(f.status!=='payée'?'<button class="btn sm gn" onclick="marquerPayeeModal(\''+fid+'\')" title="Marquer payée" style="font-size:10px">✅</button>':'')
         +(f.status==='emise'?'<button class="btn sm" onclick="marquerImpayee(\''+fid+'\')" title="Marquer impayée" style="background:#3a1010;border-color:#6a2020;color:#ff6666;font-size:10px">❌</button>':'')
@@ -13192,6 +13289,123 @@ function copyMail(){
   });
 }
 
+// ══════ V79 : MAIL PRO HTML — devis / facture / relance avec logo et charte ══════
+function _mpEsc(v){return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function buildMailPro(type,id){
+  var doc,cl,isDev=(type==='devis');
+  if(isDev){doc=db.devis.find(function(x){return x.id===id})}else{doc=db.factures.find(function(x){return x.id===id})}
+  if(!doc)return null;
+  cl=db.clients.find(function(c){return c.id===doc.clientId})||{};
+  var nomCl=((cl.prenom||'')+' '+(cl.nom||'')).trim()||'Madame, Monsieur';
+  var total=Math.abs(E(doc.total));
+  var reste=isDev?0:resteDuFac(doc);
+  var dDoc=doc.date?new Date(doc.date).toLocaleDateString('fr-FR'):'';
+  var pen=(!isDev&&type==='relance')?calcPenalitesRetard(doc):null;
+  var OR='#E8650A',NV='#0B1D3A',CR='#FAF6EE',TE='#1a7a6e';
+  var logo=(typeof LOGO_B64!=='undefined'&&LOGO_B64)?'<img src="'+LOGO_B64+'" width="64" height="64" style="width:64px;height:64px;border-radius:10px;display:block" alt="Cathy Pets">':'';
+  var subject,intro,couleur,titre,extra='';
+  var rows='';
+  function row(l,v,strong){return '<tr><td style="padding:7px 14px;font-size:13px;color:#555;border-bottom:1px solid #eee">'+l+'</td><td style="padding:7px 14px;font-size:13px;color:'+(strong?NV:'#111')+';font-weight:'+(strong?'800':'600')+';text-align:right;border-bottom:1px solid #eee">'+v+'</td></tr>'}
+  if(type==='devis'){
+    couleur=TE;titre='VOTRE DEVIS';
+    subject='Votre devis '+doc.ref+' — Cathy Pets ('+euro(total)+' TTC)';
+    intro='Nous vous remercions de votre demande et avons le plaisir de vous adresser notre devis pour la prestation suivante. Vous trouverez le document d\u00e9taill\u00e9 en pi\u00e8ce jointe.';
+    rows=row('R\u00e9f\u00e9rence',doc.ref)+row('Date',dDoc)+(doc.objet?row('Prestation',_mpEsc(doc.objet)):'')+row('Montant total TTC',euro(total),1)+row('Validit\u00e9','30 jours');
+    extra='<p style="margin:16px 0 0 0;font-size:14px;color:#333;line-height:1.6">\u2705 <b>Pour accepter ce devis</b>, il vous suffit de r\u00e9pondre \u00ab Bon pour accord \u00bb \u00e0 ce message. Nous conviendrons ensuite ensemble des modalit\u00e9s pratiques (date, prise en charge, acompte \u00e9ventuel).</p>';
+  }else if(type==='relance'){
+    couleur='#c0392b';titre='RAPPEL DE R\u00c8GLEMENT';
+    subject='Relance \u2014 Facture '+doc.ref+' en attente de r\u00e8glement ('+euro(reste)+')';
+    intro='Sauf erreur ou omission de notre part, notre facture <b>'+doc.ref+'</b> \u00e9mise le <b>'+dDoc+'</b> demeure \u00e0 ce jour impay\u00e9e. Nous vous remercions de bien vouloir proc\u00e9der \u00e0 son r\u00e8glement <b>sous 8 jours</b>.';
+    rows=row('Facture',doc.ref)+row('Date d\u2019\u00e9mission',dDoc)+(doc.objet?row('Prestation',_mpEsc(doc.objet)):'')+row('Montant TTC',euro(total))+(E(doc.acompte)>0?row('Acompte re\u00e7u','-'+euro(doc.acompte)):'')+row('Reste \u00e0 r\u00e9gler',euro(reste),1)+(pen?row('Retard constat\u00e9',pen.joursRetard+' jours'):'');
+    extra='<p style="margin:16px 0 0 0;font-size:12px;color:#777;line-height:1.55">Conform\u00e9ment aux articles L441-10 et D441-5 du Code de commerce, tout retard de paiement entra\u00eene de plein droit des p\u00e9nalit\u00e9s de retard (taux annuel 7,86\u00a0%) ainsi qu\u2019une indemnit\u00e9 forfaitaire de recouvrement de 40\u00a0\u20ac'+(pen?', soit \u00e0 ce jour <b>'+euro(pen.totalPenalites)+'</b> de p\u00e9nalit\u00e9s (total d\u00fb\u00a0: <b>'+euro(pen.totalAvecPenalites)+'</b>)':'')+'.</p><p style="margin:12px 0 0 0;font-size:13px;color:#333">Si votre r\u00e8glement a \u00e9t\u00e9 effectu\u00e9 entre-temps, nous vous prions de ne pas tenir compte de ce rappel et vous en remercions.</p>';
+  }else{
+    couleur=TE;titre='VOTRE FACTURE';
+    subject='Votre facture '+doc.ref+' \u2014 Cathy Pets ('+euro(total)+' TTC)';
+    intro='Nous vous remercions de votre confiance. Veuillez trouver ci-joint votre facture relative \u00e0 la prestation r\u00e9alis\u00e9e.';
+    rows=row('R\u00e9f\u00e9rence',doc.ref)+row('Date',dDoc)+(doc.objet?row('Prestation',_mpEsc(doc.objet)):'')+row('Montant total TTC',euro(total),1)+(E(doc.acompte)>0?row('Acompte d\u00e9j\u00e0 vers\u00e9','-'+euro(doc.acompte)):'')+(E(doc.acompte)>0||reste!==total?row('Reste \u00e0 r\u00e9gler',euro(reste),1):'');
+    extra='<p style="margin:16px 0 0 0;font-size:14px;color:#333;line-height:1.6">\ud83d\udcb3 <b>R\u00e8glement \u00e0 r\u00e9ception</b>, par virement bancaire (RIB sur la facture), ch\u00e8que ou esp\u00e8ces.</p>';
+  }
+  var html='<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:'+CR+';padding:24px 8px"><tr><td align="center">'
+    +'<table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:14px;overflow:hidden;font-family:Arial,Helvetica,sans-serif;box-shadow:0 4px 18px rgba(11,29,58,.12)">'
+    +'<tr><td style="background:'+NV+';padding:18px 24px"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>'
+    +'<td width="72">'+logo+'</td>'
+    +'<td style="padding-left:14px"><div style="font-size:21px;font-weight:900;color:#ffffff;letter-spacing:.5px">CATHY PETS</div><div style="font-size:11px;color:'+OR+';font-weight:700;letter-spacing:1px">TAXI ANIMALIER \u00b7 GARDE \u00b7 TRANSPORT INTERNATIONAL</div></td>'
+    +'</tr></table></td></tr>'
+    +'<tr><td style="background:'+couleur+';padding:8px 24px"><div style="font-size:12px;font-weight:800;color:#ffffff;letter-spacing:2px">'+titre+'</div></td></tr>'
+    +'<tr><td style="padding:26px 26px 8px 26px">'
+    +'<p style="margin:0 0 14px 0;font-size:15px;color:'+NV+';font-weight:700">Bonjour '+_mpEsc(nomCl)+',</p>'
+    +'<p style="margin:0;font-size:14px;color:#333;line-height:1.6">'+intro+'</p>'
+    +'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:18px 0 0 0;border:1px solid #eee;border-radius:10px;overflow:hidden">'+rows+'</table>'
+    +extra
+    +'<p style="margin:18px 0 0 0;font-size:13px;color:#555">\ud83d\udcce Document PDF en pi\u00e8ce jointe de ce message.</p>'
+    +'<p style="margin:18px 0 0 0;font-size:14px;color:#333;line-height:1.6">Nous restons \u00e0 votre enti\u00e8re disposition pour toute question.<br>Bien cordialement,</p>'
+    +'<table role="presentation" cellpadding="0" cellspacing="0" style="margin:14px 0 0 0"><tr>'
+    +'<td style="border-left:3px solid '+OR+';padding-left:12px">'
+    +'<div style="font-size:15px;font-weight:800;color:'+NV+'">Cathy \u2014 Cathy Pets</div>'
+    +'<div style="font-size:12px;color:#555;margin-top:3px">\ud83d\ude97 Taxi animalier\u00a0: <a href="tel:0781304110" style="color:'+OR+';text-decoration:none;font-weight:700">07 81 30 41 10</a> \u00b7 \ud83c\udfe1 Garde\u00a0: <a href="tel:0783436306" style="color:'+OR+';text-decoration:none;font-weight:700">07 83 43 63 06</a></div>'
+    +'<div style="font-size:12px;color:#555;margin-top:2px">\ud83c\udf10 <a href="https://www.cathypetsitter.com" style="color:'+TE+';text-decoration:none;font-weight:700">cathypetsitter.com</a> \u00b7 \u2709\ufe0f cathydelormepets@gmail.com</div>'
+    +'</td></tr></table>'
+    +'</td></tr>'
+    +'<tr><td style="background:'+NV+';padding:14px 24px;margin-top:20px"><div style="font-size:10px;color:#8ba3c7;line-height:1.6;text-align:center">CATHY PETS SAS \u2014 6 Chemin Du Lavoir, 02470 Neuilly-Saint-Front \u2014 SIRET 928 564 269 \u2014 RCS Soissons \u2014 TVA FR65928564269<br>Agr\u00e9ment transport d\u2019animaux vivants FR02146T2 (Types 1 &amp; 2) \u2014 RC Pro Hiscox HSXIN320028640M</div></td></tr>'
+    +'</table></td></tr></table>';
+  var text='Bonjour '+nomCl+',\n\n'+intro.replace(/<[^>]+>/g,'')+'\n\n'
+    +(type==='devis'?'Devis '+doc.ref+' du '+dDoc+' — Total : '+euro(total)+' TTC (validité 30 jours)\nPour accepter : répondez "Bon pour accord".':
+      type==='relance'?'Facture '+doc.ref+' du '+dDoc+' — Reste à régler : '+euro(reste)+(pen?' ('+pen.joursRetard+' j de retard, pénalités à ce jour : '+euro(pen.totalPenalites)+')':'')+'\nMerci de régulariser sous 8 jours.':
+      'Facture '+doc.ref+' du '+dDoc+' — Total : '+euro(total)+' TTC'+(reste!==total?' — Reste à régler : '+euro(reste):'')+'\nRèglement à réception (virement, chèque ou espèces).')
+    +'\n\nBien cordialement,\nCathy — Cathy Pets\nTaxi animalier : 07 81 30 41 10 · Garde : 07 83 43 63 06\ncathypetsitter.com · cathydelormepets@gmail.com';
+  return {to:cl.email||'',subject:subject,html:html,text:text,clientNom:nomCl,isDev:isDev,docId:id};
+}
+function openMailPro(type,id){
+  var cur=buildMailPro(type,id);
+  if(!cur){showToast('⚠️ Document introuvable');return}
+  window._mpCur=cur;
+  var old=document.getElementById('mailProModal');if(old)old.remove();
+  var tabs='';
+  if(!cur.isDev){
+    ['facture','relance'].forEach(function(t){
+      tabs+='<button onclick="document.getElementById(\'mailProModal\').remove();openMailPro(\''+t+'\',\''+id+'\')" style="background:'+(t===type?'#E8650A':'#1a2435')+';color:'+(t===type?'#fff':'#8ba3c7')+';border:1px solid '+(t===type?'#E8650A':'#2a3a50')+';border-radius:8px;padding:5px 14px;font-size:12px;font-weight:700;cursor:pointer;margin-right:6px">'+(t==='facture'?'📄 Facture':'📨 Relance')+'</button>';
+    });
+  }
+  var ov=document.createElement('div');
+  ov.id='mailProModal';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:99999;display:flex;align-items:center;justify-content:center;padding:14px';
+  ov.innerHTML='<div style="background:#0d1420;border:1px solid #2a3a50;border-radius:14px;max-width:780px;width:100%;max-height:94vh;display:flex;flex-direction:column;overflow:hidden">'
+    +'<div style="padding:12px 16px;border-bottom:1px solid #2a3a50;display:flex;align-items:center;gap:10px;flex-wrap:wrap">'
+    +'<div style="font-size:15px;font-weight:800;color:#fff;flex:1">✉️ Mail Pro — '+(cur.isDev?'Devis':(type==='relance'?'Relance':'Facture'))+'</div>'+tabs
+    +'<button onclick="document.getElementById(\'mailProModal\').remove()" style="background:none;border:none;color:#8ba3c7;font-size:20px;cursor:pointer">✕</button></div>'
+    +'<div style="padding:8px 16px;font-size:12px;color:#8ba3c7;border-bottom:1px solid #1a2435"><b style="color:#fff">À :</b> '+(cur.to?_mpEsc(cur.to):'<span style="color:#ff8a8a">⚠️ pas d\'email client enregistré</span>')+' &nbsp;·&nbsp; <b style="color:#fff">Objet :</b> '+_mpEsc(cur.subject)+'</div>'
+    +'<iframe id="mpFrame" style="flex:1;border:0;background:#fff;min-height:400px;width:100%"></iframe>'
+    +'<div style="padding:12px 16px;border-top:1px solid #2a3a50;display:flex;gap:8px;flex-wrap:wrap">'
+    +'<button class="btn og" onclick="mpCopyHTML()" style="font-size:13px">📋 Copier l\'email (coller dans Gmail)</button>'
+    +'<button class="btn" onclick="mpCopyText()" style="font-size:13px">📝 Copier version texte</button>'
+    +'<button class="btn at" onclick="mpMailto()" style="font-size:13px">📧 Ouvrir la messagerie</button>'
+    +'</div></div>';
+  document.body.appendChild(ov);
+  document.getElementById('mpFrame').srcdoc='<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body style="margin:0">'+cur.html+'</body></html>';
+}
+function mpCopyFallback(){
+  var d=document.createElement('div');d.contentEditable='true';d.style.cssText='position:fixed;left:-9999px;top:0';d.innerHTML=window._mpCur.html;document.body.appendChild(d);
+  var r=document.createRange();r.selectNodeContents(d);var s=getSelection();s.removeAllRanges();s.addRange(r);document.execCommand('copy');s.removeAllRanges();d.remove();
+  showToast('📋 Email copié — dans Gmail : nouveau message puis Ctrl+V');
+}
+function mpCopyHTML(){
+  try{
+    var bH=new Blob([window._mpCur.html],{type:'text/html'});
+    var bT=new Blob([window._mpCur.text],{type:'text/plain'});
+    navigator.clipboard.write([new ClipboardItem({'text/html':bH,'text/plain':bT})]).then(function(){
+      showToast('📋 Email copié avec mise en forme — dans Gmail : nouveau message puis Ctrl+V');
+    },function(){mpCopyFallback()});
+  }catch(e){mpCopyFallback()}
+}
+function mpCopyText(){
+  try{navigator.clipboard.writeText(window._mpCur.text);showToast('📝 Version texte copiée')}catch(e){}
+}
+function mpMailto(){
+  var c=window._mpCur;
+  if(!c.to){showToast('⚠️ Pas d\'email enregistré pour ce client');return}
+  try{navigator.clipboard.writeText(c.text)}catch(e){}
+  window.location.href='mailto:'+encodeURIComponent(c.to)+'?subject='+encodeURIComponent(c.subject)+'&body='+encodeURIComponent(c.text.slice(0,1800));
+}
 function openMailto(){
   var cl=V('mCl'),subj=V('mSubj')||'';
   var client=db.clients.find(function(c){return c.id===cl});
