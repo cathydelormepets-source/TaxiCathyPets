@@ -7804,10 +7804,8 @@ function addDev(){
       var clEmail=(cl2?cl2.email||'':'');
       var clTel=(cl2?cl2.tel||'':'');
       var subj='Contrat PEC Transport — '+q.ref;
-      // Envoi par email
-      if(clEmail){
-        window.open('https://mail.google.com/mail/?view=cm&fs=1&to='+encodeURIComponent(clEmail)+'&su='+encodeURIComponent(subj)+'&body='+encodeURIComponent(pecMsg),'_blank');
-      }
+      // Envoi par email — V79 : Mail Pro HTML avec logo et bouton de signature
+      openMailPro('pec',q.id);
       // Proposer aussi WhatsApp si numéro dispo
       if(clTel){
         var waTel=clTel.replace(/[^0-9+]/g,'');
@@ -13292,7 +13290,7 @@ function copyMail(){
 // ══════ V79 : MAIL PRO HTML — devis / facture / relance avec logo et charte ══════
 function _mpEsc(v){return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
 function buildMailPro(type,id){
-  var doc,cl,isDev=(type==='devis');
+  var doc,cl,isDev=(type==='devis'||type==='pec');
   if(isDev){doc=db.devis.find(function(x){return x.id===id})}else{doc=db.factures.find(function(x){return x.id===id})}
   if(!doc)return null;
   cl=db.clients.find(function(c){return c.id===doc.clientId})||{};
@@ -13318,6 +13316,15 @@ function buildMailPro(type,id){
     intro='Sauf erreur ou omission de notre part, notre facture <b>'+doc.ref+'</b> \u00e9mise le <b>'+dDoc+'</b> demeure \u00e0 ce jour impay\u00e9e. Nous vous remercions de bien vouloir proc\u00e9der \u00e0 son r\u00e8glement <b>sous 8 jours</b>.';
     rows=row('Facture',doc.ref)+row('Date d\u2019\u00e9mission',dDoc)+(doc.objet?row('Prestation',_mpEsc(doc.objet)):'')+row('Montant TTC',euro(total))+(E(doc.acompte)>0?row('Acompte re\u00e7u','-'+euro(doc.acompte)):'')+row('Reste \u00e0 r\u00e9gler',euro(reste),1)+(pen?row('Retard constat\u00e9',pen.joursRetard+' jours'):'');
     extra='<p style="margin:16px 0 0 0;font-size:12px;color:#777;line-height:1.55">Conform\u00e9ment aux articles L441-10 et D441-5 du Code de commerce, tout retard de paiement entra\u00eene de plein droit des p\u00e9nalit\u00e9s de retard (taux annuel 7,86\u00a0%) ainsi qu\u2019une indemnit\u00e9 forfaitaire de recouvrement de 40\u00a0\u20ac'+(pen?', soit \u00e0 ce jour <b>'+euro(pen.totalPenalites)+'</b> de p\u00e9nalit\u00e9s (total d\u00fb\u00a0: <b>'+euro(pen.totalAvecPenalites)+'</b>)':'')+'.</p><p style="margin:12px 0 0 0;font-size:13px;color:#333">Si votre r\u00e8glement a \u00e9t\u00e9 effectu\u00e9 entre-temps, nous vous prions de ne pas tenir compte de ce rappel et vous en remercions.</p>';
+  }else if(type==='pec'){
+    couleur=OR;titre='CONTRAT DE PRISE EN CHARGE';
+    var pecUrl=doc.contratPecUrl||'';
+    subject='Votre contrat de prise en charge \u2014 '+doc.ref+' \u2014 Cathy Pets';
+    intro='Afin de pr\u00e9parer au mieux le transport de votre (vos) animal(aux), nous vous invitons \u00e0 remplir et signer en ligne votre <b>contrat de prise en charge</b>. Cela ne prend que quelques minutes et peut se faire directement depuis votre t\u00e9l\u00e9phone.';
+    rows=row('R\u00e9f\u00e9rence',doc.ref)+row('Date',dDoc)+(doc.objet?row('Prestation',_mpEsc(doc.objet)):'')+(doc.total?row('Montant du devis TTC',euro(total),1):'');
+    extra='<table role="presentation" cellpadding="0" cellspacing="0" style="margin:22px auto 0 auto"><tr><td style="background:'+OR+';border-radius:10px"><a href="'+pecUrl+'" style="display:inline-block;padding:14px 30px;font-size:16px;font-weight:800;color:#ffffff;text-decoration:none">\u270d\ufe0f Remplir et signer mon contrat</a></td></tr></table>'
+      +'<p style="margin:14px 0 0 0;font-size:11px;color:#888;text-align:center;word-break:break-all">Si le bouton ne fonctionne pas, copiez ce lien dans votre navigateur :<br><a href="'+pecUrl+'" style="color:'+TE+'">'+pecUrl+'</a></p>'
+      +'<p style="margin:16px 0 0 0;font-size:13px;color:#333;line-height:1.6">\ud83d\udc3e Pensez \u00e0 pr\u00e9parer le carnet de sant\u00e9 / passeport de votre animal pour le jour du transport.</p>';
   }else{
     couleur=TE;titre='VOTRE FACTURE';
     subject='Votre facture '+doc.ref+' \u2014 Cathy Pets ('+euro(total)+' TTC)';
@@ -13349,7 +13356,8 @@ function buildMailPro(type,id){
     +'<tr><td style="background:'+NV+';padding:14px 24px;margin-top:20px"><div style="font-size:10px;color:#8ba3c7;line-height:1.6;text-align:center">CATHY PETS SAS \u2014 6 Chemin Du Lavoir, 02470 Neuilly-Saint-Front \u2014 SIRET 928 564 269 \u2014 RCS Soissons \u2014 TVA FR65928564269<br>Agr\u00e9ment transport d\u2019animaux vivants FR02146T2 (Types 1 &amp; 2) \u2014 RC Pro Hiscox HSXIN320028640M</div></td></tr>'
     +'</table></td></tr></table>';
   var text='Bonjour '+nomCl+',\n\n'+intro.replace(/<[^>]+>/g,'')+'\n\n'
-    +(type==='devis'?'Devis '+doc.ref+' du '+dDoc+' — Total : '+euro(total)+' TTC (validité 30 jours)\nPour accepter : répondez "Bon pour accord".':
+    +(type==='pec'?'Merci de remplir et signer votre contrat de prise en charge en ligne :\n'+(doc.contratPecUrl||'')+'\n\nPensez au carnet de santé / passeport de votre animal le jour du transport.':
+      type==='devis'?'Devis '+doc.ref+' du '+dDoc+' — Total : '+euro(total)+' TTC (validité 30 jours)\nPour accepter : répondez "Bon pour accord".':
       type==='relance'?'Facture '+doc.ref+' du '+dDoc+' — Reste à régler : '+euro(reste)+(pen?' ('+pen.joursRetard+' j de retard, pénalités à ce jour : '+euro(pen.totalPenalites)+')':'')+'\nMerci de régulariser sous 8 jours.':
       'Facture '+doc.ref+' du '+dDoc+' — Total : '+euro(total)+' TTC'+(reste!==total?' — Reste à régler : '+euro(reste):'')+'\nRèglement à réception (virement, chèque ou espèces).')
     +'\n\nBien cordialement,\nCathy — Cathy Pets\nTaxi animalier : 07 81 30 41 10 · Garde : 07 83 43 63 06\ncathypetsitter.com · cathydelormepets@gmail.com';
@@ -13361,7 +13369,7 @@ function openMailPro(type,id){
   window._mpCur=cur;
   var old=document.getElementById('mailProModal');if(old)old.remove();
   var tabs='';
-  if(!cur.isDev){
+  if(!cur.isDev&&type!=='pec'){
     ['facture','relance'].forEach(function(t){
       tabs+='<button onclick="document.getElementById(\'mailProModal\').remove();openMailPro(\''+t+'\',\''+id+'\')" style="background:'+(t===type?'#E8650A':'#1a2435')+';color:'+(t===type?'#fff':'#8ba3c7')+';border:1px solid '+(t===type?'#E8650A':'#2a3a50')+';border-radius:8px;padding:5px 14px;font-size:12px;font-weight:700;cursor:pointer;margin-right:6px">'+(t==='facture'?'📄 Facture':'📨 Relance')+'</button>';
     });
@@ -13371,7 +13379,7 @@ function openMailPro(type,id){
   ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:99999;display:flex;align-items:center;justify-content:center;padding:14px';
   ov.innerHTML='<div style="background:#0d1420;border:1px solid #2a3a50;border-radius:14px;max-width:780px;width:100%;max-height:94vh;display:flex;flex-direction:column;overflow:hidden">'
     +'<div style="padding:12px 16px;border-bottom:1px solid #2a3a50;display:flex;align-items:center;gap:10px;flex-wrap:wrap">'
-    +'<div style="font-size:15px;font-weight:800;color:#fff;flex:1">✉️ Mail Pro — '+(cur.isDev?'Devis':(type==='relance'?'Relance':'Facture'))+'</div>'+tabs
+    +'<div style="font-size:15px;font-weight:800;color:#fff;flex:1">✉️ Mail Pro — '+(type==='pec'?'Contrat PEC':cur.isDev?'Devis':(type==='relance'?'Relance':'Facture'))+'</div>'+tabs
     +'<button onclick="document.getElementById(\'mailProModal\').remove()" style="background:none;border:none;color:#8ba3c7;font-size:20px;cursor:pointer">✕</button></div>'
     +'<div style="padding:8px 16px;font-size:12px;color:#8ba3c7;border-bottom:1px solid #1a2435"><b style="color:#fff">À :</b> '+(cur.to?_mpEsc(cur.to):'<span style="color:#ff8a8a">⚠️ pas d\'email client enregistré</span>')+' &nbsp;·&nbsp; <b style="color:#fff">Objet :</b> '+_mpEsc(cur.subject)+'</div>'
     +'<iframe id="mpFrame" style="flex:1;border:0;background:#fff;min-height:400px;width:100%"></iframe>'
