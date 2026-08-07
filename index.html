@@ -1925,6 +1925,12 @@ Tel : 06 12 34 56 78
 <!-- TAB 4 : ARTICLES -->
 <div id="devT4" style="display:none">
   <div style="font-size:11px;font-weight:800;color:var(--mt);text-transform:uppercase;letter-spacing:.1em;margin:4px 0 6px">📦 Articles / Lignes du devis <span style="font-weight:400;font-size:10px;color:var(--bl)">(choisir depuis catalogue ou saisir)</span></div>
+  <div style="display:flex;gap:6px;align-items:center;margin:0 0 8px">
+  <label style="font-size:10px;color:var(--mt);white-space:nowrap;font-weight:700">Mode devis :</label>
+  <select id="q_optmode" onchange="devCalcTotal()" style="flex:1;background:#080f1a;border:1px solid var(--ln);color:var(--tx);border-radius:6px;padding:5px;font-size:11px">
+  <option value="cumule">➕ Cumulé — toutes les sections s'additionnent</option>
+  <option value="choix">🔀 Options au choix — le client retient UNE option</option>
+  </select></div>
   <div id="q_lignes"></div>
   <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">
     <button class="btn sm bu" onclick="devAddLigne()">➕ Ajouter un article</button>
@@ -7606,9 +7612,30 @@ function preFill(){
   devCalcTotal();
   showToast('✅ Devis pré-rempli depuis '+t.ref);
 }
+// ---- V80 : DEVIS À OPTIONS (1/2/3) ----
+function devOptSelOpts(g){
+  g=g||'';
+  var o=[['','Commun'],['opt1','Option 1'],['opt2','Option 2'],['opt3','Option 3']];
+  return o.map(function(p){return '<option value="'+p[0]+'"'+(g===p[0]?' selected':'')+'>'+p[1]+'</option>'}).join('');
+}
+function devOptLabel(g){return g==='opt1'?'Option 1':g==='opt2'?'Option 2':g==='opt3'?'Option 3':'Partie commune'}
+function devHasOptions(q){return (q.lignes||[]).some(function(l){return l.groupe})}
+function devFilterLignesOption(q,opt){
+  var lg=(q.lignes&&q.lignes.length)?JSON.parse(JSON.stringify(q.lignes)):[];
+  if((q.optMode||'cumule')!=='choix')return lg;
+  var o=(opt!==undefined&&opt!==null&&opt!=='')?opt:(q.optChoisie||'');
+  if(!o)return lg;
+  return lg.filter(function(l){var g=l.groupe||'';return g===''||g===o});
+}
+function devTotalForOption(q){
+  var lg=devFilterLignesOption(q);
+  var t=lg.reduce(function(s,l){var m=(l.montant!==undefined&&l.montant!==null)?E(l.montant):((E(l.qty)||1)*(E(l.pu)||0)*(1-(E(l.remise)||0)/100));return s+m},0);
+  t=t*(1-(E(q.remise)||0)/100)+(E(q.hotelCost)||0)+(E(q.mmCost)||0);
+  return Math.round(t*100)/100;
+}
 // ---- V28 : LIGNES ARTICLES DEVIS ----
 var _devLigneCount = 0;
-function devAddLigne(desc, qty, pu, article, remise, noTva){
+function devAddLigne(desc, qty, pu, article, remise, noTva, grp){
   var i = _devLigneCount++;
   var box = document.getElementById('q_lignes');
   if(!box) return;
@@ -7618,6 +7645,7 @@ function devAddLigne(desc, qty, pu, article, remise, noTva){
   row.innerHTML =
     '<div style="display:flex;gap:4px;margin-bottom:4px;align-items:center">'+
     '<select id="q_lg_cat_'+i+'" onchange="devCatSelect('+i+')" style="flex:1;background:#080f1a;border:1px solid var(--ln);color:var(--mt);border-radius:6px;padding:5px;font-size:11px"><option value="">📋 Choisir un article sauvegardé...</option></select>'+
+    '<select id="q_lg_g_'+i+'" onchange="devCalcTotal()" title="Groupe / Option" style="background:#080f1a;border:1px solid var(--ln);color:'+(grp?'#f5d070':'var(--mt)')+';border-radius:6px;padding:5px;font-size:10px;max-width:96px">'+devOptSelOpts(grp)+'</select>'+
     '<label style="display:flex;align-items:center;gap:3px;font-size:10px;color:var(--or);cursor:pointer;white-space:nowrap" title="Avance de frais — pas de TVA"><input type="checkbox" id="q_lg_nt_'+i+'" '+(noTva?'checked':'')+' onchange="devCalcTotal()"> Exo TVA</label>'+
     '<button class="btn sm" onclick="devSavArticle('+i+')" title="Sauvegarder cet article" style="padding:3px 6px;font-size:10px;background:#1a3a2a;border-color:#2a5a3a;color:#8fc">💾</button>'+
     '<button class="btn sm rd" onclick="devDelLigne('+i+')" style="padding:3px 6px;font-size:10px">✕</button>'+
@@ -7693,6 +7721,7 @@ function devGetLignes(){
     var pEl = document.getElementById('q_lg_p_'+i);
     var rEl = document.getElementById('q_lg_r_'+i);
     var ntEl = document.getElementById('q_lg_nt_'+i);
+    var gEl = document.getElementById('q_lg_g_'+i);
     if(dEl && qEl && pEl){
       var a = aEl ? aEl.value.trim() : '';
       var d = dEl.value.trim();
@@ -7702,14 +7731,19 @@ function devGetLignes(){
       var nt = ntEl ? ntEl.checked : false;
       var brut = q*p;
       var net = brut*(1-rem/100);
-      if(d || a || p > 0) lignes.push({article:a, desc:d, qty:q, pu:p, remise:rem, noTva:nt, montant:net});
+      if(d || a || p > 0) lignes.push({article:a, desc:d, qty:q, pu:p, remise:rem, noTva:nt, groupe:(gEl?gEl.value:''), montant:net});
     }
   }
   return lignes;
 }
 function devCalcTotal(){
   var lignes = devGetLignes();
+  var optMode=((document.getElementById('q_optmode')||{}).value)||'cumule';
+  var grpTot={'':0,opt1:0,opt2:0,opt3:0};
+  lignes.forEach(function(l){var g=l.groupe||'';if(grpTot[g]===undefined)g='';grpTot[g]+=l.montant});
+  var hasOpts=(grpTot.opt1>0||grpTot.opt2>0||grpTot.opt3>0);
   var totalTTC = lignes.reduce(function(s,l){ return s + l.montant; }, 0);
+  if(optMode==='choix'&&hasOpts){totalTTC=grpTot['']+Math.max(grpTot.opt1,grpTot.opt2,grpTot.opt3);}
   var remise = parseFloat((document.getElementById('q_remise')||{}).value||0)||0;
   var tva = ((document.getElementById('q_tva')||{}).value!==''&&(document.getElementById('q_tva')||{}).value!==undefined?parseFloat((document.getElementById('q_tva')||{}).value):20);
   var ttcApresRemise = totalTTC * (1 - remise/100);
@@ -7731,6 +7765,15 @@ function devCalcTotal(){
     recap.style.display = 'block';
     var rHtml = '';
     if(lignes.length > 0){
+      if(hasOpts){
+        var remF=(1-remise/100);
+        if(grpTot['']>0)rHtml+='<div style="display:flex;justify-content:space-between;margin-bottom:3px;color:var(--mt)"><span>🧾 Partie commune</span><b>'+euro(grpTot['']*remF)+'</b></div>';
+        ['opt1','opt2','opt3'].forEach(function(g,ix){if(grpTot[g]>0){
+          var v=optMode==='choix'?(grpTot['']+grpTot[g])*remF:grpTot[g]*remF;
+          rHtml+='<div style="display:flex;justify-content:space-between;margin-bottom:3px;color:#f5d070"><span>'+(optMode==='choix'?'🔀 Total si Option '+(ix+1):'📦 Sous-total Option '+(ix+1))+'</span><b>'+euro(v)+'</b></div>';
+        }});
+        if(optMode==='choix')rHtml+='<div style="font-size:10px;color:var(--or);margin-bottom:4px">⚠️ Devis à options — le total ci-dessous est indicatif (option la plus élevée)</div>';
+      }
       rHtml += '<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>Total TTC lignes</span><b>'+euro(totalTTC)+'</b></div>';
       if(remise > 0) rHtml += '<div style="display:flex;justify-content:space-between;margin-bottom:4px;color:var(--or)"><span>Remise '+remise+'%</span><b>-'+euro(totalTTC*remise/100)+'</b></div>';
       if(tva > 0){
@@ -7764,7 +7807,7 @@ function addDev(){
   var devLignes=devGetLignes();
   var tvaRate=((document.getElementById('q_tva')||{}).value!==''&&(document.getElementById('q_tva')||{}).value!==undefined?parseFloat((document.getElementById('q_tva')||{}).value):20);
   var remiseRate=parseFloat((document.getElementById('q_remise')||{}).value||0)||0;
-  var q={id:uid('q'),ref:'CP-DEV-'+_Y+'-'+db.settings.nextQuote,mode:V('q_mo'),clientId:V('q_cl'),animalIds:aniIds,animalId:aniIds[0]||'',accompagnants:accs,bienEtre:be,segments:segs,sigPec:sigs.sigPec||'',sigDep:sigs.sigDep||'',total:E(V('q_to')),objet:V('q_obj'),notes:V('q_no'),conditions:V('q_cond'),notesInternes:V('q_notes_int'),lignes:devLignes,tva:tvaRate,remise:remiseRate,waypoints:wps,hotel:V('q_htl'),hotelNuits:E(V('q_htn')),hotelCost:E(V('q_htc')),multiModal:V('q_mm'),mmCompagnie:V('q_mmc'),mmRef:V('q_mmr'),mmCost:E(V('q_mmx')),dateDebut:V('q_dateDebut')||'',dateFin:V('q_dateFin')||'',status:'brouillon',date:new Date().toISOString()};
+  var q={id:uid('q'),ref:'CP-DEV-'+_Y+'-'+db.settings.nextQuote,mode:V('q_mo'),clientId:V('q_cl'),animalIds:aniIds,animalId:aniIds[0]||'',accompagnants:accs,bienEtre:be,segments:segs,sigPec:sigs.sigPec||'',sigDep:sigs.sigDep||'',total:E(V('q_to')),objet:V('q_obj'),notes:V('q_no'),conditions:V('q_cond'),notesInternes:V('q_notes_int'),lignes:devLignes,optMode:(V('q_optmode')||'cumule'),tva:tvaRate,remise:remiseRate,waypoints:wps,hotel:V('q_htl'),hotelNuits:E(V('q_htn')),hotelCost:E(V('q_htc')),multiModal:V('q_mm'),mmCompagnie:V('q_mmc'),mmRef:V('q_mmr'),mmCost:E(V('q_mmx')),dateDebut:V('q_dateDebut')||'',dateFin:V('q_dateFin')||'',status:'brouillon',date:new Date().toISOString()};
   if(!q.clientId||!q.total){alert('⚠️ Client et montant requis');return}
   if(!q.objet||!q.objet.trim()){
     alert('⚠️ L\'objet / titre du devis est OBLIGATOIRE.\n\nEx: "Transport canin Paris → Lyon le 22/03/2026"');
@@ -8376,8 +8419,12 @@ function addFac(){ addFacFromDevis(); } // compat
 function addFacFromDevis(){
   var q=db.devis.find(function(x){return x.id===V('f_dv')});
   if(!q){alert('Choisis un devis');return}
-  // Build lignes from devis lignes + hotel + multimodal
-  var facLignes=(q.lignes&&q.lignes.length)?JSON.parse(JSON.stringify(q.lignes)):[];
+  // Build lignes from devis lignes + hotel + multimodal (V80 : filtre option retenue)
+  if((q.optMode||'cumule')==='choix'&&devHasOptions(q)){
+    if(!q.optChoisie){alert('⚠️ Devis à options : ouvre le devis (✏️) et sélectionne l\'option retenue avant de facturer.');return}
+    q.total=devTotalForOption(q);
+  }
+  var facLignes=devFilterLignesOption(q);
   if(E(q.hotelCost)>0){
     facLignes.push({desc:'Hébergement: '+(q.hotel||'Hôtel')+' ('+(q.hotelNuits||1)+' nuit'+(q.hotelNuits>1?'s':'')+')',qty:1,pu:E(q.hotelCost),montant:E(q.hotelCost)});
   }
@@ -10128,6 +10175,9 @@ function eDev(id){var q=db.devis.find(function(x){return x.id===id});if(!q)retur
   body+='<div class="fd"><label>Conditions particulières</label><textarea id="eq_cond" rows="3" style="'+ist+'">'+esc(q.conditions||'')+'</textarea></div>';
   // Bloc lignes éditables
   body+='<div style="margin-top:12px;padding-top:10px;border-top:1px solid #1e3a58"><label style="font-size:12px;font-weight:700;color:#8ac">📋 Lignes du devis</label>';
+  var om=q.optMode||'cumule';
+  body+='<div style="display:flex;gap:6px;margin:6px 0"><select id="eq_optmode" onchange="eqCalcTotal()" style="'+ist+';font-size:11px;padding:6px"><option value="cumule"'+(om==='cumule'?' selected':'')+'>➕ Cumulé (sections additionnées)</option><option value="choix"'+(om==='choix'?' selected':'')+'>🔀 Options au choix</option></select>';
+  body+='<select id="eq_optsel" onchange="eqCalcTotal()" title="Option retenue par le client" style="'+ist+';font-size:11px;padding:6px"><option value="">Option retenue : —</option><option value="opt1"'+(q.optChoisie==='opt1'?' selected':'')+'>✅ Option 1 retenue</option><option value="opt2"'+(q.optChoisie==='opt2'?' selected':'')+'>✅ Option 2 retenue</option><option value="opt3"'+(q.optChoisie==='opt3'?' selected':'')+'>✅ Option 3 retenue</option></select></div>';
   body+='<div id="eq_lignes" style="margin:8px 0"></div>';
   body+='<button class="btn sm bu" onclick="eqAddLigne()" style="margin-bottom:8px">➕ Ajouter une ligne</button></div>';
   // TVA + Remise + Total
@@ -10157,7 +10207,7 @@ function eDev(id){var q=db.devis.find(function(x){return x.id===id});if(!q)retur
   oMo('✏️ Modifier '+q.ref, body, footer);
   // Charger les lignes existantes
   var lignes=q.lignes||[];
-  if(lignes.length){lignes.forEach(function(lg){eqAddLigne(lg.article||'',lg.desc||'',lg.qty||1,lg.pu||0,lg.remise||0,lg.noTva||false)})}
+  if(lignes.length){lignes.forEach(function(lg){eqAddLigne(lg.article||'',lg.desc||'',lg.qty||1,lg.pu||0,lg.remise||0,lg.noTva||false,lg.groupe||'')})}
   else{eqAddLigne()}
   eqCalcTotal();
   setTimeout(function(){
@@ -10165,18 +10215,19 @@ function eDev(id){var q=db.devis.find(function(x){return x.id===id});if(!q)retur
     try{setAccList('edv',q.accompagnants||[])}catch(e){}
   },100);
 }
-function eqAddLigne(article,desc,qty,pu,remise,noTva){
+function eqAddLigne(article,desc,qty,pu,remise,noTva,grp){
   var i=_eqLigneCount++;
   var box=document.getElementById('eq_lignes');if(!box)return;
   var row=document.createElement('div');
   row.id='eq_lg_'+i;
   row.style.cssText='background:rgba(0,0,0,.15);border:1px solid #1e3a58;border-radius:8px;padding:6px;margin-bottom:4px';
-  row.innerHTML='<div style="display:grid;grid-template-columns:2fr 3fr 0.6fr 1fr 0.6fr 26px;gap:4px;align-items:center">'
+  row.innerHTML='<div style="display:grid;grid-template-columns:2fr 3fr 0.6fr 1fr 0.6fr 0.9fr 26px;gap:4px;align-items:center">'
     +'<input id="eq_lg_a_'+i+'" placeholder="Article" value="'+esc(article||'')+'" style="background:#080f1a;border:1px solid #1e3a58;color:#fff;border-radius:6px;padding:6px;font:inherit;font-size:11px;font-weight:700">'
     +'<input id="eq_lg_d_'+i+'" placeholder="Description" value="'+esc(desc||'')+'" style="background:#080f1a;border:1px solid #1e3a58;color:#fff;border-radius:6px;padding:6px;font:inherit;font-size:11px">'
     +'<input id="eq_lg_q_'+i+'" type="number" min="0.5" step="0.5" value="'+(qty||1)+'" oninput="eqCalcTotal()" placeholder="Qté" style="background:#080f1a;border:1px solid #1e3a58;color:#fff;border-radius:6px;padding:6px;font:inherit;font-size:11px;text-align:center">'
     +'<input id="eq_lg_p_'+i+'" type="number" step="0.01" min="0" value="'+(pu||'')+'" oninput="eqCalcTotal()" placeholder="PU TTC" style="background:#080f1a;border:1px solid #1e3a58;color:#fff;border-radius:6px;padding:6px;font:inherit;font-size:11px">'
     +'<input id="eq_lg_r_'+i+'" type="number" step="1" min="0" max="100" value="'+(remise||0)+'" oninput="eqCalcTotal()" placeholder="%" title="Remise %" style="background:#080f1a;border:1px solid #1e3a58;color:#f59e0b;border-radius:6px;padding:6px;font:inherit;font-size:11px;text-align:center">'
+    +'<select id="eq_lg_g_'+i+'" onchange="eqCalcTotal()" title="Groupe/Option" style="background:#080f1a;border:1px solid #1e3a58;color:'+(grp?'#f5d070':'#8ac')+';border-radius:6px;padding:6px;font:inherit;font-size:10px">'+devOptSelOpts(grp)+'</select>'
     +'<button onclick="document.getElementById(\'eq_lg_'+i+'\').remove();eqCalcTotal()" style="background:none;border:none;color:#f55;font-size:14px;cursor:pointer">✕</button>'
     +'</div>'
     +'<label style="display:flex;align-items:center;gap:3px;font-size:9px;color:#f59e0b;margin-top:3px;cursor:pointer"><input type="checkbox" id="eq_lg_nt_'+i+'" '+(noTva?'checked':'')+' onchange="eqCalcTotal()"> Exo TVA (avance frais)</label>';
@@ -10191,6 +10242,7 @@ function eqGetLignes(){
     var p=document.getElementById('eq_lg_p_'+i);
     var r=document.getElementById('eq_lg_r_'+i);
     var nt=document.getElementById('eq_lg_nt_'+i);
+    var g2=document.getElementById('eq_lg_g_'+i);
     if(!d)continue;
     var article=a?a.value.trim():'';
     var desc=d?d.value.trim():'';
@@ -10200,7 +10252,7 @@ function eqGetLignes(){
     var noTva=nt?nt.checked:false;
     var brut=qty*pu;
     var net=brut*(1-rem/100);
-    if(desc||article||pu>0)lignes.push({article:article,desc:desc,qty:qty,pu:pu,remise:rem,noTva:noTva,montant:net});
+    if(desc||article||pu>0)lignes.push({article:article,desc:desc,qty:qty,pu:pu,remise:rem,noTva:noTva,groupe:(g2?g2.value:''),montant:net});
   }
   return lignes;
 }
@@ -10211,8 +10263,16 @@ function eqCalcTotal(){
 }
 function _eqCalcTotalNow(){
   var lignes=eqGetLignes();
+  var optMode=((document.getElementById('eq_optmode')||{}).value)||'cumule';
+  var grpTot={'':0,opt1:0,opt2:0,opt3:0};
+  lignes.forEach(function(l){var g=l.groupe||'';if(grpTot[g]===undefined)g='';grpTot[g]+=l.montant});
+  var hasOpts=(grpTot.opt1>0||grpTot.opt2>0||grpTot.opt3>0);
   var totalTTC=0;
   lignes.forEach(function(lg){totalTTC+=lg.montant});
+  if(optMode==='choix'&&hasOpts){
+    var oc=((document.getElementById('eq_optsel')||{}).value)||'';
+    totalTTC=grpTot['']+(oc&&grpTot[oc]>0?grpTot[oc]:Math.max(grpTot.opt1,grpTot.opt2,grpTot.opt3));
+  }
   var remise=parseFloat((document.getElementById('eq_remise')||{}).value)||0;
   var ttcApresRemise=totalTTC*(1-remise/100);
   var tva=parseFloat((document.getElementById('eq_tva')||{}).value);
@@ -10224,7 +10284,16 @@ function _eqCalcTotalNow(){
   var recap=document.getElementById('eq_recap');
   if(recap&&lignes.length){
     recap.style.display='block';
-    recap.innerHTML='💰 <b style="color:#22a693">TTC : '+euro(ttcApresRemise)+'</b>'+(remise>0?' — Remise '+remise+'%':'')+(tva>0?' · dont HT : <b>'+euro(htApresRemise)+'</b> · TVA '+tva+'% : <b>'+euro(tvaM)+'</b>':' · <span style="font-size:10px;color:var(--mt)">TVA non applicable</span>');
+    var optH='';
+    if(hasOpts){
+      var remF2=(1-remise/100);
+      if(grpTot['']>0)optH+='<div style="color:#8ac;margin-top:4px">🧾 Commune : <b>'+euro(grpTot['']*remF2)+'</b></div>';
+      ['opt1','opt2','opt3'].forEach(function(g,ix){if(grpTot[g]>0){
+        var v=optMode==='choix'?(grpTot['']+grpTot[g])*remF2:grpTot[g]*remF2;
+        optH+='<div style="color:#f5d070">'+(optMode==='choix'?'🔀 Total si Option '+(ix+1):'📦 Sous-total Option '+(ix+1))+' : <b>'+euro(v)+'</b></div>';
+      }});
+    }
+    recap.innerHTML='💰 <b style="color:#22a693">TTC : '+euro(ttcApresRemise)+'</b>'+(remise>0?' — Remise '+remise+'%':'')+(tva>0?' · dont HT : <b>'+euro(htApresRemise)+'</b> · TVA '+tva+'% : <b>'+euro(tvaM)+'</b>':' · <span style="font-size:10px;color:var(--mt)">TVA non applicable</span>')+optH;
   }
 }
 
@@ -10236,6 +10305,8 @@ function sDev(id){var q=db.devis.find(function(x){return x.id===id});if(!q)retur
   q.acompte=parseFloat((document.getElementById('eq_ac')||{}).value)||0;
   q.total=E(V('eq_t'));
   q.lignes=eqGetLignes();
+  q.optMode=((document.getElementById('eq_optmode')||{}).value)||'cumule';
+  q.optChoisie=((document.getElementById('eq_optsel')||{}).value)||'';
   var cnt=E(V('eq_wpc'));if(cnt){var wps=[];for(var i=0;i<cnt;i++){var a=$('eqw_a_'+i),l=$('eqw_l_'+i);if(a&&a.value.trim())wps.push({label:l?l.value.trim():'Étape '+(i+1),address:a.value.trim()})}q.waypoints=wps}
   q.animalIds=getPickerAniIds('edv');q.animalId=q.animalIds[0]||'';q.accompagnants=getAccList('edv');q.bienEtre=getBeData('edv');q.segments=getSegs('edseg');
   var sigs={};try{sigs=sigGetData('edv')}catch(e){}q.sigPec=sigs.sigPec||q.sigPec||'';q.sigDep=sigs.sigDep||q.sigDep||'';
@@ -11124,6 +11195,13 @@ function devToFacDirect(id){
   var today=tdy();
   var ech30=new Date();ech30.setDate(ech30.getDate()+30);var ech30s=ech30.toISOString().slice(0,10);
   var bd='<div style="text-align:center;margin-bottom:14px"><b>'+q.ref+' — '+cN(q.clientId)+'</b><br>Total : <b style="color:var(--a2);font-size:18px">'+euro(q.total)+'</b></div>';
+  if((q.optMode||'cumule')==='choix'&&devHasOptions(q)){
+    var oc=q.optChoisie||'';
+    bd+='<div class="fd" style="margin-bottom:8px"><label>🔀 Option retenue par le client</label><select id="dtf_opt" style="padding:10px;font-size:14px;font-weight:700">'
+      +'<option value="">— Choisir l\'option —</option>'
+      +['opt1','opt2','opt3'].map(function(g,ix){var has=(q.lignes||[]).some(function(l){return l.groupe===g});return has?'<option value="'+g+'"'+(oc===g?' selected':'')+'>Option '+(ix+1)+'</option>':''}).join('')
+      +'</select><div style="font-size:10px;color:var(--or);margin-top:4px">Seules la partie commune + l\'option retenue seront facturées.</div></div>';
+  }
   bd+='<div class="row" style="margin-bottom:8px">';
   bd+='<div class="c6 fd"><label>📅 Date de la facture</label><input id="dtf_date" type="date" value="'+today+'" style="font-size:14px;font-weight:700"></div>';
   bd+='<div class="c6 fd"><label>📅 Date d\'échéance</label><input id="dtf_ech" type="date" value="'+ech30s+'" style="font-size:14px"></div>';
@@ -11155,7 +11233,14 @@ function execDevToFac(id,payNow){
   var q=db.devis.find(function(x){return x.id===id;});
   if(!q)return;
   var tva=q.tva||(db.settings.tvaRate!==undefined&&db.settings.tvaRate!==''&&db.settings.tvaRate!==null?E(db.settings.tvaRate):20);
-  var facLignes=(q.lignes&&q.lignes.length)?JSON.parse(JSON.stringify(q.lignes)):[];
+  // V80 : devis à options — facturer partie commune + option retenue uniquement
+  if((q.optMode||'cumule')==='choix'&&devHasOptions(q)){
+    var _optSel=V('dtf_opt')||'';
+    if(_optSel)q.optChoisie=_optSel;
+    if(!q.optChoisie){alert('⚠️ Devis à options : sélectionne l\'option retenue avant de facturer.');return}
+    q.total=devTotalForOption(q);
+  }
+  var facLignes=devFilterLignesOption(q);
   if(E(q.hotelCost)>0){
     facLignes.push({desc:'Hébergement: '+(q.hotel||'Hôtel')+' ('+(q.hotelNuits||1)+' nuit'+(q.hotelNuits>1?'s':'')+')',qty:1,pu:E(q.hotelCost),montant:E(q.hotelCost)});
   }
@@ -13730,10 +13815,32 @@ function printDevisPro(id) {
     return qty>0 && pu>0;
   }) : [{desc: q.notes || 'Transport animalier', qty: 1, pu: ht, montant: ht}];
   if(!qLignes.length) qLignes=[{desc: q.notes || 'Transport animalier', qty: 1, pu: ht, montant: ht}];
+  // V80 : devis à options — tri par groupe + sous-totaux
+  var optModeQ=(q.optMode||'cumule');
+  var hasGrp=qLignes.some(function(l){return l.groupe});
+  if(hasGrp){var _go={'':0,opt1:1,opt2:2,opt3:3};qLignes=qLignes.slice().sort(function(a,b){return (_go[a.groupe||'']||0)-(_go[b.groupe||'']||0)})}
+  var grpTotG={};
+  var _lastGrp=null;
+  function _grpSubRow(g){
+    var t=grpTotG[g]||{ttc:0,ht:0,tva:0};
+    html += '<tr style="background:#f0f7f5"><td colspan="5" style="border:1px solid #999;padding:6px;text-align:right;font-weight:bold;font-size:10px">Sous-total '+devOptLabel(g)+'</td>';
+    html += '<td style="border:1px solid #999;padding:6px;text-align:right;font-weight:bold;font-size:10px">'+euro(t.ht)+'</td>';
+    html += '<td style="border:1px solid #999;padding:6px;text-align:right;font-weight:bold;font-size:10px">'+euro(t.tva)+'</td>';
+    html += '<td style="border:1px solid #999;padding:6px;text-align:right;font-weight:bold;font-size:10px">'+euro(t.ttc)+'</td></tr>';
+  }
   var totalTTCLignes = 0;
   var totalHTLignes = 0;
   var totalTVALignes = 0;
   qLignes.forEach(function(lg){
+    var _g=lg.groupe||'';
+    if(hasGrp&&_g!==_lastGrp){
+      if(_lastGrp!==null)_grpSubRow(_lastGrp);
+      var _gc=_g===''?'#1a7a6e':'#b45309';
+      var _gbg=_g===''?'#e6f7f0':'#fff8e6';
+      html += '<tr style="background:'+_gbg+'"><td colspan="8" style="border:1px solid #999;padding:7px 8px;font-weight:900;font-size:11px;color:'+_gc+';text-transform:uppercase;letter-spacing:1px">'+(_g===''?'🧾 ':'🔀 ')+devOptLabel(_g)+(optModeQ==='choix'&&_g!==''&&_g===(q.optChoisie||'–')?' — ✅ RETENUE':'')+'</td></tr>';
+      _lastGrp=_g;
+    }
+    if(!grpTotG[_g])grpTotG[_g]={ttc:0,ht:0,tva:0};
     var qtyVal = lg.qty||1;
     var puVal = lg.pu||0;
     var remLigne = lg.remise||0;
@@ -13744,6 +13851,7 @@ function printDevisPro(id) {
     totalTTCLignes += mntTTC;
     totalHTLignes += htLigne;
     totalTVALignes += tvaLigne;
+    grpTotG[_g].ttc+=mntTTC;grpTotG[_g].ht+=htLigne;grpTotG[_g].tva+=tvaLigne;
     var articleName = lg.article || lg.desc || 'Article';
     var descDetail = lg.article ? (lg.desc || '') : '';
     html += '<tr>';
@@ -13757,10 +13865,36 @@ function printDevisPro(id) {
     html += '<td style="border:1px solid #999;padding:8px;text-align:right;vertical-align:top;font-weight:bold">' + euro(mntTTC) + '</td>';
     html += '</tr>';
   });
+  if(hasGrp&&_lastGrp!==null)_grpSubRow(_lastGrp);
   html += '</table></div>';
   var remisePct = E(q.remise) || 0;
-  var ttcApresRemise = totalTTCLignes * (1 - remisePct/100);
-  var htApresRemise = totalHTLignes * (1 - remisePct/100);
+  // V80 : totaux effectifs selon le mode
+  var effTTC=totalTTCLignes, effHT=totalHTLignes, effTVA=totalTVALignes, choixSansSel=false;
+  if(optModeQ==='choix'&&hasGrp){
+    var _c=grpTotG['']||{ttc:0,ht:0,tva:0};
+    var optsList=['opt1','opt2','opt3'].filter(function(g){return grpTotG[g]});
+    html += '<div style="margin:15px 0;border:2px solid #b45309;border-radius:6px;padding:12px;background:#fffbf0">';
+    html += '<div style="font-size:12px;font-weight:900;color:#b45309;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">🔀 Devis à options — une seule option à retenir</div>';
+    html += '<table style="width:100%;font-size:11px;border-collapse:collapse">';
+    optsList.forEach(function(g){
+      var t=grpTotG[g];var tt=(_c.ttc+t.ttc)*(1-remisePct/100);
+      var sel=(q.optChoisie===g);
+      html += '<tr'+(sel?' style="background:#e6f7f0"':'')+'><td style="padding:6px;border-bottom:1px solid #eee;font-weight:'+(sel?'900':'600')+'">'+(sel?'✅ ':'')+devOptLabel(g)+(_c.ttc>0?' + partie commune':'')+(sel?' — RETENUE':'')+'</td><td style="padding:6px;border-bottom:1px solid #eee;text-align:right;font-weight:900;font-size:13px;color:#1a7a6e">'+euro(tt)+' TTC</td></tr>';
+    });
+    html += '</table>';
+    if(!q.optChoisie)html += '<div style="font-size:9px;color:#666;margin-top:6px">Merci d\'indiquer l\'option retenue lors de la validation du devis. L\'acompte de 40% sera calculé sur l\'option choisie.</div>';
+    html += '</div>';
+    if(q.optChoisie&&grpTotG[q.optChoisie]){
+      var _t=grpTotG[q.optChoisie];
+      effTTC=_c.ttc+_t.ttc;effHT=_c.ht+_t.ht;effTVA=_c.tva+_t.tva;
+    } else {
+      choixSansSel=true;
+      var _mx=null;['opt1','opt2','opt3'].forEach(function(g){if(grpTotG[g]&&(!_mx||grpTotG[g].ttc>grpTotG[_mx].ttc))_mx=g});
+      if(_mx){effTTC=_c.ttc+grpTotG[_mx].ttc;effHT=_c.ht+grpTotG[_mx].ht;effTVA=_c.tva+grpTotG[_mx].tva;}
+    }
+  }
+  var ttcApresRemise = effTTC * (1 - remisePct/100);
+  var htApresRemise = effHT * (1 - remisePct/100);
   var tvaApresRemise = ttcApresRemise - htApresRemise;
   html += '<div style="margin:15px 0"><table style="width:100%;border:1px solid #999;font-size:11px"><tr style="background:#ddd">';
   html += '<th style="border:1px solid #999;padding:8px">Taux</th><th style="border:1px solid #999;padding:8px">Total HT</th><th style="border:1px solid #999;padding:8px">Montant TVA</th></tr>';
@@ -13768,14 +13902,14 @@ function printDevisPro(id) {
   html += '<td style="border:1px solid #999;padding:8px">' + euro(tvaApresRemise) + '</td></tr></table></div>';
   html += '<div style="margin:15px 0"><table style="width:100%;border:1px solid #999;font-size:11px">';
   if(remisePct > 0){
-    html += '<tr><td style="border:1px solid #999;padding:8px">Sous-total TTC</td><td style="border:1px solid #999;padding:8px;text-align:right">' + euro(totalTTCLignes) + '</td></tr>';
-    html += '<tr><td style="border:1px solid #999;padding:8px;color:#e67e22">Remise ' + remisePct + '%</td><td style="border:1px solid #999;padding:8px;text-align:right;color:#e67e22">-' + euro(totalTTCLignes * remisePct/100) + '</td></tr>';
+    html += '<tr><td style="border:1px solid #999;padding:8px">Sous-total TTC</td><td style="border:1px solid #999;padding:8px;text-align:right">' + euro(effTTC) + '</td></tr>';
+    html += '<tr><td style="border:1px solid #999;padding:8px;color:#e67e22">Remise ' + remisePct + '%</td><td style="border:1px solid #999;padding:8px;text-align:right;color:#e67e22">-' + euro(effTTC * remisePct/100) + '</td></tr>';
   }
   html += '<tr><td style="border:1px solid #999;padding:8px;font-weight:bold">Total HT</td>';
   html += '<td style="border:1px solid #999;padding:8px;text-align:right">' + euro(htApresRemise) + '</td></tr>';
   html += '<tr><td style="border:1px solid #999;padding:8px;font-weight:bold">TVA ' + tva + '%</td>';
   html += '<td style="border:1px solid #999;padding:8px;text-align:right">' + euro(tvaApresRemise) + '</td></tr>';
-  html += '<tr style="background:#ddd"><td style="border:1px solid #999;padding:8px;font-weight:bold;font-size:13px">Total TTC</td>';
+  html += '<tr style="background:#ddd"><td style="border:1px solid #999;padding:8px;font-weight:bold;font-size:13px">Total TTC'+(choixSansSel?' <span style="font-weight:400;font-size:9px;color:#b45309">(indicatif — option la plus élevée)</span>':'')+'</td>';
   html += '<td style="border:1px solid #999;padding:8px;text-align:right;font-weight:bold;font-size:13px">' + euro(ttcApresRemise) + '</td></tr></table></div>';
   html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin:15px 0">';
   html += '<div style="font-size:11px"><p><strong>BIC: '+(db.settings.entBIC||'')+'</strong></p><p><strong>IBAN: '+(db.settings.entIBAN||'')+'</strong></p></div>';
@@ -27935,7 +28069,7 @@ function applyDevTemplate(tid){
   // Vider les lignes et appliquer
   var box=$('q_lignes');if(box)box.innerHTML='';
   _devLigneCount=0;
-  if(t.lignes){t.lignes.forEach(function(l){devAddLigne(l.article||l.desc||'',l.desc||'',l.qty||1,l.pu||0,l.remise||0,l.noTva||false)})}
+  if(t.lignes){t.lignes.forEach(function(l){devAddLigne(l.desc||'',l.qty||1,l.pu||0,l.article||'',l.remise||0,l.noTva||false,l.groupe||'')})}
   if(t.tva){var tvaEl=$('q_tva');if(tvaEl)tvaEl.value=t.tva}
   if(t.remise){var remEl=$('q_remise');if(remEl)remEl.value=t.remise}
   if(t.notes){var notEl=$('q_notes');if(notEl)notEl.value=t.notes}
