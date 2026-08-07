@@ -610,7 +610,7 @@ body.nuit .card{border-color:#0a1520}
 </div>
 </aside>
 <main class="main">
-<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V79.5</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
+<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V79.6</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
 <div class="cnt">
 
 <!-- DASHBOARD -->
@@ -27981,16 +27981,64 @@ function dupContrat(id){
 }
 
 // ── V78 : Export CSV factures pour plateforme agréée (Cerfrance) — facturation électronique ──
-function exportCerfrance(){
+// ══════ V79.5 : sélecteur de période pour les exports comptables ══════
+function openExportPeriodModal(kind){
+  var now=new Date();
+  var prevM=new Date(now.getFullYear(),now.getMonth()-1,1);
+  var defMonth=prevM.getFullYear()+'-'+String(prevM.getMonth()+1).padStart(2,'0');
+  var annees={};act(db.factures).forEach(function(f){var y=(f.date||'').slice(0,4);if(y)annees[y]=1});
+  var yOpts=Object.keys(annees).sort().reverse().map(function(y){return '<option value="'+y+'">'+y+'</option>'}).join('');
+  var bd='<div style="display:flex;flex-direction:column;gap:10px">'
+    +'<div><label class="lb">Type de période</label><select class="inp" id="exp_mode" onchange="_expModeUI()">'
+    +'<option value="mois">📅 Un mois précis (recommandé pour Cerfrance)</option>'
+    +'<option value="annee">🗓️ Une année complète</option>'
+    +'<option value="libre">✂️ Période libre (du... au...)</option>'
+    +'<option value="tout">📦 Tout l\'historique</option></select></div>'
+    +'<div id="exp_z_mois"><label class="lb">Mois</label><input type="month" class="inp" id="exp_month" value="'+defMonth+'"></div>'
+    +'<div id="exp_z_annee" style="display:none"><label class="lb">Année</label><select class="inp" id="exp_year">'+yOpts+'</select></div>'
+    +'<div id="exp_z_libre" style="display:none;grid-template-columns:1fr 1fr;gap:10px"><div><label class="lb">Du</label><input type="date" class="inp" id="exp_d1"></div><div><label class="lb">Au</label><input type="date" class="inp" id="exp_d2"></div></div>'
+    +'<div style="font-size:10px;color:var(--mt)">Les factures ET avoirs émis dans la période seront inclus.</div>'
+    +'</div>';
+  oMo(kind==='cerfrance'?'📊 Export Cerfrance (CSV) — période':'📑 Export Factur-X (ZIP) — période',bd,
+    '<button class="btn og" onclick="runExportPeriod(\''+kind+'\')">📤 Exporter</button>');
+}
+function _expModeUI(){
+  var m=V('exp_mode');
+  var z1=$('exp_z_mois'),z2=$('exp_z_annee'),z3=$('exp_z_libre');
+  if(z1)z1.style.display=(m==='mois')?'':'none';
+  if(z2)z2.style.display=(m==='annee')?'':'none';
+  if(z3)z3.style.display=(m==='libre')?'grid':'none';
+}
+function _expRange(){
+  var m=V('exp_mode'),d1='',d2='',label='TOUT';
+  if(m==='mois'){
+    var mo=V('exp_month');if(!mo){return null}
+    var y=+mo.slice(0,4),mm=+mo.slice(5,7);
+    d1=mo+'-01';
+    d2=mo+'-'+String(new Date(y,mm,0).getDate()).padStart(2,'0');
+    label=mo;
+  }else if(m==='annee'){
+    var yy=V('exp_year');if(!yy)return null;
+    d1=yy+'-01-01';d2=yy+'-12-31';label=yy;
+  }else if(m==='libre'){
+    d1=V('exp_d1')||'';d2=V('exp_d2')||'';
+    if(!d1&&!d2)return null;
+    label=(d1||'debut')+'_au_'+(d2||'aujourdhui');
+  }
+  return {d1:d1,d2:d2,label:label};
+}
+function runExportPeriod(kind){
+  var r=_expRange();
+  if(r===null){showToast('⚠️ Choisissez une période');return}
+  cMo();
+  if(kind==='cerfrance')exportCerfrance(r.d1,r.d2,r.label);
+  else exportFacturXZip(r.d1,r.d2,r.label);
+}
+function exportCerfrance(d1,d2,label){
+  if(arguments.length===0){openExportPeriodModal('cerfrance');return}
   var facs=act(db.factures).slice().sort(function(a,b){return (a.date||'').localeCompare(b.date||'')});
-  if(!facs.length){alert('Aucune facture à exporter');return}
-  var annees={};facs.forEach(function(f){var y=(f.date||'').slice(0,4);if(y)annees[y]=1});
-  var listeAnnees=Object.keys(annees).sort();
-  var choix=prompt('Année à exporter ('+listeAnnees.join(', ')+') ou "tout" :',String(new Date().getFullYear()));
-  if(choix===null)return;
-  choix=choix.trim().toLowerCase();
-  if(choix!=='tout'&&choix!=='toutes'){facs=facs.filter(function(f){return (f.date||'').slice(0,4)===choix})}
-  if(!facs.length){alert('Aucune facture pour '+choix);return}
+  if(d1||d2)facs=facs.filter(function(f){var d=(f.date||'').slice(0,10);return(!d1||d>=d1)&&(!d2||d<=d2)});
+  if(!facs.length){alert('Aucune facture sur la période '+(label||''));return}
   var sep=';';
   var lignes=['Reference'+sep+'Type piece'+sep+'Date emission'+sep+'Client'+sep+'Type client'+sep+'SIREN/SIRET client'+sep+'Categorie operation'+sep+'Objet'+sep+'Total HT'+sep+'Taux TVA %'+sep+'Montant TVA'+sep+'Total TTC'+sep+'Acompte'+sep+'Avoirs lies'+sep+'Reste du'+sep+'Statut'+sep+'Date paiement'+sep+'Mode paiement'+sep+'Facture origine'];
   var fr=function(n){return (Math.round(E(n)*100)/100).toFixed(2).replace('.',',')};
@@ -28025,7 +28073,7 @@ function exportCerfrance(){
   var b=new Blob([csv],{type:'text/csv;charset=utf-8'});
   var a=document.createElement('a');
   a.href=URL.createObjectURL(b);
-  a.download='CathyPets_Export_Factures_'+(choix==='tout'||choix==='toutes'?'TOUT':choix)+'.csv';
+  a.download='CathyPets_Export_Factures_'+(label||'TOUT')+'.csv';
   a.click();
   lH('export','Export Cerfrance CSV — '+facs.length+' pièce(s)');
   showToast('📤 '+facs.length+' pièce(s) exportée(s) — à transmettre à Cerfrance');
@@ -28137,15 +28185,11 @@ function _loadJSZip(cb){
   s.onload=cb;s.onerror=function(){alert('Impossible de charger le module ZIP — vérifie ta connexion')};
   document.head.appendChild(s);
 }
-function exportFacturXZip(){
+function exportFacturXZip(d1,d2,label){
+  if(arguments.length===0){openExportPeriodModal('facturx');return}
   var facs=act(db.factures).slice().sort(function(a,b){return (a.date||'').localeCompare(b.date||'')});
-  if(!facs.length){alert('Aucune facture');return}
-  var annees={};facs.forEach(function(f){var y=(f.date||'').slice(0,4);if(y)annees[y]=1});
-  var choix=prompt('Année à exporter en Factur-X ('+Object.keys(annees).sort().join(', ')+') ou "tout" :',String(new Date().getFullYear()));
-  if(choix===null)return;
-  choix=choix.trim().toLowerCase();
-  if(choix!=='tout'&&choix!=='toutes'){facs=facs.filter(function(f){return (f.date||'').slice(0,4)===choix})}
-  if(!facs.length){alert('Aucune facture pour '+choix);return}
+  if(d1||d2)facs=facs.filter(function(f){var d=(f.date||'').slice(0,10);return(!d1||d>=d1)&&(!d2||d<=d2)});
+  if(!facs.length){alert('Aucune facture sur la période '+(label||''));return}
   showToast('📦 Génération de '+facs.length+' fichier(s) Factur-X…');
   _loadJSZip(function(){
     var zip=new JSZip();
@@ -28154,7 +28198,7 @@ function exportFacturXZip(){
     zip.generateAsync({type:'blob'}).then(function(blob){
       var a=document.createElement('a');
       a.href=URL.createObjectURL(blob);
-      a.download='CathyPets_FacturX_'+(choix==='tout'||choix==='toutes'?'TOUT':choix)+'.zip';
+      a.download='CathyPets_FacturX_'+(label||'TOUT')+'.zip';
       a.click();
       lH('export','Export Factur-X ZIP — '+n+' pièce(s)');
       showToast('📑 ZIP Factur-X prêt — '+n+' pièce(s) pour Cerfrance');
