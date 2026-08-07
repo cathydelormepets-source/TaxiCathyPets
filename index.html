@@ -13920,6 +13920,23 @@ function printDevisPro(id) {
   html += '<td style="border:1px solid #999;padding:8px;text-align:right">' + euro(tvaApresRemise) + '</td></tr>';
   html += '<tr style="background:#ddd"><td style="border:1px solid #999;padding:8px;font-weight:bold;font-size:13px">Total TTC</td>';
   html += '<td style="border:1px solid #999;padding:8px;text-align:right;font-weight:bold;font-size:13px">' + euro(ttcApresRemise) + '</td></tr></table></div>';
+  } else {
+    // V80.2 : totaux en bas — une colonne par option (avec partie commune incluse)
+    var rf2=(1-remisePct/100);
+    html += '<div style="margin:15px 0"><table style="width:100%;border:1px solid #999;font-size:11px;border-collapse:collapse"><tr style="background:#ddd">';
+    html += '<th style="border:1px solid #999;padding:8px;text-align:left"></th>';
+    optsList.forEach(function(g){html += '<th style="border:1px solid #999;padding:8px;text-align:right">'+devOptLabel(g)+(_c.ttc>0?'<br><span style="font-weight:400;font-size:9px">(+ partie commune)</span>':'')+'</th>'});
+    html += '</tr>';
+    var _rowOpt=function(label,fn,bold,color){
+      html += '<tr'+(bold?' style="background:#ddd"':'')+'><td style="border:1px solid #999;padding:8px;font-weight:bold'+(bold?';font-size:13px':'')+(color?';color:'+color:'')+'">'+label+'</td>';
+      optsList.forEach(function(g){var t=grpTotG[g];html += '<td style="border:1px solid #999;padding:8px;text-align:right'+(bold?';font-weight:bold;font-size:13px':'')+(color?';color:'+color:'')+'">'+euro(fn(t))+'</td>'});
+      html += '</tr>';
+    };
+    _rowOpt('Total HT',function(t){return (_c.ht+t.ht)*rf2});
+    _rowOpt('TVA '+tva+'%',function(t){return ((_c.ttc+t.ttc)-(_c.ht+t.ht))*rf2});
+    _rowOpt('Total TTC',function(t){return (_c.ttc+t.ttc)*rf2},true);
+    _rowOpt('Acompte 40% \u00e0 la signature',function(t){return (_c.ttc+t.ttc)*rf2*0.4},false,'#b45309');
+    html += '</table></div>';
   }
   html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin:15px 0">';
   html += '<div style="font-size:11px"><p><strong>BIC: '+(db.settings.entBIC||'')+'</strong></p><p><strong>IBAN: '+(db.settings.entIBAN||'')+'</strong></p></div>';
