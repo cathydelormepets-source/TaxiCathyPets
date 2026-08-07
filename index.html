@@ -610,7 +610,7 @@ body.nuit .card{border-color:#0a1520}
 </div>
 </aside>
 <main class="main">
-<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V79.9</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
+<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V79.10</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
 <div class="cnt">
 
 <!-- DASHBOARD -->
@@ -28061,17 +28061,22 @@ function _pdfFromHtml(rawHtml,cb){
         if(!bd||!bd.innerHTML.trim()){ifr.remove();cb(null);return}
         ifr.style.height=Math.max(1200,bd.scrollHeight+60)+'px';
         setTimeout(function(){
+          // V79.10 : neutraliser le zoom d'affichage Windows (devicePixelRatio) qui décale/coupe le rendu
+          var dprDesc=Object.getOwnPropertyDescriptor(window,'devicePixelRatio');
+          var restoreDpr=function(){try{if(dprDesc)Object.defineProperty(window,'devicePixelRatio',dprDesc);else delete window.devicePixelRatio}catch(e){}};
+          try{Object.defineProperty(window,'devicePixelRatio',{value:1,configurable:true})}catch(e){}
+          var W=Math.max(794,bd.scrollWidth||794);
           try{
             html2pdf().set({
               margin:[6,6,6,6],
               image:{type:'jpeg',quality:0.9},
-              html2canvas:{scale:2,useCORS:true,logging:false,scrollX:0,scrollY:0,windowWidth:794},
+              html2canvas:{scale:2,useCORS:true,logging:false,x:0,y:0,scrollX:0,scrollY:0,width:W,windowWidth:W},
               jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},
               pagebreak:{mode:['css','legacy']}
             }).from(bd).outputPdf('datauristring').then(function(uri){
-              ifr.remove();cb((uri.split(',')[1])||null);
-            }).catch(function(){ifr.remove();cb(null)});
-          }catch(e){ifr.remove();cb(null)}
+              restoreDpr();ifr.remove();cb((uri.split(',')[1])||null);
+            }).catch(function(){restoreDpr();ifr.remove();cb(null)});
+          }catch(e){restoreDpr();ifr.remove();cb(null)}
         },400);
       }catch(e){try{ifr.remove()}catch(_){ }cb(null)}
     }
