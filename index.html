@@ -7615,10 +7615,10 @@ function preFill(){
 // ---- V80 : DEVIS À OPTIONS (1/2/3) ----
 function devOptSelOpts(g){
   g=g||'';
-  var o=[['','Commun'],['opt1','Option 1'],['opt2','Option 2'],['opt3','Option 3']];
+  var o=[['','Commun'],['opt1','Option 1'],['opt2','Option 2'],['opt3','Option 3'],['opt4','Option 4']];
   return o.map(function(p){return '<option value="'+p[0]+'"'+(g===p[0]?' selected':'')+'>'+p[1]+'</option>'}).join('');
 }
-function devOptLabel(g){return g==='opt1'?'Option 1':g==='opt2'?'Option 2':g==='opt3'?'Option 3':'Partie commune'}
+function devOptLabel(g){return g==='opt1'?'Option 1':g==='opt2'?'Option 2':g==='opt3'?'Option 3':g==='opt4'?'Option 4':'Partie commune'}
 function devHasOptions(q){return (q.lignes||[]).some(function(l){return l.groupe})}
 function devFilterLignesOption(q,opt){
   var lg=(q.lignes&&q.lignes.length)?JSON.parse(JSON.stringify(q.lignes)):[];
@@ -7739,11 +7739,11 @@ function devGetLignes(){
 function devCalcTotal(){
   var lignes = devGetLignes();
   var optMode=((document.getElementById('q_optmode')||{}).value)||'cumule';
-  var grpTot={'':0,opt1:0,opt2:0,opt3:0};
+  var grpTot={'':0,opt1:0,opt2:0,opt3:0,opt4:0};
   lignes.forEach(function(l){var g=l.groupe||'';if(grpTot[g]===undefined)g='';grpTot[g]+=l.montant});
-  var hasOpts=(grpTot.opt1>0||grpTot.opt2>0||grpTot.opt3>0);
+  var hasOpts=(grpTot.opt1>0||grpTot.opt2>0||grpTot.opt3>0||grpTot.opt4>0);
   var totalTTC = lignes.reduce(function(s,l){ return s + l.montant; }, 0);
-  if(optMode==='choix'&&hasOpts){totalTTC=grpTot['']+Math.max(grpTot.opt1,grpTot.opt2,grpTot.opt3);}
+  if(optMode==='choix'&&hasOpts){totalTTC=grpTot['']+Math.max(grpTot.opt1,grpTot.opt2,grpTot.opt3,grpTot.opt4);}
   var remise = parseFloat((document.getElementById('q_remise')||{}).value||0)||0;
   var tva = ((document.getElementById('q_tva')||{}).value!==''&&(document.getElementById('q_tva')||{}).value!==undefined?parseFloat((document.getElementById('q_tva')||{}).value):20);
   var ttcApresRemise = totalTTC * (1 - remise/100);
@@ -7768,7 +7768,7 @@ function devCalcTotal(){
       if(hasOpts){
         var remF=(1-remise/100);
         if(grpTot['']>0)rHtml+='<div style="display:flex;justify-content:space-between;margin-bottom:3px;color:var(--mt)"><span>🧾 Partie commune</span><b>'+euro(grpTot['']*remF)+'</b></div>';
-        ['opt1','opt2','opt3'].forEach(function(g,ix){if(grpTot[g]>0){
+        ['opt1','opt2','opt3','opt4'].forEach(function(g,ix){if(grpTot[g]>0){
           var v=optMode==='choix'?(grpTot['']+grpTot[g])*remF:grpTot[g]*remF;
           rHtml+='<div style="display:flex;justify-content:space-between;margin-bottom:3px;color:#f5d070"><span>'+(optMode==='choix'?'🔀 Total si Option '+(ix+1):'📦 Sous-total Option '+(ix+1))+'</span><b>'+euro(v)+'</b></div>';
         }});
@@ -10177,7 +10177,7 @@ function eDev(id){var q=db.devis.find(function(x){return x.id===id});if(!q)retur
   body+='<div style="margin-top:12px;padding-top:10px;border-top:1px solid #1e3a58"><label style="font-size:12px;font-weight:700;color:#8ac">📋 Lignes du devis</label>';
   var om=q.optMode||'cumule';
   body+='<div style="display:flex;gap:6px;margin:6px 0"><select id="eq_optmode" onchange="eqCalcTotal()" style="'+ist+';font-size:11px;padding:6px"><option value="cumule"'+(om==='cumule'?' selected':'')+'>➕ Cumulé (sections additionnées)</option><option value="choix"'+(om==='choix'?' selected':'')+'>🔀 Options au choix</option></select>';
-  body+='<select id="eq_optsel" onchange="eqCalcTotal()" title="Option retenue par le client" style="'+ist+';font-size:11px;padding:6px"><option value="">Option retenue : —</option><option value="opt1"'+(q.optChoisie==='opt1'?' selected':'')+'>✅ Option 1 retenue</option><option value="opt2"'+(q.optChoisie==='opt2'?' selected':'')+'>✅ Option 2 retenue</option><option value="opt3"'+(q.optChoisie==='opt3'?' selected':'')+'>✅ Option 3 retenue</option></select></div>';
+  body+='<select id="eq_optsel" onchange="eqCalcTotal()" title="Option retenue par le client" style="'+ist+';font-size:11px;padding:6px"><option value="">Option retenue : —</option><option value="opt1"'+(q.optChoisie==='opt1'?' selected':'')+'>✅ Option 1 retenue</option><option value="opt2"'+(q.optChoisie==='opt2'?' selected':'')+'>✅ Option 2 retenue</option><option value="opt3"'+(q.optChoisie==='opt3'?' selected':'')+'>✅ Option 3 retenue</option><option value="opt4"'+(q.optChoisie==='opt4'?' selected':'')+'>✅ Option 4 retenue</option></select></div>';
   body+='<div id="eq_lignes" style="margin:8px 0"></div>';
   body+='<button class="btn sm bu" onclick="eqAddLigne()" style="margin-bottom:8px">➕ Ajouter une ligne</button></div>';
   // TVA + Remise + Total
@@ -10264,14 +10264,14 @@ function eqCalcTotal(){
 function _eqCalcTotalNow(){
   var lignes=eqGetLignes();
   var optMode=((document.getElementById('eq_optmode')||{}).value)||'cumule';
-  var grpTot={'':0,opt1:0,opt2:0,opt3:0};
+  var grpTot={'':0,opt1:0,opt2:0,opt3:0,opt4:0};
   lignes.forEach(function(l){var g=l.groupe||'';if(grpTot[g]===undefined)g='';grpTot[g]+=l.montant});
-  var hasOpts=(grpTot.opt1>0||grpTot.opt2>0||grpTot.opt3>0);
+  var hasOpts=(grpTot.opt1>0||grpTot.opt2>0||grpTot.opt3>0||grpTot.opt4>0);
   var totalTTC=0;
   lignes.forEach(function(lg){totalTTC+=lg.montant});
   if(optMode==='choix'&&hasOpts){
     var oc=((document.getElementById('eq_optsel')||{}).value)||'';
-    totalTTC=grpTot['']+(oc&&grpTot[oc]>0?grpTot[oc]:Math.max(grpTot.opt1,grpTot.opt2,grpTot.opt3));
+    totalTTC=grpTot['']+(oc&&grpTot[oc]>0?grpTot[oc]:Math.max(grpTot.opt1,grpTot.opt2,grpTot.opt3,grpTot.opt4));
   }
   var remise=parseFloat((document.getElementById('eq_remise')||{}).value)||0;
   var ttcApresRemise=totalTTC*(1-remise/100);
@@ -10288,7 +10288,7 @@ function _eqCalcTotalNow(){
     if(hasOpts){
       var remF2=(1-remise/100);
       if(grpTot['']>0)optH+='<div style="color:#8ac;margin-top:4px">🧾 Commune : <b>'+euro(grpTot['']*remF2)+'</b></div>';
-      ['opt1','opt2','opt3'].forEach(function(g,ix){if(grpTot[g]>0){
+      ['opt1','opt2','opt3','opt4'].forEach(function(g,ix){if(grpTot[g]>0){
         var v=optMode==='choix'?(grpTot['']+grpTot[g])*remF2:grpTot[g]*remF2;
         optH+='<div style="color:#f5d070">'+(optMode==='choix'?'🔀 Total si Option '+(ix+1):'📦 Sous-total Option '+(ix+1))+' : <b>'+euro(v)+'</b></div>';
       }});
@@ -11199,7 +11199,7 @@ function devToFacDirect(id){
     var oc=q.optChoisie||'';
     bd+='<div class="fd" style="margin-bottom:8px"><label>🔀 Option retenue par le client</label><select id="dtf_opt" style="padding:10px;font-size:14px;font-weight:700">'
       +'<option value="">— Choisir l\'option —</option>'
-      +['opt1','opt2','opt3'].map(function(g,ix){var has=(q.lignes||[]).some(function(l){return l.groupe===g});return has?'<option value="'+g+'"'+(oc===g?' selected':'')+'>Option '+(ix+1)+'</option>':''}).join('')
+      +['opt1','opt2','opt3','opt4'].map(function(g,ix){var has=(q.lignes||[]).some(function(l){return l.groupe===g});return has?'<option value="'+g+'"'+(oc===g?' selected':'')+'>Option '+(ix+1)+'</option>':''}).join('')
       +'</select><div style="font-size:10px;color:var(--or);margin-top:4px">Seules la partie commune + l\'option retenue seront facturées.</div></div>';
   }
   bd+='<div class="row" style="margin-bottom:8px">';
@@ -13818,7 +13818,7 @@ function printDevisPro(id) {
   // V80 : devis à options — tri par groupe + sous-totaux
   var optModeQ=(q.optMode||'cumule');
   var hasGrp=qLignes.some(function(l){return l.groupe});
-  if(hasGrp){var _go={'':0,opt1:1,opt2:2,opt3:3};qLignes=qLignes.slice().sort(function(a,b){return (_go[a.groupe||'']||0)-(_go[b.groupe||'']||0)})}
+  if(hasGrp){var _go={'':0,opt1:1,opt2:2,opt3:3,opt4:4};qLignes=qLignes.slice().sort(function(a,b){return (_go[a.groupe||'']||0)-(_go[b.groupe||'']||0)})}
   var grpTotG={};
   var _lastGrp=null;
   function _grpSubRow(g){
@@ -13872,14 +13872,22 @@ function printDevisPro(id) {
   var effTTC=totalTTCLignes, effHT=totalHTLignes, effTVA=totalTVALignes, choixSansSel=false;
   if(optModeQ==='choix'&&hasGrp){
     var _c=grpTotG['']||{ttc:0,ht:0,tva:0};
-    var optsList=['opt1','opt2','opt3'].filter(function(g){return grpTotG[g]});
+    var optsList=['opt1','opt2','opt3','opt4'].filter(function(g){return grpTotG[g]});
     html += '<div style="margin:15px 0;border:2px solid #b45309;border-radius:6px;padding:12px;background:#fffbf0">';
     html += '<div style="font-size:12px;font-weight:900;color:#b45309;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">🔀 Devis à options — une seule option à retenir</div>';
     html += '<table style="width:100%;font-size:11px;border-collapse:collapse">';
+    html += '<tr style="background:#f5ead6"><th style="padding:6px;text-align:left;font-size:10px">Option</th><th style="padding:6px;text-align:right;font-size:10px">Total HT</th><th style="padding:6px;text-align:right;font-size:10px">TVA</th><th style="padding:6px;text-align:right;font-size:10px">Total TTC</th><th style="padding:6px;text-align:right;font-size:10px">Acompte 40%</th></tr>';
     optsList.forEach(function(g){
-      var t=grpTotG[g];var tt=(_c.ttc+t.ttc)*(1-remisePct/100);
+      var t=grpTotG[g];var rf=(1-remisePct/100);
+      var tt=(_c.ttc+t.ttc)*rf, th=(_c.ht+t.ht)*rf, tv=tt-th;
       var sel=(q.optChoisie===g);
-      html += '<tr'+(sel?' style="background:#e6f7f0"':'')+'><td style="padding:6px;border-bottom:1px solid #eee;font-weight:'+(sel?'900':'600')+'">'+(sel?'✅ ':'')+devOptLabel(g)+(_c.ttc>0?' + partie commune':'')+(sel?' — RETENUE':'')+'</td><td style="padding:6px;border-bottom:1px solid #eee;text-align:right;font-weight:900;font-size:13px;color:#1a7a6e">'+euro(tt)+' TTC</td></tr>';
+      html += '<tr'+(sel?' style="background:#e6f7f0"':'')+'>';
+      html += '<td style="padding:6px;border-bottom:1px solid #eee;font-weight:'+(sel?'900':'600')+'">'+(sel?'✅ ':'')+devOptLabel(g)+(_c.ttc>0?' + partie commune':'')+(sel?' — RETENUE':'')+'</td>';
+      html += '<td style="padding:6px;border-bottom:1px solid #eee;text-align:right">'+euro(th)+'</td>';
+      html += '<td style="padding:6px;border-bottom:1px solid #eee;text-align:right">'+euro(tv)+'</td>';
+      html += '<td style="padding:6px;border-bottom:1px solid #eee;text-align:right;font-weight:900;font-size:13px;color:#1a7a6e">'+euro(tt)+'</td>';
+      html += '<td style="padding:6px;border-bottom:1px solid #eee;text-align:right;color:#b45309;font-weight:700">'+euro(tt*0.4)+'</td>';
+      html += '</tr>';
     });
     html += '</table>';
     if(!q.optChoisie)html += '<div style="font-size:9px;color:#666;margin-top:6px">Merci d\'indiquer l\'option retenue lors de la validation du devis. L\'acompte de 40% sera calculé sur l\'option choisie.</div>';
@@ -13889,13 +13897,14 @@ function printDevisPro(id) {
       effTTC=_c.ttc+_t.ttc;effHT=_c.ht+_t.ht;effTVA=_c.tva+_t.tva;
     } else {
       choixSansSel=true;
-      var _mx=null;['opt1','opt2','opt3'].forEach(function(g){if(grpTotG[g]&&(!_mx||grpTotG[g].ttc>grpTotG[_mx].ttc))_mx=g});
+      var _mx=null;['opt1','opt2','opt3','opt4'].forEach(function(g){if(grpTotG[g]&&(!_mx||grpTotG[g].ttc>grpTotG[_mx].ttc))_mx=g});
       if(_mx){effTTC=_c.ttc+grpTotG[_mx].ttc;effHT=_c.ht+grpTotG[_mx].ht;effTVA=_c.tva+grpTotG[_mx].tva;}
     }
   }
   var ttcApresRemise = effTTC * (1 - remisePct/100);
   var htApresRemise = effHT * (1 - remisePct/100);
   var tvaApresRemise = ttcApresRemise - htApresRemise;
+  if(!choixSansSel){
   html += '<div style="margin:15px 0"><table style="width:100%;border:1px solid #999;font-size:11px"><tr style="background:#ddd">';
   html += '<th style="border:1px solid #999;padding:8px">Taux</th><th style="border:1px solid #999;padding:8px">Total HT</th><th style="border:1px solid #999;padding:8px">Montant TVA</th></tr>';
   html += '<tr><td style="border:1px solid #999;padding:8px">' + tva.toFixed(2) + ' %</td><td style="border:1px solid #999;padding:8px">' + euro(htApresRemise) + '</td>';
@@ -13909,8 +13918,9 @@ function printDevisPro(id) {
   html += '<td style="border:1px solid #999;padding:8px;text-align:right">' + euro(htApresRemise) + '</td></tr>';
   html += '<tr><td style="border:1px solid #999;padding:8px;font-weight:bold">TVA ' + tva + '%</td>';
   html += '<td style="border:1px solid #999;padding:8px;text-align:right">' + euro(tvaApresRemise) + '</td></tr>';
-  html += '<tr style="background:#ddd"><td style="border:1px solid #999;padding:8px;font-weight:bold;font-size:13px">Total TTC'+(choixSansSel?' <span style="font-weight:400;font-size:9px;color:#b45309">(indicatif — option la plus élevée)</span>':'')+'</td>';
+  html += '<tr style="background:#ddd"><td style="border:1px solid #999;padding:8px;font-weight:bold;font-size:13px">Total TTC</td>';
   html += '<td style="border:1px solid #999;padding:8px;text-align:right;font-weight:bold;font-size:13px">' + euro(ttcApresRemise) + '</td></tr></table></div>';
+  }
   html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin:15px 0">';
   html += '<div style="font-size:11px"><p><strong>BIC: '+(db.settings.entBIC||'')+'</strong></p><p><strong>IBAN: '+(db.settings.entIBAN||'')+'</strong></p></div>';
   html += '<div style="text-align:center">' + qrCodeImg(getVitrineUrl(q.ref), 70) + '<div style="font-size:8px;color:#666;margin-top:2px">Scannez pour suivre</div></div></div>';
