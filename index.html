@@ -610,7 +610,7 @@ body.nuit .card{border-color:#0a1520}
 </div>
 </aside>
 <main class="main">
-<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V79.7</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
+<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V79.9</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
 <div class="cnt">
 
 <!-- DASHBOARD -->
@@ -13458,27 +13458,10 @@ function _genDocPDF(cb){
   window._pdfCapture=false;
   var cap=window._pdfCaptureHTML;
   if(!cap||!cap.html){cb(null);return}
-  // 2. Charger html2pdf puis convertir
-  _loadHtml2Pdf(function(err){
-    if(err){cb(null);return}
-    var host=document.createElement('div');
-    host.style.cssText='position:fixed;left:-12000px;top:0;width:794px;background:#fff;z-index:-1';
-    host.innerHTML='<style>.noprint,button{display:none!important}body{margin:0}</style>'+cap.html;
-    document.body.appendChild(host);
-    var fn=(c.isDev?'Devis_':'Facture_')+ref.replace(/[^A-Za-z0-9_-]/g,'-')+'_CathyPets.pdf';
-    try{
-      html2pdf().set({
-        margin:[6,6,6,6],
-        image:{type:'jpeg',quality:0.92},
-        html2canvas:{scale:2,useCORS:true,logging:false},
-        jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},
-        pagebreak:{mode:['css','legacy']}
-      }).from(host).outputPdf('datauristring').then(function(uri){
-        host.remove();
-        var b64=(uri.split(',')[1]||'');
-        cb(b64?{b64:b64,fn:fn}:null);
-      }).catch(function(){host.remove();cb(null)});
-    }catch(e){host.remove();cb(null)}
+  // 2. Conversion via le moteur iframe fiable (V79.9)
+  var fn=(c.isDev?'Devis_':'Facture_')+ref.replace(/[^A-Za-z0-9_-]/g,'-')+'_CathyPets.pdf';
+  _pdfFromHtml(cap.html,function(b64){
+    cb(b64?{b64:b64,fn:fn}:null);
   });
 }
 function mpSend(){
@@ -27990,6 +27973,10 @@ function openExportPeriodModal(kind){
   var annees={};act(db.factures).forEach(function(f){var y=(f.date||'').slice(0,4);if(y)annees[y]=1});
   var yOpts=Object.keys(annees).sort().reverse().map(function(y){return '<option value="'+y+'">'+y+'</option>'}).join('');
   var bd='<div style="display:flex;flex-direction:column;gap:10px">'
+    +'<div><label class="lb">Filtrer les factures par</label><select class="inp" id="exp_base" onchange="_expModeUI()">'
+    +'<option value="emission">🖋️ Date d\'émission (factures créées dans la période)</option>'
+    +'<option value="paiement">💶 Date de paiement (ENCAISSEMENTS de la période — TVA sur encaissements)</option></select></div>'
+    +'<div id="exp_base_note" style="display:none;font-size:10px;color:#f0b060">💡 Mode encaissements : uniquement les factures PAYÉES dans la période, même émises avant (ex : payée en juin, émise en avril). Les avoirs et impayées ne sont pas inclus.</div>'
     +'<div><label class="lb">Type de période</label><select class="inp" id="exp_mode" onchange="_expModeUI()">'
     +'<option value="mois">📅 Un mois précis (recommandé pour Cerfrance)</option>'
     +'<option value="annee">🗓️ Une année complète</option>'
@@ -27998,7 +27985,7 @@ function openExportPeriodModal(kind){
     +'<div id="exp_z_mois"><label class="lb">Mois</label><input type="month" class="inp" id="exp_month" value="'+defMonth+'"></div>'
     +'<div id="exp_z_annee" style="display:none"><label class="lb">Année</label><select class="inp" id="exp_year">'+yOpts+'</select></div>'
     +'<div id="exp_z_libre" style="display:none;grid-template-columns:1fr 1fr;gap:10px"><div><label class="lb">Du</label><input type="date" class="inp" id="exp_d1"></div><div><label class="lb">Au</label><input type="date" class="inp" id="exp_d2"></div></div>'
-    +'<div style="font-size:10px;color:var(--mt)">Les factures ET avoirs émis dans la période seront inclus.</div>'
+    +'<div style="font-size:10px;color:var(--mt)" id="exp_note_emission">Les factures ET avoirs émis dans la période seront inclus.</div>'
     +'</div>';
   oMo(kind==='cerfrance'?'📊 Export Cerfrance (CSV) — période':kind==='pdfzip'?'📄 Factures PDF (ZIP) — période':'📑 Export Factur-X (ZIP) — période',bd,
     '<button class="btn og" onclick="runExportPeriod(\''+kind+'\')">📤 Exporter</button>');
@@ -28009,6 +27996,9 @@ function _expModeUI(){
   if(z1)z1.style.display=(m==='mois')?'':'none';
   if(z2)z2.style.display=(m==='annee')?'':'none';
   if(z3)z3.style.display=(m==='libre')?'grid':'none';
+  var b=V('exp_base'),n1=$('exp_base_note'),n2=$('exp_note_emission');
+  if(n1)n1.style.display=(b==='paiement')?'':'none';
+  if(n2)n2.style.display=(b==='paiement')?'none':'';
 }
 function _expRange(){
   var m=V('exp_mode'),d1='',d2='',label='TOUT';
@@ -28026,47 +28016,87 @@ function _expRange(){
     if(!d1&&!d2)return null;
     label=(d1||'debut')+'_au_'+(d2||'aujourdhui');
   }
-  return {d1:d1,d2:d2,label:label};
+  var base=V('exp_base')||'emission';
+  if(base==='paiement')label='ENCAISSEMENTS_'+label;
+  return {d1:d1,d2:d2,label:label,base:base};
+}
+// Filtre commun : par date d'émission ou par date de paiement (encaissements)
+function _expFilter(facs,d1,d2,base){
+  if(base==='paiement'){
+    return facs.filter(function(f){
+      if(f.status!=='payée')return false;
+      var d=(f.datePaiement||f.paiementDate||'').slice(0,10);
+      if(!d)return false;
+      return(!d1||d>=d1)&&(!d2||d<=d2);
+    });
+  }
+  if(!d1&&!d2)return facs;
+  return facs.filter(function(f){var d=(f.date||'').slice(0,10);return(!d1||d>=d1)&&(!d2||d<=d2)});
 }
 function runExportPeriod(kind){
   var r=_expRange();
   if(r===null){showToast('⚠️ Choisissez une période');return}
   cMo();
-  if(kind==='cerfrance')exportCerfrance(r.d1,r.d2,r.label);
-  else if(kind==='pdfzip')exportFacturesPdfZip(r.d1,r.d2,r.label);
-  else exportFacturXZip(r.d1,r.d2,r.label);
+  if(kind==='cerfrance')exportCerfrance(r.d1,r.d2,r.label,r.base);
+  else if(kind==='pdfzip')exportFacturesPdfZip(r.d1,r.d2,r.label,r.base);
+  else exportFacturXZip(r.d1,r.d2,r.label,r.base);
 }
 // ══════ V79.7 : EXPORT DES VRAIES FACTURES EN PDF (ZIP) ══════
+// V79.9 : rendu PDF via iframe — le document garde ses propres styles (corrige les pages blanches)
+function _pdfFromHtml(rawHtml,cb){
+  _loadHtml2Pdf(function(err){
+    if(err){cb(null);return}
+    var html=String(rawHtml||'').replace(/<script[\s\S]*?<\/script>/gi,'');
+    var css='<style>.noprint,button{display:none!important}html,body{margin:0;background:#fff}</style>';
+    if(html.indexOf('</head>')>=0)html=html.replace('</head>',css+'</head>');
+    else html=css+html;
+    var ifr=document.createElement('iframe');
+    ifr.style.cssText='position:fixed;left:-12000px;top:0;width:794px;height:1200px;border:0';
+    document.body.appendChild(ifr);
+    var done=false;
+    function go(){
+      if(done)return;done=true;
+      try{
+        var bd=ifr.contentDocument&&ifr.contentDocument.body;
+        if(!bd||!bd.innerHTML.trim()){ifr.remove();cb(null);return}
+        ifr.style.height=Math.max(1200,bd.scrollHeight+60)+'px';
+        setTimeout(function(){
+          try{
+            html2pdf().set({
+              margin:[6,6,6,6],
+              image:{type:'jpeg',quality:0.9},
+              html2canvas:{scale:2,useCORS:true,logging:false,scrollX:0,scrollY:0,windowWidth:794},
+              jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},
+              pagebreak:{mode:['css','legacy']}
+            }).from(bd).outputPdf('datauristring').then(function(uri){
+              ifr.remove();cb((uri.split(',')[1])||null);
+            }).catch(function(){ifr.remove();cb(null)});
+          }catch(e){ifr.remove();cb(null)}
+        },400);
+      }catch(e){try{ifr.remove()}catch(_){ }cb(null)}
+    }
+    ifr.onload=go;
+    ifr.srcdoc=html;
+    setTimeout(go,3000);
+  });
+}
 function _facPdfB64(f,cb){
   window._pdfCaptureHTML=null;window._pdfCapture=true;
   try{printFacturePro(f.id)}catch(e){}
   window._pdfCapture=false;
   var cap=window._pdfCaptureHTML;
   if(!cap||!cap.html){cb(null);return}
-  var host=document.createElement('div');
-  host.style.cssText='position:fixed;left:-12000px;top:0;width:794px;background:#fff;z-index:-1';
-  host.innerHTML='<style>.noprint,button{display:none!important}body{margin:0}</style>'+cap.html;
-  document.body.appendChild(host);
-  try{
-    html2pdf().set({
-      margin:[6,6,6,6],
-      image:{type:'jpeg',quality:0.9},
-      html2canvas:{scale:2,useCORS:true,logging:false},
-      jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},
-      pagebreak:{mode:['css','legacy']}
-    }).from(host).outputPdf('datauristring').then(function(uri){
-      host.remove();cb((uri.split(',')[1])||null);
-    }).catch(function(){host.remove();cb(null)});
-  }catch(e){host.remove();cb(null)}
+  _pdfFromHtml(cap.html,cb);
 }
-function exportFacturesPdfZip(d1,d2,label){
+function exportFacturesPdfZip(d1,d2,label,base){
   if(arguments.length===0){openExportPeriodModal('pdfzip');return}
   var facs=act(db.factures).slice().sort(function(a,b){return (a.date||'').localeCompare(b.date||'')});
-  if(d1||d2)facs=facs.filter(function(f){var d=(f.date||'').slice(0,10);return(!d1||d>=d1)&&(!d2||d<=d2)});
+  facs=_expFilter(facs,d1,d2,base);
   if(!facs.length){alert('Aucune facture sur la période '+(label||''));return}
   if(facs.length>60&&!confirm('📄 '+facs.length+' factures à convertir en PDF — cela peut prendre plusieurs minutes (environ 1 à 2 s par facture).\n\nContinuer ?'))return;
   _loadHtml2Pdf(function(errH){
     if(errH){alert('❌ Impossible de charger le convertisseur PDF (connexion internet ?)');return}
+    void 0;
     _loadJSZip(function(){
       var zip=new JSZip();
       var i=0,ok=0,ko=0;
@@ -28099,10 +28129,10 @@ function exportFacturesPdfZip(d1,d2,label){
     });
   });
 }
-function exportCerfrance(d1,d2,label){
+function exportCerfrance(d1,d2,label,base){
   if(arguments.length===0){openExportPeriodModal('cerfrance');return}
   var facs=act(db.factures).slice().sort(function(a,b){return (a.date||'').localeCompare(b.date||'')});
-  if(d1||d2)facs=facs.filter(function(f){var d=(f.date||'').slice(0,10);return(!d1||d>=d1)&&(!d2||d<=d2)});
+  facs=_expFilter(facs,d1,d2,base);
   if(!facs.length){alert('Aucune facture sur la période '+(label||''));return}
   var sep=';';
   var lignes=['Reference'+sep+'Type piece'+sep+'Date emission'+sep+'Client'+sep+'Type client'+sep+'SIREN/SIRET client'+sep+'Categorie operation'+sep+'Objet'+sep+'Total HT'+sep+'Taux TVA %'+sep+'Montant TVA'+sep+'Total TTC'+sep+'Acompte'+sep+'Avoirs lies'+sep+'Reste du'+sep+'Statut'+sep+'Date paiement'+sep+'Mode paiement'+sep+'Facture origine'];
@@ -28250,10 +28280,10 @@ function _loadJSZip(cb){
   s.onload=cb;s.onerror=function(){alert('Impossible de charger le module ZIP — vérifie ta connexion')};
   document.head.appendChild(s);
 }
-function exportFacturXZip(d1,d2,label){
+function exportFacturXZip(d1,d2,label,base){
   if(arguments.length===0){openExportPeriodModal('facturx');return}
   var facs=act(db.factures).slice().sort(function(a,b){return (a.date||'').localeCompare(b.date||'')});
-  if(d1||d2)facs=facs.filter(function(f){var d=(f.date||'').slice(0,10);return(!d1||d>=d1)&&(!d2||d<=d2)});
+  facs=_expFilter(facs,d1,d2,base);
   if(!facs.length){alert('Aucune facture sur la période '+(label||''));return}
   showToast('📦 Génération de '+facs.length+' fichier(s) Factur-X…');
   _loadJSZip(function(){
