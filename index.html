@@ -610,7 +610,7 @@ body.nuit .card{border-color:#0a1520}
 </div>
 </aside>
 <main class="main">
-<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V79.6</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
+<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V79.7</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
 <div class="cnt">
 
 <!-- DASHBOARD -->
@@ -2131,6 +2131,7 @@ document.getElementById('q_contrat_pec').addEventListener('change',function(){
   <button class="btn sm" onclick="reconcilierToutesFactures()" style="font-size:11px;background:#3d2c0a;border-color:#6d5a2a;color:#fcd77a" title="Recalcule les totaux et supprime les lignes vides">🔧 Réconcilier TVA & Totaux</button>
   <button class="btn sm" onclick="exportCerfrance()" style="font-size:11px;background:#0a2c3d;border-color:#2a5a6d;color:#7ad7fc" title="Export CSV des factures pour la plateforme agréée / comptable">📤 Export Cerfrance (CSV)</button>
   <button class="btn sm" onclick="exportFacturXZip()" style="font-size:11px;background:#1a0a3d;border-color:#4a2a8d;color:#b09afc" title="Export ZIP des factures au format Factur-X (XML EN 16931)">📑 Export Factur-X (ZIP)</button>
+  <button class="btn sm" onclick="exportFacturesPdfZip()" style="font-size:11px;background:#2a1a05;border-color:#8a5a1a;color:#f0b060" title="Toutes les vraies factures de la période en PDF, dans un ZIP — idéal pour Cerfrance et l'archivage">📄 Factures PDF (ZIP)</button>
   <button class="btn sm" onclick="openReleveClientModal()" style="font-size:11px;background:#0a2c3d;border-color:#2a5a6d;color:#7ad7fc" title="Relevé de compte par client : factures payées / impayées / avoirs + détail des mouvements">🧾 Relevé par client</button>
 </div>
 <div style="display:flex;flex-direction:column;gap:14px">
@@ -27999,7 +28000,7 @@ function openExportPeriodModal(kind){
     +'<div id="exp_z_libre" style="display:none;grid-template-columns:1fr 1fr;gap:10px"><div><label class="lb">Du</label><input type="date" class="inp" id="exp_d1"></div><div><label class="lb">Au</label><input type="date" class="inp" id="exp_d2"></div></div>'
     +'<div style="font-size:10px;color:var(--mt)">Les factures ET avoirs émis dans la période seront inclus.</div>'
     +'</div>';
-  oMo(kind==='cerfrance'?'📊 Export Cerfrance (CSV) — période':'📑 Export Factur-X (ZIP) — période',bd,
+  oMo(kind==='cerfrance'?'📊 Export Cerfrance (CSV) — période':kind==='pdfzip'?'📄 Factures PDF (ZIP) — période':'📑 Export Factur-X (ZIP) — période',bd,
     '<button class="btn og" onclick="runExportPeriod(\''+kind+'\')">📤 Exporter</button>');
 }
 function _expModeUI(){
@@ -28032,7 +28033,71 @@ function runExportPeriod(kind){
   if(r===null){showToast('⚠️ Choisissez une période');return}
   cMo();
   if(kind==='cerfrance')exportCerfrance(r.d1,r.d2,r.label);
+  else if(kind==='pdfzip')exportFacturesPdfZip(r.d1,r.d2,r.label);
   else exportFacturXZip(r.d1,r.d2,r.label);
+}
+// ══════ V79.7 : EXPORT DES VRAIES FACTURES EN PDF (ZIP) ══════
+function _facPdfB64(f,cb){
+  window._pdfCaptureHTML=null;window._pdfCapture=true;
+  try{printFacturePro(f.id)}catch(e){}
+  window._pdfCapture=false;
+  var cap=window._pdfCaptureHTML;
+  if(!cap||!cap.html){cb(null);return}
+  var host=document.createElement('div');
+  host.style.cssText='position:fixed;left:-12000px;top:0;width:794px;background:#fff;z-index:-1';
+  host.innerHTML='<style>.noprint,button{display:none!important}body{margin:0}</style>'+cap.html;
+  document.body.appendChild(host);
+  try{
+    html2pdf().set({
+      margin:[6,6,6,6],
+      image:{type:'jpeg',quality:0.9},
+      html2canvas:{scale:2,useCORS:true,logging:false},
+      jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},
+      pagebreak:{mode:['css','legacy']}
+    }).from(host).outputPdf('datauristring').then(function(uri){
+      host.remove();cb((uri.split(',')[1])||null);
+    }).catch(function(){host.remove();cb(null)});
+  }catch(e){host.remove();cb(null)}
+}
+function exportFacturesPdfZip(d1,d2,label){
+  if(arguments.length===0){openExportPeriodModal('pdfzip');return}
+  var facs=act(db.factures).slice().sort(function(a,b){return (a.date||'').localeCompare(b.date||'')});
+  if(d1||d2)facs=facs.filter(function(f){var d=(f.date||'').slice(0,10);return(!d1||d>=d1)&&(!d2||d<=d2)});
+  if(!facs.length){alert('Aucune facture sur la période '+(label||''));return}
+  if(facs.length>60&&!confirm('📄 '+facs.length+' factures à convertir en PDF — cela peut prendre plusieurs minutes (environ 1 à 2 s par facture).\n\nContinuer ?'))return;
+  _loadHtml2Pdf(function(errH){
+    if(errH){alert('❌ Impossible de charger le convertisseur PDF (connexion internet ?)');return}
+    _loadJSZip(function(){
+      var zip=new JSZip();
+      var i=0,ok=0,ko=0;
+      function next(){
+        if(i>=facs.length){
+          if(!ok){alert('❌ Aucun PDF généré');return}
+          showToast('📦 Compression du ZIP...');
+          zip.generateAsync({type:'blob'}).then(function(blob){
+            var a=document.createElement('a');
+            a.href=URL.createObjectURL(blob);
+            a.download='CathyPets_Factures_PDF_'+(label||'TOUT')+'.zip';
+            a.click();
+            lH('export','Export PDF ZIP — '+ok+' facture(s) période '+(label||'tout'));
+            showToast('📄 ZIP prêt : '+ok+' facture(s) PDF'+(ko?' ('+ko+' échec(s))':''));
+          });
+          return;
+        }
+        var f=facs[i];i++;
+        showToast('📄 PDF '+i+'/'+facs.length+' — '+f.ref);
+        _facPdfB64(f,function(b64){
+          if(b64){
+            var isAv=(f.mode==='avoir'||f.status==='avoir'||(f.ref||'').indexOf('CP-AV')===0);
+            zip.file((isAv?'AVOIR_':'FACTURE_')+String(f.ref||('sans-ref-'+i)).replace(/[^A-Za-z0-9_-]/g,'-')+'.pdf',b64,{base64:true});
+            ok++;
+          }else{ko++}
+          setTimeout(next,60);
+        });
+      }
+      next();
+    });
+  });
 }
 function exportCerfrance(d1,d2,label){
   if(arguments.length===0){openExportPeriodModal('cerfrance');return}
