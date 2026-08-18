@@ -13549,6 +13549,68 @@ function _genDocPDF(cb){
     cb(b64?{b64:b64,fn:fn}:null);
   });
 }
+// V80.5 : générer le contrat de prise en charge en PDF (pré-rempli depuis le devis)
+function _genPecPDF(cb){
+  try{
+    var c=window._mpCur;
+    if(!c||!c.isDev||!c.docId){cb(null);return}
+    var q=db.devis.find(function(x){return x.id===c.docId});
+    if(!q||!q.contratPecUrl){cb(null);return}
+    var cl=db.clients.find(function(x){return x.id===q.clientId})||{};
+    var anis=[];try{anis=getAniIds(q).map(aN)}catch(e){}
+    var wps=q.waypoints||[];
+    var traj=wps.map(function(w){return (w&&(w.label||w.ville||''))||''}).filter(Boolean).join(' → ');
+    var lg=[];try{lg=devFilterLignesOption(q)}catch(e){lg=(q.lignes||[])}
+    var rows='';
+    lg.forEach(function(l){
+      var m=(l.montant!==undefined&&l.montant!==null)?E(l.montant):((E(l.qty)||1)*(E(l.pu)||0)*(1-(E(l.remise)||0)/100));
+      rows+='<tr><td style="border:1px solid #999;padding:6px">'+(l.groupe?('<b>['+devOptLabel(l.groupe)+']</b> '):'')+_mpEsc((l.article?l.article+' — ':'')+(l.desc||''))+'</td>'
+        +'<td style="border:1px solid #999;padding:6px;text-align:center">'+(E(l.qty)||1)+'</td>'
+        +'<td style="border:1px solid #999;padding:6px;text-align:right">'+euro(E(l.pu)||0)+'</td>'
+        +'<td style="border:1px solid #999;padding:6px;text-align:right">'+euro(m)+'</td></tr>';
+    });
+    var tot=E(q.total)||0;
+    var isChoix=((q.optMode||'cumule')==='choix')&&(typeof devHasOptions==='function'&&devHasOptions(q))&&!q.optChoisie;
+    var tampon='';try{tampon=tamponHtml()}catch(e){}
+    var dNow=new Date().toLocaleDateString('fr-FR');
+    var h='<div style="font-family:Arial,Helvetica,sans-serif;color:#222;font-size:12px;max-width:760px;margin:0 auto;padding:10px">'
+      +'<table style="width:100%;border-collapse:collapse;margin-bottom:6px"><tr>'
+      +'<td style="vertical-align:top"><div style="font-size:22px;font-weight:900;color:#0B1D3A;letter-spacing:.5px">CATHY PETS</div>'
+      +'<div style="font-size:10px;color:#E8650A;font-weight:700;letter-spacing:1px">TAXI ANIMALIER · GARDE · TRANSPORT INTERNATIONAL</div>'
+      +'<div style="font-size:9px;color:#555;margin-top:4px">'+_mpEsc(ENT('entNom'))+' — '+_mpEsc(ENT('entAdresse'))+'<br>SIRET '+_mpEsc(ENT('entSiret'))+' · TVA '+_mpEsc(ENT('entTva'))+' · Agrément FR02146T2<br>Tél : '+_mpEsc(ENT('entTel1'))+' · '+_mpEsc(ENT('entEmail'))+'</div></td>'
+      +'<td style="vertical-align:top;text-align:right;font-size:10px;color:#555">Fait le '+dNow+'<br>Réf. devis : <b>'+_mpEsc(q.ref||'')+'</b><br>Code contrat : <b>'+_mpEsc(q.contratPecCode||'')+'</b></td></tr></table>'
+      +'<div style="border-top:3px solid #1a7a6e;margin:8px 0 12px"></div>'
+      +'<div style="font-size:16px;font-weight:900;color:#0B1D3A;text-align:center;letter-spacing:1px;margin-bottom:12px">CONTRAT DE PRISE EN CHARGE — TRANSPORT ANIMALIER</div>'
+      +'<table style="width:100%;border-collapse:collapse;font-size:11px;margin-bottom:10px">'
+      +'<tr><td style="border:1px solid #999;padding:6px;background:#f2f2f2;width:150px"><b>Client</b></td><td style="border:1px solid #999;padding:6px">'+_mpEsc(((cl.prenom||'')+' '+(cl.nom||'')).trim()||'—')+'</td></tr>'
+      +'<tr><td style="border:1px solid #999;padding:6px;background:#f2f2f2"><b>Tél / Email</b></td><td style="border:1px solid #999;padding:6px">'+_mpEsc((cl.tel||'—')+' · '+(cl.email||'—'))+'</td></tr>'
+      +(cl.adresse?'<tr><td style="border:1px solid #999;padding:6px;background:#f2f2f2"><b>Adresse</b></td><td style="border:1px solid #999;padding:6px">'+_mpEsc(cl.adresse)+'</td></tr>':'')
+      +(anis.length?'<tr><td style="border:1px solid #999;padding:6px;background:#f2f2f2"><b>Animal(aux)</b></td><td style="border:1px solid #999;padding:6px">'+_mpEsc(anis.join(', '))+'</td></tr>':'')
+      +(traj?'<tr><td style="border:1px solid #999;padding:6px;background:#f2f2f2"><b>Trajet</b></td><td style="border:1px solid #999;padding:6px">'+_mpEsc(traj)+'</td></tr>':'')
+      +(q.objet?'<tr><td style="border:1px solid #999;padding:6px;background:#f2f2f2"><b>Prestation</b></td><td style="border:1px solid #999;padding:6px">'+_mpEsc(q.objet)+'</td></tr>':'')
+      +'</table>'
+      +(rows?'<table style="width:100%;border-collapse:collapse;font-size:11px;margin-bottom:6px"><tr style="background:#ddd"><th style="border:1px solid #999;padding:6px;text-align:left">Désignation</th><th style="border:1px solid #999;padding:6px;width:40px">Qté</th><th style="border:1px solid #999;padding:6px;width:80px;text-align:right">PU TTC</th><th style="border:1px solid #999;padding:6px;width:90px;text-align:right">Total TTC</th></tr>'+rows
+        +(isChoix?'':'<tr style="background:#f2f2f2"><td colspan="3" style="border:1px solid #999;padding:6px;text-align:right;font-weight:bold">TOTAL TTC</td><td style="border:1px solid #999;padding:6px;text-align:right;font-weight:bold">'+euro(tot)+'</td></tr>')
+        +'</table>':'')
+      +(isChoix?'<div style="font-size:10px;color:#b45309;font-weight:700;margin-bottom:8px">🔀 Devis à options : le montant dû correspondra à l\'option retenue (voir devis '+_mpEsc(q.ref||'')+' joint).</div>':'')
+      +'<div style="background:#fffbf0;border:2px solid #E8650A;border-radius:6px;padding:10px;margin:10px 0">'
+      +'<div style="font-weight:900;color:#E8650A;font-size:12px;margin-bottom:4px">✍️ SIGNATURE EN LIGNE (recommandée)</div>'
+      +'<div style="font-size:10px;line-height:1.5">Remplissez et signez ce contrat en quelques minutes depuis votre téléphone :<br><span style="word-break:break-all;color:#1a7a6e;font-weight:700">'+_mpEsc(q.contratPecUrl)+'</span></div></div>'
+      +'<div style="font-size:9px;color:#555;line-height:1.5;margin:10px 0;border:1px solid #ddd;padding:8px;border-radius:4px">'
+      +'<b>Conditions essentielles :</b> Acompte de 30% du montant TTC à la signature — solde (70%) exigible à la prise en charge ou à la dépose. '
+      +'Annulation : gratuite à +48h ; 50% de l\'acompte remboursé entre 24h et 48h ; aucun remboursement à –24h. '
+      +'Sans paiement intégral, Cathy Pets SAS se réserve un droit de rétention (CGV complètes sur le devis). '
+      +'Carnet de santé / passeport de l\'animal à présenter le jour du transport.</div>'
+      +'<table style="width:100%;margin-top:14px"><tr>'
+      +'<td style="width:48%;vertical-align:top"><div style="border:1px solid #999;padding:12px;border-radius:4px;min-height:95px"><div style="font-size:10px;font-weight:bold;margin-bottom:6px">Signature du client<br><span style="font-weight:400;color:#777">(précédée de « Lu et approuvé »)</span></div></div></td>'
+      +'<td style="width:4%"></td>'
+      +'<td style="width:48%;vertical-align:top"><div style="border:1px solid #999;padding:12px;border-radius:4px;min-height:95px"><div style="font-size:10px;font-weight:bold;margin-bottom:6px">Signature du transporteur</div>'+tampon+'<div style="font-size:9px;margin-top:4px">Cathy DELORME — Cathy Pets SAS</div></div></td>'
+      +'</tr></table></div>';
+    _pdfFromHtml(h,function(b64){
+      cb(b64?{b64:b64,fn:'Contrat_PEC_'+String(q.ref||'contrat').replace(/[^A-Za-z0-9_-]/g,'-')+'_CathyPets.pdf'}:null);
+    });
+  }catch(e){cb(null)}
+}
 function mpSend(){
   var c=window._mpCur;
   if(!c){showToast('⚠️ Aucun email en cours');return}
@@ -13557,12 +13619,14 @@ function mpSend(){
     if(confirm('🔑 Connexion Google requise (une seule fois).\n\nLa fenêtre Google va s\'ouvrir : connecte-toi et coche bien TOUTES les cases, dont « Envoyer des e-mails de votre part ».\nL\'envoi repartira automatiquement ensuite.')){window._mpPendingSend=true;gcConnectConsent()}
     return;
   }
-  showToast('📎 Préparation du PDF...');
+  showToast('📎 Préparation des PDF...');
   _genDocPDF(function(pdf){
-    _mpSendRaw(pdf);
+    _genPecPDF(function(pec){
+      _mpSendRaw(pdf,pec);
+    });
   });
 }
-function _mpSendRaw(pdf){
+function _mpSendRaw(pdf,pec){
   var c=window._mpCur;
   showToast('📤 Envoi en cours...');
   var html=c.html,att='';
@@ -13579,18 +13643,23 @@ function _mpSendRaw(pdf){
     +_mpWrap(_mpB64('<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body style="margin:0">'+html+'</body></html>'))+'\r\n'
     +att
     +'--'+B+'--';
+  var atts=[];
+  if(pdf&&pdf.b64)atts.push(pdf);
+  if(pec&&pec.b64)atts.push(pec);
   var mimeMsg;
-  if(pdf&&pdf.b64){
+  if(atts.length){
     var M='cpmix_'+Date.now();
     mimeMsg='To: '+c.to+'\r\n'
       +'Subject: =?UTF-8?B?'+_mpB64(c.subject)+'?=\r\n'
       +'MIME-Version: 1.0\r\n'
       +'Content-Type: multipart/mixed; boundary="'+M+'"\r\n\r\n'
       +'--'+M+'\r\nContent-Type: multipart/related; boundary="'+B+'"\r\n\r\n'
-      +related+'\r\n'
-      +'--'+M+'\r\nContent-Type: application/pdf; name="'+pdf.fn+'"\r\nContent-Transfer-Encoding: base64\r\nContent-Disposition: attachment; filename="'+pdf.fn+'"\r\n\r\n'
-      +_mpWrap(pdf.b64)+'\r\n'
-      +'--'+M+'--';
+      +related+'\r\n';
+    atts.forEach(function(a){
+      mimeMsg+='--'+M+'\r\nContent-Type: application/pdf; name="'+a.fn+'"\r\nContent-Transfer-Encoding: base64\r\nContent-Disposition: attachment; filename="'+a.fn+'"\r\n\r\n'
+        +_mpWrap(a.b64)+'\r\n';
+    });
+    mimeMsg+='--'+M+'--';
   }else{
     mimeMsg='To: '+c.to+'\r\n'
       +'Subject: =?UTF-8?B?'+_mpB64(c.subject)+'?=\r\n'
@@ -13606,7 +13675,7 @@ function _mpSendRaw(pdf){
   }).then(function(r){
     if(r.ok){
       window._mpRetried=false;
-      showToast('🚀 Email envoyé à '+c.to+(pdf&&pdf.b64?' avec PDF joint 📎':'')+' !');
+      showToast('🚀 Email envoyé à '+c.to+(atts.length?' avec '+atts.length+' PDF joint'+(atts.length>1?'s':'')+' 📎':'')+' !');
       lH('email','Mail Pro envoyé via Gmail : '+c.subject+' → '+c.to);
       sav(false);
       var m=document.getElementById('mailProModal');if(m)m.remove();
@@ -13618,7 +13687,7 @@ function _mpSendRaw(pdf){
             window._mpRetried=true;
             showToast('🔄 Reconnexion Google automatique...');
             gcSilentRenew(function(ok){
-              if(ok){_mpSendRaw(pdf)}
+              if(ok){_mpSendRaw(pdf,pec)}
               else{
                 window._mpRetried=false;
                 if(confirm('🔑 Autorisation Gmail expirée ou manquante.\n\nLa fenêtre Google va s\'ouvrir : coche bien TOUTES les cases, dont « Envoyer des e-mails de votre part ».\nL\'envoi repartira automatiquement ensuite.')){window._mpPendingSend=true;gcConnectConsent()}
