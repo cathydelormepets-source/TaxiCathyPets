@@ -13682,6 +13682,14 @@ function _mpSendRaw(pdf,pec){
     }else{
       return r.json().then(function(j){
         var msg=(j&&j.error&&j.error.message)||('HTTP '+r.status);
+        // V80.5 : API Gmail non activée dans le projet Google Cloud → instructions précises au lieu de boucler
+        var low=(msg||'').toLowerCase();
+        var reason='';try{reason=String((j.error.errors&&j.error.errors[0]&&j.error.errors[0].reason)||j.error.status||'')}catch(e){}
+        if(low.indexOf('gmail api has not been used')>=0||low.indexOf('has not been used in project')>=0||low.indexOf('it is disabled')>=0||reason.toLowerCase().indexOf('accessnotconfigured')>=0||low.indexOf('accessnotconfigured')>=0){
+          window._mpRetried=false;
+          alert('🛑 L\'API Gmail n\'est PAS activée dans ton projet Google Cloud — c\'est ça qui bloque l\'envoi.\n\nÀ faire UNE seule fois (2 min) :\n1. Va sur console.cloud.google.com\n2. En haut, sélectionne le projet de ton Client ID\n3. Menu ☰ → « API et services » → « Bibliothèque »\n4. Cherche « Gmail API » → clique dessus → bouton ACTIVER\n5. Attends 1-2 minutes puis reclique 🚀 Envoyer');
+          return;
+        }
         if(r.status===401||r.status===403){
           if(!window._mpRetried){
             window._mpRetried=true;
@@ -15993,6 +16001,28 @@ function printFacturePro(id) {
     html += '<td style="border:1px solid #999;padding:8px;text-align:right;font-weight:bold;color:#e67e22">' + euro(Math.max(0, E(f.total) - acompteMt)) + '</td></tr>';
   }
   html += '</table></div>';
+  // === V80.6 : SUIVI DES RÈGLEMENTS (rapprochement bancaire : chaque encaissement avec sa date) ===
+  if(!isAvoir){
+    var soldeMt=Math.max(0,E(f.total)-acompteMt);
+    var modeLbl={virement:'Virement',especes:'Espèces',cheque:'Chèque',cb:'Carte bancaire',paypal:'PayPal'};
+    var mSolde=f.paiement?(modeLbl[f.paiement]||f.paiement):'';
+    var dSolde=(isPaye&&f.datePaiement)?new Date(f.datePaiement).toLocaleDateString('fr-FR'):'';
+    var dAc2=(f.dateAcompte||f.acompteDate)?new Date(f.dateAcompte||f.acompteDate).toLocaleDateString('fr-FR'):'';
+    var mAc2=f.paiementAcompte?(modeLbl[f.paiementAcompte]||f.paiementAcompte):'';
+    html += '<div style="margin:14px 0;border:1px solid #999"><table style="width:100%;border-collapse:collapse;font-size:11px">';
+    html += '<tr style="background:#0B1D3A"><td colspan="4" style="padding:7px 10px;color:#fff;font-weight:900;font-size:11px;letter-spacing:1px">🏦 SUIVI DES RÈGLEMENTS</td></tr>';
+    html += '<tr style="background:#ddd"><th style="border:1px solid #999;padding:6px;text-align:left">Règlement</th><th style="border:1px solid #999;padding:6px;width:125px">Date d\'encaissement</th><th style="border:1px solid #999;padding:6px;width:100px">Mode</th><th style="border:1px solid #999;padding:6px;width:90px;text-align:right">Montant</th></tr>';
+    if(acompteMt>0){
+      html += '<tr style="background:#fffdf5"><td style="border:1px solid #999;padding:6px;font-weight:700;color:#b8860b">Acompte</td><td style="border:1px solid #999;padding:6px;text-align:center;font-weight:700">'+(dAc2||'—')+'</td><td style="border:1px solid #999;padding:6px;text-align:center">'+(mAc2||'—')+'</td><td style="border:1px solid #999;padding:6px;text-align:right;font-weight:700">'+euro(acompteMt)+'</td></tr>';
+    }
+    if(isPaye){
+      html += '<tr style="background:#f7fdfb"><td style="border:1px solid #999;padding:6px;font-weight:700;color:#1a7a6e">Solde</td><td style="border:1px solid #999;padding:6px;text-align:center;font-weight:700">'+(dSolde||'—')+'</td><td style="border:1px solid #999;padding:6px;text-align:center">'+(mSolde||'—')+'</td><td style="border:1px solid #999;padding:6px;text-align:right;font-weight:700">'+euro(soldeMt)+'</td></tr>';
+      html += '<tr style="background:#e6f7f0"><td colspan="3" style="border:1px solid #999;padding:6px;text-align:right;font-weight:900">TOTAL ENCAISSÉ</td><td style="border:1px solid #999;padding:6px;text-align:right;font-weight:900">'+euro(E(f.total))+'</td></tr>';
+    } else {
+      html += '<tr style="background:#fff8f0"><td style="border:1px solid #999;padding:6px;font-weight:700;color:#e67e22">Solde — en attente</td><td style="border:1px solid #999;padding:6px;text-align:center;color:#e67e22">Échéance '+echeanceStr+'</td><td style="border:1px solid #999;padding:6px;text-align:center">—</td><td style="border:1px solid #999;padding:6px;text-align:right;font-weight:700;color:#e67e22">'+euro(soldeMt)+'</td></tr>';
+    }
+    html += '</table></div>';
+  }
   // === BLOC PÉNALITÉS DE RETARD ===
   var pen=calcPenalitesRetard(f);
   if(pen){
@@ -18314,6 +18344,10 @@ function gcInitClient(clientId, promptMode){
         if(resp.error){
           _gcEl('gcAuthStatus').innerHTML = '🔴 Erreur: '+resp.error;
           gcLog('Erreur auth: '+resp.error, 'err');
+          if(resp.error==='access_denied'){
+            window._mpPendingSend=false;
+            alert('🛑 Google a bloqué l\'accès (application non validée ou compte non autorisé).\n\nDans console.cloud.google.com → « API et services » → « Écran de consentement OAuth » :\n• Statut de publication : « Test / Testing »\n• Section « Utilisateurs test » : ajoute cathydelormepets@gmail.com\n\nPuis réessaie 🚀 Envoyer, et sur l\'écran d\'avertissement clique « Paramètres avancés → Accéder à cathydelormepets-source.github.io ».');
+          }
           return;
         }
         _gcToken = resp.access_token;
