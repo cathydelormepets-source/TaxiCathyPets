@@ -610,7 +610,7 @@ body.nuit .card{border-color:#0a1520}
 </div>
 </aside>
 <main class="main">
-<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V79.12</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
+<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.10</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
 <div class="cnt">
 
 <!-- DASHBOARD -->
@@ -1437,7 +1437,7 @@ Tel : 06 12 34 56 78
   <div id="ctImportResult" style="margin-top:8px"></div>
 </div></div>
 
-<div class="card"><div class="hd"><h3>📋 Contrats signés</h3><span id="ctStats" style="font-size:11px;color:var(--mt)"></span><button class="btn sm" onclick="rattrapageContratsPayes()" style="font-size:10px;background:#3d2c0a;border-color:#6d5a2a;color:#fcd77a;margin-left:8px" title="Créer les factures manquantes pour les contrats déjà payés">🔄 Rattraper factures</button></div><div class="bd"><div id="ctTbl"></div></div></div>
+<div class="card"><div class="hd"><h3>📋 Contrats signés</h3><input id="ctSearch" oninput="window._ctSearchQ=this.value;rContrats()" placeholder="🔍 Client, animal ou réf..." style="background:#080f1a;border:1px solid var(--ln);color:var(--tx);border-radius:8px;padding:6px 10px;font:inherit;font-size:12px;width:210px;margin-left:8px"><span id="ctStats" style="font-size:11px;color:var(--mt)"></span><button class="btn sm" onclick="rattrapageContratsPayes()" style="font-size:10px;background:#3d2c0a;border-color:#6d5a2a;color:#fcd77a;margin-left:8px" title="Créer les factures manquantes pour les contrats déjà payés">🔄 Rattraper factures</button></div><div class="bd"><div id="ctTbl"></div></div></div>
 </div>
 </div>
 
@@ -22730,6 +22730,16 @@ function rContrats(){
   var stats=document.getElementById('ctStats');
   var list=act(db.contrats);
   if(!list.length){if(tbl)tbl.innerHTML='<div class="itm" style="color:var(--mt)">Aucun contrat</div>';if(stats)stats.textContent='';return;}
+  // V80.10 : recherche par client / animal / réf
+  var q=(window._ctSearchQ||'').toLowerCase().trim();
+  if(q){
+    list=list.filter(function(c){
+      var cl=(cN(c.clientId)||'').toLowerCase();
+      var ani=(c.animaux&&c.animaux.length?c.animaux.map(function(a){return a.nom||''}).join(' '):'').toLowerCase();
+      return cl.indexOf(q)>=0||ani.indexOf(q)>=0||String(c.ref||'').toLowerCase().indexOf(q)>=0;
+    });
+    if(!list.length){if(tbl)tbl.innerHTML='<div class="itm" style="color:var(--mt)">🔍 Aucun contrat trouvé pour « '+q.replace(/</g,'&lt;')+' »</div>';if(stats)stats.textContent='0 résultat';return;}
+  }
   
   var nbSigne=list.filter(function(c){return c.status==='signé'}).length;
   var nbEnvoye=list.filter(function(c){return c.status==='envoyé'}).length;
