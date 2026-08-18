@@ -1485,6 +1485,7 @@ Tel : 06 12 34 56 78
 
   <div class="row">
     <div class="c6 fd"><label>👤 Client *</label>
+      <input id="ctenv_search" oninput="ctenvSearch()" placeholder="🔍 Rechercher un client ou un nom d'animal..." style="width:100%;margin-bottom:5px;background:#080f1a;border:1px solid var(--ln);color:var(--tx);border-radius:8px;padding:8px 10px;font:inherit;font-size:13px">
       <div style="display:flex;gap:5px"><select id="ctenv_cl" style="flex:1" onchange="ctenvClChange()"></select><button class="btn sm gn" onclick="openNewCliModal('ctenv_cl')" style="padding:7px 10px">➕</button></div>
     </div>
     <div class="c6 fd"><label>📋 Type de prestation *</label>
@@ -2139,6 +2140,7 @@ document.getElementById('q_contrat_pec').addEventListener('change',function(){
   <button class="btn sm" onclick="exportFacturXZip()" style="font-size:11px;background:#1a0a3d;border-color:#4a2a8d;color:#b09afc" title="Export ZIP des factures au format Factur-X (XML EN 16931)">📑 Export Factur-X (ZIP)</button>
   <button class="btn sm" onclick="exportFacturesPdfZip()" style="font-size:11px;background:#2a1a05;border-color:#8a5a1a;color:#f0b060" title="Toutes les vraies factures de la période en PDF, dans un ZIP — idéal pour Cerfrance et l'archivage">📄 Factures PDF (ZIP)</button>
   <button class="btn sm" onclick="openReleveClientModal()" style="font-size:11px;background:#0a2c3d;border-color:#2a5a6d;color:#7ad7fc" title="Relevé de compte par client : factures payées / impayées / avoirs + détail des mouvements">🧾 Relevé par client</button>
+  <button class="btn sm" onclick="exportEncaissementsCSV()" style="font-size:11px;background:#0a3d1c;border-color:#2a6d4a;color:#7afc9d" title="1 ligne par encaissement (chaque acompte + chaque solde) avec sa date — pour pointer le relevé bancaire">🏦 Export encaissements (CSV)</button>
 </div>
 <div style="display:flex;flex-direction:column;gap:14px">
 <div class="card"><div class="hd"><h3>Factures</h3><span id="fcStats" style="font-size:11px;color:var(--mt)"></span></div><div class="bd">
@@ -23104,6 +23106,27 @@ function saveContratEdit(id){
 }
 
 // ═══ ENVOI CONTRAT PRO AU CLIENT ═══
+// V80.9 : recherche par nom de client OU nom d'animal
+function ctenvSearch(){
+  var sel=$('ctenv_cl');if(!sel)return;
+  var q=(V('ctenv_search')||'').toLowerCase().trim();
+  var cur=sel.value;
+  var sorted=act(db.clients).slice().sort(function(a,b){return(a.nom||'').localeCompare(b.nom||'','fr')});
+  var list=[];
+  if(!q){
+    sorted.forEach(function(c){list.push({c:c,via:''})});
+  } else {
+    sorted.forEach(function(c){
+      var full=((c.nom||'')+' '+(c.prenom||'')+' '+(c.tel||'')+' '+(c.email||'')).toLowerCase();
+      if(full.indexOf(q)>=0){list.push({c:c,via:''});return}
+      var ani=act(db.animaux).find(function(a){return a.clientId===c.id&&String(a.nom||'').toLowerCase().indexOf(q)>=0});
+      if(ani)list.push({c:c,via:ani.nom+(ani.espece?' ('+ani.espece+')':'')});
+    });
+  }
+  sel.innerHTML='<option value="">'+(q?('🔍 '+list.length+' résultat(s)'):'— Sélectionner —')+'</option>'+list.map(function(x){return'<option value="'+x.c.id+'">'+x.c.nom+' '+(x.c.prenom||'')+(x.via?' · 🐾 '+x.via:'')+'</option>'}).join('');
+  if(q&&list.length===1){sel.value=list[0].c.id;ctenvClChange();}
+  else if(cur&&list.some(function(x){return x.c.id===cur})){sel.value=cur;}
+}
 function ctenvInit(){
   var sel=$('ctenv_cl');if(!sel)return;
   var sorted=act(db.clients).slice().sort(function(a,b){return(a.nom||'').localeCompare(b.nom||'','fr')});
@@ -28349,7 +28372,7 @@ function openExportPeriodModal(kind){
     +'<div id="exp_z_libre" style="display:none;grid-template-columns:1fr 1fr;gap:10px"><div><label class="lb">Du</label><input type="date" class="inp" id="exp_d1"></div><div><label class="lb">Au</label><input type="date" class="inp" id="exp_d2"></div></div>'
     +'<div style="font-size:10px;color:var(--mt)" id="exp_note_emission">Les factures ET avoirs émis dans la période seront inclus.</div>'
     +'</div>';
-  oMo(kind==='cerfrance'?'📊 Export Cerfrance (CSV) — période':kind==='pdfzip'?'📄 Factures PDF (ZIP) — période':'📑 Export Factur-X (ZIP) — période',bd,
+  oMo(kind==='cerfrance'?'📊 Export Cerfrance (CSV) — période':kind==='pdfzip'?'📄 Factures PDF (ZIP) — période':kind==='encaissements'?'🏦 Export encaissements (CSV) — période':'📑 Export Factur-X (ZIP) — période',bd,
     '<button class="btn og" onclick="runExportPeriod(\''+kind+'\')">📤 Exporter</button>');
 }
 function _expModeUI(){
@@ -28401,7 +28424,53 @@ function runExportPeriod(kind){
   cMo();
   if(kind==='cerfrance')exportCerfrance(r.d1,r.d2,r.label,r.base);
   else if(kind==='pdfzip')exportFacturesPdfZip(r.d1,r.d2,r.label,r.base);
+  else if(kind==='encaissements')exportEncaissementsCSV(r.d1,r.d2,r.label);
   else exportFacturXZip(r.d1,r.d2,r.label,r.base);
+}
+// ══════ V80.8 : EXPORT ENCAISSEMENTS — 1 ligne par règlement reçu, filtré par DATE D'ENCAISSEMENT ══════
+function exportEncaissementsCSV(d1,d2,label){
+  if(arguments.length===0){openExportPeriodModal('encaissements');return}
+  var modeLbl={virement:'Virement',especes:'Especes',cheque:'Cheque',cb:'Carte bancaire',paypal:'PayPal'};
+  var clean=function(x){return String(x||'').replace(/[;\r\n]+/g,' ').trim()};
+  var fr=function(n){return (Math.round(E(n)*100)/100).toFixed(2).replace('.',',')};
+  var inP=function(d){if(!d)return false;d=String(d).slice(0,10);if(d1&&d<d1)return false;if(d2&&d>d2)return false;return true};
+  var rows=[];
+  act(db.factures).forEach(function(f){
+    var isAvoir=(f.mode==='avoir'||f.status==='avoir'||(f.ref||'').indexOf('CP-AV')===0);
+    if(isAvoir||f.status==='annulee')return;
+    var cl=db.clients.find(function(x){return x.id===f.clientId})||{};
+    var cname=clean((cl.nom||'')+' '+(cl.prenom||''));
+    var acArr=_getAcomptes(f);
+    var acTot=acArr.reduce(function(s2,a){return s2+(E(a.montant)||0)},0);
+    acArr.forEach(function(a,ix){
+      if(!inP(a.date))return;
+      rows.push({date:String(a.date||'').slice(0,10),ref:f.ref,client:cname,type:'Acompte '+(ix+1)+(acArr.length>1?'/'+acArr.length:''),mode:modeLbl[a.mode]||a.mode||'',montant:E(a.montant)||0});
+    });
+    if(f.status==='payée'&&f.datePaiement){
+      var solde=Math.max(0,E(f.total)-acTot);
+      if(solde>0&&inP(f.datePaiement)){
+        rows.push({date:String(f.datePaiement).slice(0,10),ref:f.ref,client:cname,type:'Solde',mode:modeLbl[f.paiement]||f.paiement||'',montant:solde});
+      }
+    }
+  });
+  if(!rows.length){alert('Aucun encaissement sur la période '+(label||''));return}
+  rows.sort(function(a,b){return a.date.localeCompare(b.date)||a.ref.localeCompare(b.ref)});
+  var sep=';';
+  var lignes=['Date encaissement'+sep+'Facture'+sep+'Client'+sep+'Reglement'+sep+'Mode'+sep+'Montant'];
+  var tot=0;
+  rows.forEach(function(r2){
+    tot+=r2.montant;
+    lignes.push(r2.date+sep+clean(r2.ref)+sep+r2.client+sep+r2.type+sep+clean(r2.mode)+sep+fr(r2.montant));
+  });
+  lignes.push(''+sep+''+sep+''+sep+''+sep+'TOTAL ENCAISSE'+sep+fr(tot));
+  var csv='\ufeff'+lignes.join('\r\n');
+  var b=new Blob([csv],{type:'text/csv;charset=utf-8'});
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(b);
+  a.download='CathyPets_Encaissements_'+(label||'TOUT')+'.csv';
+  a.click();
+  lH('export','Export encaissements CSV — '+rows.length+' règlement(s), total '+euro(tot));
+  showToast('🏦 '+rows.length+' encaissement(s) exporté(s) — total '+euro(tot));
 }
 // ══════ V79.7 : EXPORT DES VRAIES FACTURES EN PDF (ZIP) ══════
 // V79.11 : rendu PDF 100% isolé — html2pdf tourne DANS l'iframe (le thème sombre de l'app ne déteint plus)
