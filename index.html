@@ -10653,13 +10653,41 @@ function sFac(id){
   cMo();rFac2();showToast('💾 '+f.ref+' sauvegardée — '+euro(f.total));
 }
 // ═══ MARQUER PAYÉE ═══
+// ═══ V80.7 : ACOMPTES MULTIPLES ═══
+function _getAcomptes(f){
+  if(f.acomptes&&f.acomptes.length)return f.acomptes;
+  var m=E(f.acompte)||0;
+  if(m>0)return [{montant:m,date:(f.dateAcompte||f.acompteDate||''),mode:(f.paiementAcompte||'')}];
+  return [];
+}
+function _syncAcomptes(f){
+  var arr=f.acomptes||[];
+  var tot=arr.reduce(function(s,a){return s+(E(a.montant)||0)},0);
+  f.acompte=Math.round(tot*100)/100;
+  f.acompteMontant=f.acompte;
+  f.acompteRecu=tot>0;
+  if(arr.length){var last=arr[arr.length-1];f.dateAcompte=last.date||'';f.acompteDate=f.dateAcompte;f.paiementAcompte=last.mode||''}
+  else{f.dateAcompte='';f.acompteDate='';f.paiementAcompte=''}
+}
 function marquerAcompte(id){
   var f=db.factures.find(function(x){return x.id===id});if(!f)return;
-  var montant40=Math.round(E(f.total)*40)/100;
-  var montantDef=Math.round(E(f.total)*30)/100;
-  var bd='<div style="text-align:center;margin-bottom:12px"><b>'+f.ref+' — '+cN(f.clientId)+'</b><br>Total : <b>'+euro(f.total)+'</b></div>';
+  if(!f.acomptes||!f.acomptes.length){f.acomptes=_getAcomptes(f).slice()}
+  var dejaVerse=f.acomptes.reduce(function(s,a){return s+(E(a.montant)||0)},0);
+  var reste=Math.max(0,E(f.total)-dejaVerse);
+  var montantDef=f.acomptes.length?reste:Math.round(E(f.total)*30)/100;
+  var modeLbl={virement:'Virement',especes:'Espèces',cheque:'Chèque',cb:'CB',paypal:'PayPal'};
+  var bd='<div style="text-align:center;margin-bottom:12px"><b>'+f.ref+' — '+cN(f.clientId)+'</b><br>Total : <b>'+euro(f.total)+'</b>'+(dejaVerse>0?'<br><span style="font-size:12px">Déjà versé : <b style="color:var(--or)">'+euro(dejaVerse)+'</b> · Reste : <b style="color:var(--a2)">'+euro(reste)+'</b></span>':'')+'</div>';
+  if(f.acomptes.length){
+    bd+='<div style="margin-bottom:10px;border:1px solid var(--ln);border-radius:10px;overflow:hidden">';
+    f.acomptes.forEach(function(a,ix){
+      bd+='<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 10px;font-size:12px'+(ix>0?';border-top:1px solid var(--ln)':'')+'">'
+        +'<span>💰 <b>Acompte '+(ix+1)+'</b> — '+euro(E(a.montant)||0)+(a.date?' le '+new Date(a.date).toLocaleDateString('fr-FR'):'')+(a.mode?' ('+(modeLbl[a.mode]||a.mode)+')':'')+'</span>'
+        +'<button class="btn sm" onclick="delAcompte(\''+id+'\','+ix+')" style="color:var(--rd);font-size:11px">🗑</button></div>';
+    });
+    bd+='</div>';
+  }
   bd+='<div class="row">';
-  bd+='<div class="c7 fd"><label>💰 Montant de l\'acompte reçu</label><input id="ac_montant" type="number" step="0.01" value="'+montantDef.toFixed(2)+'" style="font-size:18px;font-weight:800;color:var(--or);text-align:center"></div>';
+  bd+='<div class="c7 fd"><label>💰 Montant du nouvel acompte</label><input id="ac_montant" type="number" step="0.01" value="'+montantDef.toFixed(2)+'" style="font-size:18px;font-weight:800;color:var(--or);text-align:center"></div>';
   bd+='<div class="c5 fd"><label>📅 Date acompte reçu</label><input id="ac_date" type="date" value="'+tdy()+'" style="font-size:14px;font-weight:700"></div>';
   bd+='</div>';
   bd+='<div class="fd" style="margin-top:6px"><label>💳 Mode de paiement</label><select id="ac_mode" style="background:#080f1a;border:1px solid var(--ln);color:var(--tx);border-radius:10px;padding:10px;font:inherit;font-size:13px;width:100%">';
@@ -10670,12 +10698,12 @@ function marquerAcompte(id){
   bd+='<option value="paypal">🅿️ PayPal</option>';
   bd+='</select></div>';
   bd+='<div style="display:flex;gap:6px;justify-content:center;margin-top:10px;flex-wrap:wrap">';
-  bd+='<span style="font-size:10px;color:var(--mt);width:100%;text-align:center;margin-bottom:2px">Raccourcis montant :</span>';
+  bd+='<span style="font-size:10px;color:var(--mt);width:100%;text-align:center;margin-bottom:2px">Raccourcis montant (sur le total) :</span>';
   bd+='<button class="btn sm" onclick="$(\'ac_montant\').value=0" style="font-size:10px">0 &#8364;</button>';
   bd+='<button class="btn sm" onclick="$(\'ac_montant\').value='+(Math.round(E(f.total)*30)/100).toFixed(2)+'" style="font-size:10px">30%</button>';
-  bd+='<button class="btn sm" onclick="$(\'ac_montant\').value='+montant40.toFixed(2)+'" style="font-size:10px">40%</button>';
+  bd+='<button class="btn sm" onclick="$(\'ac_montant\').value='+(Math.round(E(f.total)*40)/100).toFixed(2)+'" style="font-size:10px">40%</button>';
   bd+='<button class="btn sm" onclick="$(\'ac_montant\').value='+(Math.round(E(f.total)*50)/100).toFixed(2)+'" style="font-size:10px">50%</button>';
-  bd+='<button class="btn sm" onclick="$(\'ac_montant\').value='+E(f.total).toFixed(2)+'" style="font-size:10px">100%</button>';
+  bd+='<button class="btn sm" onclick="$(\'ac_montant\').value='+reste.toFixed(2)+'" style="font-size:10px;color:var(--a2);font-weight:800">Solde restant</button>';
   bd+='</div>';
   bd+='<div style="display:flex;gap:6px;justify-content:center;margin-top:10px;flex-wrap:wrap">';
   bd+='<span style="font-size:10px;color:var(--mt);width:100%;text-align:center;margin-bottom:2px">Raccourcis date :</span>';
@@ -10683,23 +10711,28 @@ function marquerAcompte(id){
   bd+='<button class="btn sm" onclick="var d=new Date();d.setDate(d.getDate()-1);$(\'ac_date\').value=d.toISOString().slice(0,10)" style="font-size:10px">Hier</button>';
   bd+='<button class="btn sm" onclick="var d=new Date();d.setDate(d.getDate()-7);$(\'ac_date\').value=d.toISOString().slice(0,10)" style="font-size:10px">Il y a 7j</button>';
   bd+='</div>';
-  oMo('💰 Acompte — '+f.ref, bd, '<button class="btn gn" onclick="saveAcompte(\''+id+'\')">💰 Enregistrer l\'acompte</button> <button class="btn" onclick="cMo()">Annuler</button>');
+  oMo('💰 Acomptes — '+f.ref, bd, '<button class="btn gn" onclick="saveAcompte(\''+id+'\')">➕ Ajouter cet acompte</button> <button class="btn" onclick="cMo()">Fermer</button>');
 }
-
+function delAcompte(id,ix){
+  var f=db.factures.find(function(x){return x.id===id});if(!f||!f.acomptes)return;
+  f.acomptes.splice(ix,1);
+  _syncAcomptes(f);
+  stamp(f);sav();rAll();
+  showToast('🗑 Acompte supprimé — total acomptes : '+euro(E(f.acompte)));
+  marquerAcompte(id);
+}
 function saveAcompte(id){
   var f=db.factures.find(function(x){return x.id===id});if(!f)return;
   var montant=E(V('ac_montant'));
+  if(!(montant>0)){showToast('⚠️ Montant invalide');return}
   var dateAc=V('ac_date')||tdy();
   var modeAc=V('ac_mode')||'virement';
-  f.acompteRecu=montant>0;
-  f.acompteDate=dateAc;      // champ utilisé par le code historique
-  f.dateAcompte=dateAc;      // champ utilisé par l'affichage (alias)
-  f.acompteMontant=montant;
-  f.acompte=montant;
-  f.paiementAcompte=modeAc;
+  if(!f.acomptes||!f.acomptes.length){f.acomptes=_getAcomptes(f).slice()}
+  f.acomptes.push({montant:Math.round(montant*100)/100,date:dateAc,mode:modeAc});
+  _syncAcomptes(f);
   stamp(f);sav();cMo();rAll();
-  showToast('💰 Acompte '+euro(montant)+' du '+new Date(dateAc).toLocaleDateString('fr-FR')+' enregistré');
-  lH('facture','Acompte: '+f.ref+' — '+euro(montant)+' ('+dateAc+')');
+  showToast('💰 Acompte '+f.acomptes.length+' — '+euro(montant)+' du '+new Date(dateAc).toLocaleDateString('fr-FR')+' (total acomptes : '+euro(E(f.acompte))+')');
+  lH('facture','Acompte '+f.acomptes.length+': '+f.ref+' — '+euro(montant)+' ('+dateAc+')');
 }
 
 // ── V79 : Bloc pénalités de retard dans le modal d'encaissement ──
@@ -15982,17 +16015,18 @@ function printFacturePro(id) {
   }
   html += '<tr style="background:#ddd"><td style="border:1px solid #999;padding:8px;font-weight:bold;font-size:13px">Total TTC</td>';
   html += '<td style="border:1px solid #999;padding:8px;text-align:right;font-weight:bold;font-size:13px">' + euro(facTTCApresRemise) + '</td></tr>';
-  // === LIGNE ACOMPTE AVEC DATE ET MODE ===
-  var acompteMt=E(f.acompte)||0;
+  // === V80.7 : UNE LIGNE PAR ACOMPTE (date + mode) ===
+  var _acArr=_getAcomptes(f);
+  var acompteMt=_acArr.reduce(function(s2,a){return s2+(E(a.montant)||0)},0);
   if(acompteMt>0){
-    var dateAc=f.dateAcompte||f.acompteDate||'';
     var modeAcLabel={virement:'Virement',especes:'Espèces',cheque:'Chèque',cb:'Carte bancaire',paypal:'PayPal'};
-    var modeAc=f.paiementAcompte?(modeAcLabel[f.paiementAcompte]||f.paiementAcompte):'';
-    var acTxt='💰 Acompte versé';
-    if(dateAc) acTxt+=' le '+new Date(dateAc).toLocaleDateString('fr-FR');
-    if(modeAc) acTxt+=' ('+modeAc+')';
-    html += '<tr style="background:#fff8e1"><td style="border:1px solid #999;padding:8px;font-weight:bold;color:#b8860b">'+acTxt+'</td>';
-    html += '<td style="border:1px solid #999;padding:8px;text-align:right;font-weight:bold;color:#b8860b">- ' + euro(acompteMt) + '</td></tr>';
+    _acArr.forEach(function(a,ix){
+      var acTxt='💰 Acompte'+(_acArr.length>1?' '+(ix+1):'')+' versé';
+      if(a.date) acTxt+=' le '+new Date(a.date).toLocaleDateString('fr-FR');
+      if(a.mode) acTxt+=' ('+(modeAcLabel[a.mode]||a.mode)+')';
+      html += '<tr style="background:#fff8e1"><td style="border:1px solid #999;padding:8px;font-weight:bold;color:#b8860b">'+acTxt+'</td>';
+      html += '<td style="border:1px solid #999;padding:8px;text-align:right;font-weight:bold;color:#b8860b">- ' + euro(E(a.montant)||0) + '</td></tr>';
+    });
   }
   if(isPaye){
     html += '<tr style="background:#e6f7f0"><td style="border:1px solid #999;padding:8px;font-weight:bold;color:#1a7a6e">✅ Payé' + (datePayStr ? ' le ' + datePayStr : '') + '</td>';
@@ -16013,9 +16047,11 @@ function printFacturePro(id) {
     html += '<div style="margin:14px 0;border:1px solid #999"><table style="width:100%;border-collapse:collapse;font-size:11px">';
     html += '<tr style="background:#0B1D3A"><td colspan="4" style="padding:7px 10px;color:#fff;font-weight:900;font-size:11px;letter-spacing:1px">🏦 SUIVI DES RÈGLEMENTS</td></tr>';
     html += '<tr style="background:#ddd"><th style="border:1px solid #999;padding:6px;text-align:left">Règlement</th><th style="border:1px solid #999;padding:6px;width:125px">Date d\'encaissement</th><th style="border:1px solid #999;padding:6px;width:100px">Mode</th><th style="border:1px solid #999;padding:6px;width:90px;text-align:right">Montant</th></tr>';
-    if(acompteMt>0){
-      html += '<tr style="background:#fffdf5"><td style="border:1px solid #999;padding:6px;font-weight:700;color:#b8860b">Acompte</td><td style="border:1px solid #999;padding:6px;text-align:center;font-weight:700">'+(dAc2||'—')+'</td><td style="border:1px solid #999;padding:6px;text-align:center">'+(mAc2||'—')+'</td><td style="border:1px solid #999;padding:6px;text-align:right;font-weight:700">'+euro(acompteMt)+'</td></tr>';
-    }
+    _acArr.forEach(function(a,ix){
+      var dA=a.date?new Date(a.date).toLocaleDateString('fr-FR'):'—';
+      var mA=a.mode?(modeLbl[a.mode]||a.mode):'—';
+      html += '<tr style="background:#fffdf5"><td style="border:1px solid #999;padding:6px;font-weight:700;color:#b8860b">Acompte'+(_acArr.length>1?' '+(ix+1):'')+'</td><td style="border:1px solid #999;padding:6px;text-align:center;font-weight:700">'+dA+'</td><td style="border:1px solid #999;padding:6px;text-align:center">'+mA+'</td><td style="border:1px solid #999;padding:6px;text-align:right;font-weight:700">'+euro(E(a.montant)||0)+'</td></tr>';
+    });
     if(isPaye){
       html += '<tr style="background:#f7fdfb"><td style="border:1px solid #999;padding:6px;font-weight:700;color:#1a7a6e">Solde</td><td style="border:1px solid #999;padding:6px;text-align:center;font-weight:700">'+(dSolde||'—')+'</td><td style="border:1px solid #999;padding:6px;text-align:center">'+(mSolde||'—')+'</td><td style="border:1px solid #999;padding:6px;text-align:right;font-weight:700">'+euro(soldeMt)+'</td></tr>';
       html += '<tr style="background:#e6f7f0"><td colspan="3" style="border:1px solid #999;padding:6px;text-align:right;font-weight:900">TOTAL ENCAISSÉ</td><td style="border:1px solid #999;padding:6px;text-align:right;font-weight:900">'+euro(E(f.total))+'</td></tr>';
