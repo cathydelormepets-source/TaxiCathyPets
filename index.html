@@ -10656,9 +10656,10 @@ function sFac(id){
 function marquerAcompte(id){
   var f=db.factures.find(function(x){return x.id===id});if(!f)return;
   var montant40=Math.round(E(f.total)*40)/100;
+  var montantDef=Math.round(E(f.total)*30)/100;
   var bd='<div style="text-align:center;margin-bottom:12px"><b>'+f.ref+' — '+cN(f.clientId)+'</b><br>Total : <b>'+euro(f.total)+'</b></div>';
   bd+='<div class="row">';
-  bd+='<div class="c7 fd"><label>💰 Montant de l\'acompte reçu</label><input id="ac_montant" type="number" step="0.01" value="'+montant40.toFixed(2)+'" style="font-size:18px;font-weight:800;color:var(--or);text-align:center"></div>';
+  bd+='<div class="c7 fd"><label>💰 Montant de l\'acompte reçu</label><input id="ac_montant" type="number" step="0.01" value="'+montantDef.toFixed(2)+'" style="font-size:18px;font-weight:800;color:var(--or);text-align:center"></div>';
   bd+='<div class="c5 fd"><label>📅 Date acompte reçu</label><input id="ac_date" type="date" value="'+tdy()+'" style="font-size:14px;font-weight:700"></div>';
   bd+='</div>';
   bd+='<div class="fd" style="margin-top:6px"><label>💳 Mode de paiement</label><select id="ac_mode" style="background:#080f1a;border:1px solid var(--ln);color:var(--tx);border-radius:10px;padding:10px;font:inherit;font-size:13px;width:100%">';
