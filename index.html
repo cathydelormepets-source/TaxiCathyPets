@@ -610,7 +610,7 @@ body.nuit .card{border-color:#0a1520}
 </div>
 </aside>
 <main class="main">
-<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.10</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
+<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.10b</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
 <div class="cnt">
 
 <!-- DASHBOARD -->
@@ -2153,7 +2153,7 @@ document.getElementById('q_contrat_pec').addEventListener('change',function(){
   <button class="btn sm" onclick="fcSubTab('avoir')" id="fcSub_avoir" style="background:#1a2030;border-color:#2a3a50;color:#e0a0d8;padding:8px 16px">📄 Avoirs</button>
 </div>
 <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;align-items:center">
-  <input id="fc_search" placeholder="🔍 Rechercher client, réf, objet..." oninput="rFac2()" style="flex:1;min-width:160px;background:#080f1a;border:1px solid var(--ln);color:var(--tx);border-radius:10px;padding:9px 13px;font:inherit;font-size:13px">
+  <input id="fc_search" placeholder="🔍 Client, animal, réf, objet..." oninput="rFac2()" style="flex:1;min-width:160px;background:#080f1a;border:1px solid var(--ln);color:var(--tx);border-radius:10px;padding:9px 13px;font:inherit;font-size:13px">
   <select id="fc_statut" onchange="rFac2()" style="background:#080f1a;border:1px solid var(--ln);color:var(--tx);border-radius:10px;padding:9px 12px;font:inherit;font-size:13px">
     <option value="">Tous statuts</option>
     <option value="emise">⏳ Émises</option>
@@ -11323,6 +11323,9 @@ function fcSubTab(v){
 }
 function rFac2(){
   var q=((document.getElementById('fc_search')||{}).value||'').toLowerCase().trim();
+  // V80.10 : index nom d'animal -> client (recherche par animal)
+  var _aniMap={};
+  if(q){act(db.animaux).forEach(function(a2){var k2=a2.clientId||'';(_aniMap[k2]=_aniMap[k2]||[]).push(String(a2.nom||'').toLowerCase())})}
   var sFlt=((document.getElementById('fc_statut')||{}).value||'');
   var isSubImpayee=window._fcSubImpayee||false;
   var isSubAvoir=window._fcSubAvoir||false;
@@ -11354,7 +11357,9 @@ function rFac2(){
     if(aFlt && fd.getFullYear()!==parseInt(aFlt)) return false;
     if(!q) return true;
     var hay=(f.ref+' '+cN(f.clientId)+' '+(f.objet||'')).toLowerCase();
-    return hay.indexOf(q)>=0;
+    if(hay.indexOf(q)>=0)return true;
+    var ani=(_aniMap[f.clientId]||[]).concat(getAniIds(f).map(function(aid){return String(aN(aid)||'').toLowerCase()}));
+    return ani.some(function(n2){return n2.indexOf(q)>=0});
   });
   var totTTC=facs.reduce(function(s,f){return s+E(f.total);},0);
   var totPaye=facs.filter(function(f){return f.status==='payée';}).reduce(function(s,f){return s+E(f.total);},0);
