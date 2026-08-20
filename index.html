@@ -610,7 +610,7 @@ body.nuit .card{border-color:#0a1520}
 </div>
 </aside>
 <main class="main">
-<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.11b</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
+<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.13</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
 <div class="cnt">
 
 <!-- DASHBOARD -->
@@ -2154,6 +2154,7 @@ document.getElementById('q_contrat_pec').addEventListener('change',function(){
 </div>
 <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;align-items:center">
   <input id="fc_search" placeholder="🔍 Client, animal, réf, objet..." oninput="rFac2()" style="flex:1;min-width:160px;background:#080f1a;border:1px solid var(--ln);color:var(--tx);border-radius:10px;padding:9px 13px;font:inherit;font-size:13px">
+  <input id="fc_montant" inputmode="decimal" placeholder="💶 Montant reçu (ex: 45,50)" oninput="rFac2()" title="Rapprochement bancaire : tapez le montant reçu sur le compte — recherche sur total TTC, solde restant, acomptes et avoirs (±0,01 €)" style="width:185px;background:#0a1a08;border:1px solid #3a6a10;color:#9d6;border-radius:10px;padding:9px 13px;font:inherit;font-size:13px;font-weight:700">
   <select id="fc_statut" onchange="rFac2()" style="background:#080f1a;border:1px solid var(--ln);color:var(--tx);border-radius:10px;padding:9px 12px;font:inherit;font-size:13px">
     <option value="">Tous statuts</option>
     <option value="emise">⏳ Émises</option>
@@ -11128,7 +11129,7 @@ function eCol(id){var p=db.colis.find(function(x){return x.id===id});if(!p)retur
 function sCol(id){var p=db.colis.find(function(x){return x.id===id});if(!p)return;stamp(p);p.type=V('ep_t');p.cost=E(V('ep_c'));p.price=E(V('ep_p'));lH('edit','Colis');sav();cMo()}
 function eNut(id){var n=db.nutrica.find(function(x){return x.id===id});if(!n)return;oMo('✏️ '+n.name,'<div class="row"><div class="c4 fd"><label>Produit</label><input id="en_n" value="'+esc(n.name)+'"></div><div class="c2 fd"><label>Stock</label><input id="en_s" type="number" value="'+(n.stock||0)+'"></div><div class="c3 fd"><label>Achat €</label><input id="en_c" type="number" step="0.01" value="'+(n.cost||0)+'"></div><div class="c3 fd"><label>Vente €</label><input id="en_p" type="number" step="0.01" value="'+(n.price||0)+'"></div></div>','<button class="btn rd" onclick="delRec(\'nutrica\',\''+id+'\',\''+esc(n.name)+'\')">🗑️</button> <button class="btn gn" onclick="sNut(\''+id+'\')">💾</button>')}
 function sNut(id){var n=db.nutrica.find(function(x){return x.id===id});if(!n)return;stamp(n);n.name=V('en_n');n.stock=E(V('en_s'));n.cost=E(V('en_c'));n.price=E(V('en_p'));lH('edit','Nutrica');sav();cMo()}
-function esc(v){return String(v||'').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
+function esc(v){return String(v||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
 
 // TABLE HELPER
 function rTbl(id,hds,rows){$(id).innerHTML='<table><thead><tr>'+hds.map(function(h){return '<th>'+h+'</th>'}).join('')+'</tr></thead><tbody>'+(rows.join('')||'<tr><td colspan="'+hds.length+'" style="text-align:center;color:var(--mt)">Aucune donnée</td></tr>')+'</tbody></table>'}
@@ -11348,6 +11349,11 @@ function fcSubTab(v){
 }
 function rFac2(){
   var q=((document.getElementById('fc_search')||{}).value||'').toLowerCase().trim();
+  // V80.13 : recherche par montant (rapprochement bancaire — particuliers sans réf de règlement)
+  var _qmRaw=((document.getElementById('fc_montant')||{}).value||'').replace(/[\s\u00a0\u20ac]/g,'').replace(',','.');
+  var _qMt=_qmRaw?parseFloat(_qmRaw):NaN;
+  var _hasMt=isFinite(_qMt)&&_qMt>0;
+  var _mtLbl={};
   // V80.11 : index nom d'animal -> client (recherche par animal)
   var _aniMap={};
   if(q){act(db.animaux).forEach(function(a2){var k2=a2.clientId||'';(_aniMap[k2]=_aniMap[k2]||[]).push(String(a2.nom||'').toLowerCase())})}
@@ -11380,6 +11386,17 @@ function rFac2(){
     }
     if(mFlt!=='' && fd.getMonth()!==parseInt(mFlt)) return false;
     if(aFlt && fd.getFullYear()!==parseInt(aFlt)) return false;
+    if(_hasMt){
+      var _eps=0.011,_lb=[];
+      if(Math.abs(Math.abs(E(f.total))-_qMt)<=_eps)_lb.push('Total TTC');
+      var _rd=resteDuFac(f);
+      if(_rd>0&&Math.abs(_rd-_qMt)<=_eps)_lb.push('Solde restant');
+      _getAcomptes(f).forEach(function(_a,_i){if(Math.abs((E(_a.montant)||0)-_qMt)<=_eps)_lb.push('Acompte '+(_i+1))});
+      var _av=avoirsSur(f);
+      if(_av>0&&Math.abs(_av-_qMt)<=_eps)_lb.push('Avoir');
+      if(!_lb.length)return false;
+      _mtLbl[f.id]=_lb;
+    }
     if(!q) return true;
     var hay=(f.ref+' '+cN(f.clientId)+' '+(f.objet||'')).toLowerCase();
     if(hay.indexOf(q)>=0)return true;
@@ -11399,7 +11416,7 @@ function rFac2(){
     +'</div>';
   if(!facs.length){
     var tbl=document.getElementById('fcTbl');
-    if(tbl)tbl.innerHTML='<div class="nt" style="text-align:center;padding:20px;color:var(--mt)">Aucune facture'+(q?' pour "'+esc(q)+'"':'')+'</div>';
+    if(tbl)tbl.innerHTML='<div class="nt" style="text-align:center;padding:20px;color:var(--mt)">Aucune facture'+(q?' pour "'+esc(q)+'"':'')+(_hasMt?' au montant de '+euro(_qMt)+' (total, solde, acompte ou avoir)':'')+'</div>';
     return;
   }
   rTbl('fcTbl',['Réf','Type','Client','Date','Objet','Total TTC','Acompte','Reste dû','Statut','Actions'],facs.map(function(f){
@@ -11425,7 +11442,7 @@ function rFac2(){
     }
     var fid=f.id, cid=f.clientId;
     return '<tr>'
-      +'<td><b>'+f.ref+'</b></td>'
+      +'<td><b>'+f.ref+'</b>'+(_mtLbl[f.id]?'<br><span style="font-size:9px;color:#9d6;background:rgba(120,200,60,.14);padding:1px 6px;border-radius:6px;white-space:nowrap">\ud83d\udcb6 = '+_mtLbl[f.id].join(' \u00b7 ')+'</span>':'')+'</td>'
       +'<td style="font-size:16px;text-align:center" title="'+(f.activityType||'autre')+'">'+typeLabel+'</td>'
       +'<td style="font-size:11px">'+cN(cid)+(function(){var aids=f.animalIds||(f.animalId?[f.animalId]:[]);if(!aids.length)return'';var names=aids.map(function(id){var a=db.animaux.find(function(x){return x.id===id});return a?a.nom:'?'});return'<br><span style="font-size:10px;color:var(--or)">🐾 '+names.join(', ')+'</span>'}())+'</td>'
       +'<td style="font-size:11px;white-space:nowrap">'+new Date(f.date||Date.now()).toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'2-digit'})+'</td>'
