@@ -610,7 +610,7 @@ body.nuit .card{border-color:#0a1520}
 </div>
 </aside>
 <main class="main">
-<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.13b</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
+<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.14</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
 <div class="cnt">
 
 <!-- DASHBOARD -->
@@ -7635,7 +7635,7 @@ function devFilterLignesOption(q,opt){
   var lg=(q.lignes&&q.lignes.length)?JSON.parse(JSON.stringify(q.lignes)):[];
   if((q.optMode||'cumule')!=='choix')return lg;
   var o=(opt!==undefined&&opt!==null&&opt!=='')?opt:(q.optChoisie||'');
-  if(!o)return lg;
+  if(!o)return lg.filter(function(l){return !(l.groupe||'')}); // V80.14 : aucune option retenue = partie commune seule
   return lg.filter(function(l){var g=l.groupe||'';return g===''||g===o});
 }
 function devTotalForOption(q){
@@ -7754,7 +7754,7 @@ function devCalcTotal(){
   lignes.forEach(function(l){var g=l.groupe||'';if(grpTot[g]===undefined)g='';grpTot[g]+=l.montant});
   var hasOpts=(grpTot.opt1>0||grpTot.opt2>0||grpTot.opt3>0||grpTot.opt4>0);
   var totalTTC = lignes.reduce(function(s,l){ return s + l.montant; }, 0);
-  if(optMode==='choix'&&hasOpts){totalTTC=grpTot['']+Math.max(grpTot.opt1,grpTot.opt2,grpTot.opt3,grpTot.opt4);}
+  if(optMode==='choix'&&hasOpts){totalTTC=grpTot[''];} // V80.14 : les options ne comptent pas dans le TTC
   var remise = parseFloat((document.getElementById('q_remise')||{}).value||0)||0;
   var tva = ((document.getElementById('q_tva')||{}).value!==''&&(document.getElementById('q_tva')||{}).value!==undefined?parseFloat((document.getElementById('q_tva')||{}).value):20);
   var ttcApresRemise = totalTTC * (1 - remise/100);
@@ -7780,10 +7780,10 @@ function devCalcTotal(){
         var remF=(1-remise/100);
         if(grpTot['']>0)rHtml+='<div style="display:flex;justify-content:space-between;margin-bottom:3px;color:var(--mt)"><span>🧾 Partie commune</span><b>'+euro(grpTot['']*remF)+'</b></div>';
         ['opt1','opt2','opt3','opt4'].forEach(function(g,ix){if(grpTot[g]>0){
-          var v=optMode==='choix'?(grpTot['']+grpTot[g])*remF:grpTot[g]*remF;
-          rHtml+='<div style="display:flex;justify-content:space-between;margin-bottom:3px;color:#f5d070"><span>'+(optMode==='choix'?'🔀 Total si Option '+(ix+1):'📦 Sous-total Option '+(ix+1))+'</span><b>'+euro(v)+'</b></div>';
+          var v=grpTot[g]*remF;
+          rHtml+='<div style="display:flex;justify-content:space-between;margin-bottom:3px;color:#f5d070"><span>'+(optMode==='choix'?'🔀 Option '+(ix+1)+' (supplément au choix)':'📦 Sous-total Option '+(ix+1))+'</span><b>'+(optMode==='choix'?'+ ':'')+euro(v)+'</b></div>';
         }});
-        if(optMode==='choix')rHtml+='<div style="font-size:10px;color:var(--or);margin-bottom:4px">⚠️ Devis à options — le total ci-dessous est indicatif (option la plus élevée)</div>';
+        if(optMode==='choix')rHtml+='<div style="font-size:10px;color:var(--or);margin-bottom:4px">ℹ️ Options au choix — NON comprises dans le total (partie commune uniquement)</div>';
       }
       rHtml += '<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>Total TTC lignes</span><b>'+euro(totalTTC)+'</b></div>';
       if(remise > 0) rHtml += '<div style="display:flex;justify-content:space-between;margin-bottom:4px;color:var(--or)"><span>Remise '+remise+'%</span><b>-'+euro(totalTTC*remise/100)+'</b></div>';
@@ -7854,8 +7854,10 @@ function addDev(){
     if(wps.length>=2)pecUrl+='&arrivee='+encodeURIComponent(wps[wps.length-1].label||'');
     pecUrl+='&devis='+encodeURIComponent(q.ref);
     // Passer les tarifs (lignes du devis) au contrat
-    if(devLignes&&devLignes.length){
-      var tarifAniPec=devLignes.filter(function(lg){return E(lg.qty)>0&&E(lg.pu)>0}).map(function(lg){
+    // V80.14 : PEC — transmettre uniquement partie commune + option retenue (jamais le cumul des options)
+    var pecLignes=devFilterLignesOption(q)||[];
+    if(pecLignes.length){
+      var tarifAniPec=pecLignes.filter(function(lg){return E(lg.qty)>0&&E(lg.pu)>0}).map(function(lg){
         var desc=(lg.article||lg.desc||'Prestation').replace(/\|/g,'-');
         return desc+'|'+(E(lg.qty)||1)+'|'+(E(lg.pu)||0)+'|'+(E(lg.remise)||0);
       });
@@ -10282,7 +10284,7 @@ function _eqCalcTotalNow(){
   lignes.forEach(function(lg){totalTTC+=lg.montant});
   if(optMode==='choix'&&hasOpts){
     var oc=((document.getElementById('eq_optsel')||{}).value)||'';
-    totalTTC=grpTot['']+(oc&&grpTot[oc]>0?grpTot[oc]:Math.max(grpTot.opt1,grpTot.opt2,grpTot.opt3,grpTot.opt4));
+    totalTTC=grpTot['']+(oc&&grpTot[oc]>0?grpTot[oc]:0); // V80.14 : sans option retenue, commune seule
   }
   var remise=parseFloat((document.getElementById('eq_remise')||{}).value)||0;
   var ttcApresRemise=totalTTC*(1-remise/100);
@@ -14051,36 +14053,35 @@ function printDevisPro(id) {
   html += '</table></div>';
   var remisePct = E(q.remise) || 0;
   // V80 : totaux effectifs selon le mode
-  var effTTC=totalTTCLignes, effHT=totalHTLignes, effTVA=totalTVALignes, choixSansSel=false;
+  var effTTC=totalTTCLignes, effHT=totalHTLignes, effTVA=totalTVALignes, choixSansSel=false, optNonInclus=false;
   if(optModeQ==='choix'&&hasGrp){
     var _c=grpTotG['']||{ttc:0,ht:0,tva:0};
     var optsList=['opt1','opt2','opt3','opt4'].filter(function(g){return grpTotG[g]});
     html += '<div style="margin:15px 0;border:2px solid #b45309;border-radius:6px;padding:12px;background:#fffbf0">';
-    html += '<div style="font-size:12px;font-weight:900;color:#b45309;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">🔀 Devis à options — une seule option à retenir</div>';
+    html += '<div style="font-size:12px;font-weight:900;color:#b45309;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">🔀 Options au choix — en supplément de la partie commune</div>';
     html += '<table style="width:100%;font-size:11px;border-collapse:collapse">';
-    html += '<tr style="background:#f5ead6"><th style="padding:6px;text-align:left;font-size:10px">Option</th><th style="padding:6px;text-align:right;font-size:10px">Total HT</th><th style="padding:6px;text-align:right;font-size:10px">TVA</th><th style="padding:6px;text-align:right;font-size:10px">Total TTC</th><th style="padding:6px;text-align:right;font-size:10px">Acompte 30%</th></tr>';
+    html += '<tr style="background:#f5ead6"><th style="padding:6px;text-align:left;font-size:10px">Option</th><th style="padding:6px;text-align:right;font-size:10px">Supplément HT</th><th style="padding:6px;text-align:right;font-size:10px">TVA</th><th style="padding:6px;text-align:right;font-size:10px">Supplément TTC</th><th style="padding:6px;text-align:right;font-size:10px">Total TTC si retenue</th></tr>';
     optsList.forEach(function(g){
       var t=grpTotG[g];var rf=(1-remisePct/100);
-      var tt=(_c.ttc+t.ttc)*rf, th=(_c.ht+t.ht)*rf, tv=tt-th;
+      var supT=t.ttc*rf, supH=t.ht*rf, supV=supT-supH, tt=(_c.ttc+t.ttc)*rf;
       var sel=(q.optChoisie===g);
       html += '<tr'+(sel?' style="background:#e6f7f0"':'')+'>';
-      html += '<td style="padding:6px;border-bottom:1px solid #eee;font-weight:'+(sel?'900':'600')+'">'+(sel?'✅ ':'')+devOptLabel(g)+(_c.ttc>0?' + partie commune':'')+(sel?' — RETENUE':'')+'</td>';
-      html += '<td style="padding:6px;border-bottom:1px solid #eee;text-align:right">'+euro(th)+'</td>';
-      html += '<td style="padding:6px;border-bottom:1px solid #eee;text-align:right">'+euro(tv)+'</td>';
-      html += '<td style="padding:6px;border-bottom:1px solid #eee;text-align:right;font-weight:900;font-size:13px;color:#1a7a6e">'+euro(tt)+'</td>';
-      html += '<td style="padding:6px;border-bottom:1px solid #eee;text-align:right;color:#b45309;font-weight:700">'+euro(tt*0.3)+'</td>';
+      html += '<td style="padding:6px;border-bottom:1px solid #eee;font-weight:'+(sel?'900':'600')+'">'+(sel?'✅ ':'')+devOptLabel(g)+' — en supplément'+(sel?' — RETENUE':'')+'</td>';
+      html += '<td style="padding:6px;border-bottom:1px solid #eee;text-align:right">'+euro(supH)+'</td>';
+      html += '<td style="padding:6px;border-bottom:1px solid #eee;text-align:right">'+euro(supV)+'</td>';
+      html += '<td style="padding:6px;border-bottom:1px solid #eee;text-align:right;font-weight:900;font-size:13px;color:#b45309">+ '+euro(supT)+'</td>';
+      html += '<td style="padding:6px;border-bottom:1px solid #eee;text-align:right;color:#1a7a6e;font-weight:700">'+euro(tt)+'</td>';
       html += '</tr>';
     });
     html += '</table>';
-    if(!q.optChoisie)html += '<div style="font-size:9px;color:#666;margin-top:6px">Merci d\'indiquer l\'option retenue lors de la validation du devis. L\'acompte de 30% sera calculé sur l\'option choisie.</div>';
+    if(!q.optChoisie)html += '<div style="font-size:9px;color:#666;margin-top:6px">Les options ne sont PAS comprises dans le Total TTC du devis (partie commune uniquement). Merci d\'indiquer l\'option retenue lors de la validation — le total et l\'acompte de 30% seront alors ajustés.</div>';
     html += '</div>';
     if(q.optChoisie&&grpTotG[q.optChoisie]){
       var _t=grpTotG[q.optChoisie];
       effTTC=_c.ttc+_t.ttc;effHT=_c.ht+_t.ht;effTVA=_c.tva+_t.tva;
     } else {
-      choixSansSel=true;
-      var _mx=null;['opt1','opt2','opt3','opt4'].forEach(function(g){if(grpTotG[g]&&(!_mx||grpTotG[g].ttc>grpTotG[_mx].ttc))_mx=g});
-      if(_mx){effTTC=_c.ttc+grpTotG[_mx].ttc;effHT=_c.ht+grpTotG[_mx].ht;effTVA=_c.tva+grpTotG[_mx].tva;}
+      // V80.14 : aucune option retenue — le devis n'engage QUE la partie commune
+      effTTC=_c.ttc;effHT=_c.ht;effTVA=_c.tva;optNonInclus=true;
     }
   }
   var ttcApresRemise = effTTC * (1 - remisePct/100);
@@ -14101,7 +14102,7 @@ function printDevisPro(id) {
   html += '<tr><td style="border:1px solid #999;padding:8px;font-weight:bold">TVA ' + tva + '%</td>';
   html += '<td style="border:1px solid #999;padding:8px;text-align:right">' + euro(tvaApresRemise) + '</td></tr>';
   html += '<tr style="background:#ddd"><td style="border:1px solid #999;padding:8px;font-weight:bold;font-size:13px">Total TTC</td>';
-  html += '<td style="border:1px solid #999;padding:8px;text-align:right;font-weight:bold;font-size:13px">' + euro(ttcApresRemise) + '</td></tr></table></div>';
+  html += '<td style="border:1px solid #999;padding:8px;text-align:right;font-weight:bold;font-size:13px">' + euro(ttcApresRemise) + '</td></tr>'+(optNonInclus?'<tr><td style="border:1px solid #999;padding:8px;color:#b45309;font-weight:bold">Acompte 30% à la signature</td><td style="border:1px solid #999;padding:8px;text-align:right;color:#b45309;font-weight:bold">'+euro(ttcApresRemise*0.3)+'</td></tr><tr><td colspan="2" style="border:1px solid #999;padding:6px;font-size:9px;color:#666">🔀 Option(s) au choix en supplément — non incluse(s) dans ce total. Total et acompte ajustés selon l\'option retenue.</td></tr>':'')+'</table></div>';
   } else {
     // V80.2 : totaux en bas — une colonne par option (avec partie commune incluse)
     var rf2=(1-remisePct/100);
