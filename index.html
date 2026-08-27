@@ -610,7 +610,7 @@ body.nuit .card{border-color:#0a1520}
 </div>
 </aside>
 <main class="main">
-<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.13</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
+<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.13b</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
 <div class="cnt">
 
 <!-- DASHBOARD -->
@@ -7623,6 +7623,14 @@ function devOptSelOpts(g){
 }
 function devOptLabel(g){return g==='opt1'?'Option 1':g==='opt2'?'Option 2':g==='opt3'?'Option 3':g==='opt4'?'Option 4':'Partie commune'}
 function devHasOptions(q){return (q.lignes||[]).some(function(l){return l.groupe})}
+// V80.13b : des qu'une ligne est affectee a une Option, on passe auto en mode 'choix' (les options ne se cumulent JAMAIS par accident)
+function devGrpChanged(sel,modeId,recalc){
+  if(sel&&sel.value){
+    var m=document.getElementById(modeId);
+    if(m&&m.value!=='choix'){m.value='choix';showToast('\ud83d\udd00 Mode devis pass\u00e9 en \u00ab Options au choix \u00bb \u2014 les options ne s\u2019additionnent pas');}
+  }
+  if(typeof recalc==='function')recalc();
+}
 function devFilterLignesOption(q,opt){
   var lg=(q.lignes&&q.lignes.length)?JSON.parse(JSON.stringify(q.lignes)):[];
   if((q.optMode||'cumule')!=='choix')return lg;
@@ -7648,7 +7656,7 @@ function devAddLigne(desc, qty, pu, article, remise, noTva, grp){
   row.innerHTML =
     '<div style="display:flex;gap:4px;margin-bottom:4px;align-items:center">'+
     '<select id="q_lg_cat_'+i+'" onchange="devCatSelect('+i+')" style="flex:1;background:#080f1a;border:1px solid var(--ln);color:var(--mt);border-radius:6px;padding:5px;font-size:11px"><option value="">📋 Choisir un article sauvegardé...</option></select>'+
-    '<select id="q_lg_g_'+i+'" onchange="devCalcTotal()" title="Groupe / Option" style="background:#080f1a;border:1px solid var(--ln);color:'+(grp?'#f5d070':'var(--mt)')+';border-radius:6px;padding:5px;font-size:10px;max-width:96px">'+devOptSelOpts(grp)+'</select>'+
+    '<select id="q_lg_g_'+i+'" onchange="devGrpChanged(this,\'q_optmode\',devCalcTotal)" title="Groupe / Option" style="background:#080f1a;border:1px solid var(--ln);color:'+(grp?'#f5d070':'var(--mt)')+';border-radius:6px;padding:5px;font-size:10px;max-width:96px">'+devOptSelOpts(grp)+'</select>'+
     '<label style="display:flex;align-items:center;gap:3px;font-size:10px;color:var(--or);cursor:pointer;white-space:nowrap" title="Avance de frais — pas de TVA"><input type="checkbox" id="q_lg_nt_'+i+'" '+(noTva?'checked':'')+' onchange="devCalcTotal()"> Exo TVA</label>'+
     '<button class="btn sm" onclick="devSavArticle('+i+')" title="Sauvegarder cet article" style="padding:3px 6px;font-size:10px;background:#1a3a2a;border-color:#2a5a3a;color:#8fc">💾</button>'+
     '<button class="btn sm rd" onclick="devDelLigne('+i+')" style="padding:3px 6px;font-size:10px">✕</button>'+
@@ -10230,7 +10238,7 @@ function eqAddLigne(article,desc,qty,pu,remise,noTva,grp){
     +'<input id="eq_lg_q_'+i+'" type="number" min="0.5" step="0.5" value="'+(qty||1)+'" oninput="eqCalcTotal()" placeholder="Qté" style="background:#080f1a;border:1px solid #1e3a58;color:#fff;border-radius:6px;padding:6px;font:inherit;font-size:11px;text-align:center">'
     +'<input id="eq_lg_p_'+i+'" type="number" step="0.01" min="0" value="'+(pu||'')+'" oninput="eqCalcTotal()" placeholder="PU TTC" style="background:#080f1a;border:1px solid #1e3a58;color:#fff;border-radius:6px;padding:6px;font:inherit;font-size:11px">'
     +'<input id="eq_lg_r_'+i+'" type="number" step="1" min="0" max="100" value="'+(remise||0)+'" oninput="eqCalcTotal()" placeholder="%" title="Remise %" style="background:#080f1a;border:1px solid #1e3a58;color:#f59e0b;border-radius:6px;padding:6px;font:inherit;font-size:11px;text-align:center">'
-    +'<select id="eq_lg_g_'+i+'" onchange="eqCalcTotal()" title="Groupe/Option" style="background:#080f1a;border:1px solid #1e3a58;color:'+(grp?'#f5d070':'#8ac')+';border-radius:6px;padding:6px;font:inherit;font-size:10px">'+devOptSelOpts(grp)+'</select>'
+    +'<select id="eq_lg_g_'+i+'" onchange="devGrpChanged(this,\'eq_optmode\',eqCalcTotal)" title="Groupe/Option" style="background:#080f1a;border:1px solid #1e3a58;color:'+(grp?'#f5d070':'#8ac')+';border-radius:6px;padding:6px;font:inherit;font-size:10px">'+devOptSelOpts(grp)+'</select>'
     +'<button onclick="document.getElementById(\'eq_lg_'+i+'\').remove();eqCalcTotal()" style="background:none;border:none;color:#f55;font-size:14px;cursor:pointer">✕</button>'
     +'</div>'
     +'<label style="display:flex;align-items:center;gap:3px;font-size:9px;color:#f59e0b;margin-top:3px;cursor:pointer"><input type="checkbox" id="eq_lg_nt_'+i+'" '+(noTva?'checked':'')+' onchange="eqCalcTotal()"> Exo TVA (avance frais)</label>';
