@@ -610,7 +610,7 @@ body.nuit .card{border-color:#0a1520}
 </div>
 </aside>
 <main class="main">
-<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.16</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
+<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.17</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
 <div class="cnt">
 
 <!-- DASHBOARD -->
@@ -7894,16 +7894,16 @@ function addDev(){
     var pecUrl=genPecUrl(q); // V80.15 : génération centralisée (options au choix incluses)
     pecCb.checked=false;document.getElementById('q_contrat_info').style.display='none';
     // Proposer d'envoyer
-    var pecMsg='📋 Contrat PEC — '+q.ref+'\n\nBonjour,\n\nVeuillez remplir et signer votre contrat de prise en charge :\n'+pecUrl+'\n\nCordialement,\nCathy Pets\n07.81.30.41.10';
-    if(confirm('✅ Devis créé !\n\n📋 Lien contrat PEC généré.\nEnvoyer par email au client ?')){
+    var pecMsg='🧾 Devis '+q.ref+' — Cathy Pets ('+euro(q.total)+' TTC)\n\nBonjour,\n\nVotre devis vous a été envoyé par email.\n\n📋 Merci de remplir et signer votre contrat de prise en charge en ligne :\n'+pecUrl+'\n\nCordialement,\nCathy Pets\n07.81.30.41.10';
+    if(confirm('✅ Devis créé !\n\n📋 Lien contrat PEC généré.\n\n✉️ Envoyer au client le DEVIS + le contrat PEC (même email) ?')){
       // Copier le lien dans le presse-papier
       try{navigator.clipboard.writeText(pecUrl)}catch(e){}
       // Proposer plusieurs options d'envoi
       var clEmail=(cl2?cl2.email||'':'');
       var clTel=(cl2?cl2.tel||'':'');
       var subj='Contrat PEC Transport — '+q.ref;
-      // Envoi par email — V79 : Mail Pro HTML avec logo et bouton de signature
-      openMailPro('pec',q.id);
+      // V80.17 : mail Pro DEVIS qui inclut aussi le bouton contrat PEC (envoi combiné)
+      openMailPro('devis',q.id);
       // Proposer aussi WhatsApp si numéro dispo
       if(clTel){
         var waTel=clTel.replace(/[^0-9+]/g,'');
@@ -13536,6 +13536,18 @@ function buildMailPro(type,id){
     intro='Nous vous remercions de votre demande et avons le plaisir de vous adresser notre devis pour la prestation suivante. Vous trouverez le document d\u00e9taill\u00e9 en pi\u00e8ce jointe.';
     rows=row('R\u00e9f\u00e9rence',doc.ref)+row('Date',dDoc)+(doc.objet?row('Prestation',_mpEsc(doc.objet)):'')+row('Montant total TTC',euro(total),1)+row('Validit\u00e9','30 jours');
     extra='<p style="margin:16px 0 0 0;font-size:14px;color:#333;line-height:1.6">\u2705 <b>Pour accepter ce devis</b>, il vous suffit de r\u00e9pondre \u00ab Bon pour accord \u00bb \u00e0 ce message. Nous conviendrons ensuite ensemble des modalit\u00e9s pratiques (date, prise en charge, acompte \u00e9ventuel).</p>';
+    // V80.17 : devis + contrat PEC dans le MEME email quand le lien existe
+    if(doc.contratPecUrl){
+      subject='Votre devis '+doc.ref+' + contrat de prise en charge \u2014 Cathy Pets';
+      var hasOptChoix=((doc.optMode||'cumule')==='choix')&&(doc.lignes||[]).some(function(l){return l.groupe})&&!doc.optChoisie;
+      extra+='<div style="margin:18px 0 0 0;padding:16px;background:#FFF6EC;border:1px solid '+OR+';border-radius:10px">'
+        +'<div style="font-size:14px;font-weight:800;color:'+NV+';margin-bottom:6px">\ud83d\udccb \u00c9tape 2 \u2014 Contrat de prise en charge</div>'
+        +'<p style="margin:0;font-size:13px;color:#333;line-height:1.6">Afin de pr\u00e9parer le transport de votre (vos) animal(aux), merci de remplir et signer \u00e9galement votre contrat de prise en charge en ligne \u2014 2 minutes depuis votre t\u00e9l\u00e9phone.'+(hasOptChoix?' <b>Vous pourrez y cocher directement l\u2019option propos\u00e9e dans le devis si vous la retenez.</b>':'')+'</p>'
+        +'<table role="presentation" cellpadding="0" cellspacing="0" style="margin:14px auto 0 auto"><tr><td style="background:'+OR+';border-radius:10px"><a href="'+doc.contratPecUrl+'" style="display:inline-block;padding:12px 26px;font-size:15px;font-weight:800;color:#ffffff;text-decoration:none">\u270d\ufe0f Remplir et signer mon contrat</a></td></tr></table>'
+        +'<p style="margin:12px 0 0 0;font-size:10px;color:#888;text-align:center;word-break:break-all">Si le bouton ne fonctionne pas : <a href="'+doc.contratPecUrl+'" style="color:'+TE+'">'+doc.contratPecUrl+'</a></p>'
+        +'</div>'
+        +'<p style="margin:14px 0 0 0;font-size:13px;color:#333;line-height:1.6">\ud83d\udc3e Pensez \u00e0 pr\u00e9parer le carnet de sant\u00e9 / passeport de votre animal pour le jour du transport.</p>';
+    }
   }else if(type==='relance'){
     couleur='#c0392b';titre='RAPPEL DE R\u00c8GLEMENT';
     subject='Relance \u2014 Facture '+doc.ref+' en attente de r\u00e8glement ('+euro(reste)+')';
@@ -13583,7 +13595,7 @@ function buildMailPro(type,id){
     +'</table></td></tr></table>';
   var text='Bonjour '+nomCl+',\n\n'+intro.replace(/<[^>]+>/g,'')+'\n\n'
     +(type==='pec'?'Merci de remplir et signer votre contrat de prise en charge en ligne :\n'+(doc.contratPecUrl||'')+'\n\nPensez au carnet de santé / passeport de votre animal le jour du transport.':
-      type==='devis'?'Devis '+doc.ref+' du '+dDoc+' — Total : '+euro(total)+' TTC (validité 30 jours)\nPour accepter : répondez "Bon pour accord".':
+      type==='devis'?'Devis '+doc.ref+' du '+dDoc+' — Total : '+euro(total)+' TTC (validité 30 jours)\nPour accepter : répondez "Bon pour accord".'+(doc.contratPecUrl?'\n\nContrat de prise en charge à remplir et signer en ligne :\n'+doc.contratPecUrl:''):
       type==='relance'?'Facture '+doc.ref+' du '+dDoc+' — Reste à régler : '+euro(reste)+(pen?' ('+pen.joursRetard+' j de retard, pénalités à ce jour : '+euro(pen.totalPenalites)+')':'')+'\nMerci de régulariser sous 8 jours.':
       'Facture '+doc.ref+' du '+dDoc+' — Total : '+euro(total)+' TTC'+(reste!==total?' — Reste à régler : '+euro(reste):'')+'\nRèglement à réception (virement, chèque ou espèces).')
     +'\n\nBien cordialement,\nCathy — Cathy Pets\nTaxi animalier : 07 81 30 41 10 · Garde : 07 83 43 63 06\ncathypetsitter.com · cathydelormepets@gmail.com';
