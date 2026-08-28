@@ -480,6 +480,9 @@ function submitContrat() {
       heure: document.getElementById('trajet_heure').value,
       contact: document.getElementById('trajet_contact').value.trim()
     },
+    optionRetenue: (window._pecOptSel&&window._pecOpts&&window._pecOpts[window._pecOptSel])?{groupe:window._pecOptSel,label:window._pecOpts[window._pecOptSel].label,details:window._pecOpts[window._pecOptSel].descs.join(', '),montant:Math.round(window._pecOpts[window._pecOptSel].montant*100)/100}:null,
+    optionsProposees: (window._pecOpts&&Object.keys(window._pecOpts).length)?Object.keys(window._pecOpts).length:0,
+    totalTTC: Math.round(((window._pecBase||0)+((window._pecOptSel&&window._pecOpts&&window._pecOpts[window._pecOptSel])?window._pecOpts[window._pecOptSel].montant:0))*100)/100,
     signature: document.getElementById('sigCanvas').toDataURL(),
     dateSignature: document.getElementById('sig_date').value,
     timestamp: new Date().toISOString()
@@ -553,6 +556,13 @@ function sendContratEmail(data) {
   body += 'Heure: ' + (data.trajet.heure || '') + '\n';
   body += 'Instructions: ' + (data.trajet.instructions || '') + '\n\n';
   
+  if(data.optionsProposees||data.totalTTC){
+    body += '--- TARIF / OPTION ---\n';
+    if(data.optionRetenue){body += '>>> OPTION RETENUE PAR LE CLIENT: '+data.optionRetenue.label+' ('+data.optionRetenue.details+') : +'+data.optionRetenue.montant.toFixed(2)+' EUR\n';}
+    else if(data.optionsProposees){body += '>>> OPTION RETENUE PAR LE CLIENT: AUCUNE (sans option)\n';}
+    if(data.totalTTC)body += 'TOTAL TTC (option comprise le cas echeant): '+data.totalTTC.toFixed(2)+' EUR\n';
+    body += '\n';
+  }
   body += '--- SIGNATURE ---\n';
   body += 'Signé le ' + new Date().toLocaleDateString('fr-FR') + '\n';
   
@@ -674,11 +684,27 @@ function applyURLParams(){
 }
 checkAccess();
 setTimeout(applyURLParams, 200);
-// Parsing tarif_animaux
+// Parsing tarif_animaux + OPTIONS AU CHOIX du client (V80.15)
+window._pecBase=0;window._pecOptSel='';window._pecOpts={};
+function pecEsc(t){return String(t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
+function pecEuro(n){return (Math.round(n*100)/100).toFixed(2).replace('.',',')+' \u20ac'}
+function pecRefreshTotal(){
+  var o=window._pecOptSel?window._pecOpts[window._pecOptSel]:null;
+  var tot=window._pecBase+(o?o.montant:0);
+  var totalEl=document.getElementById('tarifTotal');
+  if(totalEl)totalEl.innerHTML=pecEuro(tot)+(o?'<br><span style="font-size:10px;font-weight:400">dont '+pecEsc(o.label)+' : +'+pecEuro(o.montant)+'</span>':'');
+}
+function pecSelectOption(g){
+  window._pecOptSel=g||'';
+  pecRefreshTotal();
+  document.querySelectorAll('.pecOptRow').forEach(function(r){
+    r.style.background=(window._pecOptSel&&r.getAttribute('data-g')===window._pecOptSel)?'#e8f5e9':'transparent';
+  });
+}
 setTimeout(function(){
   var tp2=new URLSearchParams(window.location.search);
+  var tbody=document.getElementById('tarifBody');
   if(tp2.get('tarif_animaux')){
-    var tbody=document.getElementById('tarifBody');
     var total=0;
     tp2.get('tarif_animaux').split(';;').forEach(function(line){
       var parts=line.split('|');
@@ -687,12 +713,40 @@ setTimeout(function(){
         var mt=qty*pu;if(rem>0)mt=mt*(100-rem)/100;
         total+=mt;
         if(tbody){var tr=document.createElement('tr');
-          tr.innerHTML='<td style="padding:6px;border:1px solid #ddd">'+desc+'</td><td style="text-align:center;padding:6px;border:1px solid #ddd">'+qty+'</td><td style="text-align:right;padding:6px;border:1px solid #ddd">'+pu.toFixed(2)+' \u20ac</td><td style="text-align:center;padding:6px;border:1px solid #ddd">'+(rem>0?'-'+rem+'%':'')+'</td><td style="text-align:right;padding:6px;border:1px solid #ddd;font-weight:700">'+mt.toFixed(2).replace('.',',')+' \u20ac</td>';
+          tr.innerHTML='<td style="padding:6px;border:1px solid #ddd">'+pecEsc(desc)+'</td><td style="text-align:center;padding:6px;border:1px solid #ddd">'+qty+'</td><td style="text-align:right;padding:6px;border:1px solid #ddd">'+pu.toFixed(2)+' \u20ac</td><td style="text-align:center;padding:6px;border:1px solid #ddd">'+(rem>0?'-'+rem+'%':'')+'</td><td style="text-align:right;padding:6px;border:1px solid #ddd;font-weight:700">'+mt.toFixed(2).replace('.',',')+' \u20ac</td>';
           tbody.appendChild(tr);}
       }
     });
+    window._pecBase=total;
     var totalEl=document.getElementById('tarifTotal');
     if(totalEl)totalEl.textContent=total.toFixed(2).replace('.',',')+' \u20ac';
+  }
+  // Options au choix : le client coche l'option qu'il retient (ou "Sans option")
+  if(tp2.get('tarif_options')&&tbody){
+    var grps={};
+    tp2.get('tarif_options').split(';;').forEach(function(line){
+      var p=line.split('|');if(p.length<4)return;
+      var g=p[0],desc=p[1],qty=parseFloat(p[2])||0,pu=parseFloat(p[3])||0,rem=parseFloat(p[4])||0;
+      var mt=qty*pu;if(rem>0)mt=mt*(100-rem)/100;
+      if(!grps[g])grps[g]={montant:0,descs:[],label:'Option '+String(g||'').replace('opt','')};
+      grps[g].montant+=mt;grps[g].descs.push(desc+(qty!==1?' (x'+qty+')':''));
+    });
+    window._pecOpts=grps;
+    var keys=Object.keys(grps).sort();
+    if(keys.length){
+      var tbl=tbody.parentNode;
+      var box=document.createElement('div');
+      box.id='pecOptionsBox';
+      box.style.cssText='margin-top:12px;border:2px solid #b45309;border-radius:8px;padding:12px;background:#fffbf0';
+      var h='<div style="font-weight:800;color:#b45309;font-size:13px;margin-bottom:8px">\ud83d\udd00 OPTION(S) AU CHOIX \u2014 en suppl\u00e9ment du tarif ci-dessus</div>';
+      h+='<label class="pecOptRow" data-g="" style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px;border-radius:6px;cursor:pointer;font-size:13px;background:transparent"><span><input type="radio" name="pecOpt" value="" checked onchange="pecSelectOption(&#39;&#39;)" style="margin-right:8px;accent-color:#b45309">Sans option</span><b>\u2014</b></label>';
+      keys.forEach(function(g){var o=grps[g];
+        h+='<label class="pecOptRow" data-g="'+pecEsc(g)+'" style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px;border-radius:6px;cursor:pointer;font-size:13px;background:transparent"><span><input type="radio" name="pecOpt" value="'+pecEsc(g)+'" onchange="pecSelectOption(this.value)" style="margin-right:8px;accent-color:#b45309"><b>'+pecEsc(o.label)+'</b> \u2014 '+pecEsc(o.descs.join(', '))+'</span><b style="color:#b45309;white-space:nowrap">+ '+pecEuro(o.montant)+'</b></label>';
+      });
+      h+='<div style="font-size:11px;color:#888;margin-top:6px">Cochez l\u2019option si vous la retenez \u2014 le TOTAL TTC ci-dessus sera ajust\u00e9 automatiquement. Votre choix sera transmis avec le contrat sign\u00e9.</div>';
+      box.innerHTML=h;
+      tbl.parentNode.insertBefore(box,tbl.nextSibling);
+    }
   }
 },300);
 </script>
