@@ -610,7 +610,7 @@ body.nuit .card{border-color:#0a1520}
 </div>
 </aside>
 <main class="main">
-<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.14</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
+<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.16</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
 <div class="cnt">
 
 <!-- DASHBOARD -->
@@ -7623,11 +7623,17 @@ function devOptSelOpts(g){
 }
 function devOptLabel(g){return g==='opt1'?'Option 1':g==='opt2'?'Option 2':g==='opt3'?'Option 3':g==='opt4'?'Option 4':'Partie commune'}
 function devHasOptions(q){return (q.lignes||[]).some(function(l){return l.groupe})}
-// V80.13b : des qu'une ligne est affectee a une Option, on passe auto en mode 'choix' (les options ne se cumulent JAMAIS par accident)
+// V80.16 : quand la 1re ligne est affectee a une Option, on DEMANDE (une seule fois) : cumuler ou au choix.
+// Ensuite le selecteur "Mode devis" reste 100% sous le controle de l'utilisateur — plus jamais force.
 function devGrpChanged(sel,modeId,recalc){
   if(sel&&sel.value){
     var m=document.getElementById(modeId);
-    if(m&&m.value!=='choix'){m.value='choix';showToast('\ud83d\udd00 Mode devis pass\u00e9 en \u00ab Options au choix \u00bb \u2014 les options ne s\u2019additionnent pas');}
+    if(m&&!m.dataset.optAsked){
+      m.dataset.optAsked='1';
+      var okChoix=confirm('\ud83d\udd00 Ligne affect\u00e9e \u00e0 une Option.\n\nComment traiter les options de ce devis ?\n\n\u2705 OK = OPTIONS AU CHOIX \u2014 non cumul\u00e9es, le client choisit (total = partie commune)\n\u274c Annuler = CUMUL\u00c9 \u2014 toutes les lignes s\u2019additionnent dans le total');
+      m.value=okChoix?'choix':'cumule';
+      showToast(okChoix?'\ud83d\udd00 Mode : Options au choix \u2014 modifiable \u00e0 tout moment via \u00ab Mode devis \u00bb':'\u2795 Mode : Cumul\u00e9 \u2014 modifiable \u00e0 tout moment via \u00ab Mode devis \u00bb');
+    }
   }
   if(typeof recalc==='function')recalc();
 }
@@ -7643,6 +7649,50 @@ function devTotalForOption(q){
   var t=lg.reduce(function(s,l){var m=(l.montant!==undefined&&l.montant!==null)?E(l.montant):((E(l.qty)||1)*(E(l.pu)||0)*(1-(E(l.remise)||0)/100));return s+m},0);
   t=t*(1-(E(q.remise)||0)/100)+(E(q.hotelCost)||0)+(E(q.mmCost)||0);
   return Math.round(t*100)/100;
+}
+// V80.15 : génération/régénération du lien contrat PEC depuis un devis (options au choix transmises)
+function genPecUrl(q){
+  if(!q)return '';
+  var cl2=db.clients.find(function(x){return x.id===q.clientId});
+  var code2=q.contratPecCode||(Math.random().toString(36).substr(2,6));
+  var pecUrl='https://cathydelormepets-source.github.io/TaxiCathyPets/contrat-transport.html?code='+code2;
+  if(cl2){
+    pecUrl+='&nom='+encodeURIComponent(cl2.nom||'');
+    pecUrl+='&prenom='+encodeURIComponent(cl2.prenom||'');
+    pecUrl+='&tel='+encodeURIComponent(cl2.tel||'');
+    pecUrl+='&email='+encodeURIComponent(cl2.email||'');
+    pecUrl+='&adresse='+encodeURIComponent(cl2.adresse||'');
+  }
+  var wps2=q.waypoints||[];
+  if(wps2.length>=1)pecUrl+='&depart='+encodeURIComponent(wps2[0].label||'');
+  if(wps2.length>=2)pecUrl+='&arrivee='+encodeURIComponent(wps2[wps2.length-1].label||'');
+  pecUrl+='&devis='+encodeURIComponent(q.ref);
+  // Partie commune + option retenue uniquement dans le tableau principal
+  var baseLignes=devFilterLignesOption(q)||[];
+  var tarifAniPec=baseLignes.filter(function(lg){return E(lg.qty)>0&&E(lg.pu)>0}).map(function(lg){
+    var desc=(lg.article||lg.desc||'Prestation').replace(/\|/g,'-').replace(/;;/g,',');
+    return desc+'|'+(E(lg.qty)||1)+'|'+(E(lg.pu)||0)+'|'+(E(lg.remise)||0);
+  });
+  if(tarifAniPec.length)pecUrl+='&tarif_animaux='+encodeURIComponent(tarifAniPec.join(';;'));
+  else if(E(q.total)>0)pecUrl+='&tarif_animaux='+encodeURIComponent('Prestation transport|1|'+E(q.total)+'|0');
+  // Options non retenues : transmises séparément — AU CHOIX du client sur le contrat
+  if((q.optMode||'cumule')==='choix'){
+    var optLines=(q.lignes||[]).filter(function(lg){var g=lg.groupe||'';return g&&g!==(q.optChoisie||'')&&E(lg.qty)>0&&E(lg.pu)>0}).map(function(lg){
+      var d2=(lg.article||lg.desc||'Option').replace(/\|/g,'-').replace(/;;/g,',');
+      return (lg.groupe)+'|'+d2+'|'+(E(lg.qty)||1)+'|'+(E(lg.pu)||0)+'|'+(E(lg.remise)||0);
+    });
+    if(optLines.length)pecUrl+='&tarif_options='+encodeURIComponent(optLines.join(';;'));
+  }
+  q.contratPecCode=code2;q.contratPecUrl=pecUrl;stamp(q);sav();
+  return pecUrl;
+}
+function devGenPec(id){
+  var q=db.devis.find(function(x){return x.id===id});if(!q)return;
+  var url=genPecUrl(q);
+  try{navigator.clipboard.writeText(url)}catch(e){}
+  showToast('📋 Lien contrat PEC '+(q.contratPecUrl?'régénéré':'généré')+' et copié — options au choix incluses');
+  rAll();
+  setTimeout(function(){openMailPro('pec',id)},400);
 }
 // ---- V28 : LIGNES ARTICLES DEVIS ----
 var _devLigneCount = 0;
@@ -7841,32 +7891,7 @@ function addDev(){
   var pecCb=document.getElementById('q_contrat_pec');
   if(pecCb&&pecCb.checked){
     var cl2=db.clients.find(function(x){return x.id===q.clientId});
-    var code2=(Math.random().toString(36).substr(2,6));
-    var pecUrl='https://cathydelormepets-source.github.io/TaxiCathyPets/contrat-transport.html?code='+code2;
-    if(cl2){
-      pecUrl+='&nom='+encodeURIComponent(cl2.nom||'');
-      pecUrl+='&prenom='+encodeURIComponent(cl2.prenom||'');
-      pecUrl+='&tel='+encodeURIComponent(cl2.tel||'');
-      pecUrl+='&email='+encodeURIComponent(cl2.email||'');
-      pecUrl+='&adresse='+encodeURIComponent(cl2.adresse||'');
-    }
-    if(wps.length>=1)pecUrl+='&depart='+encodeURIComponent(wps[0].label||'');
-    if(wps.length>=2)pecUrl+='&arrivee='+encodeURIComponent(wps[wps.length-1].label||'');
-    pecUrl+='&devis='+encodeURIComponent(q.ref);
-    // Passer les tarifs (lignes du devis) au contrat
-    // V80.14 : PEC — transmettre uniquement partie commune + option retenue (jamais le cumul des options)
-    var pecLignes=devFilterLignesOption(q)||[];
-    if(pecLignes.length){
-      var tarifAniPec=pecLignes.filter(function(lg){return E(lg.qty)>0&&E(lg.pu)>0}).map(function(lg){
-        var desc=(lg.article||lg.desc||'Prestation').replace(/\|/g,'-');
-        return desc+'|'+(E(lg.qty)||1)+'|'+(E(lg.pu)||0)+'|'+(E(lg.remise)||0);
-      });
-      if(tarifAniPec.length)pecUrl+='&tarif_animaux='+encodeURIComponent(tarifAniPec.join(';;'));
-    } else if(E(q.total)>0){
-      // Fallback : 1 ligne avec le total
-      pecUrl+='&tarif_animaux='+encodeURIComponent('Prestation transport|1|'+E(q.total)+'|0');
-    }
-    q.contratPecCode=code2;q.contratPecUrl=pecUrl;stamp(q);sav();
+    var pecUrl=genPecUrl(q); // V80.15 : génération centralisée (options au choix incluses)
     pecCb.checked=false;document.getElementById('q_contrat_info').style.display='none';
     // Proposer d'envoyer
     var pecMsg='📋 Contrat PEC — '+q.ref+'\n\nBonjour,\n\nVeuillez remplir et signer votre contrat de prise en charge :\n'+pecUrl+'\n\nCordialement,\nCathy Pets\n07.81.30.41.10';
@@ -11193,6 +11218,7 @@ function rDev2(){rTbl('dvTbl',['Réf','Client','Mode','Trajet','Total','Statut',
   '<button class="btn sm at" onclick="quickMail(\'conf_dev\',\''+q.clientId+'\',\''+q.id+'\')" title="Mail texte rapide">📧</button>'+
   '<button class="btn sm" onclick="openMailPro(\'devis\',\''+q.id+'\')" title="Mail Pro HTML avec logo" style="background:#2a1a05;border-color:#8a5a1a;color:#f0b060;font-size:10px">✉️ Pro</button>'+
   '<button class="btn sm" style="background:#1a3a2a;border-color:#2a6040;color:#7bf0b0" onclick="genLienAcompte(\''+q.id+'\')" title="Lien acompte en ligne">💳</button>'+
+  '<button class="btn sm" style="background:#2a1a05;border-color:#8a5a1a;color:#f0a060;font-size:10px" onclick="devGenPec(\''+q.id+'\')" title="'+(q.contratPecUrl?'Régénérer':'Générer')+' le lien contrat PEC (options au choix incluses)">📋 PEC</button>'+
   '<button class="btn sm" style="background:#1a3a3a;border-color:#2a6060;color:#7bcfee" onclick="exportDevToGCal(\''+q.id+'\')" title="📅 Vers Google Agenda">📅</button>'+
   (q.status!=='facturé'?'<button class="btn sm" style="background:#1a2a3a;border-color:#2a4060;color:#9bc" onclick="devToTr(\''+q.id+'\')" title="→ Transport">🚗</button>':'')+
   (q.status==='envoyé'?'<button class="btn sm" style="background:#1a3020;border-color:#2a6030;color:#7bf0a0;font-size:10px" onclick="contratValide(\''+q.id+'\')" title="Contrat signé reçu → accepter + créer mission + calendrier">📋 Contrat reçu</button>':'')+
