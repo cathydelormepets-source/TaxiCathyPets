@@ -610,7 +610,7 @@ body.nuit .card{border-color:#0a1520}
 </div>
 </aside>
 <main class="main">
-<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.19</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
+<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.20</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
 <div class="cnt">
 
 <!-- DASHBOARD -->
@@ -6337,8 +6337,11 @@ function fbConnect(){
         fbConnected=false;
       });
     }else{
-      // Pas d'auth — mode ouvert (non sécurisé)
-      afterAuth();
+      // V80.20 SECURITE : plus de mode ouvert — authentification OBLIGATOIRE
+      syncUI('err','🔒 Authentification requise');
+      alert('🔒 Connexion refusée : renseigne Email + Mot de passe Firebase.\n\nLe mode ouvert (sans authentification) a été supprimé pour protéger les données Cathy Pets.');
+      fbConnected=false;
+      return;
     }
   }catch(e){console.error('fb connect err',e);syncUI('err','Erreur: '+e.message);fbConnected=false}
 }
@@ -6392,7 +6395,10 @@ function fbPush(silent){
         // localStorage plein — nettoyer tous les backups
         try{for(var ci=localStorage.length-1;ci>=0;ci--){var ck=localStorage.key(ci);if(ck&&(ck.startsWith('cathypets_backup_')||ck.startsWith('cathypets_pre_')))localStorage.removeItem(ck)}}catch(e2){}
       }
-      return fbRef.set(JSON.parse(JSON.stringify(dataToSend)));
+      // V80.20 SECURITE : le mot de passe Firebase ne part JAMAIS dans le cloud
+      var _cloudPayload=JSON.parse(JSON.stringify(dataToSend));
+      try{if(_cloudPayload.settings){delete _cloudPayload.settings.fbPass}}catch(e){}
+      return fbRef.set(_cloudPayload);
     }).then(function(){
       syncUI('on','Sync ✓ '+new Date().toLocaleTimeString('fr-FR'));
       if(!silent)showToast('⬆️ Données synchronisées');
@@ -7685,6 +7691,16 @@ function genPecUrl(q){
   }
   q.contratPecCode=code2;q.contratPecUrl=pecUrl;stamp(q);sav();
   return pecUrl;
+}
+// V80.20 : marquer l'option retenue en 1 clic depuis la liste — recalcule total + lien PEC
+function devSetOpt(id,val){
+  var q=db.devis.find(function(x){return x.id===id});if(!q)return;
+  q.optChoisie=val||'';
+  q.total=devTotalForOption(q);
+  stamp(q);sav();
+  if(q.contratPecUrl)genPecUrl(q); // le contrat reflète l'option retenue
+  showToast(val?('✅ '+devOptLabel(val)+' retenue — total '+euro(q.total)+(q.contratPecUrl?' · lien PEC mis à jour':'')):('🔀 Sans option — total '+euro(q.total)));
+  rAll();
 }
 function devGenPec(id){
   var q=db.devis.find(function(x){return x.id===id});if(!q)return;
@@ -11219,6 +11235,7 @@ function rDev2(){rTbl('dvTbl',['Réf','Client','Mode','Trajet','Total','Statut',
   '<button class="btn sm" onclick="openMailPro(\'devis\',\''+q.id+'\')" title="Mail Pro HTML avec logo" style="background:#2a1a05;border-color:#8a5a1a;color:#f0b060;font-size:10px">✉️ Pro</button>'+
   '<button class="btn sm" style="background:#1a3a2a;border-color:#2a6040;color:#7bf0b0" onclick="genLienAcompte(\''+q.id+'\')" title="Lien acompte en ligne">💳</button>'+
   '<button class="btn sm" style="background:#2a1a05;border-color:#8a5a1a;color:#f0a060;font-size:10px" onclick="devGenPec(\''+q.id+'\')" title="'+(q.contratPecUrl?'Régénérer':'Générer')+' le lien contrat PEC (options au choix incluses)">📋 PEC</button>'+
+  (((q.optMode||'cumule')==='choix'&&(q.lignes||[]).some(function(l){return l.groupe}))?'<select style="width:auto;max-width:130px;font-size:10px;padding:4px 6px;background:#1a2030;border:1px solid #8a5a1a;color:#f0a060;border-radius:8px" onchange="devSetOpt(\''+q.id+'\',this.value)" title="Option retenue par le client — recalcule total, PEC et facture">'+ '<option value=""'+(!q.optChoisie?' selected':'')+'>🔀 Sans option</option>'+['opt1','opt2','opt3','opt4'].filter(function(g){return (q.lignes||[]).some(function(l){return l.groupe===g})}).map(function(g){return '<option value="'+g+'"'+(q.optChoisie===g?' selected':'')+'>✅ '+devOptLabel(g)+'</option>'}).join('')+'</select>':'')+
   '<button class="btn sm" style="background:#1a3a3a;border-color:#2a6060;color:#7bcfee" onclick="exportDevToGCal(\''+q.id+'\')" title="📅 Vers Google Agenda">📅</button>'+
   (q.status!=='facturé'?'<button class="btn sm" style="background:#1a2a3a;border-color:#2a4060;color:#9bc" onclick="devToTr(\''+q.id+'\')" title="→ Transport">🚗</button>':'')+
   (q.status==='envoyé'?'<button class="btn sm" style="background:#1a3020;border-color:#2a6030;color:#7bf0a0;font-size:10px" onclick="contratValide(\''+q.id+'\')" title="Contrat signé reçu → accepter + créer mission + calendrier">📋 Contrat reçu</button>':'')+
@@ -11633,11 +11650,50 @@ function rDash(){
   var impayees=act(db.factures).filter(function(f){if(f.mode==='avoir'||f.status==='avoir'||(f.ref||'').indexOf('CP-AV')===0)return false;return f.status==='emise'&&f.date&&new Date(f.date)<now30&&resteDuFac(f)>0.009}); // V80.19 : avoirs exclus, seul le reste dû compte
   if(impayees.length){
     h+='<div style="background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.3);border-radius:10px;padding:10px;margin-top:8px">';
-    h+='<div style="font-weight:800;font-size:12px;color:var(--rd);margin-bottom:6px">⚠️ '+impayees.length+' facture(s) impayée(s) > 15 jours</div>';
+    var _totDu=impayees.reduce(function(s2,f2){return s2+resteDuFac(f2)},0);
+    h+='<div style="font-weight:800;font-size:12px;color:var(--rd);margin-bottom:6px">⚠️ '+impayees.length+' facture(s) impayée(s) > 15 jours — '+euro(_totDu)+' de reste dû</div>';
     impayees.forEach(function(f){
       var jours=Math.floor((new Date()-new Date(f.date))/86400000);
       h+='<div style="font-size:11px;padding:3px 0;display:flex;justify-content:space-between"><span><b>'+f.ref+'</b> — '+cN(f.clientId)+' — <b style="color:var(--rd)">'+euro(resteDuFac(f))+'</b>'+(E(f.acompte)>0||avoirsSur(f)>0?' <span style="color:var(--mt)">(reste dû)</span>':'')+'</span><span style="color:var(--rd)">'+jours+'j</span></div>';
     });
+    h+='</div>';
+  }
+  // V80.20 : SOLDES À ENCAISSER AVANT TRANSPORT (CGV : solde exigible à la prise en charge)
+  var _in7=new Date();_in7.setDate(_in7.getDate()+7);var _d7=_in7.toISOString().slice(0,10);
+  var soldesPec=[];var _seenSF={};
+  act(db.transports).forEach(function(t){
+    if(!t.date||t.date<d||t.date>_d7)return;
+    act(db.factures).forEach(function(f){
+      if(f.clientId!==t.clientId)return;
+      if(f.mode==='avoir'||f.status==='avoir'||(f.ref||'').indexOf('CP-AV')===0)return;
+      if(f.status==='payée'||f.status==='annulee')return;
+      var rd=resteDuFac(f);
+      if(rd>0.009&&!_seenSF[f.id]){_seenSF[f.id]=true;soldesPec.push({t:t,f:f,rd:rd})}
+    });
+  });
+  if(soldesPec.length){
+    var _totS=soldesPec.reduce(function(s2,x){return s2+x.rd},0);
+    h+='<div style="background:rgba(245,158,11,.10);border:1px solid rgba(245,158,11,.35);border-radius:10px;padding:10px;margin-top:8px">';
+    h+='<div style="font-weight:800;font-size:12px;color:var(--or);margin-bottom:6px">💶 '+soldesPec.length+' solde(s) à encaisser avant transport (7 j) — '+euro(_totS)+'</div>';
+    soldesPec.forEach(function(x){
+      h+='<div style="font-size:11px;padding:3px 0;display:flex;justify-content:space-between;align-items:center;gap:6px"><span>🚗 '+x.t.date+' — <b>'+cN(x.f.clientId)+'</b> — '+x.f.ref+' — <b style="color:var(--or)">'+euro(x.rd)+'</b></span><button class="btn sm" style="font-size:10px;padding:3px 8px" onclick="quickMail(\'relance_fac\',\''+x.f.clientId+'\',\''+x.f.id+'\')">📧</button></div>';
+    });
+    h+='<button class="btn sm" style="margin-top:6px;font-size:10px;background:#3a2a05;border-color:#8a6a1a;color:#f5d070" onclick="batchRelanceSoldes()">📧 Relancer tous les soldes de la semaine</button>';
+    h+='</div>';
+  }
+  // V80.20 : DEVIS SANS RÉPONSE DEPUIS 7 JOURS (relance = CA qui dort)
+  var relDev=act(db.devis).filter(function(q2){
+    if(q2.status!=='envoyé'||!q2.date)return false;
+    return Math.floor((new Date()-new Date(q2.date))/864e5)>=7;
+  });
+  if(relDev.length){
+    h+='<div style="background:rgba(26,122,110,.10);border:1px solid rgba(26,122,110,.35);border-radius:10px;padding:10px;margin-top:8px">';
+    h+='<div style="font-weight:800;font-size:12px;color:var(--te);margin-bottom:6px">📮 '+relDev.length+' devis sans réponse depuis 7 j+</div>';
+    relDev.forEach(function(q2){
+      var j2=Math.floor((new Date()-new Date(q2.date))/864e5);
+      h+='<div style="font-size:11px;padding:3px 0;display:flex;justify-content:space-between;align-items:center;gap:6px"><span><b>'+q2.ref+'</b> — '+cN(q2.clientId)+' — '+euro(q2.total)+'</span><span style="display:flex;gap:4px;align-items:center"><span style="color:var(--mt)">'+j2+'j</span><button class="btn sm" style="font-size:10px;padding:3px 8px" onclick="openMailPro(\'devis\',\''+q2.id+'\')" title="Relancer (devis + contrat PEC si lien)">📧</button></span></div>';
+    });
+    h+='<button class="btn sm" style="margin-top:6px;font-size:10px;background:#0a2c2a;border-color:#2a6a60;color:#7ad7c0" onclick="batchRelanceDevis()">📧 Relancer tous ces devis</button>';
     h+='</div>';
   }
   $('dTod').innerHTML=h;
@@ -28845,6 +28901,36 @@ function exportFacturXZip(d1,d2,label,base){
       showToast('📑 ZIP Factur-X prêt — '+n+' pièce(s) pour Cerfrance');
     });
   });
+}
+// V80.20 : relance groupée des soldes exigibles avant transport (7 jours)
+function batchRelanceSoldes(){
+  var d0=new Date().toISOString().slice(0,10);
+  var in7=new Date();in7.setDate(in7.getDate()+7);var d7=in7.toISOString().slice(0,10);
+  var lst=[];var seen={};
+  act(db.transports).forEach(function(t){
+    if(!t.date||t.date<d0||t.date>d7)return;
+    act(db.factures).forEach(function(f){
+      if(f.clientId!==t.clientId)return;
+      if(f.mode==='avoir'||f.status==='avoir'||(f.ref||'').indexOf('CP-AV')===0)return;
+      if(f.status==='payée'||f.status==='annulee')return;
+      if(resteDuFac(f)>0.009&&!seen[f.id]){seen[f.id]=true;lst.push(f)}
+    });
+  });
+  if(!lst.length){showToast('✅ Aucun solde à relancer avant les transports de la semaine');return}
+  if(!confirm('📧 Relancer '+lst.length+' solde(s) exigible(s) avant transport ?\n\n'+lst.map(function(f){return f.ref+' — '+cN(f.clientId)+' — '+euro(resteDuFac(f))}).join('\n')))return;
+  var sent=0;lst.forEach(function(f){try{quickMail('relance_fac',f.clientId,f.id);sent++}catch(e){}});
+  showToast('📧 '+sent+' relance(s) de solde préparée(s)');
+}
+// V80.20 : relance groupée des devis sans réponse J+7
+function batchRelanceDevis(){
+  var lst=act(db.devis).filter(function(q2){
+    if(q2.status!=='envoyé'||!q2.date)return false;
+    return Math.floor((new Date()-new Date(q2.date))/864e5)>=7;
+  });
+  if(!lst.length){showToast('✅ Aucun devis à relancer');return}
+  if(!confirm('📧 Relancer '+lst.length+' devis sans réponse ?\n\n'+lst.map(function(q2){return q2.ref+' — '+cN(q2.clientId)+' — '+euro(q2.total)}).join('\n')))return;
+  var sent=0;lst.forEach(function(q2){try{quickMail('relance_dev',q2.clientId,q2.id);sent++}catch(e){}});
+  showToast('📧 '+sent+' relance(s) de devis préparée(s)');
 }
 function batchRelance(){
   var impayees=act(db.factures).filter(function(f){
