@@ -610,7 +610,7 @@ body.nuit .card{border-color:#0a1520}
 </div>
 </aside>
 <main class="main">
-<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.20</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
+<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.21</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
 <div class="cnt">
 
 <!-- DASHBOARD -->
@@ -10426,6 +10426,21 @@ function resteDuFac(f){
   if(f.mode==='avoir'||f.status==='avoir'||f.status==='payée'||f.status==='annulee')return 0;
   return Math.max(0,E(f.total)-E(f.acompte)-avoirsSur(f));
 }
+// V80.21 : date d'EXIGIBILITÉ du solde (CGV) — échéance explicite ou date de prestation, sinon date d'émission.
+// Une facture avec acompte payé et prestation dans 2 mois n'est PAS en retard avant la prise en charge.
+function facDateRef(f){
+  if(!f)return '';
+  var ref=f.date||'';
+  if(f.echeance&&f.echeance>ref)ref=f.echeance;
+  var dp='';
+  try{
+    if(f.transportId){var t=act(db.transports).find(function(x){return x.id===f.transportId});if(t&&t.date)dp=t.date}
+    if(!dp&&f.gardeId){var g=act(db.gardes).find(function(x){return x.id===f.gardeId});if(g&&g.start)dp=String(g.start).slice(0,10)}
+    if(!dp&&f.devisId){var q=act(db.devis).find(function(x){return x.id===f.devisId});if(q&&q.dateDebut)dp=q.dateDebut}
+  }catch(e){}
+  if(dp&&dp>ref)ref=dp;
+  return ref;
+}
 function nextFacRef(isAvoir){
   var yr=new Date().getFullYear();
   var prefix=isAvoir?'CP-AV-':'CP-FAC-';
@@ -11647,14 +11662,16 @@ function rDash(){
   h+='<div class="itm" style="background:rgba(26,122,110,.06)">🧾 Prochain devis: <b>CP-DEV-'+_Y+'-'+db.settings.nextQuote+'</b> · Facture: <b>CP-FAC-'+_Y+'-'+db.settings.nextInvoice+'</b></div>';
   // ALERTES IMPAYÉS > 15 jours
   var now30=new Date();now30.setDate(now30.getDate()-15);
-  var impayees=act(db.factures).filter(function(f){if(f.mode==='avoir'||f.status==='avoir'||(f.ref||'').indexOf('CP-AV')===0)return false;return f.status==='emise'&&f.date&&new Date(f.date)<now30&&resteDuFac(f)>0.009}); // V80.19 : avoirs exclus, seul le reste dû compte
+  var impayees=act(db.factures).filter(function(f){if(f.mode==='avoir'||f.status==='avoir'||(f.ref||'').indexOf('CP-AV')===0)return false;return f.status==='emise'&&f.date&&new Date(facDateRef(f))<now30&&resteDuFac(f)>0.009}); // V80.21 : retard compté depuis l'exigibilité (échéance/prestation), avoirs exclus
   if(impayees.length){
     h+='<div style="background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.3);border-radius:10px;padding:10px;margin-top:8px">';
     var _totDu=impayees.reduce(function(s2,f2){return s2+resteDuFac(f2)},0);
     h+='<div style="font-weight:800;font-size:12px;color:var(--rd);margin-bottom:6px">⚠️ '+impayees.length+' facture(s) impayée(s) > 15 jours — '+euro(_totDu)+' de reste dû</div>';
     impayees.forEach(function(f){
-      var jours=Math.floor((new Date()-new Date(f.date))/86400000);
-      h+='<div style="font-size:11px;padding:3px 0;display:flex;justify-content:space-between"><span><b>'+f.ref+'</b> — '+cN(f.clientId)+' — <b style="color:var(--rd)">'+euro(resteDuFac(f))+'</b>'+(E(f.acompte)>0||avoirsSur(f)>0?' <span style="color:var(--mt)">(reste dû)</span>':'')+'</span><span style="color:var(--rd)">'+jours+'j</span></div>';
+      var _dref=facDateRef(f);
+      var jours=Math.floor((new Date()-new Date(_dref))/86400000);
+      var _refTag=(_dref!==f.date)?' <span style="color:var(--mt)">(exigible '+new Date(_dref).toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit'})+')</span>':'';
+      h+='<div style="font-size:11px;padding:3px 0;display:flex;justify-content:space-between"><span><b>'+f.ref+'</b> — '+cN(f.clientId)+' — <b style="color:var(--rd)">'+euro(resteDuFac(f))+'</b>'+(E(f.acompte)>0||avoirsSur(f)>0?' <span style="color:var(--mt)">(reste dû)</span>':'')+_refTag+'</span><span style="color:var(--rd)">'+jours+'j</span></div>';
     });
     h+='</div>';
   }
@@ -13341,7 +13358,7 @@ function rMails(){
     return (q.status==='envoyé') && age>3;
   });
   var devBrouillon = act(db.devis).filter(function(q){ return q.status==='brouillon'||q.status==='envoyé'; });
-  var facImpayees = act(db.factures).filter(function(f){ if(f.mode==='avoir'||f.status==='avoir'||(f.ref||'').indexOf('CP-AV')===0)return false; return f.status==='emise'&&resteDuFac(f)>0.009; }); // V80.19
+  var facImpayees = act(db.factures).filter(function(f){ if(f.mode==='avoir'||f.status==='avoir'||(f.ref||'').indexOf('CP-AV')===0)return false; return f.status==='emise'&&resteDuFac(f)>0.009&&facDateRef(f)<=d; }); // V80.21 : exigibles uniquement
   var trConf = act(db.transports).filter(function(t){
     if(!t.date) return false;
     var diff = (new Date(t.date)-new Date(d))/864e5;
@@ -28936,11 +28953,11 @@ function batchRelance(){
   var impayees=act(db.factures).filter(function(f){
     if(f.status==='payée'||f.status==='avoir'||f.mode==='avoir'||(f.ref||'').indexOf('CP-AV')===0)return false; // V80.19 : jamais de relance sur un avoir
     if(resteDuFac(f)<=0.009)return false; // couverte par acompte(s)/avoir(s) = rien à relancer
-    var jours=Math.floor((new Date()-new Date(f.date))/864e5);
+    var jours=Math.floor((new Date()-new Date(facDateRef(f)))/864e5); // V80.21 : retard depuis l'exigibilité
     return jours>=30;
   });
   if(!impayees.length){showToast('✅ Aucune facture impayée >30 jours');return}
-  if(!confirm('📧 Relancer '+impayees.length+' facture(s) impayée(s) >30 jours ?\n\n'+impayees.map(function(f){var j=Math.floor((new Date()-new Date(f.date))/864e5);return f.ref+' — '+cN(f.clientId)+' — '+euro(resteDuFac(f))+' ('+j+'j)'}).join('\n')))return;
+  if(!confirm('📧 Relancer '+impayees.length+' facture(s) impayée(s) >30 jours ?\n\n'+impayees.map(function(f){var j=Math.floor((new Date()-new Date(facDateRef(f)))/864e5);return f.ref+' — '+cN(f.clientId)+' — '+euro(resteDuFac(f))+' ('+j+'j)'}).join('\n')))return;
   var sent=0;
   impayees.forEach(function(f){
     try{quickMail('relance_fac',f.clientId,f.id);sent++}catch(e){}
