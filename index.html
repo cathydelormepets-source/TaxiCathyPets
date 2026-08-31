@@ -610,7 +610,7 @@ body.nuit .card{border-color:#0a1520}
 </div>
 </aside>
 <main class="main">
-<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.25</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
+<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.26</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
 <div class="cnt">
 
 <!-- DASHBOARD -->
@@ -13662,7 +13662,8 @@ function buildMailPro(type,id){
   var total=Math.abs(E(doc.total));
   var reste=isDev?0:resteDuFac(doc);
   var dDoc=doc.date?new Date(doc.date).toLocaleDateString('fr-FR'):'';
-  var pen=(!isDev&&type==='relance')?calcPenalitesRetard(doc):null;
+  var pen=(!isDev)?calcPenalitesRetard(doc):null; // V80.26 : pénalités connues pour facture/relance/solde
+  var aRegler=(!isDev)?montantARegler(doc):0;
   var OR='#E8650A',NV='#0B1D3A',CR='#FAF6EE',TE='#1a7a6e';
   var logo=(typeof LOGO_B64!=='undefined'&&LOGO_B64)?'<img src="'+LOGO_B64+'" width="64" height="64" style="width:64px;height:64px;border-radius:10px;display:block" alt="Cathy Pets">':'';
   var subject,intro,couleur,titre,extra='';
@@ -13719,10 +13720,10 @@ function buildMailPro(type,id){
       +'<p style="margin:16px 0 0 0;font-size:13px;color:#333;line-height:1.6">Un souci, une remarque ? R\u00e9pondez simplement \u00e0 ce message, nous vous lirons avec attention. Merci infiniment \ud83d\udc3e</p>';
   }else if(type==='solde'){
     couleur=OR;titre='SOLDE \u00c0 R\u00c9GLER AVANT LA PRISE EN CHARGE';
-    var _pl=_payLinks(reste,doc.ref);
-    subject='Rappel \u2014 solde de '+euro(reste)+' \u00e0 r\u00e9gler avant le transport ('+doc.ref+')';
+    var _pl=_payLinks(aRegler,doc.ref);
+    subject='Rappel \u2014 solde de '+euro(aRegler)+' \u00e0 r\u00e9gler avant le transport ('+doc.ref+')';
     intro='Le transport de votre compagnon approche\u00a0! Conform\u00e9ment \u00e0 nos conditions, <b>le solde est exigible au plus tard \u00e0 la prise en charge</b>. Merci de bien vouloir r\u00e9gler le montant restant avant le jour J afin que tout soit pr\u00eat.';
-    rows=row('Facture',doc.ref)+(doc.objet?row('Prestation',_mpEsc(doc.objet)):'')+row('Montant TTC',euro(total))+(E(doc.acompte)>0?row('Acompte re\u00e7u','-'+euro(doc.acompte)):'')+row('Solde \u00e0 r\u00e9gler',euro(reste),1);
+    rows=row('Facture',doc.ref)+(doc.objet?row('Prestation',_mpEsc(doc.objet)):'')+row('Montant TTC',euro(total))+(E(doc.acompte)>0?row('Acompte re\u00e7u','-'+euro(doc.acompte)):'')+row('Solde \u00e0 r\u00e9gler',euro(reste),1)+(pen?row('P\u00e9nalit\u00e9s de retard ('+pen.joursRetard+' j)',euro(pen.totalPenalites))+row('Total \u00e0 r\u00e9gler',euro(aRegler),1):'');
     extra=_pl.html+'<p style="margin:14px 0 0 0;font-size:12px;color:#777;line-height:1.55">Si votre r\u00e8glement est d\u00e9j\u00e0 parti, merci de ne pas tenir compte de ce rappel. \u00c0 tr\u00e8s vite \ud83d\udc3e</p>';
   }else{
     couleur=TE;titre='VOTRE FACTURE';
@@ -13730,9 +13731,9 @@ function buildMailPro(type,id){
     intro='Nous vous remercions de votre confiance. Veuillez trouver ci-joint votre facture relative \u00e0 la prestation r\u00e9alis\u00e9e.';
     rows=row('R\u00e9f\u00e9rence',doc.ref)+row('Date',dDoc)+(doc.objet?row('Prestation',_mpEsc(doc.objet)):'')+row('Montant total TTC',euro(total),1)+(E(doc.acompte)>0?row('Acompte d\u00e9j\u00e0 vers\u00e9','-'+euro(doc.acompte)):'')+(E(doc.acompte)>0||reste!==total?row('Reste \u00e0 r\u00e9gler',euro(reste),1):'');
     extra='<p style="margin:16px 0 0 0;font-size:14px;color:#333;line-height:1.6">\ud83d\udcb3 <b>R\u00e8glement \u00e0 r\u00e9ception</b>, de pr\u00e9f\u00e9rence par virement instantan\u00e9 (gratuit \u2014 coordonn\u00e9es ci-dessous), ch\u00e8que ou esp\u00e8ces.</p>';
-    if(reste>0.009&&doc.status!=='pay\u00e9e')extra+=_payLinks(reste,doc.ref).html; // V80.24
+    if(reste>0.009&&doc.status!=='pay\u00e9e'){if(pen)rows+=row('P\u00e9nalit\u00e9s de retard ('+pen.joursRetard+' j)',euro(pen.totalPenalites))+row('Total \u00e0 r\u00e9gler',euro(aRegler),1);extra+=_payLinks(aRegler,doc.ref).html;} // V80.26
   }
-  if(type==='relance'&&reste>0.009)extra+=_payLinks(reste,doc.ref).html; // V80.24
+  if(type==='relance'&&reste>0.009)extra+=_payLinks(aRegler,doc.ref).html; // V80.26 : pénalités incluses
   var html='<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:'+CR+';padding:24px 8px"><tr><td align="center">'
     +'<table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:14px;overflow:hidden;font-family:Arial,Helvetica,sans-serif;box-shadow:0 4px 18px rgba(11,29,58,.12)">'
     +'<tr><td style="background:'+NV+';padding:18px 24px"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>'
@@ -13759,10 +13760,10 @@ function buildMailPro(type,id){
   var text='Bonjour '+nomCl+',\n\n'+intro.replace(/<[^>]+>/g,'')+'\n\n'
     +(type==='pec'?'Merci de remplir et signer votre contrat de prise en charge en ligne :\n'+(doc.contratPecUrl||'')+'\n\nPensez au carnet de santé / passeport de votre animal le jour du transport.':
       type==='devis'?'Devis '+doc.ref+' du '+dDoc+' — Total : '+euro(total)+' TTC (validité 30 jours)\nPour accepter : répondez "Bon pour accord".'+(doc.contratPecUrl?'\n\nContrat de prise en charge à remplir et signer en ligne :\n'+doc.contratPecUrl:''):
-      type==='relance'?'Facture '+doc.ref+' du '+dDoc+' — Reste à régler : '+euro(reste)+(pen?' ('+pen.joursRetard+' j de retard, pénalités à ce jour : '+euro(pen.totalPenalites)+')':'')+'\nMerci de régulariser sous 8 jours.\n'+_payLinks(reste,doc.ref).text:
+      type==='relance'?'Facture '+doc.ref+' du '+dDoc+' — Reste à régler : '+euro(reste)+(pen?' ('+pen.joursRetard+' j de retard, pénalités à ce jour : '+euro(pen.totalPenalites)+')':'')+'\nMerci de régulariser sous 8 jours.\n'+_payLinks(aRegler,doc.ref).text:
       type==='acquit'?'Facture '+doc.ref+' acquittée — merci pour votre règlement. Ce document vaut reçu de paiement.':
       type==='avis'?'Votre avis Google nous aide énormément : '+((db.settings||{}).avisUrl||'')+'\nMerci infiniment !':
-      type==='solde'?'Facture '+doc.ref+' — Solde à régler avant la prise en charge : '+euro(reste)+'\n'+_payLinks(reste,doc.ref).text:
+      type==='solde'?'Facture '+doc.ref+' — Solde à régler avant la prise en charge : '+euro(aRegler)+(pen?' (dont pénalités de retard '+euro(pen.totalPenalites)+')':'')+'\n'+_payLinks(aRegler,doc.ref).text:
       'Facture '+doc.ref+' du '+dDoc+' — Total : '+euro(total)+' TTC'+(reste!==total?' — Reste à régler : '+euro(reste):'')+'\nRèglement à réception (virement, chèque ou espèces).')
     +'\n\nBien cordialement,\nCathy — Cathy Pets\nTaxi animalier : 07 81 30 41 10 · Garde : 07 83 43 63 06\ncathypetsitter.com · cathydelormepets@gmail.com';
   return {to:cl.email||'',subject:subject,html:html,text:text,clientNom:nomCl,isDev:isDev,docId:id,noPdf:(type==='pec'||type==='avis'),type:type};
@@ -14351,18 +14352,28 @@ function calcPenalitesRetard(f,dateRef){
   // V79 : paiement à réception → échéance = date de la facture (sauf échéance explicite).
   // Les pénalités courent dès le 1er jour de retard ; l'application reste au choix de l'utilisateur (case à cocher).
   // dateRef (optionnel) = date de référence du calcul (ex: date réelle du paiement) ; par défaut aujourd'hui.
+  if(f.penalitesAppliquees) return null; // V80.26 : déjà intégrées dans la facture, pas de double calcul
+  if(f.mode==='avoir'||f.status==='avoir'||f.status==='annulee') return null;
   var now2=dateRef?new Date(dateRef):new Date();
   var dateFac=new Date(f.date||now2);
-  var echeance=f.echeance?new Date(f.echeance):dateFac;
+  // V80.26 : échéance = date d'EXIGIBILITÉ (échéance explicite ou date de prestation — CGV), jamais avant
+  var _dref=(typeof facDateRef==='function')?facDateRef(f):'';
+  var echeance=_dref?new Date(_dref):(f.echeance?new Date(f.echeance):dateFac);
   var joursRetard=Math.floor((now2-echeance)/(1000*86400));
   if(joursRetard<1||f.status==='payée') return null;
-  var resteDu=Math.max(0,E(f.total)-E(f.acompte));
+  var resteDu=(typeof resteDuFac==='function')?resteDuFac(f):Math.max(0,E(f.total)-E(f.acompte));
   if(resteDu<=0) return null;
   var tauxAnnuel=7.86;
   var interets=Math.round(resteDu*tauxAnnuel/100*joursRetard/365*100)/100;
   var forfait=40;
   var totalPenalites=Math.round((interets+forfait)*100)/100;
   return {joursRetard:joursRetard,resteDu:resteDu,tauxAnnuel:tauxAnnuel,interets:interets,forfait:forfait,totalPenalites:totalPenalites,echeance:echeance,totalAvecPenalites:Math.round((resteDu+totalPenalites)*100)/100};
+}
+// V80.26 : montant réellement à régler = reste dû + pénalités de retard qui courent (sauf si retirées manuellement)
+function montantARegler(f){
+  var r=resteDuFac(f);
+  var pen=calcPenalitesRetard(f);
+  return (pen&&pen.totalPenalites>0)?Math.round((r+pen.totalPenalites)*100)/100:r;
 }
 // ═══════════════════════════════════════════════════════
 // 🌐 PASSERELLE VERS LA PLATEFORME VERCEL (espace clients)
@@ -16356,11 +16367,11 @@ function printFacturePro(id) {
     html += '<p style="margin:6px 0;font-weight:bold;color:#e65c00">TVA non applicable — Article 293 B du Code Général des Impôts</p>';
   }
   // V80.25 : règlement du solde — virement instantané + QR SEPA scannable (0 € de frais)
-  if(!isPaye&&!isAvoir){var _rdPdf=resteDuFac(f);var _plp=_payLinks(_rdPdf,f.ref);
+  if(!isPaye&&!isAvoir){var _rdPdf=montantARegler(f);var _penPdf=(_rdPdf>resteDuFac(f)+0.009);var _plp=_payLinks(_rdPdf,f.ref);
     if(_rdPdf>0.009&&_plp.iban){
       html += '<div style="margin:12px 0;padding:10px 14px;background:#F3FAF8;border:1px solid #1a7a6e;border-radius:6px;font-size:11px;display:flex;gap:14px;align-items:center">'
         +(_plp.qr?'<img src="'+_plp.qr+'" style="width:96px;height:96px;flex:none" onerror="this.style.display=\'none\'">':'')
-        +'<div><b style="color:#0B1D3A;font-size:12px">\u26a1 R\u00e9gler le solde de '+euro(_rdPdf)+' par virement instantan\u00e9</b> \u2014 gratuit, re\u00e7u en 10 secondes<br>'
+        +'<div><b style="color:#0B1D3A;font-size:12px">\u26a1 R\u00e9gler '+(_penPdf?'le total d\u00fb de ':'le solde de ')+euro(_rdPdf)+' par virement instantan\u00e9</b>'+(_penPdf?' <span style="color:#e53e3e;font-weight:700">(p\u00e9nalit\u00e9s de retard incluses)</span>':'')+' \u2014 gratuit, re\u00e7u en 10 secondes<br>'
         +'<span style="color:#666">Scannez ce QR code avec votre application bancaire : le virement se pr\u00e9-remplit (IBAN, montant, r\u00e9f\u00e9rence).</span><br>'
         +'R\u00e9f\u00e9rence \u00e0 indiquer : <b style="color:#E8650A">'+f.ref+'</b>'+(_plp.sumup?' \u00b7 <span style="color:#888">Carte bancaire sur demande : <a href="'+_plp.sumup+'" style="color:#1a7a6e">lien s\u00e9curis\u00e9</a></span>':'')+'</div></div>';
     }
