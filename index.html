@@ -610,7 +610,7 @@ body.nuit .card{border-color:#0a1520}
 </div>
 </aside>
 <main class="main">
-<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.28b</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
+<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.29</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
 <div class="cnt">
 
 <!-- DASHBOARD -->
@@ -17418,15 +17418,26 @@ function rFrais(){
   _trP.forEach(function(t){
     var co=totalCostTr(t)+(db.depenses||[]).filter(function(x){return x.transportId===t.id&&!x._deleted}).reduce(function(s2,x){return s2+E(x.ttc)},0);
     var k=t.clientId||'?';
-    if(!_byCli[k])_byCli[k]={n:0,ca:0,cout:0};
+    if(!_byCli[k])_byCli[k]={n:0,ca:0,cout:0,nG:0};
     _byCli[k].n++;_byCli[k].ca+=E(t.price);_byCli[k].cout+=co;
+  });
+  // V80.29 : les GARDES comptent aussi (CA garde − dépenses liées à la garde)
+  act(db.gardes||[]).forEach(function(g){
+    if(!E(g.price))return;
+    var gd=String(g.start||'').slice(0,10);if(!gd)return;
+    var okP=(periode==='jour')?gd===d:(periode==='semaine')?(gd>=semS&&gd<=d):(periode==='mois')?gd.slice(0,7)===moisS:gd.slice(0,4)===anneeS;
+    if(!okP)return;
+    var co=(db.depenses||[]).filter(function(x){return x.gardeId===g.id&&!x._deleted}).reduce(function(s2,x){return s2+E(x.ttc)},0);
+    var k=g.clientId||'?';
+    if(!_byCli[k])_byCli[k]={n:0,ca:0,cout:0,nG:0};
+    _byCli[k].nG=(_byCli[k].nG||0)+1;_byCli[k].ca+=E(g.price);_byCli[k].cout+=co;
   });
   var _ck=Object.keys(_byCli).sort(function(a,b){return (_byCli[b].ca-_byCli[b].cout)-(_byCli[a].ca-_byCli[a].cout)});
   var _margeCliHtml='';
   if(_ck.length){
-    _margeCliHtml='<div style="background:rgba(26,122,110,.07);border:1px solid rgba(26,122,110,.25);border-radius:10px;padding:10px 12px;margin-bottom:12px"><div style="font-weight:800;font-size:12px;color:var(--te);margin-bottom:6px">🚗 Marge par client (transports de la période — coûts : carburant estimé + péages + hôtel + multimodal + tickets liés)</div><table style="width:100%;font-size:11px;border-collapse:collapse"><tr style="color:var(--mt)"><th style="text-align:left;padding:3px">Client</th><th style="text-align:center">Nb</th><th style="text-align:right">CA TTC</th><th style="text-align:right">Coûts</th><th style="text-align:right">Marge</th><th style="text-align:right">%</th></tr>';
+    _margeCliHtml='<div style="background:rgba(26,122,110,.07);border:1px solid rgba(26,122,110,.25);border-radius:10px;padding:10px 12px;margin-bottom:12px"><div style="font-weight:800;font-size:12px;color:var(--te);margin-bottom:6px">🚗🏠 Marge par client (transports + gardes de la période — coûts : carburant estimé + péages + hôtel + multimodal + tickets 📸 liés)</div><table style="width:100%;font-size:11px;border-collapse:collapse"><tr style="color:var(--mt)"><th style="text-align:left;padding:3px">Client</th><th style="text-align:center">Nb</th><th style="text-align:right">CA TTC</th><th style="text-align:right">Coûts</th><th style="text-align:right">Marge</th><th style="text-align:right">%</th></tr>';
     _ck.forEach(function(k){var g2=_byCli[k];var mg=g2.ca-g2.cout;var pc=g2.ca>0?Math.round(mg/g2.ca*100):0;
-      _margeCliHtml+='<tr><td style="padding:3px;border-top:1px solid rgba(255,255,255,.04)">'+esc(cN(k))+'</td><td style="text-align:center;border-top:1px solid rgba(255,255,255,.04)">'+g2.n+'</td><td style="text-align:right;border-top:1px solid rgba(255,255,255,.04)">'+euro(g2.ca)+'</td><td style="text-align:right;border-top:1px solid rgba(255,255,255,.04)">'+euro(g2.cout)+'</td><td style="text-align:right;border-top:1px solid rgba(255,255,255,.04);font-weight:800;color:'+(mg>=0?'var(--a2)':'var(--rd)')+'">'+euro(mg)+'</td><td style="text-align:right;border-top:1px solid rgba(255,255,255,.04);color:'+(pc>=30?'var(--a2)':pc>=0?'var(--or)':'var(--rd)')+'">'+pc+'%</td></tr>';
+      _margeCliHtml+='<tr><td style="padding:3px;border-top:1px solid rgba(255,255,255,.04)">'+esc(cN(k))+'</td><td style="text-align:center;border-top:1px solid rgba(255,255,255,.04)">'+(g2.n?'🚗'+g2.n:'')+((g2.nG||0)?' 🏠'+g2.nG:'')+'</td><td style="text-align:right;border-top:1px solid rgba(255,255,255,.04)">'+euro(g2.ca)+'</td><td style="text-align:right;border-top:1px solid rgba(255,255,255,.04)">'+euro(g2.cout)+'</td><td style="text-align:right;border-top:1px solid rgba(255,255,255,.04);font-weight:800;color:'+(mg>=0?'var(--a2)':'var(--rd)')+'">'+euro(mg)+'</td><td style="text-align:right;border-top:1px solid rgba(255,255,255,.04);color:'+(pc>=30?'var(--a2)':pc>=0?'var(--or)':'var(--rd)')+'">'+pc+'%</td></tr>';
     });
     _margeCliHtml+='</table><div style="font-size:10px;color:var(--mt);margin-top:4px">💡 En dessous de 30 % de marge, le tarif de ce client/trajet mérite d\'être revu.</div></div>';
   }
