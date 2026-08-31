@@ -610,7 +610,7 @@ body.nuit .card{border-color:#0a1520}
 </div>
 </aside>
 <main class="main">
-<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.26</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
+<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.27</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
 <div class="cnt">
 
 <!-- DASHBOARD -->
@@ -2138,6 +2138,8 @@ document.getElementById('q_contrat_pec').addEventListener('change',function(){
   <button class="btn sm" onclick="reconcilierToutesFactures()" style="font-size:11px;background:#3d2c0a;border-color:#6d5a2a;color:#fcd77a" title="Recalcule les totaux et supprime les lignes vides">🔧 Réconcilier TVA & Totaux</button>
   <button class="btn sm" onclick="exportCerfrance()" style="font-size:11px;background:#0a2c3d;border-color:#2a5a6d;color:#7ad7fc" title="Export CSV des factures pour la plateforme agréée / comptable">📤 Export Cerfrance (CSV)</button>
   <button class="btn sm" onclick="exportGrandLivre()" style="font-size:11px;background:#1a2a10;border-color:#3a6a10;color:#9d6" title="Un seul fichier annuel : factures + avoirs + chaque encaissement lettré (date, mode, réglé par)">📚 Grand livre annuel (comptable)</button>
+  <button class="btn sm" onclick="auditEFacture()" style="font-size:11px;background:#2a1a05;border-color:#8a5a1a;color:#f0a060" title="Contrôle des mentions obligatoires (réforme e-facture 2026/2027)">🧾 Audit e-facture</button>
+  <button class="btn sm" onclick="backupDrive(true)" style="font-size:11px" title="Sauvegarde complète JSON sur Google Drive (dossier CathyPets/Sauvegardes)">💾 Sauvegarde Drive</button>
   <button class="btn sm" onclick="exportFacturXZip()" style="font-size:11px;background:#1a0a3d;border-color:#4a2a8d;color:#b09afc" title="Export ZIP des factures au format Factur-X (XML EN 16931)">📑 Export Factur-X (ZIP)</button>
   <button class="btn sm" onclick="exportFacturesPdfZip()" style="font-size:11px;background:#2a1a05;border-color:#8a5a1a;color:#f0b060" title="Toutes les vraies factures de la période en PDF, dans un ZIP — idéal pour Cerfrance et l'archivage">📄 Factures PDF (ZIP)</button>
   <button class="btn sm" onclick="openReleveClientModal()" style="font-size:11px;background:#0a2c3d;border-color:#2a5a6d;color:#7ad7fc" title="Relevé de compte par client : factures payées / impayées / avoirs + détail des mouvements">🧾 Relevé par client</button>
@@ -16378,6 +16380,8 @@ function printFacturePro(id) {
   }
   html += '<p style="margin:6px 0;font-weight:bold">Mode de règlement : ' + (f.paiement || 'virement, espèces') + '.</p>';
   html += '<p style="margin:6px 0;color:#666">Échéance : ' + echeanceStr + '</p>';
+  // V80.27 : mentions réforme facturation électronique
+  html += '<p style="margin:6px 0;color:#666;font-size:10px">Catégorie d\'opération : prestation de services · TVA exigible sur les encaissements (art. 269-2-c CGI)'+(cl&&cl.type&&cl.type!=='particulier'&&cl.siret?' · SIREN client : '+String(cl.siret).replace(/\D/g,'').slice(0,9):'')+(f.transportId?' · Date de prestation : '+(function(){var t=act(db.transports).find(function(x){return x.id===f.transportId});return t&&t.date?new Date(t.date).toLocaleDateString('fr-FR'):''})():'')+'</p>';
   if(cl && cl.type && cl.type!=='particulier'){
     html += '<p style="margin:6px 0;color:#666">Conditions professionnels : tout retard de paiement entraîne de plein droit des pénalités au taux de 7,86% annuel et une indemnité forfaitaire de recouvrement de 40 € par facture (art. L441-10 & D441-5 du Code de commerce), sans mise en demeure préalable. En cas d\'impayé, Cathy Pets SAS peut suspendre ou annuler toute prestation en cours ou à venir (art. 1219 du Code civil).</p>';
   } else {
@@ -17290,7 +17294,7 @@ function rFrais(){
   rEl.innerHTML=h;
   // Stats jour/semaine/mois
   var sEl=$('frStats');
-  var sh='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">';
+  var sh=carteCarbBloc()+'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">';
   [{label:'AUJOURD\'HUI',deps:allDeps.filter(function(f){return f.date===d}),facs:act(db.factures).filter(function(f){return f.date&&f.date.slice(0,10)===d}),color:'#3b82f6'},
    {label:'SEMAINE',deps:allDeps.filter(function(f){return f.date>=semS}),facs:act(db.factures).filter(function(f){return f.date&&f.date.slice(0,10)>=semS}),color:'#f59e0b'},
    {label:'CE MOIS',deps:allDeps.filter(function(f){return f.date&&f.date.slice(0,7)===moisS}),facs:act(db.factures).filter(function(f){return f.date&&f.date.slice(0,7)===moisS}),color:'var(--a2)'}
@@ -18672,7 +18676,7 @@ function gcInitClient(clientId, promptMode){
   try{
     var client = google.accounts.oauth2.initTokenClient({
       client_id: clientId,
-      scope: 'https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/gmail.send',
+      scope: 'https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/drive.file',
       callback: function(resp){
         if(resp.error){
           _gcEl('gcAuthStatus').innerHTML = '🔴 Erreur: '+resp.error;
@@ -18731,7 +18735,7 @@ function gcSilentRenew(cb){
     try{
       var cl=google.accounts.oauth2.initTokenClient({
         client_id:clientId,
-        scope:'https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/gmail.send',
+        scope:'https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/drive.file',
         callback:function(resp){
           if(resp&&resp.access_token){
             _gcToken=resp.access_token;db.settings.gcToken=_gcToken;sav(false);
@@ -19020,6 +19024,7 @@ function gcAutoRestore(){
       gcImport();
       gcStartAutoSync();
       setTimeout(autoRelanceSoldesJ2,4000); // V80.24
+      setTimeout(function(){backupDrive(false)},9000); // V80.27 : sauvegarde Drive hebdo
     }, 1500);
   }else{setTimeout(function(){try{if((db.settings||{}).autoRelSolde){var n=_soldesJ2List().length;if(n)showToast('\ud83d\udcb6 '+n+' solde(s) \u00e0 relancer (J-2) \u2014 connecte Gmail pour l\u2019envoi auto')}}catch(e){}},5000)}
 }
@@ -21043,6 +21048,19 @@ function rCfTVA(recettes,deps){
   h+='<div style="padding:14px;background:#0f1f33;border:1px solid var(--ln);border-radius:10px;text-align:center"><div class="lb">TVA déductible</div><div style="font-size:24px;font-weight:900;color:var(--bl);margin-top:6px">'+euro(tvaDed)+'</div></div>';
   h+='<div style="padding:14px;background:'+(tvaNet>=0?'rgba(212,168,67,.12)':'rgba(26,122,110,.12)')+';border:1px solid '+(tvaNet>=0?'rgba(212,168,67,.4)':'rgba(26,122,110,.4)')+';border-radius:10px;text-align:center"><div class="lb">TVA à décaisser</div><div style="font-size:24px;font-weight:900;color:'+(tvaNet>=0?'var(--gd)':'var(--a2)')+';margin-top:6px">'+euro(tvaNet)+'</div></div>';
   h+='</div>';
+  // V80.27 : TVA SUR LES ENCAISSEMENTS (régime de droit commun des prestations de services)
+  try{
+    var rg=cfGetRange();var encTTC=0,encTVA=0,encN=0;
+    act(db.factures).forEach(function(f){
+      if(f.mode==='avoir'||f.status==='avoir'||f.status==='annulee')return;
+      var tx=E(f.tva);if(!(tx>=0))tx=20;var coef=tx/(100+tx);
+      _getAcomptes(f).forEach(function(a){if(cfInRange(a.date,rg.d1,rg.d2)){encTTC+=E(a.montant);encTVA+=E(a.montant)*coef;encN++}});
+      if(f.status==='payée'&&f.datePaiement&&cfInRange(f.datePaiement,rg.d1,rg.d2)){var sol=Math.max(0,E(f.total)-E(f.acompte)-avoirsSur(f));if(sol>0){encTTC+=sol;encTVA+=sol*coef;encN++}}
+    });
+    h+='<div style="background:rgba(26,122,110,.10);border:1px solid rgba(26,122,110,.35);border-radius:10px;padding:10px 12px;margin-bottom:12px"><div style="font-weight:800;font-size:12px;color:var(--te);margin-bottom:4px">💶 TVA exigible sur les ENCAISSEMENTS de la période (régime services)</div>'
+      +'<div style="font-size:12px">'+encN+' encaissement(s) — '+euro(encTTC)+' TTC encaissés → <b>TVA à déclarer : '+euro(encTVA)+'</b> · TVA déductible (dépenses) : '+euro(tvaDed)+' → <b style="color:var(--gd)">net à payer : '+euro(Math.max(0,encTVA-tvaDed))+'</b></div>'
+      +'<div style="font-size:10px;color:var(--mt);margin-top:4px">Pour une prestation de services, la TVA est due à l’encaissement (acompte compris), pas à la facturation — c’est ce chiffre que ta comptable déclare. La TVA « collectée » ci-dessous (sur factures émises) est indicative.</div></div>';
+  }catch(e){}
   h+='<div class="nt" style="margin-bottom:12px"><b>📋 Éléments CA3 / CA12</b><br>';
   h+='Ligne CA (CA HT) : <b>'+euro(caHT)+'</b><br>';
   h+='Ligne 0979 (CA TTC) : <b>'+euro(caTTC)+'</b><br>';
@@ -28890,13 +28908,19 @@ function exportGrandLivre(){
       if(solde>0)rows.push({date:String(f.datePaiement).slice(0,10),piece:'ENCAISSEMENT',ref:f.ref,client:cname,lib:'Solde sur '+f.ref,debit:0,credit:solde,mode:modeLbl[f.paiement]||f.paiement||'',payeur:clean(f.payeur||''),lettrage:f.ref,statut:''});
     }
   });
+  // V80.27 : dépenses (tickets scannés, frais, achats) avec justificatif Drive
+  (db.depenses||[]).forEach(function(d){
+    if(d._deleted||!inP(d.date))return;
+    var ttc=E(d.ttc)||E(d.montant)||0,ht=E(d.ht)||(ttc/(1+(E(d.tva)||20)/100));
+    rows.push({date:String(d.date).slice(0,10),piece:'DEPENSE '+(d.compte||'606'),ref:clean(d.ref||d.id||''),client:clean(d.fournisseur||''),lib:clean(d.label||d.desc||'')+(d.carteCarb?' [carte carburant'+(d.rapproche?' — fact. '+d.rapproche.ref:'')+']':''),debit:0,credit:0,dep:ttc,depHT:ht,mode:clean(d.paiement||''),payeur:'',lettrage:d.drive?d.drive.url:'',statut:d.drive?'Justificatif Drive':(d.photo?'Photo locale':'')});
+  });
   if(!rows.length){alert('Aucune \u00e9criture pour '+an);return}
   rows.sort(function(a,b){return a.date.localeCompare(b.date)||a.ref.localeCompare(b.ref)});
   var sep=';';
-  var L=['Date'+sep+'Piece'+sep+'Reference'+sep+'Client'+sep+'Libelle'+sep+'Debit (facture TTC)'+sep+'Credit (encaisse / avoir)'+sep+'Mode'+sep+'Regle par'+sep+'Lettrage'+sep+'Statut'];
-  var tD=0,tC=0;
-  rows.forEach(function(r){tD+=r.debit;tC+=r.credit;L.push(r.date+sep+r.piece+sep+clean(r.ref)+sep+r.client+sep+r.lib+sep+(r.debit?fr(r.debit):'')+sep+(r.credit?fr(r.credit):'')+sep+r.mode+sep+(r.payeur||(r.piece==='ENCAISSEMENT'?r.client:''))+sep+r.lettrage+sep+r.statut)});
-  L.push(''+sep+''+sep+''+sep+''+sep+'TOTAUX '+an+sep+fr(tD)+sep+fr(tC)+sep+''+sep+''+sep+''+sep+'Reste a encaisser : '+fr(tD-tC));
+  var L=['Date'+sep+'Piece'+sep+'Reference'+sep+'Client / Fournisseur'+sep+'Libelle'+sep+'Debit (facture TTC)'+sep+'Credit (encaisse / avoir)'+sep+'Depense TTC'+sep+'Depense HT'+sep+'Mode'+sep+'Regle par'+sep+'Lettrage / Justificatif'+sep+'Statut'];
+  var tD=0,tC=0,tX=0;
+  rows.forEach(function(r){tD+=r.debit;tC+=r.credit;tX+=(r.dep||0);L.push(r.date+sep+r.piece+sep+clean(r.ref)+sep+r.client+sep+r.lib+sep+(r.debit?fr(r.debit):'')+sep+(r.credit?fr(r.credit):'')+sep+(r.dep?fr(r.dep):'')+sep+(r.depHT?fr(r.depHT):'')+sep+r.mode+sep+(r.payeur||(r.piece==='ENCAISSEMENT'?r.client:''))+sep+r.lettrage+sep+r.statut)});
+  L.push(''+sep+''+sep+''+sep+''+sep+'TOTAUX '+an+sep+fr(tD)+sep+fr(tC)+sep+fr(tX)+sep+''+sep+''+sep+''+sep+''+sep+'Reste a encaisser : '+fr(tD-tC));
   var csv='\ufeff'+L.join('\r\n');
   var b=new Blob([csv],{type:'text/csv;charset=utf-8'});
   var a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='CathyPets_GrandLivre_'+an+'.csv';a.click();
@@ -29005,6 +29029,8 @@ function facturXml(fid){
   +'<rsm:ExchangedDocument><ram:ID>'+_fxE(f.ref)+'</ram:ID><ram:TypeCode>'+(isAvoir?'381':'380')+'</ram:TypeCode>'
   +'<ram:IssueDateTime><udt:DateTimeString format="102">'+_fxD(f.date)+'</udt:DateTimeString></ram:IssueDateTime>'
   +(f.objet?'<ram:IncludedNote><ram:Content>'+_fxE(f.objet)+'</ram:Content></ram:IncludedNote>':'')
+  +'<ram:IncludedNote><ram:Content>Cat\u00e9gorie d\u2019op\u00e9ration : prestation de services</ram:Content><ram:SubjectCode>AAI</ram:SubjectCode></ram:IncludedNote>'
+  +'<ram:IncludedNote><ram:Content>TVA exigible sur les encaissements (art. 269-2-c CGI)</ram:Content><ram:SubjectCode>TXD</ram:SubjectCode></ram:IncludedNote>'
   +'</rsm:ExchangedDocument>'
   +'<rsm:SupplyChainTradeTransaction>'
   +lignesXml
@@ -29020,7 +29046,7 @@ function facturXml(fid){
     +(clTvaNum?'<ram:SpecifiedTaxRegistration><ram:ID schemeID="VA">'+_fxE(clTvaNum[0].replace(/\s/g,'').toUpperCase())+'</ram:ID></ram:SpecifiedTaxRegistration>':'')
     +'</ram:BuyerTradeParty>'
   +'</ram:ApplicableHeaderTradeAgreement>'
-  +'<ram:ApplicableHeaderTradeDelivery/>'
+  +(function(){var dp='';try{if(f.transportId){var t=act(db.transports).find(function(x){return x.id===f.transportId});if(t&&t.date)dp=t.date}if(!dp&&f.devisId){var q=act(db.devis).find(function(x){return x.id===f.devisId});if(q&&q.dateDebut)dp=q.dateDebut}}catch(e){}return dp?'<ram:ApplicableHeaderTradeDelivery><ram:ActualDeliverySupplyChainEvent><ram:OccurrenceDateTime><udt:DateTimeString format="102">'+_fxD(dp)+'</udt:DateTimeString></ram:OccurrenceDateTime></ram:ActualDeliverySupplyChainEvent></ram:ApplicableHeaderTradeDelivery>':'<ram:ApplicableHeaderTradeDelivery/>'})()
   +'<ram:ApplicableHeaderTradeSettlement>'
     +'<ram:InvoiceCurrencyCode>EUR</ram:InvoiceCurrencyCode>'
     +'<ram:SpecifiedTradeSettlementPaymentMeans><ram:TypeCode>'+payCode+'</ram:TypeCode></ram:SpecifiedTradeSettlementPaymentMeans>'
@@ -29116,6 +29142,172 @@ function autoRelanceSoldesJ2(){
     next();
   }catch(e){console.warn('autoRelanceSoldesJ2',e)}
 }
+// ══════════════ V80.27 : GOOGLE DRIVE — sauvegarde hebdo + justificatifs ══════════════
+function _drvReq(method,url,body,contentType,cb){
+  if(!_gcToken){cb(null,'no_token');return}
+  fetch(url,{method:method,headers:{'Authorization':'Bearer '+_gcToken,'Content-Type':contentType||'application/json'},body:body||null})
+    .then(function(r){if(r.status===403||r.status===401){cb(null,'scope');return null}return r.json()})
+    .then(function(j){if(j)cb(j,null)}).catch(function(e){cb(null,String(e))});
+}
+function driveFolder(name,parentId,cb){
+  var q="name='"+name.replace(/'/g,"\\'")+"' and mimeType='application/vnd.google-apps.folder' and trashed=false"+(parentId?" and '"+parentId+"' in parents":"");
+  _drvReq('GET','https://www.googleapis.com/drive/v3/files?q='+encodeURIComponent(q)+'&fields=files(id,name)',null,null,function(j,err){
+    if(err){cb(null,err);return}
+    if(j&&j.files&&j.files.length){cb(j.files[0].id,null);return}
+    _drvReq('POST','https://www.googleapis.com/drive/v3/files',JSON.stringify({name:name,mimeType:'application/vnd.google-apps.folder',parents:parentId?[parentId]:[]}),'application/json',function(j2,err2){cb(j2&&j2.id?j2.id:null,err2)});
+  });
+}
+function drivePath(parts,cb){ // ['CathyPets','Justificatifs','2026-09']
+  var i=0,parent=null;
+  function next(){if(i>=parts.length){cb(parent,null);return}driveFolder(parts[i++],parent,function(id,err){if(!id){cb(null,err||'folder');return}parent=id;next()})}
+  next();
+}
+function driveUpload(blob,name,folderId,cb){
+  var meta={name:name,parents:folderId?[folderId]:[]};
+  var B='cpdrv'+Date.now();
+  var rd=new FileReader();
+  rd.onload=function(){
+    var b64=String(rd.result).split(',')[1];
+    var body='--'+B+'\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n'+JSON.stringify(meta)+'\r\n--'+B+'\r\nContent-Type: '+(blob.type||'application/octet-stream')+'\r\nContent-Transfer-Encoding: base64\r\n\r\n'+b64+'\r\n--'+B+'--';
+    _drvReq('POST','https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,webViewLink',body,'multipart/related; boundary='+B,cb);
+  };
+  rd.readAsDataURL(blob);
+}
+function _dataUrlToBlob(du){var p=du.split(',');var mime=(p[0].match(/data:([^;]+);/)||[])[1]||'image/jpeg';var bin=atob(p[1]);var arr=new Uint8Array(bin.length);for(var i=0;i<bin.length;i++)arr[i]=bin.charCodeAt(i);return new Blob([arr],{type:mime})}
+function driveUploadJustif(dataUrl,name,cb){
+  if(!_gcToken){cb(null,'no_token');return}
+  var mois=tdy().slice(0,7);
+  drivePath(['CathyPets','Justificatifs',mois],function(fid,err){
+    if(!fid){cb(null,err);return}
+    driveUpload(_dataUrlToBlob(dataUrl),name,fid,function(j,e2){cb(j&&j.id?{id:j.id,url:j.webViewLink||('https://drive.google.com/file/d/'+j.id+'/view')}:null,e2)});
+  });
+}
+function backupDrive(force){
+  try{
+    if(!_gcToken){if(force)showToast('🔑 Connecte Google (bouton Agenda) pour activer la sauvegarde Drive');return}
+    var last=(db.settings||{}).lastDriveBackup||'';
+    if(!force&&last&&(new Date()-new Date(last))<6.5*86400000)return;
+    var data=JSON.parse(JSON.stringify(db));try{if(data.settings){delete data.settings.fbPass;delete data.settings.gcToken}}catch(e){}
+    var blob=new Blob([JSON.stringify(data)],{type:'application/json'});
+    var name='CathyPets_backup_'+new Date().toISOString().slice(0,16).replace(/[:T]/g,'-')+'.json';
+    drivePath(['CathyPets','Sauvegardes'],function(fid,err){
+      if(!fid){if(err==='scope'){showToast('🔑 Reconnecte Google (une fois) pour autoriser Drive');}else if(force)showToast('⚠️ Drive : '+err);return}
+      driveUpload(blob,name,fid,function(j,e2){
+        if(j&&j.id){db.settings.lastDriveBackup=new Date().toISOString();sav(false);showToast('💾 Sauvegarde Drive OK — '+name);lH('backup','Sauvegarde Drive : '+name+' ('+Math.round(blob.size/1024)+' Ko)')}
+        else if(force)showToast('⚠️ Sauvegarde Drive échouée : '+(e2||'?'));
+      });
+    });
+  }catch(e){console.warn('backupDrive',e)}
+}
+
+// ══════════════ V80.27 : SCAN TICKET — photo → dépense du jour (compta) ══════════════
+var _tkPhoto='';
+function scanTicket(){
+  _tkPhoto='';
+  var ist='width:100%;background:#080f1a;border:1px solid var(--ln);color:var(--tx);border-radius:10px;padding:10px;font:inherit;font-size:14px';
+  var h='<div style="display:flex;gap:8px;margin-bottom:10px">'
+    +'<label class="btn gn" style="flex:1;text-align:center;padding:14px;cursor:pointer;font-size:14px">📸 Prendre le ticket en photo<input type="file" accept="image/*" capture="environment" style="display:none" onchange="_tkPhotoPick(this)"></label>'
+    +'<label class="btn" style="flex:1;text-align:center;padding:14px;cursor:pointer;font-size:13px">🖼️ Choisir une image<input type="file" accept="image/*,application/pdf" style="display:none" onchange="_tkPhotoPick(this)"></label></div>'
+    +'<div id="tk_prev" style="text-align:center;margin-bottom:10px;min-height:20px;font-size:11px;color:var(--mt)">Aucune photo pour l’instant (facultatif mais recommandé)</div>'
+    +'<div class="row">'
+    +'<div class="c6 fd"><label>📅 Date du ticket</label><input id="tk_dt" type="date" value="'+tdy()+'" style="'+ist+'"></div>'
+    +'<div class="c6 fd"><label>🏪 Fournisseur</label><input id="tk_fo" list="tk_fo_list" placeholder="Leclerc, TotalEnergies, Vinci..." style="'+ist+'"><datalist id="tk_fo_list"><option value="E.Leclerc"><option value="TotalEnergies"><option value="Vinci Autoroutes"><option value="Sanef"><option value="Intermarché"><option value="Carrefour"><option value="Amazon"><option value="Norauto"><option value="Feu Vert"><option value="Vétérinaire"></datalist></div>'
+    +'</div><div class="row">'
+    +'<div class="c6 fd"><label>📂 Type de dépense</label><select id="tk_cat" onchange="_tkCatChange()" style="'+ist+'"><option value="602">⛽ Carburant (602)</option><option value="625">🛣️ Péage / parking / déplacement (625)</option><option value="625r">🍽️ Restaurant / hôtel (625)</option><option value="615">🔧 Entretien / réparation véhicule (615)</option><option value="606">🧹 Matériel / fournitures (606)</option><option value="622">🩺 Vétérinaire / honoraires (622)</option><option value="626">📱 Télécom / postal (626)</option><option value="616">🛡️ Assurance (616)</option><option value="623">📣 Publicité (623)</option><option value="606a">📎 Autre (606)</option></select></div>'
+    +'<div class="c6 fd"><label>💳 Payé avec</label><select id="tk_mp" style="'+ist+'"><option value="carte_carburant">⛽ Carte carburant (facture mensuelle)</option><option value="cb" selected>💳 CB société</option><option value="prelevement">🏦 Prélèvement</option><option value="virement">🏦 Virement</option><option value="cheque">📝 Chèque</option><option value="perso">👤 Avancé perso (note de frais)</option></select></div>'
+    +'</div><div class="row">'
+    +'<div class="c4 fd"><label>💰 Montant TTC €</label><input id="tk_ttc" type="number" step="0.01" inputmode="decimal" style="'+ist+';font-size:18px;font-weight:800;color:var(--rd)" oninput="_tkCalc()"></div>'
+    +'<div class="c4 fd"><label>TVA %</label><select id="tk_tva" onchange="_tkCalc()" style="'+ist+'"><option value="20" selected>20 %</option><option value="10">10 % (resto)</option><option value="5.5">5,5 %</option><option value="0">0 % (péage étranger, timbre)</option></select></div>'
+    +'<div class="c4 fd"><label>HT (calculé)</label><input id="tk_ht" readonly style="'+ist+';color:var(--gd)"></div>'
+    +'</div><div class="row">'
+    +'<div class="c8 fd"><label>📝 Libellé</label><input id="tk_lb" placeholder="Ex : Plein E85 Transit — trajet Luxembourg" style="'+ist+'"></div>'
+    +'<div class="c4 fd"><label>🚗 Lié au transport</label><select id="tk_tr" style="'+ist+'"><option value="">— Aucun —</option>'+act(db.transports).filter(function(t){return t.date&&Math.abs(new Date(t.date)-new Date())<20*86400000}).sort(function(a,b){return (b.date||'').localeCompare(a.date||'')}).map(function(t){return '<option value="'+t.id+'">'+t.date+' — '+esc(cN(t.clientId))+'</option>'}).join('')+'</select></div>'
+    +'</div>'
+    +'<div id="tk_carb_note" style="display:none;font-size:11px;color:#f5d070;background:rgba(245,208,112,.08);border:1px solid rgba(245,208,112,.3);border-radius:8px;padding:8px;margin-top:4px">⛽ Ticket carte carburant : la dépense est comptée <b>au jour du plein</b>. La facture mensuelle Leclerc servira de justificatif de paiement (rapprochement dans l’onglet Frais). Ne saisis pas ce plein en plus dans l’onglet ⛽.</div>'
+    +'<div style="display:flex;gap:8px;margin-top:12px"><button class="btn gn" style="flex:1;padding:13px;font-size:14px" onclick="saveTicket()">✅ Enregistrer dans la compta du jour</button></div>';
+  oMo('📸 Scanner un ticket / une facture réglée',h,'');
+  setTimeout(function(){var m=$('tk_mp');if(m)m.addEventListener('change',_tkCatChange);_tkCatChange()},50);
+}
+function _tkCatChange(){var c=V('tk_cat'),mp=$('tk_mp');var note=$('tk_carb_note');if(c==='602'&&mp&&!mp.dataset.touched){mp.value='carte_carburant'}if(note)note.style.display=(mp&&mp.value==='carte_carburant')?'block':'none';var tv=$('tk_tva');if(tv&&c==='625r')tv.value='10';_tkCalc()}
+function _tkCalc(){var ttc=E(V('tk_ttc')),tv=E(V('tk_tva'));var ht=tv>0?ttc/(1+tv/100):ttc;var e=$('tk_ht');if(e)e.value=ttc?ht.toFixed(2):''}
+function _tkPhotoPick(inp){
+  var f=inp.files&&inp.files[0];if(!f)return;
+  var rd=new FileReader();
+  rd.onload=function(ev){
+    if(f.type==='application/pdf'){_tkPhoto=ev.target.result;$('tk_prev').innerHTML='📄 PDF prêt ('+Math.round(f.size/1024)+' Ko)';return}
+    var img=new Image();img.onload=function(){
+      var max=1400,sc=Math.min(1,max/Math.max(img.width,img.height));
+      var cv=document.createElement('canvas');cv.width=Math.round(img.width*sc);cv.height=Math.round(img.height*sc);
+      cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
+      _tkPhoto=cv.toDataURL('image/jpeg',0.72);
+      $('tk_prev').innerHTML='<img src="'+_tkPhoto+'" style="max-height:140px;border-radius:8px;border:1px solid var(--ln)"><div>📷 Photo prête ('+Math.round(_tkPhoto.length*0.75/1024)+' Ko)</div>';
+    };img.src=ev.target.result;
+  };
+  rd.readAsDataURL(f);
+}
+function saveTicket(){
+  var ttc=E(V('tk_ttc'));if(!(ttc>0)){showToast('⚠️ Montant TTC obligatoire');return}
+  var cat=V('tk_cat');var compte=cat.replace(/[a-z]$/,'');
+  var tv=E(V('tk_tva'));var ht=tv>0?ttc/(1+tv/100):ttc;
+  var mp=V('tk_mp');var fo=V('tk_fo');var lb=V('tk_lb')||({'602':'Carburant','625':'Péage / déplacement','625r':'Restauration / hébergement','615':'Entretien véhicule','606':'Fournitures','622':'Honoraires','626':'Télécom','616':'Assurance','623':'Publicité','606a':'Divers'})[cat];
+  var dep={id:uid('d'),date:V('tk_dt')||tdy(),fournisseur:fo,label:lb+(fo?' — '+fo:''),compte:compte,ht:Math.round(ht*100)/100,tva:tv,ttc:Math.round(ttc*100)/100,paiement:mp,ref:'TICKET_'+Date.now(),notes:'Scan ticket',transportId:V('tk_tr')||'',carteCarb:(mp==='carte_carburant')?(fo||'Carte carburant'):'',source:'scan'};
+  if(!db.depenses)db.depenses=[];
+  // Vignette locale (légère) + original sur Drive
+  var finish=function(){stamp(dep);db.depenses.push(dep);sav();cMo();lH('depense','📸 Ticket '+dep.label+' — '+euro(dep.ttc)+' TTC ('+compte+')'+(dep.carteCarb?' [carte carburant]':''));showToast('✅ '+euro(dep.ttc)+' enregistré — compte '+compte+(dep.drive?' · justificatif sur Drive':dep.photo?' · photo locale':''));try{rFrais()}catch(e){}try{rCerfrance()}catch(e){}};
+  if(_tkPhoto&&_tkPhoto.indexOf('data:image')===0){
+    var img=new Image();img.onload=function(){var cv=document.createElement('canvas');var sc=Math.min(1,320/Math.max(img.width,img.height));cv.width=Math.round(img.width*sc);cv.height=Math.round(img.height*sc);cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);dep.photo=cv.toDataURL('image/jpeg',0.55);
+      driveUploadJustif(_tkPhoto,'Ticket_'+dep.date+'_'+(fo||compte).replace(/[^\w-]+/g,'_')+'_'+dep.ttc.toFixed(2)+'.jpg',function(r,err){if(r){dep.drive=r}else if(err==='scope'){showToast('🔑 Reconnecte Google une fois pour archiver les tickets sur Drive')}finish()});
+    };img.src=_tkPhoto;
+  }else if(_tkPhoto){ // PDF
+    driveUploadJustif(_tkPhoto,'Facture_'+dep.date+'_'+(fo||compte).replace(/[^\w-]+/g,'_')+'.pdf',function(r){if(r)dep.drive=r;finish()});
+  }else finish();
+}
+// ══════════════ V80.27 : CARTE CARBURANT — rapprochement avec la facture mensuelle ══════════════
+function carteCarbBloc(){
+  var grp={};
+  (db.depenses||[]).forEach(function(d){if(!d.carteCarb||d._deleted)return;var k=(d.date||'').slice(0,7)+'|'+d.carteCarb;if(!grp[k])grp[k]={mois:(d.date||'').slice(0,7),carte:d.carteCarb,n:0,ttc:0,rap:0,fact:null};grp[k].n++;grp[k].ttc+=E(d.ttc);if(d.rapproche){grp[k].rap++;grp[k].fact=d.rapproche}});
+  var keys=Object.keys(grp).sort().reverse().slice(0,6);if(!keys.length)return '';
+  var h='<div style="background:rgba(245,208,112,.07);border:1px solid rgba(245,208,112,.3);border-radius:10px;padding:10px 12px;margin-bottom:12px"><div style="font-weight:800;font-size:12px;color:#f5d070;margin-bottom:6px">⛽ Carte carburant — rapprochement facture mensuelle</div>';
+  keys.forEach(function(k){var g=grp[k];var ok=g.rap===g.n;
+    h+='<div style="display:flex;justify-content:space-between;align-items:center;gap:6px;font-size:11px;padding:4px 0;border-top:1px solid rgba(255,255,255,.05)"><span><b>'+g.mois+'</b> · '+esc(g.carte)+' · '+g.n+' ticket(s) · <b>'+euro(g.ttc)+'</b> TTC'+(ok?' <span style="color:#9d6">✅ rapproché — facture '+esc(g.fact.ref||'')+' du '+g.fact.date+' ('+euro(g.fact.total)+')'+(Math.abs(E(g.fact.total)-g.ttc)>0.5?' ⚠️ écart '+euro(E(g.fact.total)-g.ttc):''):' <span style="color:var(--or)">⏳ facture mensuelle attendue')+'</span></span>'
+      +(ok?'':'<button class="btn sm" style="font-size:10px;padding:3px 8px" onclick="rapprocherCarb(\''+g.mois+'\',\''+esc(g.carte)+'\')">📄 Facture reçue</button>')+'</div>';
+  });
+  return h+'<div style="font-size:10px;color:var(--mt);margin-top:4px">Les pleins sont comptés au jour du ticket (compte 602). La facture mensuelle n’est PAS ressaisie en dépense : elle justifie le prélèvement.</div></div>';
+}
+function rapprocherCarb(mois,carte){
+  var tk=(db.depenses||[]).filter(function(d){return d.carteCarb===carte&&(d.date||'').slice(0,7)===mois&&!d._deleted});
+  var tot=tk.reduce(function(s,d){return s+E(d.ttc)},0);
+  var ref=prompt('📄 Facture mensuelle '+carte+' — '+mois+'\n\nN° de facture :','');if(ref===null)return;
+  var dt=prompt('Date de la facture (AAAA-MM-JJ) :',tdy());if(dt===null)return;
+  var mt=prompt('Montant TTC de la facture :\n(tickets scannés : '+euro(tot)+')',tot.toFixed(2));if(mt===null)return;
+  var total=E(String(mt).replace(',','.'));
+  tk.forEach(function(d){d.rapproche={ref:ref,date:dt,total:total};stamp(d)});
+  sav();lH('depense','Rapprochement carte carburant '+carte+' '+mois+' : '+tk.length+' tickets = '+euro(tot)+' / facture '+ref+' '+euro(total));
+  showToast(Math.abs(total-tot)<=0.5?'✅ Rapproché — '+tk.length+' ticket(s) = facture '+ref:'⚠️ Rapproché avec écart de '+euro(total-tot)+' — vérifie un ticket manquant');
+  try{rFrais()}catch(e){}
+}
+
+// ══════════════ V80.27 : AUDIT CONFORMITÉ FACTURATION ÉLECTRONIQUE ══════════════
+function auditEFacture(){
+  var an=String(new Date().getFullYear());
+  var pb=[];var nbPro=0;
+  act(db.factures).filter(function(f){return (f.date||'').slice(0,4)===an&&f.status!=='annulee'}).forEach(function(f){
+    var cl=db.clients.find(function(x){return x.id===f.clientId})||{};
+    var pro=cl.type&&cl.type!=='particulier';
+    if(pro){nbPro++;var siren=String(cl.siret||'').replace(/\D/g,'');if(siren.length<9)pb.push(f.ref+' — '+cN(f.clientId)+' : SIREN/SIRET client manquant (obligatoire B2B)');if(!cl.adresse||!cl.cp)pb.push(f.ref+' — '+cN(f.clientId)+' : adresse complète client manquante')}
+    if(!f.lignes||!f.lignes.length)pb.push(f.ref+' : aucune ligne détaillée (désignation, quantité, PU, TVA requis)');
+    if(!(E(f.tva)>=0))pb.push(f.ref+' : taux de TVA non défini');
+  });
+  var st=db.settings||{};
+  if(!st.entIBAN)pb.push('Paramètres : IBAN manquant');
+  if(!(st.entTva||'').match(/^FR/))pb.push('Paramètres : n° TVA intracom manquant');
+  var h='<div style="font-size:12px;line-height:1.6">'
+    +'<div class="nt" style="margin-bottom:10px">📅 <b>Réforme facturation électronique</b> : réception obligatoire via plateforme agréée dès le <b>1er sept. 2026</b> ; émission obligatoire pour Cathy Pets (TPE) dès le <b>1er sept. 2027</b>. L’app génère déjà le <b>Factur-X</b> (EN 16931) avec date de prestation, catégorie « prestation de services », SIREN acheteur et TVA sur les encaissements.</div>'
+    +'<div style="margin-bottom:6px"><b>'+an+'</b> — '+nbPro+' facture(s) pro contrôlée(s) — '+(pb.length?'<span style="color:var(--rd)">'+pb.length+' point(s) à corriger</span>':'<span style="color:#9d6">✅ aucune anomalie</span>')+'</div>'
+    +(pb.length?'<ul style="margin:0;padding-left:18px">'+pb.slice(0,40).map(function(p){return '<li>'+esc(p)+'</li>'}).join('')+(pb.length>40?'<li>… +'+(pb.length-40)+'</li>':'')+'</ul>':'')
+    +'<div class="nt" style="margin-top:10px;font-size:11px">✅ Checklist : plateforme agréée choisie (Cerfrance / Qonto) · SIREN sur chaque client pro (fiche client → SIRET) · adresse de livraison si différente du siège · mention « TVA sur les encaissements » (auto) · numérotation continue (auto).</div></div>';
+  oMo('🧾 Audit conformité e-facture '+an,h,'');
+}
 // V80.20 : relance groupée des soldes exigibles avant transport (7 jours)
 function batchRelanceSoldes(){
   var d0=new Date().toISOString().slice(0,10);
@@ -29164,6 +29356,6 @@ function batchRelance(){
 function editRecur(){ return;}
 function oMoTemplate(){ return;}
 
-</script>
+</script><button id="fabScan" onclick="scanTicket()" title="Scanner un ticket / facture réglée" style="position:fixed;right:14px;bottom:92px;z-index:900;width:52px;height:52px;border-radius:50%;border:2px solid #f5d070;background:#2a1a05;color:#fff;font-size:22px;box-shadow:0 4px 14px rgba(0,0,0,.45);cursor:pointer">📸</button>
 </body>
 </html>
