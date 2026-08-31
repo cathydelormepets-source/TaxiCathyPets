@@ -610,7 +610,7 @@ body.nuit .card{border-color:#0a1520}
 </div>
 </aside>
 <main class="main">
-<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.27</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
+<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.28</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
 <div class="cnt">
 
 <!-- DASHBOARD -->
@@ -7715,6 +7715,102 @@ function devSetOpt(id,val){
   showToast(val?('✅ '+devOptLabel(val)+' retenue — total '+euro(q.total)+(q.contratPecUrl?' · lien PEC mis à jour':'')):('🔀 Sans option — total '+euro(q.total)));
   rAll();
 }
+// V80.28 : COMPTE-RENDU DE LIVRAISON — photo + heure + note + envoi "bien arrivé"
+var _lvPhoto='';
+function livraisonModal(tId){
+  var t=db.transports.find(function(x){return x.id===tId});if(!t)return;
+  _lvPhoto='';
+  var ist='width:100%;background:#080f1a;border:1px solid var(--ln);color:var(--tx);border-radius:10px;padding:10px;font:inherit;font-size:13px';
+  var now=new Date();
+  var h='<div style="font-size:12px;color:var(--mt);margin-bottom:8px">'+t.ref+' — '+esc(cN(t.clientId))+' — '+t.date+'</div>'
+    +'<label class="btn gn" style="display:block;text-align:center;padding:14px;cursor:pointer;font-size:14px;margin-bottom:8px">📸 Photo de l\'animal livré<input type="file" accept="image/*" capture="environment" style="display:none" onchange="_lvPick(this)"></label>'
+    +'<div id="lv_prev" style="text-align:center;margin-bottom:8px;min-height:16px;font-size:11px;color:var(--mt)"></div>'
+    +'<div class="row"><div class="c6 fd"><label>🕐 Heure de remise</label><input id="lv_h" value="'+('0'+now.getHours()).slice(-2)+':'+('0'+now.getMinutes()).slice(-2)+'" style="'+ist+'"></div>'
+    +'<div class="c6 fd"><label>📍 Remis à</label><input id="lv_qui" placeholder="Ex : M. Dupont (client) / Mme X (pension)" style="'+ist+'"></div></div>'
+    +'<div class="fd"><label>📝 Observations (état de l\'animal, remarques)</label><input id="lv_note" placeholder="Ex : voyage calme, a bu et mangé à l\'arrivée" style="'+ist+'"></div>'
+    +'<div style="display:flex;gap:8px;margin-top:10px"><button class="btn gn" style="flex:1;padding:12px" onclick="saveLivraison(\''+tId+'\')">✅ Enregistrer + proposer l\'email au client</button></div>';
+  oMo('📦 Livraison — '+t.ref,h,'');
+}
+function _lvPick(inp){
+  var f=inp.files&&inp.files[0];if(!f)return;
+  var rd=new FileReader();rd.onload=function(ev){
+    var img=new Image();img.onload=function(){
+      var max=1400,sc=Math.min(1,max/Math.max(img.width,img.height));
+      var cv=document.createElement('canvas');cv.width=Math.round(img.width*sc);cv.height=Math.round(img.height*sc);
+      cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
+      _lvPhoto=cv.toDataURL('image/jpeg',0.72);
+      $('lv_prev').innerHTML='<img src="'+_lvPhoto+'" style="max-height:130px;border-radius:8px;border:1px solid var(--ln)">';
+    };img.src=ev.target.result;
+  };rd.readAsDataURL(f);
+}
+function saveLivraison(tId){
+  var t=db.transports.find(function(x){return x.id===tId});if(!t)return;
+  t.livraison={date:tdy(),heure:V('lv_h'),qui:V('lv_qui'),note:V('lv_note')};
+  var finish=function(){
+    stamp(t);sav();cMo();
+    lH('transport','📦 Livraison '+t.ref+' — '+t.livraison.heure+(t.livraison.qui?' remis à '+t.livraison.qui:''));
+    showToast('📦 Livraison enregistrée'+(t.livraison.drive?' — photo sur Drive':''));
+    try{rTrp()}catch(e){}try{rDash()}catch(e){}
+    setTimeout(function(){if(confirm('✉️ Envoyer au client le message « Votre compagnon est bien arrivé » (avec la photo) ?'))openMailPro('livraison',tId)},300);
+  };
+  if(_lvPhoto){
+    var img=new Image();img.onload=function(){
+      var cv=document.createElement('canvas');var sc=Math.min(1,420/Math.max(img.width,img.height));
+      cv.width=Math.round(img.width*sc);cv.height=Math.round(img.height*sc);
+      cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
+      t.livraison.photo=cv.toDataURL('image/jpeg',0.6);
+      if(_gcToken){
+        var mois=tdy().slice(0,7);
+        drivePath(['CathyPets','Livraisons',mois],function(fid){
+          if(!fid){finish();return}
+          driveUpload(_dataUrlToBlob(_lvPhoto),'Livraison_'+t.ref+'_'+tdy()+'.jpg',fid,function(j){
+            if(j&&j.id){
+              t.livraison.drive={id:j.id,url:'https://drive.google.com/file/d/'+j.id+'/view'};
+              _drvReq('POST','https://www.googleapis.com/drive/v3/files/'+j.id+'/permissions',JSON.stringify({role:'reader',type:'anyone'}),'application/json',function(){finish()});
+            } else finish();
+          });
+        });
+      } else finish();
+    };img.src=_lvPhoto;
+  } else finish();
+}
+// V80.28 : lien "Bon pour accord" en ligne (devis-accord.html) — signature + option + QR acompte
+function genDevisAccordUrl(q){
+  if(!q)return '';
+  var cl=db.clients.find(function(x){return x.id===q.clientId})||{};
+  var st=db.settings||{};
+  var code=q.accordCode||(Math.random().toString(36).substr(2,6));
+  var u='https://cathydelormepets-source.github.io/TaxiCathyPets/devis-accord.html?code='+code;
+  u+='&devis='+encodeURIComponent(q.ref);
+  u+='&nom='+encodeURIComponent(cl.nom||'')+'&prenom='+encodeURIComponent(cl.prenom||'')+'&email='+encodeURIComponent(cl.email||'');
+  if(q.objet)u+='&objet='+encodeURIComponent(q.objet);
+  var val=new Date(new Date(q.date||tdy()).getTime()+30*86400000).toLocaleDateString('fr-FR');
+  u+='&validite='+encodeURIComponent(val);
+  var baseLignes=devFilterLignesOption(q)||[];
+  var tarif=baseLignes.filter(function(lg){return E(lg.qty)>0&&E(lg.pu)>0}).map(function(lg){
+    var d=(lg.article||lg.desc||'Prestation').replace(/\|/g,'-').replace(/;;/g,',');
+    return d+'|'+(E(lg.qty)||1)+'|'+(E(lg.pu)||0)+'|'+(E(lg.remise)||0);
+  });
+  if(tarif.length)u+='&tarif='+encodeURIComponent(tarif.join(';;'));
+  else u+='&total='+encodeURIComponent(E(q.total));
+  if((q.optMode||'cumule')==='choix'){
+    var optL=(q.lignes||[]).filter(function(lg){var g=lg.groupe||'';return g&&g!==(q.optChoisie||'')&&E(lg.qty)>0&&E(lg.pu)>0}).map(function(lg){
+      var d2=(lg.article||lg.desc||'Option').replace(/\|/g,'-').replace(/;;/g,',');
+      return lg.groupe+'|'+d2+'|'+(E(lg.qty)||1)+'|'+(E(lg.pu)||0)+'|'+(E(lg.remise)||0);
+    });
+    if(optL.length)u+='&tarif_options='+encodeURIComponent(optL.join(';;'));
+  }
+  if(st.entIBAN)u+='&iban='+encodeURIComponent(st.entIBAN)+'&bic='+encodeURIComponent(st.entBIC||'')+'&benef='+encodeURIComponent(st.entNom||'Cathy Pets SAS');
+  q.accordCode=code;q.accordUrl=u;stamp(q);sav();
+  return u;
+}
+function devGenAccord(id){
+  var q=db.devis.find(function(x){return x.id===id});if(!q)return;
+  var url=genDevisAccordUrl(q);
+  try{navigator.clipboard.writeText(url)}catch(e){}
+  showToast('✍️ Lien « Bon pour accord » généré et copié — le client signe, choisit son option et voit le QR acompte');
+  rAll();
+}
 function devGenPec(id){
   var q=db.devis.find(function(x){return x.id===id});if(!q)return;
   var url=genPecUrl(q);
@@ -11267,7 +11363,7 @@ function rCli(filterQuery){
 }
 function filterCliTable(val){rCli(val);}
 function rAni(){rTbl('anTbl',['Animal','Client','Espèce','Race','CITES',''],act(db.animaux).map(function(a){return '<tr><td>'+a.nom+'</td><td>'+cN(a.clientId)+'</td><td>'+a.espece+'</td><td>'+(a.race||'')+'</td><td>'+(a.cites||'')+'</td><td><button class="btn sm bu" onclick="eAni(\''+a.id+'\')">✏️</button></td></tr>'}))}
-function rTrp(){rTbl('trTbl',['Réf','Date','Client','Trajet','Km','Coût','TTC','HT','Brute','Nette','Extras','GPS',''],act(db.transports).map(function(t){var l=tLegs(t);var tr=l.length<=3?l.join(' → '):(l[0]+' → ... → '+l[l.length-1]);var co=totalCostTr(t);var m=fmtMarg(t.price,co);var gmUrl=l.length>1?'https://www.google.com/maps/dir/?api=1&origin='+l.map(encodeURIComponent)[0]+'&destination='+l.map(encodeURIComponent)[l.length-1]+(l.length>2?'&waypoints='+l.slice(1,l.length-1).map(encodeURIComponent).join('|'):'')+'&travelmode=driving':'';var gmNoToll=gmUrl?gmUrl+'&avoid=tolls':'';var hasFac=act(db.factures).find(function(f){return f.transportId===t.id});return '<tr><td>'+t.ref+(hasFac?' <span class="pill gt" style="font-size:8px">FAC</span>':'')+'</td><td>'+t.date+'</td><td>'+cN(t.clientId)+'</td><td style="font-size:11px">'+tr+'</td><td>'+(t.kmManual||0)+'</td><td>'+euro(co)+'</td><td>'+euro(t.price)+'</td><td>'+euro(m.priceHT)+'</td><td style="color:'+(m.brute>=0?'var(--a2)':'var(--rd)')+'">'+euro(m.brute)+'</td><td style="color:'+(m.nette>=0?'var(--a2)':'var(--rd)')+'"><b>'+euro(m.nette)+'</b></td><td style="font-size:10px">'+extraHtml(t)+'</td><td style="white-space:nowrap">'+(gmUrl?'<a class="btn sm bu" href="'+gmUrl+'" target="_blank" title="Rapide">🚀</a> <a class="btn sm" style="background:#16332015;border-color:#22a69340;color:#22a693" href="'+gmNoToll+'" target="_blank" title="Sans péage">🌿</a>':'')+'</td><td style="display:flex;gap:3px;flex-wrap:wrap"><button class="btn sm bu" onclick="eTr(\''+t.id+'\')">✏️</button><button class="btn sm og" onclick="dupTr(\''+t.id+'\')" title="Dupliquer">📋</button>'+(hasFac?'':'<button class="btn sm gn" onclick="facExpressFromTr(\''+t.id+'\')" title="Facturer express">💶</button>')+'</td></tr>'}))}
+function rTrp(){rTbl('trTbl',['Réf','Date','Client','Trajet','Km','Coût','TTC','HT','Brute','Nette','Extras','GPS',''],act(db.transports).map(function(t){var l=tLegs(t);var tr=l.length<=3?l.join(' → '):(l[0]+' → ... → '+l[l.length-1]);var co=totalCostTr(t);var m=fmtMarg(t.price,co);var gmUrl=l.length>1?'https://www.google.com/maps/dir/?api=1&origin='+l.map(encodeURIComponent)[0]+'&destination='+l.map(encodeURIComponent)[l.length-1]+(l.length>2?'&waypoints='+l.slice(1,l.length-1).map(encodeURIComponent).join('|'):'')+'&travelmode=driving':'';var gmNoToll=gmUrl?gmUrl+'&avoid=tolls':'';var hasFac=act(db.factures).find(function(f){return f.transportId===t.id});return '<tr><td>'+t.ref+(hasFac?' <span class="pill gt" style="font-size:8px">FAC</span>':'')+'</td><td>'+t.date+'</td><td>'+cN(t.clientId)+'</td><td style="font-size:11px">'+tr+'</td><td>'+(t.kmManual||0)+'</td><td>'+euro(co)+'</td><td>'+euro(t.price)+'</td><td>'+euro(m.priceHT)+'</td><td style="color:'+(m.brute>=0?'var(--a2)':'var(--rd)')+'">'+euro(m.brute)+'</td><td style="color:'+(m.nette>=0?'var(--a2)':'var(--rd)')+'"><b>'+euro(m.nette)+'</b></td><td style="font-size:10px">'+extraHtml(t)+'</td><td style="white-space:nowrap">'+(gmUrl?'<a class="btn sm bu" href="'+gmUrl+'" target="_blank" title="Rapide">🚀</a> <a class="btn sm" style="background:#16332015;border-color:#22a69340;color:#22a693" href="'+gmNoToll+'" target="_blank" title="Sans péage">🌿</a>':'')+'</td><td style="display:flex;gap:3px;flex-wrap:wrap"><button class="btn sm bu" onclick="eTr(\''+t.id+'\')">✏️</button><button class="btn sm og" onclick="dupTr(\''+t.id+'\')" title="Dupliquer">📋</button>'+(t.livraison?'<span class="pill gt" style="font-size:8px" title="Livré le '+t.livraison.date+' à '+t.livraison.heure+'">📦✓</span>':'<button class="btn sm" style="background:#2a1a05;border-color:#8a5a1a;color:#f0a060" onclick="livraisonModal(\''+t.id+'\')" title="Compte-rendu de livraison (photo + email bien arrivé)">📦</button>')+(hasFac?'':'<button class="btn sm gn" onclick="facExpressFromTr(\''+t.id+'\')" title="Facturer express">💶</button>')+'</td></tr>'}))}
 function rGrd2(){var typeIcons={garde_domicile:'🏡',garde_famille:'👨‍👩‍👧',pension:'🏠',promenade:'🐕',veterinaire:'🩺',combine:'🚗🏡'};rTbl('grTbl',['Réf','Type','Animal','Trajet','Entrée','Sortie','Coût','TTC','Nette HT',''],act(db.gardes).map(function(g){var m=fmtMarg(g.price,E(g.cost));var hasFac=act(db.factures).find(function(f){return f.gardeId===g.id});var ico=typeIcons[g.type||'garde_domicile']||'🏡';var trajet='';if(g.villeDepart)trajet+=g.villeDepart;if(g.villePEC)trajet+=(trajet?' → ':'')+g.villePEC;if(g.villeArrivee)trajet+=(trajet?' → ':'')+g.villeArrivee;return '<tr><td>'+g.ref+(hasFac?' <span class="pill gt" style="font-size:8px">FAC</span>':'')+'</td><td title="'+(g.type||'garde_domicile')+'">'+ico+'</td><td>'+aNs(g)+'</td><td style="font-size:11px">'+esc(trajet)+'</td><td>'+fD(g.start)+'</td><td>'+fD(g.end)+'</td><td>'+euro(g.cost||0)+'</td><td>'+euro(g.price)+'</td><td style="color:'+(m.nette>=0?'var(--a2)':'var(--rd)')+'"><b>'+euro(m.nette)+'</b></td><td style="display:flex;gap:3px"><button class="btn sm bu" onclick="eGrd(\''+g.id+'\')">✏️</button>'+(hasFac?'':'<button class="btn sm gn" onclick="facExpressFromGrd(\''+g.id+'\')" title="Facturer express">💶</button>')+'</td></tr>'}))}
 function rDev2(){rTbl('dvTbl',['Réf','Client','Mode','Trajet','Total','Statut','Actions'],act(db.devis).map(function(q){var sc=q.status==='facturé'?'gt':q.status==='accepté'?'bt':q.status==='refusé'?'rt':'gy';var wps=q.waypoints||[];var tr=wps.length>=2?(wps[0].address+' → ... → '+wps[wps.length-1].address):wps.length===1?wps[0].address:'—';return '<tr><td>'+q.ref+'</td><td>'+cN(q.clientId)+'</td><td>'+(q.mode||'km')+'</td><td style="font-size:11px;max-width:160px">'+tr+'</td><td>'+euro(q.total)+'</td><td><span class="pill '+sc+'">'+q.status+'</span></td><td style="white-space:nowrap;display:flex;gap:3px;flex-wrap:wrap">'+
   '<button class="btn sm bu" onclick="eDev(\''+q.id+'\')" title="Modifier">✏️</button>'+
@@ -11276,6 +11372,7 @@ function rDev2(){rTbl('dvTbl',['Réf','Client','Mode','Trajet','Total','Statut',
   '<button class="btn sm" onclick="openMailPro(\'devis\',\''+q.id+'\')" title="Mail Pro HTML avec logo" style="background:#2a1a05;border-color:#8a5a1a;color:#f0b060;font-size:10px">✉️ Pro</button>'+
   '<button class="btn sm" style="background:#1a3a2a;border-color:#2a6040;color:#7bf0b0" onclick="genLienAcompte(\''+q.id+'\')" title="Lien acompte en ligne">💳</button>'+
   '<button class="btn sm" style="background:#2a1a05;border-color:#8a5a1a;color:#f0a060;font-size:10px" onclick="devGenPec(\''+q.id+'\')" title="'+(q.contratPecUrl?'Régénérer':'Générer')+' le lien contrat PEC (options au choix incluses)">📋 PEC</button>'+
+  '<button class="btn sm" style="background:#0a2c2a;border-color:#2a6a60;color:#7ad7c0;font-size:10px" onclick="devGenAccord(\''+q.id+'\')" title="'+(q.accordUrl?'Régénérer':'Générer')+' le lien Bon pour accord en ligne (signature + option + QR acompte)">✍️ Accord</button>'+
   (((q.optMode||'cumule')==='choix'&&(q.lignes||[]).some(function(l){return l.groupe}))?'<select style="width:auto;max-width:130px;font-size:10px;padding:4px 6px;background:#1a2030;border:1px solid #8a5a1a;color:#f0a060;border-radius:8px" onchange="devSetOpt(\''+q.id+'\',this.value)" title="Option retenue par le client — recalcule total, PEC et facture">'+ '<option value=""'+(!q.optChoisie?' selected':'')+'>🔀 Sans option</option>'+['opt1','opt2','opt3','opt4'].filter(function(g){return (q.lignes||[]).some(function(l){return l.groupe===g})}).map(function(g){return '<option value="'+g+'"'+(q.optChoisie===g?' selected':'')+'>✅ '+devOptLabel(g)+'</option>'}).join('')+'</select>':'')+
   '<button class="btn sm" style="background:#1a3a3a;border-color:#2a6060;color:#7bcfee" onclick="exportDevToGCal(\''+q.id+'\')" title="📅 Vers Google Agenda">📅</button>'+
   (q.status!=='facturé'?'<button class="btn sm" style="background:#1a2a3a;border-color:#2a4060;color:#9bc" onclick="devToTr(\''+q.id+'\')" title="→ Transport">🚗</button>':'')+
@@ -13657,15 +13754,16 @@ function _payLinks(montant,ref){
 }
 function buildMailPro(type,id){
   var doc,cl,isDev=(type==='devis'||type==='pec');
-  if(isDev){doc=db.devis.find(function(x){return x.id===id})}else{doc=db.factures.find(function(x){return x.id===id})}
+  var isLiv=(type==='livraison');
+  if(isDev){doc=db.devis.find(function(x){return x.id===id})}else if(isLiv){doc=db.transports.find(function(x){return x.id===id})}else{doc=db.factures.find(function(x){return x.id===id})}
   if(!doc)return null;
   cl=db.clients.find(function(c){return c.id===doc.clientId})||{};
   var nomCl=((cl.prenom||'')+' '+(cl.nom||'')).trim()||'Madame, Monsieur';
-  var total=Math.abs(E(doc.total));
-  var reste=isDev?0:resteDuFac(doc);
+  var total=isLiv?E(doc.price):Math.abs(E(doc.total));
+  var reste=(isDev||isLiv)?0:resteDuFac(doc);
   var dDoc=doc.date?new Date(doc.date).toLocaleDateString('fr-FR'):'';
-  var pen=(!isDev)?calcPenalitesRetard(doc):null; // V80.26 : pénalités connues pour facture/relance/solde
-  var aRegler=(!isDev)?montantARegler(doc):0;
+  var pen=(!isDev&&!isLiv)?calcPenalitesRetard(doc):null; // V80.26 : pénalités connues pour facture/relance/solde
+  var aRegler=(!isDev&&!isLiv)?montantARegler(doc):0;
   var OR='#E8650A',NV='#0B1D3A',CR='#FAF6EE',TE='#1a7a6e';
   var logo=(typeof LOGO_B64!=='undefined'&&LOGO_B64)?'<img src="'+LOGO_B64+'" width="64" height="64" style="width:64px;height:64px;border-radius:10px;display:block" alt="Cathy Pets">':'';
   var subject,intro,couleur,titre,extra='';
@@ -13676,7 +13774,12 @@ function buildMailPro(type,id){
     subject='Votre devis '+doc.ref+' — Cathy Pets ('+euro(total)+' TTC)';
     intro='Nous vous remercions de votre demande et avons le plaisir de vous adresser notre devis pour la prestation suivante. Vous trouverez le document d\u00e9taill\u00e9 en pi\u00e8ce jointe.';
     rows=row('R\u00e9f\u00e9rence',doc.ref)+row('Date',dDoc)+(doc.objet?row('Prestation',_mpEsc(doc.objet)):'')+row('Montant total TTC',euro(total),1)+row('Validit\u00e9','30 jours');
-    extra='<p style="margin:16px 0 0 0;font-size:14px;color:#333;line-height:1.6">\u2705 <b>Pour accepter ce devis</b>, il vous suffit de r\u00e9pondre \u00ab Bon pour accord \u00bb \u00e0 ce message. Nous conviendrons ensuite ensemble des modalit\u00e9s pratiques (date, prise en charge, acompte \u00e9ventuel).</p>';
+    if(doc.accordUrl){
+      extra='<table role="presentation" cellpadding="0" cellspacing="0" style="margin:20px auto 0 auto"><tr><td style="background:'+TE+';border-radius:10px"><a href="'+doc.accordUrl+'" style="display:inline-block;padding:14px 30px;font-size:16px;font-weight:800;color:#ffffff;text-decoration:none">\u270d\ufe0f Accepter et signer le devis en ligne</a></td></tr></table>'
+        +'<p style="margin:10px 0 0 0;font-size:11px;color:#888;text-align:center">2 minutes depuis votre t\u00e9l\u00e9phone \u2014 choix de l\u2019option, signature, et coordonn\u00e9es de l\u2019acompte. Lien direct : <a href="'+doc.accordUrl+'" style="color:'+TE+'">'+doc.accordUrl+'</a></p>';
+    } else {
+      extra='<p style="margin:16px 0 0 0;font-size:14px;color:#333;line-height:1.6">\u2705 <b>Pour accepter ce devis</b>, il vous suffit de r\u00e9pondre \u00ab Bon pour accord \u00bb \u00e0 ce message. Nous conviendrons ensuite ensemble des modalit\u00e9s pratiques (date, prise en charge, acompte \u00e9ventuel).</p>';
+    }
     // V80.17 : devis + contrat PEC dans le MEME email quand le lien existe
     if(doc.contratPecUrl){
       subject='Votre devis '+doc.ref+' + contrat de prise en charge \u2014 Cathy Pets';
@@ -13704,6 +13807,17 @@ function buildMailPro(type,id){
     extra='<table role="presentation" cellpadding="0" cellspacing="0" style="margin:22px auto 0 auto"><tr><td style="background:'+OR+';border-radius:10px"><a href="'+pecUrl+'" style="display:inline-block;padding:14px 30px;font-size:16px;font-weight:800;color:#ffffff;text-decoration:none">\u270d\ufe0f Remplir et signer mon contrat</a></td></tr></table>'
       +'<p style="margin:14px 0 0 0;font-size:11px;color:#888;text-align:center;word-break:break-all">Si le bouton ne fonctionne pas, copiez ce lien dans votre navigateur :<br><a href="'+pecUrl+'" style="color:'+TE+'">'+pecUrl+'</a></p>'
       +'<p style="margin:16px 0 0 0;font-size:13px;color:#333;line-height:1.6">\ud83d\udc3e Pensez \u00e0 pr\u00e9parer le carnet de sant\u00e9 / passeport de votre animal pour le jour du transport.</p>';
+  }else if(type==='livraison'){
+    couleur=TE;titre='VOTRE COMPAGNON EST BIEN ARRIV\u00c9 \ud83d\udc3e';
+    var lv=doc.livraison||{};
+    var legs=(typeof tLegs==='function')?tLegs(doc):[];
+    subject='\ud83d\udc3e Bien arriv\u00e9 ! \u2014 Transport '+doc.ref+' du '+(doc.date||'');
+    intro='Bonne nouvelle : votre compagnon est <b>bien arriv\u00e9 \u00e0 destination</b> et se porte bien. Voici le compte-rendu de la remise.';
+    rows=row('Transport',doc.ref)+row('Date',doc.date||'')+(lv.heure?row('Heure de remise',lv.heure):'')+(lv.qui?row('Remis \u00e0',_mpEsc(lv.qui)):'')+(legs.length>1?row('Trajet',_mpEsc(legs[0]+' \u2192 '+legs[legs.length-1])):'')+(lv.note?row('Observations',_mpEsc(lv.note)):'');
+    extra=(lv.photo?'<div style="text-align:center;margin:16px 0 0 0"><img src="'+lv.photo+'" style="max-width:100%;max-height:320px;border-radius:12px;border:2px solid '+TE+'" alt="Photo \u00e0 l\u2019arriv\u00e9e"></div>':'')
+      +(lv.drive&&lv.drive.url?'<p style="margin:10px 0 0 0;font-size:12px;text-align:center"><a href="'+lv.drive.url+'" style="color:'+TE+';font-weight:700">\ud83d\udcf7 Voir la photo en haute qualit\u00e9</a></p>':'')
+      +'<p style="margin:16px 0 0 0;font-size:14px;color:#333;line-height:1.6">Merci de votre confiance \u2014 ce fut un plaisir de voyager avec votre compagnon. \ud83d\udc3e</p>'
+      +((db.settings||{}).avisUrl?'<p style="margin:12px 0 0 0;font-size:13px;text-align:center">\u2b50 Un petit mot sur votre exp\u00e9rience nous aiderait beaucoup : <a href="'+(db.settings||{}).avisUrl+'" style="color:'+OR+';font-weight:800">laisser un avis Google</a></p>':'');
   }else if(type==='acquit'){
     couleur=TE;titre='FACTURE ACQUITT\u00c9E \u2014 RE\u00c7U DE PAIEMENT';
     var _dp=doc.datePaiement?new Date(doc.datePaiement).toLocaleDateString('fr-FR'):dDoc;
@@ -13765,10 +13879,11 @@ function buildMailPro(type,id){
       type==='relance'?'Facture '+doc.ref+' du '+dDoc+' — Reste à régler : '+euro(reste)+(pen?' ('+pen.joursRetard+' j de retard, pénalités à ce jour : '+euro(pen.totalPenalites)+')':'')+'\nMerci de régulariser sous 8 jours.\n'+_payLinks(aRegler,doc.ref).text:
       type==='acquit'?'Facture '+doc.ref+' acquittée — merci pour votre règlement. Ce document vaut reçu de paiement.':
       type==='avis'?'Votre avis Google nous aide énormément : '+((db.settings||{}).avisUrl||'')+'\nMerci infiniment !':
+      type==='livraison'?'Votre compagnon est bien arrivé à destination ('+((doc.livraison||{}).heure||'')+').'+((doc.livraison||{}).note?' '+(doc.livraison||{}).note:'')+((doc.livraison||{}).drive?'\nPhoto : '+(doc.livraison||{}).drive.url:''):
       type==='solde'?'Facture '+doc.ref+' — Solde à régler avant la prise en charge : '+euro(aRegler)+(pen?' (dont pénalités de retard '+euro(pen.totalPenalites)+')':'')+'\n'+_payLinks(aRegler,doc.ref).text:
       'Facture '+doc.ref+' du '+dDoc+' — Total : '+euro(total)+' TTC'+(reste!==total?' — Reste à régler : '+euro(reste):'')+'\nRèglement à réception (virement, chèque ou espèces).')
     +'\n\nBien cordialement,\nCathy — Cathy Pets\nTaxi animalier : 07 81 30 41 10 · Garde : 07 83 43 63 06\ncathypetsitter.com · cathydelormepets@gmail.com';
-  return {to:cl.email||'',subject:subject,html:html,text:text,clientNom:nomCl,isDev:isDev,docId:id,noPdf:(type==='pec'||type==='avis'),type:type};
+  return {to:cl.email||'',subject:subject,html:html,text:text,clientNom:nomCl,isDev:isDev,docId:id,noPdf:(type==='pec'||type==='avis'||type==='livraison'),type:type};
 }
 function openMailPro(type,id){
   var cur=buildMailPro(type,id);
@@ -17271,8 +17386,32 @@ function rFrais(){
   $('frK4').textContent=euro(benefTTC);$('frK4').style.color=benefTTC>=0?'var(--a2)':'var(--rd)';
   // Rentabilité
   var rEl=$('frRenta');
+  // V80.28 : marge nette par client sur la période (basée sur totalCostTr + dépenses liées au transport)
+  var _trP=act(db.transports).filter(function(t){
+    if(!t.date||!E(t.price))return false;
+    if(periode==='jour')return t.date===d;
+    if(periode==='semaine')return t.date>=semS&&t.date<=d;
+    if(periode==='mois')return t.date.slice(0,7)===moisS;
+    return t.date.slice(0,4)===anneeS;
+  });
+  var _byCli={};
+  _trP.forEach(function(t){
+    var co=totalCostTr(t)+(db.depenses||[]).filter(function(x){return x.transportId===t.id&&!x._deleted}).reduce(function(s2,x){return s2+E(x.ttc)},0);
+    var k=t.clientId||'?';
+    if(!_byCli[k])_byCli[k]={n:0,ca:0,cout:0};
+    _byCli[k].n++;_byCli[k].ca+=E(t.price);_byCli[k].cout+=co;
+  });
+  var _ck=Object.keys(_byCli).sort(function(a,b){return (_byCli[b].ca-_byCli[b].cout)-(_byCli[a].ca-_byCli[a].cout)});
+  var _margeCliHtml='';
+  if(_ck.length){
+    _margeCliHtml='<div style="background:rgba(26,122,110,.07);border:1px solid rgba(26,122,110,.25);border-radius:10px;padding:10px 12px;margin-bottom:12px"><div style="font-weight:800;font-size:12px;color:var(--te);margin-bottom:6px">🚗 Marge par client (transports de la période — coûts : carburant estimé + péages + hôtel + multimodal + tickets liés)</div><table style="width:100%;font-size:11px;border-collapse:collapse"><tr style="color:var(--mt)"><th style="text-align:left;padding:3px">Client</th><th style="text-align:center">Nb</th><th style="text-align:right">CA TTC</th><th style="text-align:right">Coûts</th><th style="text-align:right">Marge</th><th style="text-align:right">%</th></tr>';
+    _ck.forEach(function(k){var g2=_byCli[k];var mg=g2.ca-g2.cout;var pc=g2.ca>0?Math.round(mg/g2.ca*100):0;
+      _margeCliHtml+='<tr><td style="padding:3px;border-top:1px solid rgba(255,255,255,.04)">'+esc(cN(k))+'</td><td style="text-align:center;border-top:1px solid rgba(255,255,255,.04)">'+g2.n+'</td><td style="text-align:right;border-top:1px solid rgba(255,255,255,.04)">'+euro(g2.ca)+'</td><td style="text-align:right;border-top:1px solid rgba(255,255,255,.04)">'+euro(g2.cout)+'</td><td style="text-align:right;border-top:1px solid rgba(255,255,255,.04);font-weight:800;color:'+(mg>=0?'var(--a2)':'var(--rd)')+'">'+euro(mg)+'</td><td style="text-align:right;border-top:1px solid rgba(255,255,255,.04);color:'+(pc>=30?'var(--a2)':pc>=0?'var(--or)':'var(--rd)')+'">'+pc+'%</td></tr>';
+    });
+    _margeCliHtml+='</table><div style="font-size:10px;color:var(--mt);margin-top:4px">💡 En dessous de 30 % de marge, le tarif de ce client/trajet mérite d\'être revu.</div></div>';
+  }
   var periodeLabel={jour:"Aujourd'hui",semaine:'Cette semaine',mois:'Ce mois',annee:'Cette année'};
-  var h='<div style="text-align:center;margin-bottom:14px"><div style="font-size:11px;color:var(--mt)">'+periodeLabel[periode]+'</div></div>';
+  var h='<div style="text-align:center;margin-bottom:14px"><div style="font-size:11px;color:var(--mt)">'+periodeLabel[periode]+'</div></div>'+_margeCliHtml;
   h+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px">';
   h+='<div style="padding:12px;background:rgba(26,122,110,.08);border:1px solid rgba(26,122,110,.15);border-radius:8px;text-align:center"><div style="font-size:10px;color:var(--mt)">CA TTC</div><div style="font-size:18px;font-weight:900;color:var(--a2)">'+euro(caTTC)+'</div><div style="font-size:10px;color:var(--mt)">HT : '+euro(caHT)+'</div><div style="font-size:9px;color:var(--mt)">TVA collectée : '+euro(caTVA)+'</div></div>';
   h+='<div style="padding:12px;background:rgba(225,29,72,.08);border:1px solid rgba(225,29,72,.15);border-radius:8px;text-align:center"><div style="font-size:10px;color:var(--mt)">DÉPENSES TTC</div><div style="font-size:18px;font-weight:900;color:#e11d48">'+euro(totalDepTTC)+'</div><div style="font-size:10px;color:var(--mt)">HT : '+euro(totalDepHT)+'</div><div style="font-size:9px;color:var(--mt)">TVA déductible : '+euro(totalDepTVA)+'</div></div>';

@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="fr" translate="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="google" content="notranslate">
+<title>Bon pour accord — Cathy Pets</title>
+<style>
+:root{--nv:#0B1D3A;--or:#E8650A;--te:#1a7a6e;--cr:#FAF6EE}
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system,'Segoe UI',Roboto,Arial,sans-serif;background:var(--cr);color:#222;font-size:15px;line-height:1.55}
+.wrap{max-width:640px;margin:0 auto;padding:16px}
+.head{background:var(--nv);color:#fff;border-radius:14px;padding:18px 20px;text-align:center;margin-bottom:14px}
+.head .t{font-size:20px;font-weight:900;letter-spacing:1px}
+.head .s{font-size:12px;opacity:.85;margin-top:4px}
+.card{background:#fff;border:1px solid #e5e0d5;border-radius:12px;padding:16px;margin-bottom:14px;box-shadow:0 2px 8px rgba(0,0,0,.04)}
+.card h2{margin:0 0 10px 0;font-size:15px;color:var(--nv)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:#f0ece2;text-align:left;padding:7px 8px;font-size:11px}
+td{padding:7px 8px;border-bottom:1px solid #eee}
+.tot{background:#eef7f4;font-weight:900;font-size:15px}
+.opt{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px;border:1px solid #eee;border-radius:8px;margin-bottom:6px;cursor:pointer;font-size:14px}
+.opt.on{background:#e8f5e9;border-color:var(--te)}
+.btn{display:block;width:100%;padding:15px;border:none;border-radius:10px;background:var(--or);color:#fff;font-size:17px;font-weight:900;cursor:pointer}
+.btn:disabled{opacity:.45}
+input[type=text],input[type=email]{width:100%;padding:11px;border:1px solid #ccc;border-radius:8px;font:inherit}
+label{font-size:12px;font-weight:700;color:#555;display:block;margin:10px 0 4px}
+#sig{border:2px dashed #bbb;border-radius:8px;width:100%;height:150px;touch-action:none;background:#fff}
+.mono{font-family:monospace;letter-spacing:1px}
+.ok{display:none}
+.err{color:#c0392b;font-size:13px;margin-top:8px;display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="head">
+    <div class="t">🐾 CATHY PETS</div>
+    <div class="s">Transport & pension animaliers — Agrément FR02146T2 · Licence JME 11 24 02068</div>
+  </div>
+
+  <div id="formZone">
+  <div class="card">
+    <h2>🧾 Votre devis <span id="dRef"></span></h2>
+    <div id="dObjet" style="font-size:14px;color:#444;margin-bottom:8px"></div>
+    <table><thead><tr><th>Désignation</th><th style="text-align:center;width:44px">Qté</th><th style="text-align:right;width:90px">Montant TTC</th></tr></thead><tbody id="dLignes"></tbody>
+    <tfoot>
+      <tr class="tot"><td colspan="2">TOTAL TTC</td><td style="text-align:right" id="dTotal">—</td></tr>
+      <tr><td colspan="2" style="color:var(--or);font-weight:800">Acompte 30 % à la signature</td><td style="text-align:right;color:var(--or);font-weight:800" id="dAcompte">—</td></tr>
+    </tfoot></table>
+    <div id="dValid" style="font-size:11px;color:#888;margin-top:6px"></div>
+  </div>
+
+  <div class="card" id="optCard" style="display:none">
+    <h2>🔀 Option(s) au choix — en supplément</h2>
+    <div id="optList"></div>
+    <div style="font-size:11px;color:#888">Cochez l'option si vous la retenez — le total et l'acompte s'ajustent.</div>
+  </div>
+
+  <div class="card">
+    <h2>✍️ Bon pour accord</h2>
+    <label>Votre nom complet *</label>
+    <input type="text" id="fNom" placeholder="Prénom NOM">
+    <label>Votre email (pour la confirmation)</label>
+    <input type="email" id="fEmail" placeholder="vous@email.com">
+    <label style="display:flex;gap:8px;align-items:flex-start;font-weight:400;font-size:13px;margin-top:12px;cursor:pointer">
+      <input type="checkbox" id="fCgv" style="margin-top:3px">
+      <span>J'accepte ce devis pour le montant indiqué (option comprise le cas échéant) ainsi que les conditions générales figurant sur le devis, et je m'engage à verser l'acompte de 30 % pour confirmer la réservation. *</span>
+    </label>
+    <label>Signature (au doigt ou à la souris) *</label>
+    <canvas id="sig"></canvas>
+    <div style="text-align:right;margin:4px 0 12px"><a href="#" onclick="clearSig();return false" style="font-size:12px;color:#888">↺ Effacer</a></div>
+    <button class="btn" id="btnGo" onclick="envoyer()">✍️ Je signe — BON POUR ACCORD</button>
+    <div class="err" id="errMsg"></div>
+  </div>
+  </div>
+
+  <div class="card ok" id="okZone">
+    <h2>✅ Merci ! Votre accord est enregistré</h2>
+    <p style="font-size:14px">Nous avons bien reçu votre <b>bon pour accord</b><span id="okOpt"></span>. Pour confirmer définitivement la réservation, merci de régler l'acompte :</p>
+    <div style="text-align:center;font-size:26px;font-weight:900;color:var(--or);margin:8px 0" id="okAcompte"></div>
+    <div id="okVir" style="background:#f3faf8;border:1px solid var(--te);border-radius:10px;padding:12px;font-size:13px"></div>
+    <p style="font-size:12px;color:#888;margin-top:10px">⚡ Choisissez « virement instantané » dans votre application bancaire : gratuit, reçu en 10 secondes. Vous recevrez ensuite la confirmation du transport.</p>
+  </div>
+
+  <div style="text-align:center;font-size:11px;color:#999;margin:14px 0">Cathy Pets SAS — 6 Chemin du Lavoir, 02470 Neuilly-Saint-Front — 07 81 30 41 10</div>
+</div>
+
+<script>
+var P=new URLSearchParams(location.search);
+function g(k){return P.get(k)||''}
+function eur(n){return (Math.round(n*100)/100).toFixed(2).replace('.',',')+' \u20ac'}
+function esc(t){return String(t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+var base=0, optSel='', opts={};
+// ---- Rendu du devis ----
+document.getElementById('dRef').textContent=g('devis');
+document.getElementById('dObjet').textContent=g('objet');
+if(g('validite'))document.getElementById('dValid').textContent='Devis valable jusqu\u2019au '+g('validite')+'.';
+var tb=document.getElementById('dLignes');
+(g('tarif')||'').split(';;').forEach(function(l){
+  var p=l.split('|');if(p.length<3||!p[0])return;
+  var qty=parseFloat(p[1])||1,pu=parseFloat(p[2])||0,rem=parseFloat(p[3])||0;
+  var mt=qty*pu;if(rem>0)mt=mt*(100-rem)/100;
+  base+=mt;
+  var tr=document.createElement('tr');
+  tr.innerHTML='<td>'+esc(p[0])+'</td><td style="text-align:center">'+qty+'</td><td style="text-align:right;font-weight:700">'+eur(mt)+'</td>';
+  tb.appendChild(tr);
+});
+if(!base&&g('total'))base=parseFloat(g('total'))||0;
+// ---- Options ----
+(g('tarif_options')||'').split(';;').forEach(function(l){
+  var p=l.split('|');if(p.length<4||!p[0])return;
+  var qty=parseFloat(p[2])||1,pu=parseFloat(p[3])||0,rem=parseFloat(p[4])||0;
+  var mt=qty*pu;if(rem>0)mt=mt*(100-rem)/100;
+  if(!opts[p[0]])opts[p[0]]={m:0,d:[],label:'Option '+String(p[0]).replace('opt','')};
+  opts[p[0]].m+=mt;opts[p[0]].d.push(p[1]);
+});
+var ok=Object.keys(opts).sort();
+if(ok.length){
+  document.getElementById('optCard').style.display='block';
+  var ol=document.getElementById('optList');
+  var mk=function(g2,lbl,det,m){
+    var d=document.createElement('label');d.className='opt'+(g2===''?' on':'');d.dataset.g=g2;
+    d.innerHTML='<span><input type="radio" name="o" '+(g2===''?'checked':'')+' style="margin-right:8px">'+(g2===''?'<b>Sans option</b>':'<b>'+esc(lbl)+'</b> \u2014 '+esc(det))+'</span><b style="color:var(--or);white-space:nowrap">'+(g2===''?'\u2014':'+ '+eur(m))+'</b>';
+    d.addEventListener('click',function(){optSel=g2;document.querySelectorAll('.opt').forEach(function(x){x.classList.toggle('on',x.dataset.g===g2)});refresh()});
+    ol.appendChild(d);
+  };
+  mk('','','',0);
+  ok.forEach(function(k){mk(k,opts[k].label,opts[k].d.join(', '),opts[k].m)});
+}
+function totalCourant(){return base+(optSel&&opts[optSel]?opts[optSel].m:0)}
+function refresh(){
+  document.getElementById('dTotal').textContent=eur(totalCourant());
+  document.getElementById('dAcompte').textContent=eur(totalCourant()*0.3);
+}
+refresh();
+// ---- Signature ----
+var cv=document.getElementById('sig'),ctx=cv.getContext('2d'),drawing=false,hasSig=false;
+function fit(){var r=cv.getBoundingClientRect();cv.width=r.width;cv.height=150;ctx.lineWidth=2;ctx.lineCap='round';ctx.strokeStyle='#0B1D3A'}
+fit();window.addEventListener('resize',fit);
+function pos(e){var r=cv.getBoundingClientRect();var t=e.touches?e.touches[0]:e;return {x:t.clientX-r.left,y:t.clientY-r.top}}
+function dn(e){drawing=true;hasSig=true;var p=pos(e);ctx.beginPath();ctx.moveTo(p.x,p.y);e.preventDefault()}
+function mv(e){if(!drawing)return;var p=pos(e);ctx.lineTo(p.x,p.y);ctx.stroke();e.preventDefault()}
+function up(){drawing=false}
+cv.addEventListener('mousedown',dn);cv.addEventListener('mousemove',mv);window.addEventListener('mouseup',up);
+cv.addEventListener('touchstart',dn,{passive:false});cv.addEventListener('touchmove',mv,{passive:false});cv.addEventListener('touchend',up);
+function clearSig(){ctx.clearRect(0,0,cv.width,cv.height);hasSig=false}
+// ---- Envoi ----
+function envoyer(){
+  var err=document.getElementById('errMsg');err.style.display='none';
+  var nom=document.getElementById('fNom').value.trim();
+  if(!nom){err.textContent='\u26a0\ufe0f Merci d\u2019indiquer votre nom complet.';err.style.display='block';return}
+  if(!document.getElementById('fCgv').checked){err.textContent='\u26a0\ufe0f Merci de cocher la case d\u2019acceptation.';err.style.display='block';return}
+  if(!hasSig){err.textContent='\u26a0\ufe0f Merci de signer dans le cadre.';err.style.display='block';return}
+  var btn=document.getElementById('btnGo');btn.disabled=true;btn.textContent='\u23f3 Envoi en cours\u2026';
+  var tot=totalCourant(),ac=tot*0.3;
+  var body='=== BON POUR ACCORD — DEVIS '+g('devis')+' ===\n\n'
+    +'Client: '+nom+(g('nom')?' (fiche: '+g('prenom')+' '+g('nom')+')':'')+'\n'
+    +'Email: '+(document.getElementById('fEmail').value.trim()||g('email')||'—')+'\n'
+    +'Objet: '+g('objet')+'\n\n'
+    +'>>> OPTION RETENUE: '+(optSel&&opts[optSel]?opts[optSel].label+' ('+opts[optSel].d.join(', ')+') : +'+opts[optSel].m.toFixed(2)+' EUR':(ok.length?'AUCUNE (sans option)':'—'))+'\n'
+    +'TOTAL TTC ACCEPTE: '+tot.toFixed(2)+' EUR\n'
+    +'ACOMPTE 30%: '+ac.toFixed(2)+' EUR\n\n'
+    +'Signe electroniquement le '+new Date().toLocaleString('fr-FR')+'\n'
+    +'Code accord: '+g('code')+'\n';
+  fetch('https://formsubmit.co/ajax/cathydelormepets@gmail.com',{
+    method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},
+    body:JSON.stringify({_subject:'\u2705 BON POUR ACCORD \u2014 '+g('devis')+' \u2014 '+nom+' \u2014 '+tot.toFixed(2)+' EUR',message:body,signature_png:cv.toDataURL('image/png')})
+  }).then(function(r){return r.json()}).then(function(){fini(tot,ac)}).catch(function(){fini(tot,ac)});
+}
+function fini(tot,ac){
+  document.getElementById('formZone').style.display='none';
+  var z=document.getElementById('okZone');z.style.display='block';
+  if(optSel&&opts[optSel])document.getElementById('okOpt').textContent=' avec '+opts[optSel].label;
+  document.getElementById('okAcompte').textContent='Acompte : '+eur(ac);
+  var iban=(g('iban')||'').replace(/\s+/g,'').toUpperCase(),bic=(g('bic')||'').toUpperCase(),ben=g('benef')||'Cathy Pets SAS';
+  var v='<b>\u26a1 Virement instantan\u00e9 (gratuit)</b><br>B\u00e9n\u00e9ficiaire : <b>'+esc(ben)+'</b><br>';
+  if(iban){
+    v+='IBAN : <b class="mono">'+iban.replace(/(.{4})/g,'$1 ').trim()+'</b><br>'+(bic?'BIC : <b class="mono">'+bic+'</b><br>':'');
+    v+='R\u00e9f\u00e9rence : <b style="color:var(--or)">Acompte '+esc(g('devis'))+'</b><br>';
+    var epc='BCD\n002\n1\nSCT\n'+bic+'\n'+ben.slice(0,70)+'\n'+iban+'\nEUR'+ac.toFixed(2)+'\n\n\nAcompte '+g('devis')+'\n';
+    v+='<div style="text-align:center;margin-top:8px"><img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data='+encodeURIComponent(epc)+'&format=png&qzone=1" style="width:150px;height:150px"><div style="font-size:11px;color:#888">Scannez avec votre appli bancaire \u2014 le virement se pr\u00e9-remplit</div></div>';
+  }
+  document.getElementById('okVir').innerHTML=v;
+  window.scrollTo(0,0);
+}
+</script>
+</body>
+</html>
