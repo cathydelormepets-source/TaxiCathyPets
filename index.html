@@ -610,7 +610,7 @@ body.nuit .card{border-color:#0a1520}
 </div>
 </aside>
 <main class="main">
-<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.22b</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
+<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.25</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
 <div class="cnt">
 
 <!-- DASHBOARD -->
@@ -2137,6 +2137,7 @@ document.getElementById('q_contrat_pec').addEventListener('change',function(){
   <button class="btn sm rd" onclick="batchRelance()" style="font-size:11px">📧 Relancer toutes les impayées >30j</button>
   <button class="btn sm" onclick="reconcilierToutesFactures()" style="font-size:11px;background:#3d2c0a;border-color:#6d5a2a;color:#fcd77a" title="Recalcule les totaux et supprime les lignes vides">🔧 Réconcilier TVA & Totaux</button>
   <button class="btn sm" onclick="exportCerfrance()" style="font-size:11px;background:#0a2c3d;border-color:#2a5a6d;color:#7ad7fc" title="Export CSV des factures pour la plateforme agréée / comptable">📤 Export Cerfrance (CSV)</button>
+  <button class="btn sm" onclick="exportGrandLivre()" style="font-size:11px;background:#1a2a10;border-color:#3a6a10;color:#9d6" title="Un seul fichier annuel : factures + avoirs + chaque encaissement lettré (date, mode, réglé par)">📚 Grand livre annuel (comptable)</button>
   <button class="btn sm" onclick="exportFacturXZip()" style="font-size:11px;background:#1a0a3d;border-color:#4a2a8d;color:#b09afc" title="Export ZIP des factures au format Factur-X (XML EN 16931)">📑 Export Factur-X (ZIP)</button>
   <button class="btn sm" onclick="exportFacturesPdfZip()" style="font-size:11px;background:#2a1a05;border-color:#8a5a1a;color:#f0b060" title="Toutes les vraies factures de la période en PDF, dans un ZIP — idéal pour Cerfrance et l'archivage">📄 Factures PDF (ZIP)</button>
   <button class="btn sm" onclick="openReleveClientModal()" style="font-size:11px;background:#0a2c3d;border-color:#2a5a6d;color:#7ad7fc" title="Relevé de compte par client : factures payées / impayées / avoirs + détail des mouvements">🧾 Relevé par client</button>
@@ -4625,8 +4626,9 @@ document.getElementById('q_contrat_pec').addEventListener('change',function(){
   <div class="hd"><h3>💳 Paiement en ligne</h3></div>
   <div class="bd">
     <div class="row">
-      <div class="c12 fd"><label>Email PayPal</label><input id="s_paypal" placeholder="votre@email.com"></div>
-      <div class="c12 fd"><label>URL SumUp</label><input id="s_sumup" placeholder="https://pay.sumup.com/b2c/..."></div>
+      <div class="c12 fd"><label>URL lien carte bancaire SumUp (optionnel — proposé « sur demande » uniquement, 2,5 % de frais)</label><input id="s_sumup" placeholder="https://pay.sumup.com/b2c/..."></div>
+      <div class="c12 fd"><label>⭐ Lien avis Google (fiche établissement → « Demander des avis »)</label><input id="s_avisUrl" placeholder="https://g.page/r/XXXX/review"></div>
+      <div class="c12 fd"><label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="s_autoRelSolde" style="width:auto"> 💶 Relance automatique du solde à J-2 du transport (envoi Gmail direct, une seule fois par facture)</label></div>
     </div>
   </div>
 </div>
@@ -7689,6 +7691,15 @@ function genPecUrl(q){
     });
     if(optLines.length)pecUrl+='&tarif_options='+encodeURIComponent(optLines.join(';;'));
   }
+  // V80.24 : fiche(s) animal pré-remplie(s) sur le contrat (à valider par le client)
+  try{
+    var aniIds=getAniIds(q)||[];
+    var aniLines=aniIds.map(function(aid){var a=(db.animaux||[]).find(function(x){return x.id===aid});if(!a)return '';
+      var cl3=function(v){return String(v||'').replace(/\|/g,'-').replace(/;;/g,',')};
+      return [a.nom,a.espece,a.race,a.sexe,a.poids,a.couleur,a.ident,a.cites,a.vaccin1,a.vaccin2,a.passeport,a.traitement,a.allergie].map(cl3).join('|');
+    }).filter(Boolean);
+    if(aniLines.length)pecUrl+='&animaux='+encodeURIComponent(aniLines.join(';;'));
+  }catch(e){}
   q.contratPecCode=code2;q.contratPecUrl=pecUrl;stamp(q);sav();
   return pecUrl;
 }
@@ -9346,7 +9357,7 @@ function depPrintDecompte(depId){
   // IBAN
   html+='<p style="margin-top:20px;padding:10px;background:#dcfce7;border-radius:8px;font-size:11px;text-align:center">';
   html+='<b>💳 Coordonnées bancaires Cathy Pets SAS</b><br>';
-  html+='IBAN : FR33 1144 9000 0101 3933 6001 S46 · BIC : BDEIFRPPXXX';
+  html+='IBAN : '+(db.settings.entIBAN||'')+' · BIC : '+(db.settings.entBIC||'')+' — privilégiez le virement instantané (gratuit)';
   html+='</p>';
   
   html+='<p style="text-align:center;font-size:10px;color:#888;margin-top:20px">Cathy Pets SAS · SIRET 928 564 269 · RC Pro Hiscox HSXIN320028640M · cathypetsitter.com</p>';
@@ -10913,6 +10924,8 @@ function confirmPayee(id){
   lH('facture','Payée: '+f.ref+' le '+new Date(f.datePaiement).toLocaleDateString('fr-FR')+(payeur?' — réglé par '+payeur:''));
   sav();showToast('✅ '+f.ref+' payée le '+new Date(f.datePaiement).toLocaleDateString('fr-FR')+' — '+euro(montant)+(montant>reste+0.009?' (trop-perçu '+euro(montant-reste)+' à régulariser)':'')+(f.penalitesMontant?' (dont '+euro(f.penalitesMontant)+' de pénalités)':''));
   cMo();rFac2();try{rDash()}catch(e){}try{rFinancierTempsReel()}catch(e){}
+  // V80.24 : envoi de la facture acquittée (vaut reçu)
+  setTimeout(function(){if(confirm('\ud83e\uddfe Facture '+f.ref+' acquitt\u00e9e.\n\n\u2709\ufe0f Envoyer la facture acquitt\u00e9e au client (mail Pro + PDF tamponn\u00e9) ?'))openMailPro('acquit',id)},350);
 }
 function marquerPayee(id){
   var f=db.factures.find(function(x){return x.id===id});
@@ -11722,6 +11735,23 @@ function rDash(){
       h+='<div style="font-size:11px;padding:3px 0;display:flex;justify-content:space-between;align-items:center;gap:6px"><span><b>'+q2.ref+'</b> — '+cN(q2.clientId)+' — '+euro(q2.total)+'</span><span style="display:flex;gap:4px;align-items:center"><span style="color:var(--mt)">'+j2+'j</span><button class="btn sm" style="font-size:10px;padding:3px 8px" onclick="openMailPro(\'devis\',\''+q2.id+'\')" title="Relancer (devis + contrat PEC si lien)">📧</button></span></div>';
     });
     h+='<button class="btn sm" style="margin-top:6px;font-size:10px;background:#0a2c2a;border-color:#2a6a60;color:#7ad7c0" onclick="batchRelanceDevis()">📧 Relancer tous ces devis</button>';
+    h+='</div>';
+  }
+  // V80.24 : DEMANDES D'AVIS GOOGLE — transports terminés depuis 2 j+, facture payée, pas encore demandé
+  var _m2=new Date();_m2.setDate(_m2.getDate()-2);var _dm2=_m2.toISOString().slice(0,10);
+  var _m45=new Date();_m45.setDate(_m45.getDate()-45);var _dm45=_m45.toISOString().slice(0,10);
+  var avisList=[];
+  act(db.transports).forEach(function(t){
+    if(!t.date||t.date>_dm2||t.date<_dm45||t.avisDemande)return;
+    var f=act(db.factures).find(function(x){return x.status==='pay\u00e9e'&&(x.transportId===t.id||(t.devisId&&x.devisId===t.devisId))});
+    if(f)avisList.push({t:t,f:f});
+  });
+  if(avisList.length){
+    h+='<div style="background:rgba(232,101,10,.10);border:1px solid rgba(232,101,10,.35);border-radius:10px;padding:10px;margin-top:8px">';
+    h+='<div style="font-weight:800;font-size:12px;color:var(--or);margin-bottom:6px">\u2b50 '+avisList.length+' demande(s) d\u2019avis Google \u00e0 envoyer'+((db.settings||{}).avisUrl?'':' <span style="color:var(--rd);font-weight:400">(lien avis non configur\u00e9 \u2192 \u2699\ufe0f Param\u00e8tres)</span>')+'</div>';
+    avisList.forEach(function(x){
+      h+='<div style="font-size:11px;padding:3px 0;display:flex;justify-content:space-between;align-items:center;gap:6px"><span>\ud83d\ude97 '+x.t.date+' \u2014 <b>'+cN(x.t.clientId)+'</b> \u2014 '+x.f.ref+'</span><span style="display:flex;gap:4px"><button class="btn sm" style="font-size:10px;padding:3px 8px" onclick="demanderAvis(\''+x.f.id+'\',\''+x.t.id+'\')" title="Envoyer la demande d\u2019avis">\u2b50 \ud83d\udce7</button><button class="btn sm" style="font-size:10px;padding:3px 6px;color:var(--mt)" onclick="marquerAvisFait(\''+x.t.id+'\')" title="D\u00e9j\u00e0 fait / ignorer">\u2714</button></span></div>';
+    });
     h+='</div>';
   }
   $('dTod').innerHTML=h;
@@ -12788,8 +12818,9 @@ function rSet(){
   sv('s_gd', s.guardDog||28);
   sv('s_gc', s.guardCat||15);
   sv('s_gn', s.guardNac||25);
-  sv('s_paypal', s.paypalEmail||'');
   sv('s_sumup', s.sumupUrl||'');
+  sv('s_avisUrl', s.avisUrl||'');
+  try{var _ar=$('s_autoRelSolde');if(_ar)_ar.checked=!!s.autoRelSolde}catch(e){}
   sv('s_objmois', s.objectifMois||'');
   sv('fb_ak', s.fbApiKey||'');
   sv('fb_pid', s.fbProjectId||'');
@@ -12853,8 +12884,9 @@ function savSet(){
   s.autoSaveCloud=V('s_asc')==='1'?1:0;
   var obj=parseFloat(V('s_objmois')||'0');
   if(obj>0){s.objectifMois=obj;var bkObj=document.getElementById('bk_obj');if(bkObj)bkObj.value=obj;}
-  var pp=V('s_paypal');if(pp!==null)s.paypalEmail=pp;
   var su=V('s_sumup');if(su!==null)s.sumupUrl=su;
+  var av=V('s_avisUrl');if(av!==null)s.avisUrl=av;
+  try{var _ar2=$('s_autoRelSolde');if(_ar2)s.autoRelSolde=!!_ar2.checked}catch(e){}
   var ftMain=V('s_ft');if(ftMain)s.fuelType=ftMain;
   // Nouveaux settings V28: classe péage, API carburant, GPS base
   var tc=V('s_tc');if(tc)s.tollClass=parseInt(tc)||1;
@@ -13599,6 +13631,28 @@ function copyMail(){
 
 // ══════ V79 : MAIL PRO HTML — devis / facture / relance avec logo et charte ══════
 function _mpEsc(v){return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+// V80.25 : moyens de règlement du solde — VIREMENT INSTANTANÉ (0 € de frais) en tête, QR SEPA scannable, carte (SumUp) en option
+function _payLinks(montant,ref){
+  var st=db.settings||{};var su=st.sumupUrl||'';
+  var iban=String(st.entIBAN||'').replace(/\s+/g,'').toUpperCase(),bic=String(st.entBIC||'').replace(/\s+/g,'').toUpperCase();
+  var ibanAff=iban.replace(/(.{4})/g,'$1 ').trim();
+  var m=(Math.round(E(montant)*100)/100).toFixed(2);
+  var out={paypal:'',sumup:su,iban:ibanAff,bic:bic,epc:'',qr:'',html:'',text:''};
+  if(iban){
+    // QR "virement SEPA" (norme EPC069-12) : scanné par l'appli bancaire, le virement est pré-rempli (IBAN, montant, référence)
+    var benef=String(st.entNom||'Cathy Pets SAS').slice(0,70);
+    out.epc='BCD\n002\n1\nSCT\n'+bic+'\n'+benef+'\n'+iban+'\nEUR'+m+'\n\n\n'+String(ref||'').slice(0,140)+'\n';
+    out.qr='https://api.qrserver.com/v1/create-qr-code/?size=140x140&data='+encodeURIComponent(out.epc)+'&format=png&qzone=1';
+  }
+  if(!iban&&!su)return out;
+  out.html='<div style="margin:16px 0 0 0;padding:14px 16px;background:#F3FAF8;border:1px solid #1a7a6e;border-radius:10px">'
+    +'<div style="font-size:14px;font-weight:800;color:#0B1D3A;margin-bottom:6px">\u26a1 R\u00e9gler '+euro(E(montant))+' par virement instantan\u00e9 \u2014 gratuit, re\u00e7u en 10 secondes</div>'
+    +(iban?'<table role="presentation" cellpadding="0" cellspacing="0" style="font-size:13px;color:#333"><tr><td style="padding:2px 10px 2px 0;color:#666">B\u00e9n\u00e9ficiaire</td><td style="font-weight:700">'+(st.entNom||'Cathy Pets SAS')+'</td></tr><tr><td style="padding:2px 10px 2px 0;color:#666">IBAN</td><td style="font-weight:700;font-family:monospace;letter-spacing:1px">'+ibanAff+'</td></tr>'+(bic?'<tr><td style="padding:2px 10px 2px 0;color:#666">BIC</td><td style="font-weight:700;font-family:monospace">'+bic+'</td></tr>':'')+'<tr><td style="padding:2px 10px 2px 0;color:#666">R\u00e9f\u00e9rence \u00e0 indiquer</td><td style="font-weight:800;color:#E8650A">'+ref+'</td></tr></table>':'')
+    +'<div style="font-size:11px;color:#666;margin-top:8px">Dans votre application bancaire, choisissez \u00ab virement instantan\u00e9 \u00bb : sans frais dans toute l\u2019Union europ\u00e9enne, l\u2019argent arrive imm\u00e9diatement.'+(su?' Paiement par carte bancaire possible sur demande : <a href="'+su+'" style="color:#1a7a6e">lien s\u00e9curis\u00e9</a>.':'')+'</div>'
+    +'</div>';
+  out.text=(iban?'Virement instantane (gratuit) : IBAN '+ibanAff+(bic?' - BIC '+bic:'')+' - Reference : '+ref+'\n':'')+(su?'Carte bancaire (sur demande) : '+su+'\n':'');
+  return out;
+}
 function buildMailPro(type,id){
   var doc,cl,isDev=(type==='devis'||type==='pec');
   if(isDev){doc=db.devis.find(function(x){return x.id===id})}else{doc=db.factures.find(function(x){return x.id===id})}
@@ -13647,13 +13701,38 @@ function buildMailPro(type,id){
     extra='<table role="presentation" cellpadding="0" cellspacing="0" style="margin:22px auto 0 auto"><tr><td style="background:'+OR+';border-radius:10px"><a href="'+pecUrl+'" style="display:inline-block;padding:14px 30px;font-size:16px;font-weight:800;color:#ffffff;text-decoration:none">\u270d\ufe0f Remplir et signer mon contrat</a></td></tr></table>'
       +'<p style="margin:14px 0 0 0;font-size:11px;color:#888;text-align:center;word-break:break-all">Si le bouton ne fonctionne pas, copiez ce lien dans votre navigateur :<br><a href="'+pecUrl+'" style="color:'+TE+'">'+pecUrl+'</a></p>'
       +'<p style="margin:16px 0 0 0;font-size:13px;color:#333;line-height:1.6">\ud83d\udc3e Pensez \u00e0 pr\u00e9parer le carnet de sant\u00e9 / passeport de votre animal pour le jour du transport.</p>';
+  }else if(type==='acquit'){
+    couleur=TE;titre='FACTURE ACQUITT\u00c9E \u2014 RE\u00c7U DE PAIEMENT';
+    var _dp=doc.datePaiement?new Date(doc.datePaiement).toLocaleDateString('fr-FR'):dDoc;
+    var _ml={virement:'Virement bancaire',especes:'Esp\u00e8ces',cheque:'Ch\u00e8que',cb:'Carte bancaire',paypal:'PayPal'};
+    subject='Votre facture '+doc.ref+' acquitt\u00e9e \u2014 merci pour votre r\u00e8glement';
+    intro='Nous avons bien re\u00e7u votre r\u00e8glement et vous en remercions. Vous trouverez ci-joint votre <b>facture acquitt\u00e9e</b>, qui vaut re\u00e7u de paiement pour votre comptabilit\u00e9.';
+    rows=row('Facture',doc.ref)+row('Date',dDoc)+(doc.objet?row('Prestation',_mpEsc(doc.objet)):'')+row('Montant TTC',euro(total),1)+row('R\u00e9gl\u00e9e le',_dp)+(doc.paiement?row('Mode',_ml[doc.paiement]||doc.paiement):'')+(doc.payeur?row('R\u00e9gl\u00e9 par',_mpEsc(doc.payeur)):'');
+    extra='<p style="margin:16px 0 0 0;font-size:14px;color:#333;line-height:1.6">\ud83d\udc3e Ce fut un plaisir de prendre soin de votre compagnon. Nous esp\u00e9rons vous revoir bient\u00f4t \u2014 n\u2019h\u00e9sitez pas \u00e0 nous recommander autour de vous.</p>'+((db.settings||{}).avisUrl?'<p style="margin:12px 0 0 0;font-size:13px;color:#333;text-align:center">\u2b50 Votre avis compte : <a href="'+(db.settings||{}).avisUrl+'" style="color:'+OR+';font-weight:800">laisser un avis Google (30 secondes)</a></p>':'');
+  }else if(type==='avis'){
+    couleur=OR;titre='VOTRE AVIS COMPTE POUR NOUS';
+    var _au=(db.settings||{}).avisUrl||'';
+    subject='Comment s\u2019est pass\u00e9 le transport ? \u2b50 Votre avis en 30 secondes \u2014 Cathy Pets';
+    intro='Nous esp\u00e9rons que votre compagnon est bien arriv\u00e9 et que tout s\u2019est pass\u00e9 comme vous le souhaitiez. Petite entreprise passionn\u00e9e, nous vivons des recommandations de nos clients\u00a0: <b>votre avis Google nous aide \u00e9norm\u00e9ment</b> \u00e0 nous faire conna\u00eetre.';
+    rows=(doc.objet?row('Prestation',_mpEsc(doc.objet)):'')+row('R\u00e9f\u00e9rence',doc.ref);
+    extra=(_au?'<table role="presentation" cellpadding="0" cellspacing="0" style="margin:22px auto 0 auto"><tr><td style="background:'+OR+';border-radius:10px"><a href="'+_au+'" style="display:inline-block;padding:14px 30px;font-size:16px;font-weight:800;color:#ffffff;text-decoration:none">\u2b50 Laisser un avis Google</a></td></tr></table><p style="margin:12px 0 0 0;font-size:11px;color:#888;text-align:center;word-break:break-all">'+_au+'</p>':'<p style="margin:16px 0 0 0;font-size:13px;color:#c0392b;text-align:center">\u26a0\ufe0f Lien avis Google non configur\u00e9 (\u2699\ufe0f Param\u00e8tres)</p>')
+      +'<p style="margin:16px 0 0 0;font-size:13px;color:#333;line-height:1.6">Un souci, une remarque ? R\u00e9pondez simplement \u00e0 ce message, nous vous lirons avec attention. Merci infiniment \ud83d\udc3e</p>';
+  }else if(type==='solde'){
+    couleur=OR;titre='SOLDE \u00c0 R\u00c9GLER AVANT LA PRISE EN CHARGE';
+    var _pl=_payLinks(reste,doc.ref);
+    subject='Rappel \u2014 solde de '+euro(reste)+' \u00e0 r\u00e9gler avant le transport ('+doc.ref+')';
+    intro='Le transport de votre compagnon approche\u00a0! Conform\u00e9ment \u00e0 nos conditions, <b>le solde est exigible au plus tard \u00e0 la prise en charge</b>. Merci de bien vouloir r\u00e9gler le montant restant avant le jour J afin que tout soit pr\u00eat.';
+    rows=row('Facture',doc.ref)+(doc.objet?row('Prestation',_mpEsc(doc.objet)):'')+row('Montant TTC',euro(total))+(E(doc.acompte)>0?row('Acompte re\u00e7u','-'+euro(doc.acompte)):'')+row('Solde \u00e0 r\u00e9gler',euro(reste),1);
+    extra=_pl.html+'<p style="margin:14px 0 0 0;font-size:12px;color:#777;line-height:1.55">Si votre r\u00e8glement est d\u00e9j\u00e0 parti, merci de ne pas tenir compte de ce rappel. \u00c0 tr\u00e8s vite \ud83d\udc3e</p>';
   }else{
     couleur=TE;titre='VOTRE FACTURE';
     subject='Votre facture '+doc.ref+' \u2014 Cathy Pets ('+euro(total)+' TTC)';
     intro='Nous vous remercions de votre confiance. Veuillez trouver ci-joint votre facture relative \u00e0 la prestation r\u00e9alis\u00e9e.';
     rows=row('R\u00e9f\u00e9rence',doc.ref)+row('Date',dDoc)+(doc.objet?row('Prestation',_mpEsc(doc.objet)):'')+row('Montant total TTC',euro(total),1)+(E(doc.acompte)>0?row('Acompte d\u00e9j\u00e0 vers\u00e9','-'+euro(doc.acompte)):'')+(E(doc.acompte)>0||reste!==total?row('Reste \u00e0 r\u00e9gler',euro(reste),1):'');
-    extra='<p style="margin:16px 0 0 0;font-size:14px;color:#333;line-height:1.6">\ud83d\udcb3 <b>R\u00e8glement \u00e0 r\u00e9ception</b>, par virement bancaire (RIB sur la facture), ch\u00e8que ou esp\u00e8ces.</p>';
+    extra='<p style="margin:16px 0 0 0;font-size:14px;color:#333;line-height:1.6">\ud83d\udcb3 <b>R\u00e8glement \u00e0 r\u00e9ception</b>, de pr\u00e9f\u00e9rence par virement instantan\u00e9 (gratuit \u2014 coordonn\u00e9es ci-dessous), ch\u00e8que ou esp\u00e8ces.</p>';
+    if(reste>0.009&&doc.status!=='pay\u00e9e')extra+=_payLinks(reste,doc.ref).html; // V80.24
   }
+  if(type==='relance'&&reste>0.009)extra+=_payLinks(reste,doc.ref).html; // V80.24
   var html='<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:'+CR+';padding:24px 8px"><tr><td align="center">'
     +'<table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:14px;overflow:hidden;font-family:Arial,Helvetica,sans-serif;box-shadow:0 4px 18px rgba(11,29,58,.12)">'
     +'<tr><td style="background:'+NV+';padding:18px 24px"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>'
@@ -13680,10 +13759,13 @@ function buildMailPro(type,id){
   var text='Bonjour '+nomCl+',\n\n'+intro.replace(/<[^>]+>/g,'')+'\n\n'
     +(type==='pec'?'Merci de remplir et signer votre contrat de prise en charge en ligne :\n'+(doc.contratPecUrl||'')+'\n\nPensez au carnet de santé / passeport de votre animal le jour du transport.':
       type==='devis'?'Devis '+doc.ref+' du '+dDoc+' — Total : '+euro(total)+' TTC (validité 30 jours)\nPour accepter : répondez "Bon pour accord".'+(doc.contratPecUrl?'\n\nContrat de prise en charge à remplir et signer en ligne :\n'+doc.contratPecUrl:''):
-      type==='relance'?'Facture '+doc.ref+' du '+dDoc+' — Reste à régler : '+euro(reste)+(pen?' ('+pen.joursRetard+' j de retard, pénalités à ce jour : '+euro(pen.totalPenalites)+')':'')+'\nMerci de régulariser sous 8 jours.':
+      type==='relance'?'Facture '+doc.ref+' du '+dDoc+' — Reste à régler : '+euro(reste)+(pen?' ('+pen.joursRetard+' j de retard, pénalités à ce jour : '+euro(pen.totalPenalites)+')':'')+'\nMerci de régulariser sous 8 jours.\n'+_payLinks(reste,doc.ref).text:
+      type==='acquit'?'Facture '+doc.ref+' acquittée — merci pour votre règlement. Ce document vaut reçu de paiement.':
+      type==='avis'?'Votre avis Google nous aide énormément : '+((db.settings||{}).avisUrl||'')+'\nMerci infiniment !':
+      type==='solde'?'Facture '+doc.ref+' — Solde à régler avant la prise en charge : '+euro(reste)+'\n'+_payLinks(reste,doc.ref).text:
       'Facture '+doc.ref+' du '+dDoc+' — Total : '+euro(total)+' TTC'+(reste!==total?' — Reste à régler : '+euro(reste):'')+'\nRèglement à réception (virement, chèque ou espèces).')
     +'\n\nBien cordialement,\nCathy — Cathy Pets\nTaxi animalier : 07 81 30 41 10 · Garde : 07 83 43 63 06\ncathypetsitter.com · cathydelormepets@gmail.com';
-  return {to:cl.email||'',subject:subject,html:html,text:text,clientNom:nomCl,isDev:isDev,docId:id,noPdf:(type==='pec')};
+  return {to:cl.email||'',subject:subject,html:html,text:text,clientNom:nomCl,isDev:isDev,docId:id,noPdf:(type==='pec'||type==='avis'),type:type};
 }
 function openMailPro(type,id){
   var cur=buildMailPro(type,id);
@@ -13892,6 +13974,7 @@ function _mpSendRaw(pdf,pec){
       window._mpRetried=false;
       showToast('🚀 Email envoyé à '+c.to+(atts.length?' avec '+atts.length+' PDF joint'+(atts.length>1?'s':'')+' 📎':'')+' !');
       lH('email','Mail Pro envoyé via Gmail : '+c.subject+' → '+c.to);
+      try{if(typeof c.onSent==='function')c.onSent()}catch(e){}
       sav(false);
       var m=document.getElementById('mailProModal');if(m)m.remove();
     }else{
@@ -16082,13 +16165,19 @@ function printFacturePro(id) {
   var datePayStr = f.datePaiement ? new Date(f.datePaiement).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' }) : '';
   var isAvoir = f.mode==='avoir' || (f.ref||'').indexOf('AV')>=0;
   var isPaye = f.status==='payée';
-  var html = '<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>FACTURE ' + f.ref + '</title><style>';
+  var html = '<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>FACTURE ' + f.ref + (isPaye?' — ACQUITTÉE':'') + '</title><style>';
   html += 'body{font-family:Arial,sans-serif;margin:0;padding:0;color:#333}.page{max-width:210mm;margin:0 auto;padding:20mm}';
   html += '@media print{body{margin:0}.page{margin:0;padding:20mm}.no-print{display:none!important}}@page{size:A4;margin:10mm}</style></head><body><div class="page">';
   // ══ BANDEAU STATUT PAIEMENT ══
   if(isPaye){
-    html += '<div style="text-align:center;margin-bottom:20px"><div style="display:inline-block;padding:10px 40px;background:#e6f7f0;border:3px solid #1a7a6e;border-radius:8px"><span style="font-size:36px;font-weight:900;color:#1a7a6e;letter-spacing:6px">PAYÉ</span>';
-    if(datePayStr) html += '<div style="font-size:12px;color:#1a7a6e;margin-top:4px">Le ' + datePayStr + (f.paiement ? ' — ' + f.paiement : '') + '</div>';
+    // V80.23 : tampon FACTURE ACQUITTÉE (valeur de reçu pour le client et sa comptabilité)
+    var _mpLbl={virement:'Virement bancaire',especes:'Espèces',cheque:'Chèque',cb:'Carte bancaire',paypal:'PayPal'};
+    var _mpTxt=f.paiement?(_mpLbl[f.paiement]||f.paiement):'';
+    html += '<div style="text-align:center;margin:4px 0 22px 0"><div style="display:inline-block;transform:rotate(-4deg);padding:10px 34px 12px 34px;border:4px double #1a7a6e;border-radius:10px;background:rgba(26,122,110,.06);box-shadow:0 0 0 2px #fff inset">';
+    html += '<div style="font-size:11px;font-weight:700;color:#1a7a6e;letter-spacing:4px;margin-bottom:2px">CATHY PETS SAS</div>';
+    html += '<div style="font-size:30px;font-weight:900;color:#1a7a6e;letter-spacing:5px;line-height:1.05">FACTURE ACQUITTÉE</div>';
+    html += '<div style="font-size:12px;color:#1a7a6e;margin-top:5px;font-weight:700">' + (datePayStr ? 'Réglée le ' + datePayStr : 'Réglée intégralement') + (_mpTxt ? ' — ' + _mpTxt : '') + (f.payeur ? ' — par ' + esc(f.payeur) : '') + '</div>';
+    html += '<div style="font-size:9px;color:#1a7a6e;margin-top:3px;letter-spacing:1px">Pour acquit — ce document vaut reçu de paiement</div>';
     html += '</div></div>';
   } else if(isAvoir){
     html += '<div style="text-align:center;margin-bottom:20px"><div style="display:inline-block;padding:10px 40px;background:#fdf0f7;border:3px solid #8a2080;border-radius:8px"><span style="font-size:36px;font-weight:900;color:#8a2080;letter-spacing:6px">AVOIR</span></div></div>';
@@ -16265,6 +16354,16 @@ function printFacturePro(id) {
   html += '<div style="margin:20px 0;padding:12px;background:#f5f5f5;font-size:10px;line-height:1.6">';
   if(tva===0 || db.settings.noTva){
     html += '<p style="margin:6px 0;font-weight:bold;color:#e65c00">TVA non applicable — Article 293 B du Code Général des Impôts</p>';
+  }
+  // V80.25 : règlement du solde — virement instantané + QR SEPA scannable (0 € de frais)
+  if(!isPaye&&!isAvoir){var _rdPdf=resteDuFac(f);var _plp=_payLinks(_rdPdf,f.ref);
+    if(_rdPdf>0.009&&_plp.iban){
+      html += '<div style="margin:12px 0;padding:10px 14px;background:#F3FAF8;border:1px solid #1a7a6e;border-radius:6px;font-size:11px;display:flex;gap:14px;align-items:center">'
+        +(_plp.qr?'<img src="'+_plp.qr+'" style="width:96px;height:96px;flex:none" onerror="this.style.display=\'none\'">':'')
+        +'<div><b style="color:#0B1D3A;font-size:12px">\u26a1 R\u00e9gler le solde de '+euro(_rdPdf)+' par virement instantan\u00e9</b> \u2014 gratuit, re\u00e7u en 10 secondes<br>'
+        +'<span style="color:#666">Scannez ce QR code avec votre application bancaire : le virement se pr\u00e9-remplit (IBAN, montant, r\u00e9f\u00e9rence).</span><br>'
+        +'R\u00e9f\u00e9rence \u00e0 indiquer : <b style="color:#E8650A">'+f.ref+'</b>'+(_plp.sumup?' \u00b7 <span style="color:#888">Carte bancaire sur demande : <a href="'+_plp.sumup+'" style="color:#1a7a6e">lien s\u00e9curis\u00e9</a></span>':'')+'</div></div>';
+    }
   }
   html += '<p style="margin:6px 0;font-weight:bold">Mode de règlement : ' + (f.paiement || 'virement, espèces') + '.</p>';
   html += '<p style="margin:6px 0;color:#666">Échéance : ' + echeanceStr + '</p>';
@@ -16718,8 +16817,7 @@ function printFacPro(id){
     var paypalEmail=db.settings.paypalEmail||'';
     var sumupUrl=db.settings.sumupUrl||'';
     var qrData='';
-    if(paypalEmail)qrData='https://www.paypal.com/paypalme/'+paypalEmail.replace('@','')+'/'+E(f.total).toFixed(2)+'EUR';
-    else if(sumupUrl)qrData=sumupUrl;
+    if(sumupUrl)qrData=sumupUrl; // V80.25 : PayPal retiré
     if(qrData&&f.status!=='payée'){
       h+='<div style="text-align:center;margin:12px 0;padding:12px;background:#f8f9fa;border-radius:8px;border:1px solid #ddd">';
       h+='<div style="font-size:11px;font-weight:700;color:#666;margin-bottom:6px">📱 Scannez pour payer</div>';
@@ -18910,8 +19008,9 @@ function gcAutoRestore(){
       gcLog('🔄 Token restauré automatiquement', 'ok');
       gcImport();
       gcStartAutoSync();
+      setTimeout(autoRelanceSoldesJ2,4000); // V80.24
     }, 1500);
-  }
+  }else{setTimeout(function(){try{if((db.settings||{}).autoRelSolde){var n=_soldesJ2List().length;if(n)showToast('\ud83d\udcb6 '+n+' solde(s) \u00e0 relancer (J-2) \u2014 connecte Gmail pour l\u2019envoi auto')}}catch(e){}},5000)}
 }
 
 // =================== FIN GOOGLE AGENDA ===================
@@ -21602,46 +21701,36 @@ function sendRelance(facId){
 
 // =================== ACOMPTES EN LIGNE (PayPal / SumUp) ===================
 function genLienAcompte(quoteId){
+  // V80.25 : acompte par VIREMENT INSTANTANÉ (0 € de frais) + QR SEPA ; carte SumUp en option
   var q = db.devis.find(function(x){return x.id===quoteId;});
   if(!q){alert('Devis introuvable');return;}
   var cl = db.clients.find(function(c){return c.id===q.clientId;});
-  var acompte = (E(q.total)*0.3).toFixed(2);
-  var desc = encodeURIComponent('Acompte Cathy Pets — '+q.ref+' — '+(cl?cl.nom:''));
-  var settings = db.settings;
-
-  var paypalEmail = settings.paypalEmail||'';
-  var sumupUrl = settings.sumupUrl||'';
-
+  var acompte = Math.round(E(q.total)*30)/100;
+  var pl=_payLinks(acompte,'Acompte '+q.ref);
   var html = '<div style="text-align:center">';
-  html += '<div style="font-size:18px;font-weight:900;color:var(--gd);margin-bottom:8px">💳 Acompte : <span style="color:var(--a2)">'+euro(parseFloat(acompte))+'</span></div>';
-  html += '<div style="font-size:12px;color:var(--mt);margin-bottom:16px">30% du devis '+q.ref+' — Total : '+euro(q.total)+'</div>';
-  html += '<div style="display:flex;flex-direction:column;gap:10px;max-width:320px;margin:0 auto">';
-
-  if(paypalEmail){
-    var ppLink = 'https://www.paypal.com/paypalme/'+paypalEmail.replace('@','')+'/'+acompte+'EUR';
-    html += '<a href="'+ppLink+'" target="_blank" class="btn bu" style="padding:14px;font-size:14px;text-align:center">💙 Payer par PayPal — '+euro(parseFloat(acompte))+'</a>';
-    html += '<div style="font-size:10px;color:var(--mt);margin-top:-6px">Lien : '+ppLink+'</div>';
+  html += '<div style="font-size:18px;font-weight:900;color:var(--gd);margin-bottom:4px">\ud83d\udcb6 Acompte : <span style="color:var(--a2)">'+euro(acompte)+'</span></div>';
+  html += '<div style="font-size:12px;color:var(--mt);margin-bottom:12px">30% du devis '+q.ref+' \u2014 Total : '+euro(q.total)+(cl?' \u2014 '+esc((cl.prenom||'')+' '+(cl.nom||'')):'')+'</div>';
+  if(pl.iban){
+    html += '<div style="display:inline-block;text-align:left;background:#0a1a18;border:1px solid #1a7a6e;border-radius:10px;padding:12px 14px;font-size:12px;max-width:420px">';
+    html += (pl.qr?'<img src="'+pl.qr+'" style="width:110px;height:110px;float:right;margin-left:12px;border-radius:6px;background:#fff;padding:3px">':'');
+    html += '<div style="font-weight:800;color:#7ad7c0;margin-bottom:6px">\u26a1 Virement instantan\u00e9 \u2014 gratuit, re\u00e7u en 10 s</div>';
+    html += '<div>IBAN : <b style="font-family:monospace">'+pl.iban+'</b></div>'+(pl.bic?'<div>BIC : <b style="font-family:monospace">'+pl.bic+'</b></div>':'')+'<div>R\u00e9f\u00e9rence : <b style="color:var(--or)">Acompte '+q.ref+'</b></div>';
+    html += '<div style="font-size:10px;color:var(--mt);margin-top:6px;clear:both">Le QR code se scanne depuis l\u2019appli bancaire du client : le virement est pr\u00e9-rempli.</div></div>';
   } else {
-    html += '<div class="nt" style="font-size:11px">📌 Pour activer PayPal : ⚙️ Paramètres → Email PayPal</div>';
+    html += '<div class="nt" style="font-size:11px">\ud83d\udccc Renseigne IBAN et BIC dans \u2699\ufe0f Param\u00e8tres \u2192 Entreprise</div>';
   }
-
-  if(sumupUrl){
-    html += '<a href="'+sumupUrl+'" target="_blank" class="btn gn" style="padding:14px;font-size:14px;text-align:center">💚 Payer par SumUp — '+euro(parseFloat(acompte))+'</a>';
-  } else {
-    html += '<div class="nt" style="font-size:11px">📌 Pour activer SumUp : ⚙️ Paramètres → URL SumUp</div>';
-  }
-
-  html += '<button class="btn sm" style="background:#1a2a3a;border-color:#2a4060;color:#aac" onclick="copyAcompteLink(\''+q.ref+'\',\''+acompte+'\',\''+paypalEmail+'\')">📋 Copier lien dans mail</button>';
-  html += '</div></div>';
-
-  oMo('💳 Lien de paiement — '+q.ref, html, '');
+  if(pl.sumup) html += '<div style="margin-top:10px"><a href="'+pl.sumup+'" target="_blank" class="btn sm" style="font-size:11px">\ud83d\udcb3 Carte bancaire (SumUp, 2,5\u00a0% de frais) \u2014 sur demande</a></div>';
+  html += '<div style="margin-top:12px"><button class="btn sm" style="background:#1a2a3a;border-color:#2a4060;color:#aac" onclick="copyAcompteLink(\''+q.id+'\')">\ud83d\udccb Copier le message (mail / WhatsApp)</button></div>';
+  html += '</div>';
+  oMo('\ud83d\udcb6 Acompte \u2014 '+q.ref, html, '');
 }
 
-function copyAcompteLink(ref, acompte, paypalEmail){
-  var txt = 'Bonjour,\n\nPour confirmer votre réservation '+ref+', un acompte de '+acompte+' € est demandé.\n\n';
-  if(paypalEmail) txt += '💙 Payer par PayPal : https://www.paypal.com/paypalme/'+paypalEmail.replace('@','')+'/'+acompte+'EUR\n';
-  txt += '\n'+ENT('entNom')+' — '+ENT('entTel1')+'';
-  navigator.clipboard.writeText(txt).then(function(){showToast('📋 Lien acompte copié !');}).catch(function(){});
+function copyAcompteLink(quoteId){
+  var q = db.devis.find(function(x){return x.id===quoteId;});if(!q)return;
+  var acompte = Math.round(E(q.total)*30)/100;
+  var pl=_payLinks(acompte,'Acompte '+q.ref);
+  var txt = 'Bonjour,\n\nPour confirmer votre r\u00e9servation '+q.ref+', un acompte de '+euro(acompte)+' est demand\u00e9.\n\n'+pl.text+'\n'+ENT('entNom')+' \u2014 '+ENT('entTel1');
+  navigator.clipboard.writeText(txt).then(function(){showToast('\ud83d\udccb Message acompte copi\u00e9 !');}).catch(function(){});
 }
 
 // Ajouter bouton acompte dans rDev2
@@ -28761,6 +28850,48 @@ function exportFacturesPdfZip(d1,d2,label,base){
     });
   });
 }
+// V80.24 : GRAND LIVRE ANNUEL — pièces (factures/avoirs) + encaissements lettrés, pour la comptable
+function exportGrandLivre(){
+  var an=prompt('\ud83d\udcda Grand livre \u2014 ann\u00e9e ?',String(new Date().getFullYear()));
+  if(!an)return;an=String(an).trim();
+  var d1=an+'-01-01',d2=an+'-12-31';
+  var inP=function(d){d=String(d||'').slice(0,10);return d>=d1&&d<=d2};
+  var fr=function(n){return (Math.round(E(n)*100)/100).toFixed(2).replace('.',',')};
+  var clean=function(x){return String(x||'').replace(/[;\r\n]+/g,' ').trim()};
+  var modeLbl={virement:'Virement',especes:'Especes',cheque:'Cheque',cb:'CB',paypal:'PayPal'};
+  var rows=[];
+  act(db.factures).forEach(function(f){
+    if(f.status==='annulee')return;
+    var cl=db.clients.find(function(x){return x.id===f.clientId})||{};
+    var cname=clean((cl.nom||'')+' '+(cl.prenom||''));
+    var isAv=(f.mode==='avoir'||f.status==='avoir'||(f.ref||'').indexOf('CP-AV')===0);
+    var ttc=Math.abs(E(f.total));
+    if(inP(f.date)){
+      rows.push({date:String(f.date).slice(0,10),piece:isAv?'AVOIR':'FACTURE',ref:f.ref,client:cname,lib:clean(f.objet||''),debit:isAv?0:ttc,credit:isAv?ttc:0,mode:'',payeur:'',lettrage:isAv?clean(f.factureOrigine||f.origRef||f.ref):f.ref,statut:isAv?'Avoir':(f.status==='pay\u00e9e'?'Payee':'En attente')});
+    }
+    if(isAv)return;
+    var acArr=_getAcomptes(f);var acTot=0;
+    acArr.forEach(function(a,ix){acTot+=E(a.montant)||0;if(!inP(a.date))return;
+      rows.push({date:String(a.date||'').slice(0,10),piece:'ENCAISSEMENT',ref:f.ref,client:cname,lib:'Acompte '+(ix+1)+(acArr.length>1?'/'+acArr.length:'')+' sur '+f.ref,debit:0,credit:E(a.montant)||0,mode:modeLbl[a.mode]||a.mode||'',payeur:clean(a.payeur||''),lettrage:f.ref,statut:''});
+    });
+    if(f.status==='pay\u00e9e'&&f.datePaiement&&inP(f.datePaiement)){
+      var solde=Math.max(0,E(f.total)-acTot-avoirsSur(f));
+      if(solde>0)rows.push({date:String(f.datePaiement).slice(0,10),piece:'ENCAISSEMENT',ref:f.ref,client:cname,lib:'Solde sur '+f.ref,debit:0,credit:solde,mode:modeLbl[f.paiement]||f.paiement||'',payeur:clean(f.payeur||''),lettrage:f.ref,statut:''});
+    }
+  });
+  if(!rows.length){alert('Aucune \u00e9criture pour '+an);return}
+  rows.sort(function(a,b){return a.date.localeCompare(b.date)||a.ref.localeCompare(b.ref)});
+  var sep=';';
+  var L=['Date'+sep+'Piece'+sep+'Reference'+sep+'Client'+sep+'Libelle'+sep+'Debit (facture TTC)'+sep+'Credit (encaisse / avoir)'+sep+'Mode'+sep+'Regle par'+sep+'Lettrage'+sep+'Statut'];
+  var tD=0,tC=0;
+  rows.forEach(function(r){tD+=r.debit;tC+=r.credit;L.push(r.date+sep+r.piece+sep+clean(r.ref)+sep+r.client+sep+r.lib+sep+(r.debit?fr(r.debit):'')+sep+(r.credit?fr(r.credit):'')+sep+r.mode+sep+(r.payeur||(r.piece==='ENCAISSEMENT'?r.client:''))+sep+r.lettrage+sep+r.statut)});
+  L.push(''+sep+''+sep+''+sep+''+sep+'TOTAUX '+an+sep+fr(tD)+sep+fr(tC)+sep+''+sep+''+sep+''+sep+'Reste a encaisser : '+fr(tD-tC));
+  var csv='\ufeff'+L.join('\r\n');
+  var b=new Blob([csv],{type:'text/csv;charset=utf-8'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='CathyPets_GrandLivre_'+an+'.csv';a.click();
+  lH('export','Grand livre '+an+' \u2014 '+rows.length+' \u00e9critures');
+  showToast('\ud83d\udcda Grand livre '+an+' export\u00e9 \u2014 '+rows.length+' \u00e9critures');
+}
 function exportCerfrance(d1,d2,label,base){
   if(arguments.length===0){openExportPeriodModal('cerfrance');return}
   var facs=act(db.factures).slice().sort(function(a,b){return (a.date||'').localeCompare(b.date||'')});
@@ -28931,6 +29062,48 @@ function exportFacturXZip(d1,d2,label,base){
       showToast('📑 ZIP Factur-X prêt — '+n+' pièce(s) pour Cerfrance');
     });
   });
+}
+// V80.24 : demande d'avis Google (mail Pro) + journal pour ne jamais redemander
+function demanderAvis(fId,tId){
+  var t=db.transports.find(function(x){return x.id===tId});
+  openMailPro('avis',fId);
+  if(window._mpCur){window._mpCur.onSent=function(){if(t){t.avisDemande=tdy();stamp(t);sav();lH('email','Demande d\u2019avis Google envoy\u00e9e \u2014 '+cN(t.clientId));try{rDash()}catch(e){}}}}
+}
+function marquerAvisFait(tId){var t=db.transports.find(function(x){return x.id===tId});if(!t)return;t.avisDemande=tdy();stamp(t);sav();try{rDash()}catch(e){}showToast('\u2714 Demande d\u2019avis marqu\u00e9e comme faite')}
+// V80.24 : relance AUTOMATIQUE du solde à J-2 du transport (Gmail direct, journalisée : 1 seule fois par facture)
+function _soldesJ2List(){
+  var d0=new Date();var d1=new Date();d1.setDate(d1.getDate()+1);var d2=new Date();d2.setDate(d2.getDate()+2);
+  var s1=d1.toISOString().slice(0,10),s2=d2.toISOString().slice(0,10);
+  var lst=[];var seen={};
+  act(db.transports).forEach(function(t){
+    if(!t.date||t.date<s1||t.date>s2)return;
+    act(db.factures).forEach(function(f){
+      if(f.clientId!==t.clientId||f.relSoldeAuto)return;
+      if(f.mode==='avoir'||f.status==='avoir'||(f.ref||'').indexOf('CP-AV')===0||f.status==='pay\u00e9e'||f.status==='annulee')return;
+      if(resteDuFac(f)>0.009&&!seen[f.id]){seen[f.id]=true;lst.push(f)}
+    });
+  });
+  return lst;
+}
+function autoRelanceSoldesJ2(){
+  try{
+    if(!(db.settings||{}).autoRelSolde)return;
+    var lst=_soldesJ2List();
+    if(!lst.length)return;
+    if(!_gcToken){showToast('\ud83d\udcb6 '+lst.length+' solde(s) \u00e0 relancer (J-2) \u2014 connecte Gmail pour l\u2019envoi automatique');return}
+    var i=0;
+    function next(){
+      if(i>=lst.length){showToast('\u2705 Relances de solde J-2 termin\u00e9es');try{rDash()}catch(e){}return}
+      var f=lst[i++];
+      var c=buildMailPro('solde',f.id);
+      if(!c||!c.to){lH('email','Relance solde J-2 impossible (pas d\u2019email) : '+f.ref);setTimeout(next,300);return}
+      c.onSent=function(){f.relSoldeAuto=tdy();stamp(f);sav();lH('email','Relance solde J-2 AUTO envoy\u00e9e : '+f.ref+' \u2014 '+euro(resteDuFac(f)))};
+      window._mpCur=c;
+      _genDocPDF(function(pdf){_mpSendRaw(pdf,null);setTimeout(next,6000)});
+    }
+    showToast('\ud83d\udcb6 Relance automatique du solde J-2 : '+lst.length+' facture(s)...');
+    next();
+  }catch(e){console.warn('autoRelanceSoldesJ2',e)}
 }
 // V80.20 : relance groupée des soldes exigibles avant transport (7 jours)
 function batchRelanceSoldes(){
