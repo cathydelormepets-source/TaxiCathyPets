@@ -610,7 +610,7 @@ body.nuit .card{border-color:#0a1520}
 </div>
 </aside>
 <main class="main">
-<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.22</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
+<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.22b</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
 <div class="cnt">
 
 <!-- DASHBOARD -->
@@ -16205,12 +16205,13 @@ function printFacturePro(id) {
       var acTxt='💰 Acompte'+(_acArr.length>1?' '+(ix+1):'')+' versé';
       if(a.date) acTxt+=' le '+new Date(a.date).toLocaleDateString('fr-FR');
       if(a.mode) acTxt+=' ('+(modeAcLabel[a.mode]||a.mode)+')';
+      if(a.payeur) acTxt+=' — réglé par '+esc(a.payeur);
       html += '<tr style="background:#fff8e1"><td style="border:1px solid #999;padding:8px;font-weight:bold;color:#b8860b">'+acTxt+'</td>';
       html += '<td style="border:1px solid #999;padding:8px;text-align:right;font-weight:bold;color:#b8860b">- ' + euro(E(a.montant)||0) + '</td></tr>';
     });
   }
   if(isPaye){
-    html += '<tr style="background:#e6f7f0"><td style="border:1px solid #999;padding:8px;font-weight:bold;color:#1a7a6e">✅ Payé' + (datePayStr ? ' le ' + datePayStr : '') + '</td>';
+    html += '<tr style="background:#e6f7f0"><td style="border:1px solid #999;padding:8px;font-weight:bold;color:#1a7a6e">✅ Payé' + (datePayStr ? ' le ' + datePayStr : '') + (f.payeur ? ' — réglé par ' + esc(f.payeur) : '') + '</td>';
     html += '<td style="border:1px solid #999;padding:8px;text-align:right;font-weight:bold;color:#1a7a6e">' + euro(E(f.total)) + '</td></tr>';
   } else {
     html += '<tr style="background:#fff8f0"><td style="border:1px solid #999;padding:8px;font-weight:bold;color:#e67e22">Reste à payer</td>';
@@ -16226,18 +16227,18 @@ function printFacturePro(id) {
     var dAc2=(f.dateAcompte||f.acompteDate)?new Date(f.dateAcompte||f.acompteDate).toLocaleDateString('fr-FR'):'';
     var mAc2=f.paiementAcompte?(modeLbl[f.paiementAcompte]||f.paiementAcompte):'';
     html += '<div style="margin:14px 0;border:1px solid #999"><table style="width:100%;border-collapse:collapse;font-size:11px">';
-    html += '<tr style="background:#0B1D3A"><td colspan="4" style="padding:7px 10px;color:#fff;font-weight:900;font-size:11px;letter-spacing:1px">🏦 SUIVI DES RÈGLEMENTS</td></tr>';
-    html += '<tr style="background:#ddd"><th style="border:1px solid #999;padding:6px;text-align:left">Règlement</th><th style="border:1px solid #999;padding:6px;width:125px">Date d\'encaissement</th><th style="border:1px solid #999;padding:6px;width:100px">Mode</th><th style="border:1px solid #999;padding:6px;width:90px;text-align:right">Montant</th></tr>';
+    html += '<tr style="background:#0B1D3A"><td colspan="5" style="padding:7px 10px;color:#fff;font-weight:900;font-size:11px;letter-spacing:1px">🏦 SUIVI DES RÈGLEMENTS</td></tr>';
+    html += '<tr style="background:#ddd"><th style="border:1px solid #999;padding:6px;text-align:left">Règlement</th><th style="border:1px solid #999;padding:6px;width:125px">Date d\'encaissement</th><th style="border:1px solid #999;padding:6px;width:100px">Mode</th><th style="border:1px solid #999;padding:6px;width:120px">Réglé par</th><th style="border:1px solid #999;padding:6px;width:90px;text-align:right">Montant</th></tr>';
     _acArr.forEach(function(a,ix){
       var dA=a.date?new Date(a.date).toLocaleDateString('fr-FR'):'—';
       var mA=a.mode?(modeLbl[a.mode]||a.mode):'—';
-      html += '<tr style="background:#fffdf5"><td style="border:1px solid #999;padding:6px;font-weight:700;color:#b8860b">Acompte'+(_acArr.length>1?' '+(ix+1):'')+'</td><td style="border:1px solid #999;padding:6px;text-align:center;font-weight:700">'+dA+'</td><td style="border:1px solid #999;padding:6px;text-align:center">'+mA+'</td><td style="border:1px solid #999;padding:6px;text-align:right;font-weight:700">'+euro(E(a.montant)||0)+'</td></tr>';
+      html += '<tr style="background:#fffdf5"><td style="border:1px solid #999;padding:6px;font-weight:700;color:#b8860b">Acompte'+(_acArr.length>1?' '+(ix+1):'')+'</td><td style="border:1px solid #999;padding:6px;text-align:center;font-weight:700">'+dA+'</td><td style="border:1px solid #999;padding:6px;text-align:center">'+mA+'</td><td style="border:1px solid #999;padding:6px;text-align:center;font-size:10px">'+(a.payeur?esc(a.payeur):'<span style="color:#999">client</span>')+'</td><td style="border:1px solid #999;padding:6px;text-align:right;font-weight:700">'+euro(E(a.montant)||0)+'</td></tr>';
     });
     if(isPaye){
-      html += '<tr style="background:#f7fdfb"><td style="border:1px solid #999;padding:6px;font-weight:700;color:#1a7a6e">Solde</td><td style="border:1px solid #999;padding:6px;text-align:center;font-weight:700">'+(dSolde||'—')+'</td><td style="border:1px solid #999;padding:6px;text-align:center">'+(mSolde||'—')+'</td><td style="border:1px solid #999;padding:6px;text-align:right;font-weight:700">'+euro(soldeMt)+'</td></tr>';
-      html += '<tr style="background:#e6f7f0"><td colspan="3" style="border:1px solid #999;padding:6px;text-align:right;font-weight:900">TOTAL ENCAISSÉ</td><td style="border:1px solid #999;padding:6px;text-align:right;font-weight:900">'+euro(E(f.total))+'</td></tr>';
+      html += '<tr style="background:#f7fdfb"><td style="border:1px solid #999;padding:6px;font-weight:700;color:#1a7a6e">Solde</td><td style="border:1px solid #999;padding:6px;text-align:center;font-weight:700">'+(dSolde||'—')+'</td><td style="border:1px solid #999;padding:6px;text-align:center">'+(mSolde||'—')+'</td><td style="border:1px solid #999;padding:6px;text-align:center;font-size:10px">'+(f.payeur?esc(f.payeur):'<span style="color:#999">client</span>')+'</td><td style="border:1px solid #999;padding:6px;text-align:right;font-weight:700">'+euro(soldeMt)+'</td></tr>';
+      html += '<tr style="background:#e6f7f0"><td colspan="4" style="border:1px solid #999;padding:6px;text-align:right;font-weight:900">TOTAL ENCAISSÉ</td><td style="border:1px solid #999;padding:6px;text-align:right;font-weight:900">'+euro(E(f.total))+'</td></tr>';
     } else {
-      html += '<tr style="background:#fff8f0"><td style="border:1px solid #999;padding:6px;font-weight:700;color:#e67e22">Solde — en attente</td><td style="border:1px solid #999;padding:6px;text-align:center;color:#e67e22">Échéance '+echeanceStr+'</td><td style="border:1px solid #999;padding:6px;text-align:center">—</td><td style="border:1px solid #999;padding:6px;text-align:right;font-weight:700;color:#e67e22">'+euro(soldeMt)+'</td></tr>';
+      html += '<tr style="background:#fff8f0"><td style="border:1px solid #999;padding:6px;font-weight:700;color:#e67e22">Solde — en attente</td><td style="border:1px solid #999;padding:6px;text-align:center;color:#e67e22">Échéance '+echeanceStr+'</td><td style="border:1px solid #999;padding:6px;text-align:center">—</td><td style="border:1px solid #999;padding:6px;text-align:center">—</td><td style="border:1px solid #999;padding:6px;text-align:right;font-weight:700;color:#e67e22">'+euro(soldeMt)+'</td></tr>';
     }
     html += '</table></div>';
   }
