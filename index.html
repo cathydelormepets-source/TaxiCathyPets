@@ -610,7 +610,7 @@ body.nuit .card{border-color:#0a1520}
 </div>
 </aside>
 <main class="main">
-<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.31</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
+<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.31b</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
 <div class="cnt">
 
 <!-- DASHBOARD -->
@@ -17388,8 +17388,18 @@ function frCatChange(){
 }
 function rFrais(){
   if(!db.depenses)db.depenses=[];
-  var deps=act(db.depenses);
+  // V80.31b : unifier les 3 schémas de dépenses (frais terrain: cat/montant/desc — ticket scanné: compte/ttc/label — compta dp_: compte/ht/ttc/label)
+  var _cptCat={'602':'carburant','606':'materiel','615':'entretien','616':'assurance','622':'veterinaire','623':'publicite','625':'peage','626':'telecom'};
+  var deps=act(db.depenses).map(function(d0){
+    var d2={};for(var k in d0)d2[k]=d0[k];
+    if(!E(d2.montant)&&E(d2.ttc))d2.montant=E(d2.ttc);
+    if(!E(d2.montant)&&E(d2.ht)){var _t=E(d2.tva);d2.montant=Math.round(E(d2.ht)*(1+(_t>0&&_t<30?_t:20)/100)*100)/100;}
+    if(!d2.cat)d2.cat=_cptCat[String(d2.compte||'')]||'autre';
+    if(!d2.desc)d2.desc=(d2.label||'')+((d2.fournisseur&&String(d2.label||'').indexOf(d2.fournisseur)<0)?(d2.label?' — ':'')+d2.fournisseur:'');
+    return d2;
+  });
   var catLabels={hotel:'🏨 Hôtel',restaurant:'🍽️ Restaurant',ferry:'🚢 Ferry',train:'🚄 Train',avion:'✈️ Avion',peage:'🛣️ Péages',parking:'🅿️ Parking',materiel:'🧹 Matériel',veterinaire:'🩺 Vétérinaire',assurance:'🛡️ Assurance',autre:'📎 Autre',carburant:'⛽ Carburant'};
+  catLabels.carburant=catLabels.carburant||'⛽ Carburant';catLabels.entretien=catLabels.entretien||'🔧 Entretien';catLabels.telecom=catLabels.telecom||'📱 Télécom';catLabels.publicite=catLabels.publicite||'📣 Publicité';catLabels.autre=catLabels.autre||'📎 Divers';
   var d=tdy();var sem=new Date();sem.setDate(sem.getDate()-7);var semS=sem.toISOString().slice(0,10);
   var moisS=d.slice(0,7);var anneeS=d.slice(0,4);
   var periode=V('fr_periode')||'mois';
