@@ -610,7 +610,7 @@ body.nuit .card{border-color:#0a1520}
 </div>
 </aside>
 <main class="main">
-<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.29b</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
+<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.31</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
 <div class="cnt">
 
 <!-- DASHBOARD -->
@@ -7736,14 +7736,14 @@ function devSetOpt(id,val){
   rAll();
 }
 // V80.28 : COMPTE-RENDU DE LIVRAISON — photo + heure + note + envoi "bien arrivé"
-var _lvPhoto='';
+var _lvPhotos=[];
 function livraisonModal(tId){
   var t=db.transports.find(function(x){return x.id===tId});if(!t)return;
-  _lvPhoto='';
+  _lvPhotos=[];
   var ist='width:100%;background:#080f1a;border:1px solid var(--ln);color:var(--tx);border-radius:10px;padding:10px;font:inherit;font-size:13px';
   var now=new Date();
   var h='<div style="font-size:12px;color:var(--mt);margin-bottom:8px">'+t.ref+' — '+esc(cN(t.clientId))+' — '+t.date+'</div>'
-    +'<button type="button" class="btn gn" style="display:block;width:100%;text-align:center;padding:14px;font-size:14px;margin-bottom:8px" onclick="var _e=document.getElementById(\'lv_file\');if(_e){_e.value=\'\';_e.click()}">📸 Photo de l\'animal livré</button>'
+    +'<button type="button" class="btn gn" style="display:block;width:100%;text-align:center;padding:14px;font-size:14px;margin-bottom:8px" onclick="var _e=document.getElementById(\'lv_file\');if(_e){_e.value=\'\';_e.click()}">📸 Ajouter une photo des animaux (3 max)</button>'
     +'<input type="file" id="lv_file" accept="image/*" capture="environment" style="position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0" onchange="_lvPick(this)">'
     +'<div id="lv_prev" style="text-align:center;margin-bottom:8px;min-height:16px;font-size:11px;color:var(--mt)"></div>'
     +'<div class="row"><div class="c6 fd"><label>🕐 Heure de remise</label><input id="lv_h" value="'+('0'+now.getHours()).slice(-2)+':'+('0'+now.getMinutes()).slice(-2)+'" style="'+ist+'"></div>'
@@ -7754,15 +7754,17 @@ function livraisonModal(tId){
 }
 function _lvPick(inp){
   var f=inp.files&&inp.files[0];if(!f)return;
+  if(_lvPhotos.length>=3){showToast('\u26a0\ufe0f 3 photos maximum');return}
   var rd=new FileReader();rd.onload=function(ev){
     var img=new Image();img.onload=function(){
       var max=1400,sc=Math.min(1,max/Math.max(img.width,img.height));
       var cv=document.createElement('canvas');cv.width=Math.round(img.width*sc);cv.height=Math.round(img.height*sc);
       cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
-      _lvPhoto=cv.toDataURL('image/jpeg',0.72);
-      $('lv_prev').innerHTML='<img src="'+_lvPhoto+'" style="max-height:130px;border-radius:8px;border:1px solid var(--ln)">';
+      _lvPhotos.push(cv.toDataURL('image/jpeg',0.72));
+      $('lv_prev').innerHTML=_lvPhotos.map(function(p,i){return '<span style="position:relative;display:inline-block;margin:3px"><img src="'+p+'" style="max-height:100px;border-radius:8px;border:1px solid var(--ln)"><a href="#" onclick="_lvPhotos.splice('+i+',1);_lvPick({files:[]});return false" style="position:absolute;top:-6px;right:-6px;background:var(--rd);color:#fff;border-radius:50%;width:18px;height:18px;font-size:11px;text-align:center;text-decoration:none;line-height:18px">\u00d7</a></span>'}).join('')+' <span style="color:var(--mt);font-size:10px">'+_lvPhotos.length+'/3</span>';
     };img.src=ev.target.result;
   };rd.readAsDataURL(f);
+  if(!f.size&&$('lv_prev')){$('lv_prev').innerHTML=_lvPhotos.map(function(p,i){return '<span style="position:relative;display:inline-block;margin:3px"><img src="'+p+'" style="max-height:100px;border-radius:8px;border:1px solid var(--ln)"><a href="#" onclick="_lvPhotos.splice('+i+',1);_lvPick({files:[]});return false" style="position:absolute;top:-6px;right:-6px;background:var(--rd);color:#fff;border-radius:50%;width:18px;height:18px;font-size:11px;text-align:center;text-decoration:none;line-height:18px">\u00d7</a></span>'}).join('')+(_lvPhotos.length?' <span style="color:var(--mt);font-size:10px">'+_lvPhotos.length+'/3</span>':'')}
 }
 function saveLivraison(tId){
   var t=db.transports.find(function(x){return x.id===tId});if(!t)return;
@@ -7774,25 +7776,31 @@ function saveLivraison(tId){
     try{rTrp()}catch(e){}try{rDash()}catch(e){}
     setTimeout(function(){if(confirm('✉️ Envoyer au client le message « Votre compagnon est bien arrivé » (avec la photo) ?'))openMailPro('livraison',tId)},300);
   };
-  if(_lvPhoto){
-    var img=new Image();img.onload=function(){
-      var cv=document.createElement('canvas');var sc=Math.min(1,420/Math.max(img.width,img.height));
-      cv.width=Math.round(img.width*sc);cv.height=Math.round(img.height*sc);
-      cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
-      t.livraison.photo=cv.toDataURL('image/jpeg',0.6);
-      if(_gcToken){
-        var mois=tdy().slice(0,7);
-        drivePath(['CathyPets','Livraisons',mois],function(fid){
-          if(!fid){finish();return}
-          driveUpload(_dataUrlToBlob(_lvPhoto),'Livraison_'+t.ref+'_'+tdy()+'.jpg',fid,function(j){
-            if(j&&j.id){
-              t.livraison.drive={id:j.id,url:'https://drive.google.com/file/d/'+j.id+'/view'};
-              _drvReq('POST','https://www.googleapis.com/drive/v3/files/'+j.id+'/permissions',JSON.stringify({role:'reader',type:'anyone'}),'application/json',function(){finish()});
-            } else finish();
+  if(_lvPhotos.length){
+    t.livraison.photos=[];t.livraison.driveUrls=[];
+    var idx=0;
+    function one(){
+      if(idx>=_lvPhotos.length){t.livraison.photo=t.livraison.photos[0]||'';t.livraison.drive=t.livraison.driveUrls[0]?{url:t.livraison.driveUrls[0]}:null;finish();return}
+      var src=_lvPhotos[idx];
+      var img=new Image();img.onload=function(){
+        var cv=document.createElement('canvas');var sc=Math.min(1,420/Math.max(img.width,img.height));
+        cv.width=Math.round(img.width*sc);cv.height=Math.round(img.height*sc);
+        cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
+        t.livraison.photos.push(cv.toDataURL('image/jpeg',0.6));
+        if(_gcToken){
+          drivePath(['CathyPets','Livraisons',tdy().slice(0,7)],function(fid){
+            if(!fid){idx++;one();return}
+            driveUpload(_dataUrlToBlob(src),'Livraison_'+t.ref+'_'+tdy()+'_'+(idx+1)+'.jpg',fid,function(j){
+              if(j&&j.id){
+                t.livraison.driveUrls.push('https://drive.google.com/file/d/'+j.id+'/view');
+                _drvReq('POST','https://www.googleapis.com/drive/v3/files/'+j.id+'/permissions',JSON.stringify({role:'reader',type:'anyone'}),'application/json',function(){idx++;one()});
+              } else {idx++;one()}
+            });
           });
-        });
-      } else finish();
-    };img.src=_lvPhoto;
+        } else {idx++;one()}
+      };img.src=src;
+    }
+    one();
   } else finish();
 }
 // V80.28 : lien "Bon pour accord" en ligne (devis-accord.html) — signature + option + QR acompte
@@ -13831,12 +13839,16 @@ function buildMailPro(type,id){
   }else if(type==='livraison'){
     couleur=TE;titre='VOTRE COMPAGNON EST BIEN ARRIV\u00c9 \ud83d\udc3e';
     var lv=doc.livraison||{};
+    // V80.30 : facture acquittée liée → jointe au même email
+    var fLie=act(db.factures).find(function(x){return x.status==='pay\u00e9e'&&(x.transportId===doc.id||(doc.devisId&&x.devisId===doc.devisId))});
     var legs=(typeof tLegs==='function')?tLegs(doc):[];
     subject='\ud83d\udc3e Bien arriv\u00e9 ! \u2014 Transport '+doc.ref+' du '+(doc.date||'');
     intro='Bonne nouvelle : votre compagnon est <b>bien arriv\u00e9 \u00e0 destination</b> et se porte bien. Voici le compte-rendu de la remise.';
     rows=row('Transport',doc.ref)+row('Date',doc.date||'')+(lv.heure?row('Heure de remise',lv.heure):'')+(lv.qui?row('Remis \u00e0',_mpEsc(lv.qui)):'')+(legs.length>1?row('Trajet',_mpEsc(legs[0]+' \u2192 '+legs[legs.length-1])):'')+(lv.note?row('Observations',_mpEsc(lv.note)):'');
-    extra=(lv.photo?'<div style="text-align:center;margin:16px 0 0 0"><img src="'+lv.photo+'" style="max-width:100%;max-height:320px;border-radius:12px;border:2px solid '+TE+'" alt="Photo \u00e0 l\u2019arriv\u00e9e"></div>':'')
-      +(lv.drive&&lv.drive.url?'<p style="margin:10px 0 0 0;font-size:12px;text-align:center"><a href="'+lv.drive.url+'" style="color:'+TE+';font-weight:700">\ud83d\udcf7 Voir la photo en haute qualit\u00e9</a></p>':'')
+    var _ph=(lv.photos&&lv.photos.length)?lv.photos:(lv.photo?[lv.photo]:[]);
+    extra=(_ph.length?'<div style="text-align:center;margin:16px 0 0 0">'+_ph.map(function(p){return '<img src="'+p+'" style="max-width:'+(_ph.length>1?'46%':'100%')+';max-height:300px;border-radius:12px;border:2px solid '+TE+';margin:3px" alt="Photo \u00e0 l\u2019arriv\u00e9e">'}).join('')+'</div>':'')
+      +((lv.driveUrls&&lv.driveUrls.length)||(lv.drive&&lv.drive.url)?'<p style="margin:10px 0 0 0;font-size:12px;text-align:center">'+((lv.driveUrls&&lv.driveUrls.length?lv.driveUrls:[lv.drive.url]).map(function(u,i){return '<a href="'+u+'" style="color:'+TE+';font-weight:700;margin:0 5px">\ud83d\udcf7 Photo '+(i+1)+' HD</a>'}).join(''))+'</p>':'')
+      +(fLie?'<p style="margin:14px 0 0 0;font-size:13px;color:#333;line-height:1.6">\ud83e\uddfe Vous trouverez \u00e9galement en pi\u00e8ce jointe votre <b>facture '+fLie.ref+' acquitt\u00e9e</b>, qui vaut re\u00e7u de paiement.</p>':'')
       +'<p style="margin:16px 0 0 0;font-size:14px;color:#333;line-height:1.6">Merci de votre confiance \u2014 ce fut un plaisir de voyager avec votre compagnon. \ud83d\udc3e</p>'
       +((db.settings||{}).avisUrl?'<p style="margin:12px 0 0 0;font-size:13px;text-align:center">\u2b50 Un petit mot sur votre exp\u00e9rience nous aiderait beaucoup : <a href="'+(db.settings||{}).avisUrl+'" style="color:'+OR+';font-weight:800">laisser un avis Google</a></p>':'');
   }else if(type==='acquit'){
@@ -13904,7 +13916,9 @@ function buildMailPro(type,id){
       type==='solde'?'Facture '+doc.ref+' — Solde à régler avant la prise en charge : '+euro(aRegler)+(pen?' (dont pénalités de retard '+euro(pen.totalPenalites)+')':'')+'\n'+_payLinks(aRegler,doc.ref).text:
       'Facture '+doc.ref+' du '+dDoc+' — Total : '+euro(total)+' TTC'+(reste!==total?' — Reste à régler : '+euro(reste):'')+'\nRèglement à réception (virement, chèque ou espèces).')
     +'\n\nBien cordialement,\nCathy — Cathy Pets\nTaxi animalier : 07 81 30 41 10 · Garde : 07 83 43 63 06\ncathypetsitter.com · cathydelormepets@gmail.com';
-  return {to:cl.email||'',subject:subject,html:html,text:text,clientNom:nomCl,isDev:isDev,docId:id,noPdf:(type==='pec'||type==='avis'||type==='livraison'),type:type};
+  var _docId=id,_noPdf=(type==='pec'||type==='avis'||type==='livraison');
+  if(type==='livraison'&&typeof fLie!=='undefined'&&fLie){_docId=fLie.id;_noPdf=false;} // V80.30 : PDF facture acquittée joint
+  return {to:cl.email||'',subject:subject,html:html,text:text,clientNom:nomCl,isDev:isDev,docId:_docId,noPdf:_noPdf,type:type};
 }
 function openMailPro(type,id){
   var cur=buildMailPro(type,id);
@@ -29420,10 +29434,64 @@ function _tkPhotoPick(inp){
       var cv=document.createElement('canvas');cv.width=Math.round(img.width*sc);cv.height=Math.round(img.height*sc);
       cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
       _tkPhoto=cv.toDataURL('image/jpeg',0.72);
-      $('tk_prev').innerHTML='<img src="'+_tkPhoto+'" style="max-height:140px;border-radius:8px;border:1px solid var(--ln)"><div>📷 Photo prête ('+Math.round(_tkPhoto.length*0.75/1024)+' Ko)</div>';
+      $('tk_prev').innerHTML='<img src="'+_tkPhoto+'" style="max-height:140px;border-radius:8px;border:1px solid var(--ln)"><div>📷 Photo prête ('+Math.round(_tkPhoto.length*0.75/1024)+' Ko)</div><div id="tk_ocr" style="font-size:11px;color:var(--gd);margin-top:4px"></div>';
+      _tkOCR(_tkPhoto); // V80.31 : lecture automatique du ticket
     };img.src=ev.target.result;
   };
   rd.readAsDataURL(f);
+}
+// ══════════════ V80.31 : OCR LOCAL DU TICKET (Tesseract.js chargé à la demande) ══════════════
+var _tessLoading=false;
+function _tkOCR(dataUrl){
+  var st=document.getElementById('tk_ocr');if(!st)return;
+  st.textContent='🔍 Lecture du ticket en cours…';
+  function run(){
+    Tesseract.recognize(dataUrl,'fra',{logger:function(m){if(m.status==='recognizing text'&&st)st.textContent='🔍 Lecture… '+Math.round((m.progress||0)*100)+' %'}})
+      .then(function(r){_tkFill((r&&r.data&&r.data.text)||'')})
+      .catch(function(e){if(st)st.innerHTML='<span style="color:var(--or)">⚠️ Lecture impossible — saisis les champs à la main</span>';console.warn('OCR',e)});
+  }
+  if(window.Tesseract){run();return}
+  if(_tessLoading){setTimeout(function(){_tkOCR(dataUrl)},800);return}
+  _tessLoading=true;
+  var sc=document.createElement('script');
+  sc.src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
+  sc.onload=function(){_tessLoading=false;run()};
+  sc.onerror=function(){_tessLoading=false;if(st)st.innerHTML='<span style="color:var(--or)">⚠️ OCR indisponible hors connexion — saisis à la main</span>'};
+  document.head.appendChild(sc);
+}
+function _tkFill(txt){
+  var st=document.getElementById('tk_ocr');
+  if(!txt||txt.length<8){if(st)st.innerHTML='<span style="color:var(--or)">⚠️ Rien de lisible — photo plus nette / plus près ?</span>';return}
+  var up=txt.toUpperCase();var got=[];
+  var setIf=function(id,v){var e=document.getElementById(id);if(e&&v&&!e.value){e.value=v;return true}return false};
+  var marques=[['LECLERC','E.Leclerc'],['TOTALENERGIES','TotalEnergies'],['TOTAL ','TotalEnergies'],['INTERMARCHE','Intermarché'],['CARREFOUR','Carrefour'],['AUCHAN','Auchan'],['SUPER U','Super U'],['SYSTEME U','Super U'],['ESSO','Esso'],['SHELL','Shell'],['AVIA','Avia'],['BP ','BP'],['VINCI','Vinci Autoroutes'],['SANEF','Sanef'],['APRR','APRR'],['AREA','AREA'],['NORAUTO','Norauto'],['FEU VERT','Feu Vert'],['AMAZON','Amazon'],['ACTION','Action'],['BRICO','Bricomarché']];
+  var four='';for(var i=0;i<marques.length;i++){if(up.indexOf(marques[i][0])>=0){four=marques[i][1];break}}
+  if(!four){var l1=txt.split('\n').map(function(l){return l.trim()}).filter(function(l){return l.length>2&&l.length<32&&!/\d{4}/.test(l)});if(l1.length)four=l1[0]}
+  if(setIf('tk_fo',four))got.push('fournisseur');
+  var md=txt.match(/(\d{1,2})[\/\.\-](\d{1,2})[\/\.\-](20\d{2}|\d{2})/);
+  if(md){var an=md[3].length===2?'20'+md[3]:md[3];var iso=an+'-'+('0'+md[2]).slice(-2)+'-'+('0'+md[1]).slice(-2);
+    var e=document.getElementById('tk_dt');if(e&&iso<=tdy()&&iso>'2020-01-01'){e.value=iso;got.push('date')}}
+  var amts=[];var best=0;
+  txt.split('\n').forEach(function(l){
+    var lu=l.toUpperCase();
+    var ms=l.match(/(\d{1,4})[\s]?[.,](\d{2})\b/g)||[];
+    ms.forEach(function(m){var v=parseFloat(m.replace(/\s/g,'').replace(',','.'));if(v>0&&v<10000){amts.push(v);
+      if(/TOTAL|TTC|A PAYER|PAYER|MONTANT|CB\b|CARTE/.test(lu)&&v>best)best=v;}});
+  });
+  if(!best&&amts.length)best=Math.max.apply(null,amts);
+  if(best>0){var e2=document.getElementById('tk_ttc');if(e2&&!e2.value){e2.value=best.toFixed(2);got.push('montant '+euro(best))}}
+  var mt=up.match(/TVA[^\d]{0,10}(20|10|5[.,]5)/);
+  if(mt){var e3=document.getElementById('tk_tva');if(e3){e3.value=mt[1].replace(',','.');got.push('TVA '+mt[1]+'%')}}
+  var e4=document.getElementById('tk_cat');
+  if(e4){
+    if(/GAZOLE|GASOIL|DIESEL|SP95|SP98|E85|ETHANOL|LITRE|CARBURANT|VOLUME/.test(up)){e4.value='602';got.push('carburant')}
+    else if(/PEAGE|PÉAGE|AUTOROUTE|PARKING/.test(up)){e4.value='625';got.push('péage')}
+    else if(/RESTAURANT|BRASSERIE|MENU|COUVERT/.test(up)){e4.value='625r';got.push('resto')}
+    else if(/VETERINAIRE|VÉTÉRINAIRE|CLINIQUE VET/.test(up)){e4.value='622';got.push('véto')}
+    _tkCatChange();
+  }
+  _tkCalc();
+  if(st)st.innerHTML=got.length?('✅ Lu : '+got.join(' · ')+' — <b>vérifie le montant avant d’enregistrer</b>'):'⚠️ Ticket lu mais rien d’exploitable — saisis à la main';
 }
 function saveTicket(){
   var ttc=E(V('tk_ttc'));if(!(ttc>0)){showToast('⚠️ Montant TTC obligatoire');return}
