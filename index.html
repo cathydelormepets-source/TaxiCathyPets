@@ -610,7 +610,7 @@ body.nuit .card{border-color:#0a1520}
 </div>
 </aside>
 <main class="main">
-<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.31b</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
+<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.32</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
 <div class="cnt">
 
 <!-- DASHBOARD -->
@@ -4630,6 +4630,7 @@ document.getElementById('q_contrat_pec').addEventListener('change',function(){
     <div class="row">
       <div class="c12 fd"><label>URL lien carte bancaire SumUp (optionnel — proposé « sur demande » uniquement, 2,5 % de frais)</label><input id="s_sumup" placeholder="https://pay.sumup.com/b2c/..."></div>
       <div class="c12 fd"><label>⭐ Lien avis Google (fiche établissement → « Demander des avis »)</label><input id="s_avisUrl" placeholder="https://g.page/r/XXXX/review"></div>
+      <div class="c12 fd"><label>⛽ Récupération TVA carburant (selon carte grise du véhicule)</label><select id="s_tvaCarbu" class="inp"><option value="80">80 % — véhicule de tourisme (VP)</option><option value="100">100 % — véhicule utilitaire (VU / CTTE)</option></select></div>
       <div class="c12 fd"><label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="s_autoRelSolde" style="width:auto"> 💶 Relance automatique du solde à J-2 du transport (envoi Gmail direct, une seule fois par facture)</label></div>
     </div>
   </div>
@@ -12948,6 +12949,7 @@ function rSet(){
   sv('s_gn', s.guardNac||25);
   sv('s_sumup', s.sumupUrl||'');
   sv('s_avisUrl', s.avisUrl||'');
+  try{var _tc=$('s_tvaCarbu');if(_tc)_tc.value=String(E(s.tvaCarbuPct)===100?100:80)}catch(e){}
   try{var _ar=$('s_autoRelSolde');if(_ar)_ar.checked=!!s.autoRelSolde}catch(e){}
   sv('s_objmois', s.objectifMois||'');
   sv('fb_ak', s.fbApiKey||'');
@@ -13014,6 +13016,7 @@ function savSet(){
   if(obj>0){s.objectifMois=obj;var bkObj=document.getElementById('bk_obj');if(bkObj)bkObj.value=obj;}
   var su=V('s_sumup');if(su!==null)s.sumupUrl=su;
   var av=V('s_avisUrl');if(av!==null)s.avisUrl=av;
+  var _tc2=V('s_tvaCarbu');if(_tc2)s.tvaCarbuPct=parseInt(_tc2)||80;
   try{var _ar2=$('s_autoRelSolde');if(_ar2)s.autoRelSolde=!!_ar2.checked}catch(e){}
   var ftMain=V('s_ft');if(ftMain)s.fuelType=ftMain;
   // Nouveaux settings V28: classe péage, API carburant, GPS base
@@ -21230,17 +21233,36 @@ function rCfPL(recettes,deps){
   el.innerHTML=h;
 }
 
+// V80.32 : TVA RÉCUPÉRABLE ≠ TVA payée.
+// Règles France : hébergement dirigeants/salariés → 0 % récupérable (art. 206 IV ann. II CGI) ;
+// carburant (gazole, essence, E85) → 80 % véhicule de tourisme / 100 % utilitaire (réglage ⚙️) ;
+// restaurant, péages, autres frais pro avec facture → 100 %.
+function tvaRecupCoef(d){
+  var cat=String(d.cat||'').toLowerCase();var cpt=String(d.compte||'');
+  if(cat==='hotel'||cat==='hebergement')return 0;
+  if(cat==='carburant'||cpt==='602'){var p=E((db.settings||{}).tvaCarbuPct);return (p===100||p===80)?p/100:0.8;}
+  return 1;
+}
+function tvaDeductibleDeps(deps){
+  return deps.reduce(function(s,d){
+    var tvaM=E(d.ttc)-E(d.ht);
+    if(!(tvaM>0)&&E(d.montant)&&E(d.tva)>0)tvaM=E(d.montant)-E(d.montant)/(1+E(d.tva)/100);
+    return s+Math.max(0,tvaM)*tvaRecupCoef(d);
+  },0);
+}
 function rCfTVA(recettes,deps){
   var el=document.getElementById('cfTvaBody');if(!el)return;
   var tvaColl=recettes.reduce(function(s,r){return s+(E(r.ttc)-E(r.ht))},0);
-  var tvaDed=deps.reduce(function(s,d){return s+(E(d.ttc)-E(d.ht))},0);
+  var tvaPayee=deps.reduce(function(s,d){var m=E(d.ttc)-E(d.ht);if(!(m>0)&&E(d.montant)&&E(d.tva)>0)m=E(d.montant)-E(d.montant)/(1+E(d.tva)/100);return s+Math.max(0,m)},0);
+  var tvaDed=tvaDeductibleDeps(deps); // V80.32 : récupérable uniquement
+  var tvaNonRec=Math.max(0,tvaPayee-tvaDed);
   var tvaNet=tvaColl-tvaDed;
   var caHT=recettes.reduce(function(s,r){return s+E(r.ht)},0);
   var caTTC=recettes.reduce(function(s,r){return s+E(r.ttc)},0);
 
   var h='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px">';
   h+='<div style="padding:14px;background:#0f1f33;border:1px solid var(--ln);border-radius:10px;text-align:center"><div class="lb">TVA collectée</div><div style="font-size:24px;font-weight:900;color:var(--gd);margin-top:6px">'+euro(tvaColl)+'</div></div>';
-  h+='<div style="padding:14px;background:#0f1f33;border:1px solid var(--ln);border-radius:10px;text-align:center"><div class="lb">TVA déductible</div><div style="font-size:24px;font-weight:900;color:var(--bl);margin-top:6px">'+euro(tvaDed)+'</div></div>';
+  h+='<div style="padding:14px;background:#0f1f33;border:1px solid var(--ln);border-radius:10px;text-align:center"><div class="lb">TVA récupérable</div><div style="font-size:24px;font-weight:900;color:var(--bl);margin-top:6px">'+euro(tvaDed)+'</div><div style="font-size:9px;color:var(--mt);margin-top:2px">'+(tvaNonRec>0.009?'TVA payée non récupérable : '+euro(tvaNonRec)+' (hôtel 0 %, carburant '+(E((db.settings||{}).tvaCarbuPct)===100?'100':'80')+' %)':'hôtel exclu · carburant '+(E((db.settings||{}).tvaCarbuPct)===100?'100':'80')+' %')+'</div></div>';
   h+='<div style="padding:14px;background:'+(tvaNet>=0?'rgba(212,168,67,.12)':'rgba(26,122,110,.12)')+';border:1px solid '+(tvaNet>=0?'rgba(212,168,67,.4)':'rgba(26,122,110,.4)')+';border-radius:10px;text-align:center"><div class="lb">TVA à décaisser</div><div style="font-size:24px;font-weight:900;color:'+(tvaNet>=0?'var(--gd)':'var(--a2)')+';margin-top:6px">'+euro(tvaNet)+'</div></div>';
   h+='</div>';
   // V80.27 : TVA SUR LES ENCAISSEMENTS (régime de droit commun des prestations de services)
@@ -21338,7 +21360,7 @@ function cfExportPDF(){
   var recs=cfGetRecettes(range.d1,range.d2);
   var caHT=recs.reduce(function(s,r){return s+E(r.ht)},0),caTTC=recs.reduce(function(s,r){return s+E(r.ttc)},0);
   var depHT=deps.reduce(function(s,d){return s+E(d.ht)},0);
-  var tvaColl=caTTC-caHT,tvaDed=deps.reduce(function(s,d){return s+(E(d.ttc)-E(d.ht))},0);
+  var tvaColl=caTTC-caHT,tvaDed=tvaDeductibleDeps(deps); // V80.32
   var resHT=caHT-depHT;
   var h='<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Bilan CERFRANCE — Cathy Pets</title><style>';
   h+='body{font-family:Arial,sans-serif;color:#111;font-size:12px;margin:0;padding:0}';
@@ -29410,7 +29432,7 @@ function scanTicket(){
     +'<div class="c6 fd"><label>📅 Date du ticket</label><input id="tk_dt" type="date" value="'+tdy()+'" style="'+ist+'"></div>'
     +'<div class="c6 fd"><label>🏪 Fournisseur</label><input id="tk_fo" list="tk_fo_list" placeholder="Leclerc, TotalEnergies, Vinci..." style="'+ist+'"><datalist id="tk_fo_list"><option value="E.Leclerc"><option value="TotalEnergies"><option value="Vinci Autoroutes"><option value="Sanef"><option value="Intermarché"><option value="Carrefour"><option value="Amazon"><option value="Norauto"><option value="Feu Vert"><option value="Vétérinaire"></datalist></div>'
     +'</div><div class="row">'
-    +'<div class="c6 fd"><label>📂 Type de dépense</label><select id="tk_cat" onchange="_tkCatChange()" style="'+ist+'"><option value="602">⛽ Carburant (602)</option><option value="625">🛣️ Péage / parking / déplacement (625)</option><option value="625r">🍽️ Restaurant / hôtel (625)</option><option value="615">🔧 Entretien / réparation véhicule (615)</option><option value="606">🧹 Matériel / fournitures (606)</option><option value="622">🩺 Vétérinaire / honoraires (622)</option><option value="626">📱 Télécom / postal (626)</option><option value="616">🛡️ Assurance (616)</option><option value="623">📣 Publicité (623)</option><option value="606a">📎 Autre (606)</option></select></div>'
+    +'<div class="c6 fd"><label>📂 Type de dépense</label><select id="tk_cat" onchange="_tkCatChange()" style="'+ist+'"><option value="602">⛽ Carburant (602)</option><option value="625">🛣️ Péage / parking / déplacement (625)</option><option value="625r">🍽️ Restaurant (625 — TVA 10 %)</option><option value="625h">🏨 Hôtel / hébergement (625 — TVA 10 %, non récupérable)</option><option value="615">🔧 Entretien / réparation véhicule (615)</option><option value="606">🧹 Matériel / fournitures (606)</option><option value="622">🩺 Vétérinaire / honoraires (622)</option><option value="626">📱 Télécom / postal (626)</option><option value="616">🛡️ Assurance (616)</option><option value="623">📣 Publicité (623)</option><option value="606a">📎 Autre (606)</option></select></div>'
     +'<div class="c6 fd"><label>💳 Payé avec</label><select id="tk_mp" style="'+ist+'"><option value="carte_carburant">⛽ Carte carburant (facture mensuelle)</option><option value="cb" selected>💳 CB société</option><option value="prelevement">🏦 Prélèvement</option><option value="virement">🏦 Virement</option><option value="cheque">📝 Chèque</option><option value="perso">👤 Avancé perso (note de frais)</option></select></div>'
     +'</div><div class="row">'
     +'<div class="c4 fd"><label>💰 Montant TTC €</label><input id="tk_ttc" type="number" step="0.01" inputmode="decimal" style="'+ist+';font-size:18px;font-weight:800;color:var(--rd)" oninput="_tkCalc()"></div>'
@@ -29432,7 +29454,7 @@ function _tkOpenPicker(n){
   el.value=''; // permet de re-choisir le même fichier
   try{el.click()}catch(e){showToast('\u26a0\ufe0f Impossible d\u2019ouvrir le s\u00e9lecteur : '+e)}
 }
-function _tkCatChange(){var c=V('tk_cat'),mp=$('tk_mp');var note=$('tk_carb_note');if(c==='602'&&mp&&!mp.dataset.touched){mp.value='carte_carburant'}if(note)note.style.display=(mp&&mp.value==='carte_carburant')?'block':'none';var tv=$('tk_tva');if(tv&&c==='625r')tv.value='10';_tkCalc()}
+function _tkCatChange(){var c=V('tk_cat'),mp=$('tk_mp');var note=$('tk_carb_note');if(c==='602'&&mp&&!mp.dataset.touched){mp.value='carte_carburant'}if(note)note.style.display=(mp&&mp.value==='carte_carburant')?'block':'none';var tv=$('tk_tva');if(tv&&(c==='625r'||c==='625h'))tv.value='10';_tkCalc()}
 function _tkCalc(){var ttc=E(V('tk_ttc')),tv=E(V('tk_tva'));var ht=tv>0?ttc/(1+tv/100):ttc;var e=$('tk_ht');if(e)e.value=ttc?ht.toFixed(2):''}
 function _tkPhotoPick(inp){
   var f=inp.files&&inp.files[0];if(!f)return;
@@ -29496,6 +29518,7 @@ function _tkFill(txt){
   if(e4){
     if(/GAZOLE|GASOIL|DIESEL|SP95|SP98|E85|ETHANOL|LITRE|CARBURANT|VOLUME/.test(up)){e4.value='602';got.push('carburant')}
     else if(/PEAGE|PÉAGE|AUTOROUTE|PARKING/.test(up)){e4.value='625';got.push('péage')}
+    else if(/HOTEL|H\u00d4TEL|IBIS|CAMPANILE|KYRIAD|B&B|NUIT\(S\)|CHAMBRE|TAXE DE SEJOUR/.test(up)){e4.value='625h';got.push('h\u00f4tel')}
     else if(/RESTAURANT|BRASSERIE|MENU|COUVERT/.test(up)){e4.value='625r';got.push('resto')}
     else if(/VETERINAIRE|VÉTÉRINAIRE|CLINIQUE VET/.test(up)){e4.value='622';got.push('véto')}
     _tkCatChange();
@@ -29507,8 +29530,8 @@ function saveTicket(){
   var ttc=E(V('tk_ttc'));if(!(ttc>0)){showToast('⚠️ Montant TTC obligatoire');return}
   var cat=V('tk_cat');var compte=cat.replace(/[a-z]$/,'');
   var tv=E(V('tk_tva'));var ht=tv>0?ttc/(1+tv/100):ttc;
-  var mp=V('tk_mp');var fo=V('tk_fo');var lb=V('tk_lb')||({'602':'Carburant','625':'Péage / déplacement','625r':'Restauration / hébergement','615':'Entretien véhicule','606':'Fournitures','622':'Honoraires','626':'Télécom','616':'Assurance','623':'Publicité','606a':'Divers'})[cat];
-  var dep={id:uid('d'),date:V('tk_dt')||tdy(),fournisseur:fo,label:lb+(fo?' — '+fo:''),compte:compte,ht:Math.round(ht*100)/100,tva:tv,ttc:Math.round(ttc*100)/100,paiement:mp,ref:'TICKET_'+Date.now(),notes:'Scan ticket',transportId:V('tk_tr')||'',carteCarb:(mp==='carte_carburant')?(fo||'Carte carburant'):'',source:'scan'};
+  var mp=V('tk_mp');var fo=V('tk_fo');var lb=V('tk_lb')||({'602':'Carburant','625':'Péage / déplacement','625r':'Restaurant','625h':'Hôtel / hébergement','615':'Entretien véhicule','606':'Fournitures','622':'Honoraires','626':'Télécom','616':'Assurance','623':'Publicité','606a':'Divers'})[cat];
+  var dep={id:uid('d'),date:V('tk_dt')||tdy(),fournisseur:fo,label:lb+(fo?' — '+fo:''),compte:compte,cat:(cat==='625h'?'hotel':cat==='625r'?'restaurant':cat==='602'?'carburant':''),ht:Math.round(ht*100)/100,tva:tv,ttc:Math.round(ttc*100)/100,paiement:mp,ref:'TICKET_'+Date.now(),notes:'Scan ticket',transportId:V('tk_tr')||'',carteCarb:(mp==='carte_carburant')?(fo||'Carte carburant'):'',source:'scan'};
   if(!db.depenses)db.depenses=[];
   // Vignette locale (légère) + original sur Drive
   var finish=function(){stamp(dep);db.depenses.push(dep);sav();cMo();lH('depense','📸 Ticket '+dep.label+' — '+euro(dep.ttc)+' TTC ('+compte+')'+(dep.carteCarb?' [carte carburant]':''));showToast('✅ '+euro(dep.ttc)+' enregistré — compte '+compte+(dep.drive?' · justificatif sur Drive':dep.photo?' · photo locale':''));try{rFrais()}catch(e){}try{rCerfrance()}catch(e){}};
