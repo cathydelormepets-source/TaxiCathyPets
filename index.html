@@ -610,7 +610,7 @@ body.nuit .card{border-color:#0a1520}
 </div>
 </aside>
 <main class="main">
-<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.29</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
+<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.29b</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
 <div class="cnt">
 
 <!-- DASHBOARD -->
@@ -7743,7 +7743,8 @@ function livraisonModal(tId){
   var ist='width:100%;background:#080f1a;border:1px solid var(--ln);color:var(--tx);border-radius:10px;padding:10px;font:inherit;font-size:13px';
   var now=new Date();
   var h='<div style="font-size:12px;color:var(--mt);margin-bottom:8px">'+t.ref+' — '+esc(cN(t.clientId))+' — '+t.date+'</div>'
-    +'<label class="btn gn" style="display:block;text-align:center;padding:14px;cursor:pointer;font-size:14px;margin-bottom:8px">📸 Photo de l\'animal livré<input type="file" accept="image/*" capture="environment" style="display:none" onchange="_lvPick(this)"></label>'
+    +'<button type="button" class="btn gn" style="display:block;width:100%;text-align:center;padding:14px;font-size:14px;margin-bottom:8px" onclick="var _e=document.getElementById(\'lv_file\');if(_e){_e.value=\'\';_e.click()}">📸 Photo de l\'animal livré</button>'
+    +'<input type="file" id="lv_file" accept="image/*" capture="environment" style="position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0" onchange="_lvPick(this)">'
     +'<div id="lv_prev" style="text-align:center;margin-bottom:8px;min-height:16px;font-size:11px;color:var(--mt)"></div>'
     +'<div class="row"><div class="c6 fd"><label>🕐 Heure de remise</label><input id="lv_h" value="'+('0'+now.getHours()).slice(-2)+':'+('0'+now.getMinutes()).slice(-2)+'" style="'+ist+'"></div>'
     +'<div class="c6 fd"><label>📍 Remis à</label><input id="lv_qui" placeholder="Ex : M. Dupont (client) / Mme X (pension)" style="'+ist+'"></div></div>'
@@ -29376,8 +29377,10 @@ function scanTicket(){
   _tkPhoto='';
   var ist='width:100%;background:#080f1a;border:1px solid var(--ln);color:var(--tx);border-radius:10px;padding:10px;font:inherit;font-size:14px';
   var h='<div style="display:flex;gap:8px;margin-bottom:10px">'
-    +'<label class="btn gn" style="flex:1;text-align:center;padding:14px;cursor:pointer;font-size:14px">📸 Prendre le ticket en photo<input type="file" accept="image/*" capture="environment" style="display:none" onchange="_tkPhotoPick(this)"></label>'
-    +'<label class="btn" style="flex:1;text-align:center;padding:14px;cursor:pointer;font-size:13px">🖼️ Choisir une image<input type="file" accept="image/*,application/pdf" style="display:none" onchange="_tkPhotoPick(this)"></label></div>'
+    +'<button type="button" class="btn gn" style="flex:1;text-align:center;padding:14px;font-size:14px" onclick="_tkOpenPicker(1)">📸 Prendre le ticket en photo</button>'
+    +'<button type="button" class="btn" style="flex:1;text-align:center;padding:14px;font-size:13px" onclick="_tkOpenPicker(2)">🖼️ Choisir une image</button></div>'
+    +'<input type="file" id="tk_file1" accept="image/*" capture="environment" style="position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0" onchange="_tkPhotoPick(this)">'
+    +'<input type="file" id="tk_file2" accept="image/*,application/pdf" style="position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0" onchange="_tkPhotoPick(this)">'
     +'<div id="tk_prev" style="text-align:center;margin-bottom:10px;min-height:20px;font-size:11px;color:var(--mt)">Aucune photo pour l’instant (facultatif mais recommandé)</div>'
     +'<div class="row">'
     +'<div class="c6 fd"><label>📅 Date du ticket</label><input id="tk_dt" type="date" value="'+tdy()+'" style="'+ist+'"></div>'
@@ -29397,6 +29400,13 @@ function scanTicket(){
     +'<div style="display:flex;gap:8px;margin-top:12px"><button class="btn gn" style="flex:1;padding:13px;font-size:14px" onclick="saveTicket()">✅ Enregistrer dans la compta du jour</button></div>';
   oMo('📸 Scanner un ticket / une facture réglée',h,'');
   setTimeout(function(){var m=$('tk_mp');if(m)m.addEventListener('change',_tkCatChange);_tkCatChange()},50);
+}
+// V80.29b : ouverture fiable du sélecteur de fichier (compatible PWA installée / WebView Android)
+function _tkOpenPicker(n){
+  var el=document.getElementById('tk_file'+n);
+  if(!el){showToast('\u26a0\ufe0f S\u00e9lecteur introuvable');return}
+  el.value=''; // permet de re-choisir le même fichier
+  try{el.click()}catch(e){showToast('\u26a0\ufe0f Impossible d\u2019ouvrir le s\u00e9lecteur : '+e)}
 }
 function _tkCatChange(){var c=V('tk_cat'),mp=$('tk_mp');var note=$('tk_carb_note');if(c==='602'&&mp&&!mp.dataset.touched){mp.value='carte_carburant'}if(note)note.style.display=(mp&&mp.value==='carte_carburant')?'block':'none';var tv=$('tk_tva');if(tv&&c==='625r')tv.value='10';_tkCalc()}
 function _tkCalc(){var ttc=E(V('tk_ttc')),tv=E(V('tk_tva'));var ht=tv>0?ttc/(1+tv/100):ttc;var e=$('tk_ht');if(e)e.value=ttc?ht.toFixed(2):''}
