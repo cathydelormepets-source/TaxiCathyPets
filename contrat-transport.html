@@ -349,8 +349,24 @@ function checkAccess() {
   // Date de signature = aujourd'hui
   document.getElementById('sig_date').value = new Date().toISOString().slice(0, 10);
   
-  // Ajouter un premier animal
-  addAnimal();
+  // Ajouter un premier animal — ou pré-remplir depuis le devis (V80.24)
+  var aniParam = params.get('animaux') || '';
+  if (aniParam) {
+    aniParam.split(';;').forEach(function(line) {
+      var p = line.split('|'); if (!p[0]) return;
+      addAnimal();
+      var idx = animalCount;
+      var setV = function(id, v) { var el = document.getElementById(id + '_' + idx); if (el && v) el.value = v; };
+      setV('ani_nom', p[0]); setV('ani_espece', p[1]); setV('ani_race', p[2]); setV('ani_sexe', p[3]);
+      setV('ani_poids', p[4]); setV('ani_couleur', p[5]); setV('ani_puce', p[6]); setV('ani_cites', p[7]);
+      setV('ani_rage', p[8]); setV('ani_vac2', p[9]); setV('ani_pass', p[10]); setV('ani_trait', p[11]); setV('ani_rem', p[12]);
+    });
+    var note = document.createElement('div');
+    note.style.cssText = 'font-size:12px;color:#b45309;background:#fffbf0;border:1px solid #f0c080;border-radius:6px;padding:8px 10px;margin-bottom:10px';
+    note.textContent = '✅ Fiche(s) pré-remplie(s) depuis votre dossier — merci de vérifier et compléter (vaccins, traitement, remarques) avant de signer.';
+    var lst = document.getElementById('animauxList'); if (lst) lst.insertAdjacentElement('afterbegin', note);
+  }
+  if (animalCount === 0) addAnimal();
   
   // Initialiser la signature canvas
   initSignature();
@@ -377,6 +393,14 @@ function addAnimal() {
   html += '<div class="form-group"><label>N° Puce / Tatouage</label><input id="ani_puce_' + idx + '"></div>';
   html += '</div><div class="form-row">';
   html += '<div class="form-group"><label>N° CITES (si exotique)</label><input id="ani_cites_' + idx + '" placeholder="Laisser vide si non applicable"></div>';
+  html += '</div><div class="form-row">';
+  html += '<div class="form-group"><label>💉 Vaccin antirabique (date)</label><input id="ani_rage_' + idx + '" type="date"></div>';
+  html += '<div class="form-group"><label>💉 Autre vaccin / rappel (date)</label><input id="ani_vac2_' + idx + '" type="date"></div>';
+  html += '</div><div class="form-row">';
+  html += '<div class="form-group"><label>📘 N° passeport européen</label><input id="ani_pass_' + idx + '" placeholder="Si voyage à l\'étranger"></div>';
+  html += '<div class="form-group"><label>💊 Traitement en cours</label><input id="ani_trait_' + idx + '" placeholder="Médicament, dose, horaire"></div>';
+  html += '</div><div class="form-row">';
+  html += '<div class="form-group" style="flex:1"><label>⚠️ Allergies / comportement / remarques</label><input id="ani_rem_' + idx + '" placeholder="Ex : anxieux en voiture, ne supporte pas les autres chiens..."></div>';
   html += '</div></div>';
   document.getElementById('animauxList').insertAdjacentHTML('beforeend', html);
 }
@@ -514,7 +538,12 @@ function collectAnimaux() {
       poids: (document.getElementById('ani_poids_' + idx) || {}).value || '',
       couleur: (document.getElementById('ani_couleur_' + idx) || {}).value || '',
       puce: (document.getElementById('ani_puce_' + idx) || {}).value || '',
-      cites: (document.getElementById('ani_cites_' + idx) || {}).value || ''
+      cites: (document.getElementById('ani_cites_' + idx) || {}).value || '',
+      rage: (document.getElementById('ani_rage_' + idx) || {}).value || '',
+      vaccin2: (document.getElementById('ani_vac2_' + idx) || {}).value || '',
+      passeport: (document.getElementById('ani_pass_' + idx) || {}).value || '',
+      traitement: (document.getElementById('ani_trait_' + idx) || {}).value || '',
+      remarques: (document.getElementById('ani_rem_' + idx) || {}).value || ''
     });
   });
   return animaux;
@@ -537,6 +566,9 @@ function sendContratEmail(data) {
   body += '--- ANIMAL(AUX) ---\n';
   data.animaux.forEach(function(a, i) {
     body += 'Animal ' + (i + 1) + ': ' + a.nom + ' | ' + a.espece + ' | ' + a.race + ' | ' + a.sexe + ' | ' + a.age + ' | ' + a.poids + 'kg | Puce: ' + a.puce + (a.cites ? ' | CITES: ' + a.cites : '') + '\n';
+    if (a.rage || a.vaccin2 || a.passeport) body += '   Vaccins: rage ' + (a.rage || '—') + ' | autre ' + (a.vaccin2 || '—') + (a.passeport ? ' | Passeport: ' + a.passeport : '') + '\n';
+    if (a.traitement) body += '   Traitement: ' + a.traitement + '\n';
+    if (a.remarques) body += '   Remarques: ' + a.remarques + '\n';
   });
   
   body += '\n--- ÉTAT DE SANTÉ ---\n';
