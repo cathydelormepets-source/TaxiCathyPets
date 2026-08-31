@@ -610,7 +610,7 @@ body.nuit .card{border-color:#0a1520}
 </div>
 </aside>
 <main class="main">
-<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.21</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
+<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.22</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
 <div class="cnt">
 
 <!-- DASHBOARD -->
@@ -10729,6 +10729,12 @@ function _getAcomptes(f){
   if(m>0)return [{montant:m,date:(f.dateAcompte||f.acompteDate||''),mode:(f.paiementAcompte||'')}];
   return [];
 }
+// V80.22 : qui a réglé (acomptes + solde) — utile pour la compta quand le payeur ≠ client
+function facPayeurs(f){
+  var pp=_getAcomptes(f).map(function(a){return (a.payeur||'').trim()}).filter(Boolean);
+  if(f.payeur&&String(f.payeur).trim())pp.push(String(f.payeur).trim());
+  return pp.filter(function(v,i,arr){return arr.indexOf(v)===i});
+}
 function _syncAcomptes(f){
   var arr=f.acomptes||[];
   var tot=arr.reduce(function(s,a){return s+(E(a.montant)||0)},0);
@@ -10750,7 +10756,7 @@ function marquerAcompte(id){
     bd+='<div style="margin-bottom:10px;border:1px solid var(--ln);border-radius:10px;overflow:hidden">';
     f.acomptes.forEach(function(a,ix){
       bd+='<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 10px;font-size:12px'+(ix>0?';border-top:1px solid var(--ln)':'')+'">'
-        +'<span>💰 <b>Acompte '+(ix+1)+'</b> — '+euro(E(a.montant)||0)+(a.date?' le '+new Date(a.date).toLocaleDateString('fr-FR'):'')+(a.mode?' ('+(modeLbl[a.mode]||a.mode)+')':'')+'</span>'
+        +'<span>💰 <b>Acompte '+(ix+1)+'</b> — '+euro(E(a.montant)||0)+(a.date?' le '+new Date(a.date).toLocaleDateString('fr-FR'):'')+(a.mode?' ('+(modeLbl[a.mode]||a.mode)+')':'')+(a.payeur?' · <span style="color:var(--gd)">👤 réglé par '+esc(a.payeur)+'</span>':'')+'</span>'
         +'<button class="btn sm" onclick="delAcompte(\''+id+'\','+ix+')" style="color:var(--rd);font-size:11px">🗑</button></div>';
     });
     bd+='</div>';
@@ -10766,6 +10772,7 @@ function marquerAcompte(id){
   bd+='<option value="cb">💳 Carte bancaire</option>';
   bd+='<option value="paypal">🅿️ PayPal</option>';
   bd+='</select></div>';
+  bd+='<div class="fd" style="margin-top:6px"><label>👤 Réglé par <span style="font-weight:400;color:var(--mt)">(si différent du client — pour la compta)</span></label><input id="ac_payeur" placeholder="Ex : Mme Dupont (mère) — vide = '+esc(cN(f.clientId))+'" style="width:100%;background:#080f1a;border:1px solid var(--ln);color:var(--tx);border-radius:10px;padding:10px;font:inherit;font-size:13px"></div>';
   bd+='<div style="display:flex;gap:6px;justify-content:center;margin-top:10px;flex-wrap:wrap">';
   bd+='<span style="font-size:10px;color:var(--mt);width:100%;text-align:center;margin-bottom:2px">Raccourcis montant (sur le total) :</span>';
   bd+='<button class="btn sm" onclick="$(\'ac_montant\').value=0" style="font-size:10px">0 &#8364;</button>';
@@ -10797,11 +10804,12 @@ function saveAcompte(id){
   var dateAc=V('ac_date')||tdy();
   var modeAc=V('ac_mode')||'virement';
   if(!f.acomptes||!f.acomptes.length){f.acomptes=_getAcomptes(f).slice()}
-  f.acomptes.push({montant:Math.round(montant*100)/100,date:dateAc,mode:modeAc});
+  var payAc=V('ac_payeur');
+  f.acomptes.push({montant:Math.round(montant*100)/100,date:dateAc,mode:modeAc,payeur:payAc});
   _syncAcomptes(f);
   stamp(f);sav();cMo();rAll();
   showToast('💰 Acompte '+f.acomptes.length+' — '+euro(montant)+' du '+new Date(dateAc).toLocaleDateString('fr-FR')+' (total acomptes : '+euro(E(f.acompte))+')');
-  lH('facture','Acompte '+f.acomptes.length+': '+f.ref+' — '+euro(montant)+' ('+dateAc+')');
+  lH('facture','Acompte '+f.acomptes.length+': '+f.ref+' — '+euro(montant)+' ('+dateAc+')'+(payAc?' réglé par '+payAc:''));
 }
 
 // ── V79 : Bloc pénalités de retard dans le modal d'encaissement ──
@@ -10847,6 +10855,7 @@ function marquerPayeeModal(id){
     '<button class="btn sm" onclick="$(\'pay_montant\').value='+(Math.round(resteDuFac(f)*50)/100).toFixed(2)+'" style="font-size:10px">50%</button>'+
     '<button class="btn sm" onclick="$(\'pay_montant\').value='+resteDuFac(f).toFixed(2)+'" style="font-size:10px;color:var(--a2);font-weight:800">Solde ('+euro(resteDuFac(f))+')</button>'+
     '</div>'+
+    '<div style="margin:10px 0"><label style="font-size:11px;font-weight:700;color:#b0c8df;display:block;margin-bottom:4px">👤 Réglé par <span style="font-weight:400;color:#8aa">(si différent du client — pour la compta)</span></label><input id="pay_payeur" placeholder="Ex : Mme Dupont (mère) — vide = '+esc(cN(f.clientId))+'" value="'+esc(f.payeur||'')+'" style="'+ist+'"></div>'+
     '<div style="margin:10px 0"><label style="font-size:11px;font-weight:700;color:#b0c8df;display:block;margin-bottom:4px">💳 Mode de paiement</label>'+
     '<select id="pay_mode" style="'+ist+'">'+
     '<option value="virement"'+(f.paiement==='virement'?' selected':'')+'>🏦 Virement</option>'+
@@ -10883,11 +10892,12 @@ function confirmPayee(id){
   var reste=resteDuFac(f);
   var dPay=V('pay_date')||tdy();
   var mode=V('pay_mode')||f.paiement||'virement';
+  var payeur=V('pay_payeur'); // V80.22
   if(!(montant>0)){showToast('⚠️ Montant invalide');return}
   if(montant<reste-0.009){
     // Paiement partiel → enregistré comme acompte, la facture reste ouverte
     if(!f.acomptes||!f.acomptes.length){f.acomptes=_getAcomptes(f).slice()}
-    f.acomptes.push({montant:Math.round(montant*100)/100,date:dPay,mode:mode});
+    f.acomptes.push({montant:Math.round(montant*100)/100,date:dPay,mode:mode,payeur:payeur});
     _syncAcomptes(f);
     var modalP=document.getElementById('payModal');if(modalP)modalP.remove();
     lH('facture','Paiement partiel: '+f.ref+' — '+euro(montant)+' ('+dPay+')');
@@ -10898,8 +10908,9 @@ function confirmPayee(id){
   f.status='payée';
   f.datePaiement=dPay;
   f.paiement=mode;
+  f.payeur=payeur; // V80.22
   var modal=document.getElementById('payModal');if(modal)modal.remove();
-  lH('facture','Payée: '+f.ref+' le '+new Date(f.datePaiement).toLocaleDateString('fr-FR'));
+  lH('facture','Payée: '+f.ref+' le '+new Date(f.datePaiement).toLocaleDateString('fr-FR')+(payeur?' — réglé par '+payeur:''));
   sav();showToast('✅ '+f.ref+' payée le '+new Date(f.datePaiement).toLocaleDateString('fr-FR')+' — '+euro(montant)+(montant>reste+0.009?' (trop-perçu '+euro(montant-reste)+' à régulariser)':'')+(f.penalitesMontant?' (dont '+euro(f.penalitesMontant)+' de pénalités)':''));
   cMo();rFac2();try{rDash()}catch(e){}try{rFinancierTempsReel()}catch(e){}
 }
@@ -11510,7 +11521,7 @@ function rFac2(){
     }
     var fid=f.id, cid=f.clientId;
     return '<tr>'
-      +'<td><b>'+f.ref+'</b>'+(_mtLbl[f.id]?'<br><span style="font-size:9px;color:#9d6;background:rgba(120,200,60,.14);padding:1px 6px;border-radius:6px;white-space:nowrap">\ud83d\udcb6 = '+_mtLbl[f.id].join(' \u00b7 ')+'</span>':'')+'</td>'
+      +'<td><b>'+f.ref+'</b>'+(_mtLbl[f.id]?'<br><span style="font-size:9px;color:#9d6;background:rgba(120,200,60,.14);padding:1px 6px;border-radius:6px;white-space:nowrap">\ud83d\udcb6 = '+_mtLbl[f.id].join(' \u00b7 ')+'</span>':'')+(facPayeurs(f).length?'<br><span style="font-size:9px;color:var(--gd)" title="Payeur différent du client">👤 réglé par '+esc(facPayeurs(f).join(', '))+'</span>':'')+'</td>'
       +'<td style="font-size:16px;text-align:center" title="'+(f.activityType||'autre')+'">'+typeLabel+'</td>'
       +'<td style="font-size:11px">'+cN(cid)+(function(){var aids=f.animalIds||(f.animalId?[f.animalId]:[]);if(!aids.length)return'';var names=aids.map(function(id){var a=db.animaux.find(function(x){return x.id===id});return a?a.nom:'?'});return'<br><span style="font-size:10px;color:var(--or)">🐾 '+names.join(', ')+'</span>'}())+'</td>'
       +'<td style="font-size:11px;white-space:nowrap">'+new Date(f.date||Date.now()).toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'2-digit'})+'</td>'
@@ -16695,12 +16706,13 @@ function printFacPro(id){
     h+='<tr class="tr"><td><strong>TOTAL TTC</strong></td><td style="text-align:right"><strong>'+euro(f.total)+'</strong></td></tr>';
     if(E(f.acompte)>0){
       var mpacLabel=f.paiementAcompte==='cb'?'CB':f.paiementAcompte==='especes'?'Espèces':f.paiementAcompte==='cheque'?'Chèque':f.paiementAcompte==='virement'?'Virement':'';
-      h+='<tr><td style="color:#666">Acompte versé'+(mpacLabel?' ('+mpacLabel+')':'')+'</td><td style="text-align:right;color:#666">- '+euro(f.acompte)+'</td></tr>';
+      var _acPay=_getAcomptes(f).map(function(a){return (a.payeur||'').trim()}).filter(Boolean).filter(function(v,i,arr){return arr.indexOf(v)===i});
+      h+='<tr><td style="color:#666">Acompte versé'+(mpacLabel?' ('+mpacLabel+')':'')+(_acPay.length?' — réglé par '+_acPay.join(', '):'')+'</td><td style="text-align:right;color:#666">- '+euro(f.acompte)+'</td></tr>';
       h+='<tr class="tr"><td><strong>RESTE À PAYER</strong></td><td style="text-align:right"><strong style="color:#e65100">'+euro(E(f.total)-E(f.acompte))+'</strong></td></tr>';
     }
     h+='</table></div>';
     var mpSoldeLabel=f.paiement==='cb'?'Carte bancaire':f.paiement==='especes'?'Espèces':f.paiement==='cheque'?'Chèque':'Virement bancaire';
-    h+='<div style="background:#f0f7f5;border:1px solid #b8e0d9;border-radius:6px;padding:10px 14px;margin:10px 0;font-size:12px"><strong>Mode de paiement du solde :</strong> '+mpSoldeLabel+'</div>';
+    h+='<div style="background:#f0f7f5;border:1px solid #b8e0d9;border-radius:6px;padding:10px 14px;margin:10px 0;font-size:12px"><strong>Mode de paiement du solde :</strong> '+mpSoldeLabel+(f.status==='payée'&&f.payeur?' — <strong>réglé par</strong> '+esc(f.payeur)+(f.datePaiement?' le '+new Date(f.datePaiement).toLocaleDateString('fr-FR'):''):'')+'</div>';
     // QR code paiement
     var paypalEmail=db.settings.paypalEmail||'';
     var sumupUrl=db.settings.sumupUrl||'';
@@ -28626,25 +28638,25 @@ function exportEncaissementsCSV(d1,d2,label){
     var acTot=acArr.reduce(function(s2,a){return s2+(E(a.montant)||0)},0);
     acArr.forEach(function(a,ix){
       if(!inP(a.date))return;
-      rows.push({date:String(a.date||'').slice(0,10),ref:f.ref,client:cname,type:'Acompte '+(ix+1)+(acArr.length>1?'/'+acArr.length:''),mode:modeLbl[a.mode]||a.mode||'',montant:E(a.montant)||0});
+      rows.push({date:String(a.date||'').slice(0,10),ref:f.ref,client:cname,payeur:clean(a.payeur||''),type:'Acompte '+(ix+1)+(acArr.length>1?'/'+acArr.length:''),mode:modeLbl[a.mode]||a.mode||'',montant:E(a.montant)||0});
     });
     if(f.status==='payée'&&f.datePaiement){
       var solde=Math.max(0,E(f.total)-acTot);
       if(solde>0&&inP(f.datePaiement)){
-        rows.push({date:String(f.datePaiement).slice(0,10),ref:f.ref,client:cname,type:'Solde',mode:modeLbl[f.paiement]||f.paiement||'',montant:solde});
+        rows.push({date:String(f.datePaiement).slice(0,10),ref:f.ref,client:cname,payeur:clean(f.payeur||''),type:'Solde',mode:modeLbl[f.paiement]||f.paiement||'',montant:solde});
       }
     }
   });
   if(!rows.length){alert('Aucun encaissement sur la période '+(label||''));return}
   rows.sort(function(a,b){return a.date.localeCompare(b.date)||a.ref.localeCompare(b.ref)});
   var sep=';';
-  var lignes=['Date encaissement'+sep+'Facture'+sep+'Client'+sep+'Reglement'+sep+'Mode'+sep+'Montant'];
+  var lignes=['Date encaissement'+sep+'Facture'+sep+'Client'+sep+'Regle par'+sep+'Reglement'+sep+'Mode'+sep+'Montant'];
   var tot=0;
   rows.forEach(function(r2){
     tot+=r2.montant;
-    lignes.push(r2.date+sep+clean(r2.ref)+sep+r2.client+sep+r2.type+sep+clean(r2.mode)+sep+fr(r2.montant));
+    lignes.push(r2.date+sep+clean(r2.ref)+sep+r2.client+sep+(r2.payeur||r2.client)+sep+r2.type+sep+clean(r2.mode)+sep+fr(r2.montant));
   });
-  lignes.push(''+sep+''+sep+''+sep+''+sep+'TOTAL ENCAISSE'+sep+fr(tot));
+  lignes.push(''+sep+''+sep+''+sep+''+sep+''+sep+'TOTAL ENCAISSE'+sep+fr(tot));
   var csv='\ufeff'+lignes.join('\r\n');
   var b=new Blob([csv],{type:'text/csv;charset=utf-8'});
   var a=document.createElement('a');
