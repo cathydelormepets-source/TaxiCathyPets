@@ -610,7 +610,7 @@ body.nuit .card{border-color:#0a1520}
 </div>
 </aside>
 <main class="main">
-<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.32</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
+<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.33</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
 <div class="cnt">
 
 <!-- DASHBOARD -->
@@ -7672,7 +7672,7 @@ function devFilterLignesOption(q,opt){
   var lg=(q.lignes&&q.lignes.length)?JSON.parse(JSON.stringify(q.lignes)):[];
   if((q.optMode||'cumule')!=='choix')return lg;
   var o=(opt!==undefined&&opt!==null&&opt!=='')?opt:(q.optChoisie||'');
-  if(!o)return lg.filter(function(l){return !(l.groupe||'')}); // V80.14 : aucune option retenue = partie commune seule
+  if(!o||o==='none')return lg.filter(function(l){return !(l.groupe||'')}); // V80.14/V80.33 : aucune option (pas encore choisie ou refusée) = partie commune seule
   return lg.filter(function(l){var g=l.groupe||'';return g===''||g===o});
 }
 function devTotalForOption(q){
@@ -7708,7 +7708,7 @@ function genPecUrl(q){
   else if(E(q.total)>0)pecUrl+='&tarif_animaux='+encodeURIComponent('Prestation transport|1|'+E(q.total)+'|0');
   // Options non retenues : transmises séparément — AU CHOIX du client sur le contrat
   if((q.optMode||'cumule')==='choix'){
-    var optLines=(q.lignes||[]).filter(function(lg){var g=lg.groupe||'';return g&&g!==(q.optChoisie||'')&&E(lg.qty)>0&&E(lg.pu)>0}).map(function(lg){
+    var optLines=(q.optChoisie==='none')?[]:(q.lignes||[]).filter(function(lg){var g=lg.groupe||'';return g&&g!==(q.optChoisie||'')&&E(lg.qty)>0&&E(lg.pu)>0}).map(function(lg){
       var d2=(lg.article||lg.desc||'Option').replace(/\|/g,'-').replace(/;;/g,',');
       return (lg.groupe)+'|'+d2+'|'+(E(lg.qty)||1)+'|'+(E(lg.pu)||0)+'|'+(E(lg.remise)||0);
     });
@@ -7733,7 +7733,7 @@ function devSetOpt(id,val){
   q.total=devTotalForOption(q);
   stamp(q);sav();
   if(q.contratPecUrl)genPecUrl(q); // le contrat reflète l'option retenue
-  showToast(val?('✅ '+devOptLabel(val)+' retenue — total '+euro(q.total)+(q.contratPecUrl?' · lien PEC mis à jour':'')):('🔀 Sans option — total '+euro(q.total)));
+  showToast(val==='none'?('❌ Sans option (refusée) — total '+euro(q.total)+' · le devis peut être facturé'):val?('✅ '+devOptLabel(val)+' retenue — total '+euro(q.total)+(q.contratPecUrl?' · lien PEC mis à jour':'')):('🔀 Option à choisir — total '+euro(q.total)));
   rAll();
 }
 // V80.28 : COMPTE-RENDU DE LIVRAISON — photo + heure + note + envoi "bien arrivé"
@@ -7824,7 +7824,7 @@ function genDevisAccordUrl(q){
   if(tarif.length)u+='&tarif='+encodeURIComponent(tarif.join(';;'));
   else u+='&total='+encodeURIComponent(E(q.total));
   if((q.optMode||'cumule')==='choix'){
-    var optL=(q.lignes||[]).filter(function(lg){var g=lg.groupe||'';return g&&g!==(q.optChoisie||'')&&E(lg.qty)>0&&E(lg.pu)>0}).map(function(lg){
+    var optL=(q.optChoisie==='none')?[]:(q.lignes||[]).filter(function(lg){var g=lg.groupe||'';return g&&g!==(q.optChoisie||'')&&E(lg.qty)>0&&E(lg.pu)>0}).map(function(lg){
       var d2=(lg.article||lg.desc||'Option').replace(/\|/g,'-').replace(/;;/g,',');
       return lg.groupe+'|'+d2+'|'+(E(lg.qty)||1)+'|'+(E(lg.pu)||0)+'|'+(E(lg.remise)||0);
     });
@@ -8614,7 +8614,7 @@ function addFacFromDevis(){
   if(!q){alert('Choisis un devis');return}
   // Build lignes from devis lignes + hotel + multimodal (V80 : filtre option retenue)
   if((q.optMode||'cumule')==='choix'&&devHasOptions(q)){
-    if(!q.optChoisie){alert('⚠️ Devis à options : ouvre le devis (✏️) et sélectionne l\'option retenue avant de facturer.');return}
+    if(!q.optChoisie){alert('⚠️ Devis à options : indique le choix du client dans la liste des devis (sélecteur 🔀) — une option, ou « ❌ Sans option (refusée) » — avant de facturer.');return}
     q.total=devTotalForOption(q);
   }
   var facLignes=devFilterLignesOption(q);
@@ -10370,7 +10370,7 @@ function eDev(id){var q=db.devis.find(function(x){return x.id===id});if(!q)retur
   body+='<div style="margin-top:12px;padding-top:10px;border-top:1px solid #1e3a58"><label style="font-size:12px;font-weight:700;color:#8ac">📋 Lignes du devis</label>';
   var om=q.optMode||'cumule';
   body+='<div style="display:flex;gap:6px;margin:6px 0"><select id="eq_optmode" onchange="eqCalcTotal()" style="'+ist+';font-size:11px;padding:6px"><option value="cumule"'+(om==='cumule'?' selected':'')+'>➕ Cumulé (sections additionnées)</option><option value="choix"'+(om==='choix'?' selected':'')+'>🔀 Options au choix</option></select>';
-  body+='<select id="eq_optsel" onchange="eqCalcTotal()" title="Option retenue par le client" style="'+ist+';font-size:11px;padding:6px"><option value="">Option retenue : —</option><option value="opt1"'+(q.optChoisie==='opt1'?' selected':'')+'>✅ Option 1 retenue</option><option value="opt2"'+(q.optChoisie==='opt2'?' selected':'')+'>✅ Option 2 retenue</option><option value="opt3"'+(q.optChoisie==='opt3'?' selected':'')+'>✅ Option 3 retenue</option><option value="opt4"'+(q.optChoisie==='opt4'?' selected':'')+'>✅ Option 4 retenue</option></select></div>';
+  body+='<select id="eq_optsel" onchange="eqCalcTotal()" title="Option retenue par le client" style="'+ist+';font-size:11px;padding:6px"><option value="">Option retenue : — (à choisir)</option><option value="none"'+(q.optChoisie==='none'?' selected':'')+'>❌ Sans option (refusée)</option><option value="opt1"'+(q.optChoisie==='opt1'?' selected':'')+'>✅ Option 1 retenue</option><option value="opt2"'+(q.optChoisie==='opt2'?' selected':'')+'>✅ Option 2 retenue</option><option value="opt3"'+(q.optChoisie==='opt3'?' selected':'')+'>✅ Option 3 retenue</option><option value="opt4"'+(q.optChoisie==='opt4'?' selected':'')+'>✅ Option 4 retenue</option></select></div>';
   body+='<div id="eq_lignes" style="margin:8px 0"></div>';
   body+='<button class="btn sm bu" onclick="eqAddLigne()" style="margin-bottom:8px">➕ Ajouter une ligne</button></div>';
   // TVA + Remise + Total
@@ -11403,7 +11403,7 @@ function rDev2(){rTbl('dvTbl',['Réf','Client','Mode','Trajet','Total','Statut',
   '<button class="btn sm" style="background:#1a3a2a;border-color:#2a6040;color:#7bf0b0" onclick="genLienAcompte(\''+q.id+'\')" title="Lien acompte en ligne">💳</button>'+
   '<button class="btn sm" style="background:#2a1a05;border-color:#8a5a1a;color:#f0a060;font-size:10px" onclick="devGenPec(\''+q.id+'\')" title="'+(q.contratPecUrl?'Régénérer':'Générer')+' le lien contrat PEC (options au choix incluses)">📋 PEC</button>'+
   '<button class="btn sm" style="background:#0a2c2a;border-color:#2a6a60;color:#7ad7c0;font-size:10px" onclick="devGenAccord(\''+q.id+'\')" title="'+(q.accordUrl?'Régénérer':'Générer')+' le lien Bon pour accord en ligne (signature + option + QR acompte)">✍️ Accord</button>'+
-  (((q.optMode||'cumule')==='choix'&&(q.lignes||[]).some(function(l){return l.groupe}))?'<select style="width:auto;max-width:130px;font-size:10px;padding:4px 6px;background:#1a2030;border:1px solid #8a5a1a;color:#f0a060;border-radius:8px" onchange="devSetOpt(\''+q.id+'\',this.value)" title="Option retenue par le client — recalcule total, PEC et facture">'+ '<option value=""'+(!q.optChoisie?' selected':'')+'>🔀 Sans option</option>'+['opt1','opt2','opt3','opt4'].filter(function(g){return (q.lignes||[]).some(function(l){return l.groupe===g})}).map(function(g){return '<option value="'+g+'"'+(q.optChoisie===g?' selected':'')+'>✅ '+devOptLabel(g)+'</option>'}).join('')+'</select>':'')+
+  (((q.optMode||'cumule')==='choix'&&(q.lignes||[]).some(function(l){return l.groupe}))?'<select style="width:auto;max-width:130px;font-size:10px;padding:4px 6px;background:#1a2030;border:1px solid #8a5a1a;color:#f0a060;border-radius:8px" onchange="devSetOpt(\''+q.id+'\',this.value)" title="Option retenue par le client — recalcule total, PEC et facture">'+ '<option value=""'+(!q.optChoisie?' selected':'')+'>🔀 Option à choisir…</option><option value="none"'+(q.optChoisie==='none'?' selected':'')+'>❌ Sans option (refusée)</option>'+['opt1','opt2','opt3','opt4'].filter(function(g){return (q.lignes||[]).some(function(l){return l.groupe===g})}).map(function(g){return '<option value="'+g+'"'+(q.optChoisie===g?' selected':'')+'>✅ '+devOptLabel(g)+'</option>'}).join('')+'</select>':'')+
   '<button class="btn sm" style="background:#1a3a3a;border-color:#2a6060;color:#7bcfee" onclick="exportDevToGCal(\''+q.id+'\')" title="📅 Vers Google Agenda">📅</button>'+
   (q.status!=='facturé'?'<button class="btn sm" style="background:#1a2a3a;border-color:#2a4060;color:#9bc" onclick="devToTr(\''+q.id+'\')" title="→ Transport">🚗</button>':'')+
   (q.status==='envoyé'?'<button class="btn sm" style="background:#1a3020;border-color:#2a6030;color:#7bf0a0;font-size:10px" onclick="contratValide(\''+q.id+'\')" title="Contrat signé reçu → accepter + créer mission + calendrier">📋 Contrat reçu</button>':'')+
@@ -11520,7 +11520,7 @@ function execDevToFac(id,payNow){
   if((q.optMode||'cumule')==='choix'&&devHasOptions(q)){
     var _optSel=V('dtf_opt')||'';
     if(_optSel)q.optChoisie=_optSel;
-    if(!q.optChoisie){alert('⚠️ Devis à options : sélectionne l\'option retenue avant de facturer.');return}
+    if(!q.optChoisie){alert('⚠️ Devis à options : sélectionne l\'option retenue — ou « ❌ Sans option (refusée) » — avant de facturer.');return}
     q.total=devTotalForOption(q);
   }
   var facLignes=devFilterLignesOption(q);
@@ -14436,6 +14436,7 @@ function printDevisPro(id) {
     });
     html += '</table>';
     if(!q.optChoisie)html += '<div style="font-size:9px;color:#666;margin-top:6px">Les options ne sont PAS comprises dans le Total TTC du devis (partie commune uniquement). Merci d\'indiquer l\'option retenue lors de la validation — le total et l\'acompte de 30% seront alors ajustés.</div>';
+    else if(q.optChoisie==='none')html += '<div style="font-size:9px;color:#666;margin-top:6px">Options non retenues par le client — le Total TTC correspond à la prestation de base.</div>';
     html += '</div>';
     if(q.optChoisie&&grpTotG[q.optChoisie]){
       var _t=grpTotG[q.optChoisie];
