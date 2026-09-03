@@ -610,7 +610,7 @@ body.nuit .card{border-color:#0a1520}
 </div>
 </aside>
 <main class="main">
-<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.34</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
+<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.37</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
 <div class="cnt">
 
 <!-- DASHBOARD -->
@@ -4631,6 +4631,8 @@ document.getElementById('q_contrat_pec').addEventListener('change',function(){
     <div class="row">
       <div class="c12 fd"><label>URL lien carte bancaire SumUp (optionnel — proposé « sur demande » uniquement, 2,5 % de frais)</label><input id="s_sumup" placeholder="https://pay.sumup.com/b2c/..."></div>
       <div class="c12 fd"><label>⭐ Lien avis Google (fiche établissement → « Demander des avis »)</label><input id="s_avisUrl" placeholder="https://g.page/r/XXXX/review"></div>
+      <div class="c6 fd"><label>🎯 Objectif CA encaissé / mois (€ TTC, 0 = désactivé)</label><input id="s_objCA" type="number" step="100" placeholder="8000"></div>
+      <div class="c6 fd"><label>💉 Alerte vaccins : rappel dû dans (jours)</label><input id="s_vacJours" type="number" step="1" placeholder="45"></div>
       <div class="c12 fd"><label>⛽ Récupération TVA carburant (selon carte grise du véhicule)</label><select id="s_tvaCarbu" class="inp"><option value="80">80 % — véhicule de tourisme (VP)</option><option value="100">100 % — véhicule utilitaire (VU / CTTE)</option></select></div>
       <div class="c12 fd"><label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="s_autoRelSolde" style="width:auto"> 💶 Relance automatique du solde à J-2 du transport (envoi Gmail direct, une seule fois par facture)</label></div>
     </div>
@@ -6833,7 +6835,8 @@ function _geoFlush(){
   var q=job.q;
   // Add ", France" hint if no comma and no digit (likely a city name)
   var qf=q;
-  if(qf.indexOf(',')<0&&!/\d/.test(qf))qf+=', France';
+  // V80.36 : ne jamais forcer ", France" sur une ville étrangère (Luxembourg → Jardin du Luxembourg, Paris !)
+  if(qf.indexOf(',')<0&&!/\d/.test(qf)&&!(typeof _RX_ETRANGER!=='undefined'&&_RX_ETRANGER.test(qf)))qf+=', France';
   fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=fr,be,lu,de,es,it,ch,nl,pt,gb&q='+encodeURIComponent(qf),{headers:{'Accept-Language':'fr'}})
   .then(function(r){return r.json()})
   .then(function(j){
@@ -7008,11 +7011,54 @@ function calcDist(from,to){
   });
 }
 // Calc rapide + éco for one leg
+// V80.36 : géocodage HYBRIDE — BAN Géoplateforme IGN (adresses françaises précises, tolère les fautes)
+// + Nominatim (hameaux, étranger). Ordre : BAN sûr (score ≥ 0,75) → Nominatim exact → BAN moyen (≥ 0,4, marqué ≈) → rue sans n° → ville+CP.
+var _banCache={};
+function _banGeo(q){
+  if(_banCache[q]!==undefined)return Promise.resolve(_banCache[q]);
+  return fetch('https://data.geopf.fr/geocodage/search?limit=1&q='+encodeURIComponent(q))
+    .then(function(r){return r.json()})
+    .then(function(j){
+      var f=(j&&j.features&&j.features[0])||null;
+      var res=null;
+      if(f&&f.geometry&&f.geometry.coordinates){
+        var p=f.properties||{};
+        res={lat:f.geometry.coordinates[1],lon:f.geometry.coordinates[0],display:p.label||q,label:p.label||'',score:p.score||0,btype:p.type||''};
+      }
+      _banCache[q]=res;return res;
+    }).catch(function(){return null});
+}
+var _RX_ETRANGER=/luxembourg|belgi|bruxelles|li\u00e8ge|namur|charleroi|allemagne|deutsch|berlin|k\u00f6ln|koln|frankfurt|munich|m\u00fcnchen|espagne|espa\u00f1|spain|madrid|barcelon|ital|milan|rome|roma|torino|suisse|schweiz|switzerland|gen\u00e8ve|geneve|zurich|lausanne|pays-bas|nederland|holland|amsterdam|rotterdam|portugal|lisbonne|lisboa|porto|monaco|andorr|royaume|england|london|angleterre|uk\b|autriche|wien|vienne|pologne|warsaw|prague|tch\u00e8que/i;
+function geocodeSmart(q){
+  q=String(q||'').trim();if(!q)return Promise.resolve(null);
+  var etranger=_RX_ETRANGER.test(q);
+  var pBan=etranger?Promise.resolve(null):_banGeo(q);
+  return pBan.then(function(ban){
+    if(ban&&ban.score>=0.75){
+      if(ban.btype==='municipality'&&/^\s*\d+\s+\D/.test(q))ban.approxCity=ban.label; // rue demandée, ville trouvée
+      return ban;
+    }
+    return geocode(q).then(function(a){
+      if(a)return a;
+      if(ban&&ban.score>=0.4){ban.approxCity=ban.label;return ban}
+      var v1=q.replace(/^\s*\d+[\s,]*/,'').trim(); // sans le numéro de rue
+      var p1=(v1&&v1!==q)?geocode(v1):Promise.resolve(null);
+      return p1.then(function(b){
+        if(b){b.approxCity=v1;return b}
+        var m=q.match(/([A-Za-z\u00c0-\u00ff'\u2019 -]{2,}?)[\s,]+(\d{5})\b/)||q.match(/\b(\d{5})[\s,]+([A-Za-z\u00c0-\u00ff'\u2019 -]{2,})/);
+        var ville=m?((m[1]&&/\d{5}/.test(m[2])?m[1]:m[2])+' '+(m[1]&&/\d{5}/.test(m[2])?m[2]:m[1])).trim():'';
+        if(!ville){var segs=q.split(',').map(function(x){return x.trim()}).filter(Boolean);ville=segs.length?segs[segs.length-1]:''}
+        if(!ville||ville===q)return null;
+        return geocode(ville).then(function(c){if(c)c.approxCity=ville;return c});
+      });
+    });
+  });
+}
 function calcDistAll(from,to){
-  return geocode(from).then(function(a){
-    if(!a)return{rapide:{km:0,min:0,ok:false,errFrom:true},eco:{km:0,min:0,ok:false,errFrom:true}};
-    return geocode(to).then(function(b){
-      if(!b)return{rapide:{km:0,min:0,ok:false,errTo:true},eco:{km:0,min:0,ok:false,errTo:true}};
+  return geocodeSmart(from).then(function(a){
+    if(!a)return{rapide:{km:0,min:0,ok:false,errFrom:true,fromAd:from},eco:{km:0,min:0,ok:false,errFrom:true,fromAd:from}};
+    return geocodeSmart(to).then(function(b){
+      if(!b)return{rapide:{km:0,min:0,ok:false,errTo:true,toAd:to},eco:{km:0,min:0,ok:false,errTo:true,toAd:to}};
       // If Google Maps key → get rapide AND eco (avoid=tolls) separately
       if(db.settings.gmapsKey){
         return Promise.all([gmapsRoute(a,b,false),gmapsRoute(a,b,true)]).then(function(arr){
@@ -7443,6 +7489,22 @@ function calcDev(){
   }
   function finish(){
    try{
+    // V80.35 : tronçon incalculable = pas de prix affiché (sinon devis faux)
+    var badAddrs=[];
+    allerAll.forEach(function(r){
+      if(!r.rapide.ok){badAddrs.push(r.rapide.errFrom?(r.fromAd||r.fromLabel):(r.toAd||r.toLabel))}
+    });
+    if(doRetourCalc&&retourAll&&!retourAll.rapide.ok)badAddrs.push(retourAll.rapide.errFrom?pts[allerLegs].address:pts[0].address);
+    if(badAddrs.length){
+      var uniq=badAddrs.filter(function(v,i,arr){return arr.indexOf(v)===i});
+      $('devPrev').innerHTML='<div style="background:rgba(224,73,73,.12);border:1px solid var(--rd);border-radius:10px;padding:12px;font-size:12px">'
+        +'<div style="font-weight:900;color:var(--rd);margin-bottom:6px">❌ Calcul impossible — adresse(s) introuvable(s) :</div>'
+        +uniq.map(function(ad){return '<div style="padding:2px 0">• <b>'+esc(ad)+'</b></div>'}).join('')
+        +'<div style="margin-top:8px;color:var(--mt);font-size:11px">👉 Vérifie l\'orthographe (ex. « Albrecht » et non « Albretch »), ou saisis simplement <b>« Ville CodePostal »</b> (ex. « Saint-Raphaël 83700 ») — le calcul se fait alors de ville à ville, largement suffisant pour un devis.</div>'
+        +'</div>';
+      btn.textContent='🧮 Calculer itinéraire + prix';btn.disabled=false;
+      return;
+    }
     var manualTolls=E(V('qd_pa'))+E(V('qd_pr'));
     // Auto-estimate tolls
     var kmAllerR=0,kmAllerE=0,kmRetR=0,kmRetE=0;
@@ -7456,8 +7518,8 @@ function calcDev(){
     function calcMode(rk,useTolls){
       var kmA=0,minA=0;allerAll.forEach(function(r){var l=r[rk];kmA+=l.km;minA+=l.min});
       var ret=retourAll[rk];var kmR=doRetourCalc?(ret.km||0):0,minR=doRetourCalc?(ret.min||0):0;
-      var pA=Math.max(kmA*db.settings.kmPrice,db.settings.minFee);
-      var pR=doRetourCalc?Math.max(kmR*((db.grilleTarif||{}).retour||0.80),db.settings.minFee):0;
+      var pA=kmA>0?Math.max(kmA*db.settings.kmPrice,db.settings.minFee):0; // V80.35 : jamais de forfait sur 0 km
+      var pR=(doRetourCalc&&kmR>0)?Math.max(kmR*((db.grilleTarif||{}).retour||0.80),db.settings.minFee):0;
       var t=useTolls?tolls:0;
       var tot=pA+pR+t;
       var cd=costDetail(kmA+kmR,t);
@@ -7531,8 +7593,8 @@ function renderDevCard(title,color,key,data,allerAll,rk,pts,showRetour){
   h+='<span style="color:'+(marg.nette>=0?'var(--a2)':'var(--rd)')+'">Nette HT: <b>'+euro(marg.nette)+'</b> ('+marg.pctN+'%)</span>';
   h+='</div>';
   h+='<details style="margin-top:6px"><summary style="cursor:pointer;font-size:11px;color:var(--mt)">Détail '+(allerAll.length+(showRetour?1:0))+' tronçons</summary>';
-  allerAll.forEach(function(r,i){var leg=r[rk];h+='<div class="itm" style="margin-top:3px;padding:4px 8px;font-size:11px;border-left:2px solid '+color+'"><b>'+(i+1)+'.</b> '+r.fromLabel+' → '+r.toLabel+' · '+leg.km+' km · '+fmtMin(leg.min)+(leg.ok?'':' ❌')+'</div>'});
-  if(showRetour) h+='<div class="itm" style="margin-top:3px;padding:4px 8px;font-size:11px;border-left:2px solid var(--mt)"><b>Retour:</b> '+pts[pts.length-1].label+' → '+pts[0].label+' · '+data.kmR+' km · '+fmtMin(data.minR)+(data.retOk!==false?'':' ❌')+'</div>';
+  allerAll.forEach(function(r,i){var leg=r[rk];var apx=(leg.a&&leg.a.approxCity)||(leg.b&&leg.b.approxCity);h+='<div class="itm" style="margin-top:3px;padding:4px 8px;font-size:11px;border-left:2px solid '+color+'"><b>'+(i+1)+'.</b> '+r.fromLabel+' → '+r.toLabel+' · '+leg.km+' km · '+fmtMin(leg.min)+(leg.ok?'':' ❌')+(apx?' <span style="color:var(--or)" title="Adresse exacte introuvable — calcul fait sur : '+esc(apx)+'">≈ '+esc(apx)+'</span>':'')+'</div>'});
+  if(showRetour) h+='<div class="itm" style="margin-top:3px;padding:4px 8px;font-size:11px;border-left:2px solid var(--mt)"><b>Retour:</b> '+(pts[pts.length-2]?pts[pts.length-2].label:'Destination')+' → '+pts[pts.length-1].label+' · '+data.kmR+' km · '+fmtMin(data.minR)+(data.retOk!==false?'':' ❌')+'</div>';
   h+='</details></div>';
   return h;
 }
@@ -11867,6 +11929,27 @@ function rDash(){
     h+='<button class="btn sm" style="margin-top:6px;font-size:10px;background:#0a2c2a;border-color:#2a6a60;color:#7ad7c0" onclick="batchRelanceDevis()">📧 Relancer tous ces devis</button>';
     h+='</div>';
   }
+  // V80.37 : 🎯 OBJECTIF CA ENCAISSÉ DU MOIS
+  try{
+    var objCA=E((db.settings||{}).objCA);
+    if(objCA>0){
+      var moisCur=tdy().slice(0,7);var encM=0;
+      act(db.factures).forEach(function(f){
+        if(f.mode==='avoir'||f.status==='avoir'||f.status==='annulee')return;
+        _getAcomptes(f).forEach(function(a){if(String(a.date||'').slice(0,7)===moisCur)encM+=E(a.montant)});
+        if(f.status==='payée'&&String(f.datePaiement||'').slice(0,7)===moisCur){var sol=Math.max(0,E(f.total)-E(f.acompte)-avoirsSur(f));if(sol>0)encM+=sol}
+      });
+      var pctO=Math.min(100,Math.round(encM/objCA*100));
+      var lastD=new Date(new Date().getFullYear(),new Date().getMonth()+1,0).getDate();
+      var restJ=Math.max(1,lastD-new Date().getDate());
+      var restE=Math.max(0,objCA-encM);
+      h+='<div style="background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.3);border-radius:10px;padding:10px 12px;margin-top:8px">'
+        +'<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px"><span style="font-weight:800;color:#60a5fa">🎯 Objectif du mois : '+euro(objCA)+'</span><span><b style="color:'+(pctO>=100?'var(--gn)':'var(--tx)')+'">'+euro(encM)+'</b> encaissés — '+pctO+' %</span></div>'
+        +'<div style="background:rgba(255,255,255,.08);border-radius:6px;height:10px;overflow:hidden"><div style="width:'+pctO+'%;height:100%;background:'+(pctO>=100?'var(--gn)':pctO>=60?'#60a5fa':'var(--or)')+';border-radius:6px"></div></div>'
+        +(pctO>=100?'<div style="font-size:10px;color:var(--gn);margin-top:4px">🎉 Objectif atteint — tout le reste est du bonus !</div>':'<div style="font-size:10px;color:var(--mt);margin-top:4px">Reste '+euro(restE)+' sur '+restJ+' jour(s) → ~'+euro(restE/restJ)+'/jour</div>')
+        +'</div>';
+    }
+  }catch(e){}
   // V80.24 : DEMANDES D'AVIS GOOGLE — transports terminés depuis 2 j+, facture payée, pas encore demandé
   var _m2=new Date();_m2.setDate(_m2.getDate()-2);var _dm2=_m2.toISOString().slice(0,10);
   var _m45=new Date();_m45.setDate(_m45.getDate()-45);var _dm45=_m45.toISOString().slice(0,10);
@@ -11884,6 +11967,31 @@ function rDash(){
     });
     h+='</div>';
   }
+  // V80.37 : 💉 RAPPELS DE VACCINS — échéance sous X jours ou dépassée
+  try{
+    var vacJ=E((db.settings||{}).vacJours)||45;
+    var lim=new Date();lim.setDate(lim.getDate()+vacJ);var limS=lim.toISOString().slice(0,10);
+    var d0v=tdy();var vacList=[];
+    act(db.animaux||[]).forEach(function(a){
+      if(a.vacRappelSent&&(new Date(d0v)-new Date(a.vacRappelSent))<60*86400000)return;
+      [['vaccin1','💉 Rage'],['vaccin2','💉 Vaccin']].forEach(function(vv){
+        var dt=String(a[vv[0]]||'').slice(0,10);
+        if(dt&&dt<=limS)vacList.push({a:a,lbl:vv[1],dt:dt,late:dt<d0v});
+      });
+    });
+    if(vacList.length){
+      vacList.sort(function(x,y){return x.dt.localeCompare(y.dt)});
+      h+='<div style="background:rgba(157,102,221,.10);border:1px solid rgba(157,102,221,.35);border-radius:10px;padding:10px;margin-top:8px">';
+      h+='<div style="font-weight:800;font-size:12px;color:#b794f6;margin-bottom:6px">💉 '+vacList.length+' rappel(s) de vaccin à signaler aux clients</div>';
+      vacList.slice(0,8).forEach(function(x){
+        var jrs=Math.round((new Date(x.dt)-new Date(d0v))/86400000);
+        h+='<div style="font-size:11px;padding:3px 0;display:flex;justify-content:space-between;align-items:center;gap:6px"><span>🐾 <b>'+esc(x.a.nom||'?')+'</b> ('+esc(cN(x.a.clientId))+') — '+x.lbl+' : '+x.dt+' <b style="color:'+(x.late?'var(--rd)':'var(--or)')+'">'+(x.late?('dépassé de '+(-jrs)+' j'):('dans '+jrs+' j'))+'</b></span>'
+          +'<span style="display:flex;gap:4px"><button class="btn sm" style="font-size:10px;padding:3px 8px" onclick="rappelVaccin(\''+x.a.id+'\')" title="Envoyer le rappel au client">💉 📧</button><button class="btn sm" style="font-size:10px;padding:3px 6px;color:var(--mt)" onclick="marquerVaccinFait(\''+x.a.id+'\')" title="Fait / à jour — met en sommeil 60 j">✔</button></span></div>';
+      });
+      if(vacList.length>8)h+='<div style="font-size:10px;color:var(--mt)">… +'+(vacList.length-8)+' autres</div>';
+      h+='</div>';
+    }
+  }catch(e){}
   $('dTod').innerHTML=h;
 
   // Next 30 days: ALL upcoming
@@ -12950,6 +13058,8 @@ function rSet(){
   sv('s_gn', s.guardNac||25);
   sv('s_sumup', s.sumupUrl||'');
   sv('s_avisUrl', s.avisUrl||'');
+  sv('s_objCA', s.objCA||'');
+  sv('s_vacJours', s.vacJours||45);
   try{var _tc=$('s_tvaCarbu');if(_tc)_tc.value=String(E(s.tvaCarbuPct)===100?100:80)}catch(e){}
   try{var _ar=$('s_autoRelSolde');if(_ar)_ar.checked=!!s.autoRelSolde}catch(e){}
   sv('s_objmois', s.objectifMois||'');
@@ -13017,6 +13127,7 @@ function savSet(){
   if(obj>0){s.objectifMois=obj;var bkObj=document.getElementById('bk_obj');if(bkObj)bkObj.value=obj;}
   var su=V('s_sumup');if(su!==null)s.sumupUrl=su;
   var av=V('s_avisUrl');if(av!==null)s.avisUrl=av;
+  s.objCA=E(V('s_objCA'));s.vacJours=E(V('s_vacJours'))||45;
   var _tc2=V('s_tvaCarbu');if(_tc2)s.tvaCarbuPct=parseInt(_tc2)||80;
   try{var _ar2=$('s_autoRelSolde');if(_ar2)s.autoRelSolde=!!_ar2.checked}catch(e){}
   var ftMain=V('s_ft');if(ftMain)s.fuelType=ftMain;
@@ -13893,16 +14004,16 @@ function _payLinks(montant,ref){
 }
 function buildMailPro(type,id){
   var doc,cl,isDev=(type==='devis'||type==='pec');
-  var isLiv=(type==='livraison');
-  if(isDev){doc=db.devis.find(function(x){return x.id===id})}else if(isLiv){doc=db.transports.find(function(x){return x.id===id})}else{doc=db.factures.find(function(x){return x.id===id})}
+  var isLiv=(type==='livraison');var isVac=(type==='vaccin');
+  if(isDev){doc=db.devis.find(function(x){return x.id===id})}else if(isLiv){doc=db.transports.find(function(x){return x.id===id})}else if(isVac){doc=(db.animaux||[]).find(function(x){return x.id===id})}else{doc=db.factures.find(function(x){return x.id===id})}
   if(!doc)return null;
   cl=db.clients.find(function(c){return c.id===doc.clientId})||{};
   var nomCl=((cl.prenom||'')+' '+(cl.nom||'')).trim()||'Madame, Monsieur';
-  var total=isLiv?E(doc.price):Math.abs(E(doc.total));
-  var reste=(isDev||isLiv)?0:resteDuFac(doc);
+  var total=isVac?0:isLiv?E(doc.price):Math.abs(E(doc.total));
+  var reste=(isDev||isLiv||isVac)?0:resteDuFac(doc);
   var dDoc=doc.date?new Date(doc.date).toLocaleDateString('fr-FR'):'';
-  var pen=(!isDev&&!isLiv)?calcPenalitesRetard(doc):null; // V80.26 : pénalités connues pour facture/relance/solde
-  var aRegler=(!isDev&&!isLiv)?montantARegler(doc):0;
+  var pen=(!isDev&&!isLiv&&!isVac)?calcPenalitesRetard(doc):null; // V80.26 : pénalités connues pour facture/relance/solde
+  var aRegler=(!isDev&&!isLiv&&!isVac)?montantARegler(doc):0;
   var OR='#E8650A',NV='#0B1D3A',CR='#FAF6EE',TE='#1a7a6e';
   var logo=(typeof LOGO_B64!=='undefined'&&LOGO_B64)?'<img src="'+LOGO_B64+'" width="64" height="64" style="width:64px;height:64px;border-radius:10px;display:block" alt="Cathy Pets">':'';
   var subject,intro,couleur,titre,extra='';
@@ -13946,6 +14057,16 @@ function buildMailPro(type,id){
     extra='<table role="presentation" cellpadding="0" cellspacing="0" style="margin:22px auto 0 auto"><tr><td style="background:'+OR+';border-radius:10px"><a href="'+pecUrl+'" style="display:inline-block;padding:14px 30px;font-size:16px;font-weight:800;color:#ffffff;text-decoration:none">\u270d\ufe0f Remplir et signer mon contrat</a></td></tr></table>'
       +'<p style="margin:14px 0 0 0;font-size:11px;color:#888;text-align:center;word-break:break-all">Si le bouton ne fonctionne pas, copiez ce lien dans votre navigateur :<br><a href="'+pecUrl+'" style="color:'+TE+'">'+pecUrl+'</a></p>'
       +'<p style="margin:16px 0 0 0;font-size:13px;color:#333;line-height:1.6">\ud83d\udc3e Pensez \u00e0 pr\u00e9parer le carnet de sant\u00e9 / passeport de votre animal pour le jour du transport.</p>';
+  }else if(type==='vaccin'){
+    couleur=OR;titre='RAPPEL DE VACCIN \u00c0 PR\u00c9VOIR \ud83d\udc89';
+    var _v1=String(doc.vaccin1||'').slice(0,10),_v2=String(doc.vaccin2||'').slice(0,10),_d0=tdy();
+    var _vd=(_v1&&_v1<=_v2||!_v2)?_v1:_v2;if(!_vd)_vd=_v1||_v2;
+    var _late=_vd&&_vd<_d0;
+    subject='\ud83d\udc89 '+(doc.nom||'Votre compagnon')+' \u2014 rappel de vaccin '+(_late?'\u00e0 r\u00e9gulariser':'\u00e0 pr\u00e9voir')+' ('+(_vd?new Date(_vd).toLocaleDateString('fr-FR'):'')+')';
+    intro='Petit message de pr\u00e9vention de la part de toute l\u2019\u00e9quipe : selon notre dossier, un vaccin de <b>'+_mpEsc(doc.nom||'votre compagnon')+'</b> arrive '+(_late?'est arriv\u00e9':'')+' \u00e0 \u00e9ch\u00e9ance. Un vaccin \u00e0 jour est indispensable pour tout transport ou s\u00e9jour en pension (le certificat est exig\u00e9), et surtout pour sa sant\u00e9.';
+    rows=row('Animal',_mpEsc(doc.nom||'')+(doc.espece?' ('+_mpEsc(doc.espece)+')':''))+(_v1?row('\ud83d\udc89 Rage \u2014 rappel d\u00fb le',new Date(_v1).toLocaleDateString('fr-FR'),_v1<=_d0?1:0):'')+(_v2?row('\ud83d\udc89 Autre vaccin \u2014 rappel d\u00fb le',new Date(_v2).toLocaleDateString('fr-FR'),_v2<=_d0?1:0):'');
+    extra='<p style="margin:16px 0 0 0;font-size:14px;color:#333;line-height:1.6">Nous vous conseillons de prendre rendez-vous avec votre v\u00e9t\u00e9rinaire d\u00e8s maintenant'+(_late?' \u2014 apr\u00e8s la date, certains vaccins n\u00e9cessitent de reprendre le protocole depuis le d\u00e9but (d\u00e9lai + co\u00fbt suppl\u00e9mentaires)':'')+'. Une fois le rappel fait, envoyez-nous simplement la nouvelle date : nous mettrons le dossier de '+_mpEsc(doc.nom||'votre compagnon')+' \u00e0 jour.</p>'
+      +'<p style="margin:12px 0 0 0;font-size:13px;color:#333;line-height:1.6">\ud83d\ude97 Besoin d\u2019un coup de main pour l\u2019emmener chez le v\u00e9t\u00e9rinaire ? C\u2019est aussi notre m\u00e9tier \u2014 r\u00e9pondez \u00e0 ce message et nous organisons le transport. \ud83d\udc3e</p>';
   }else if(type==='livraison'){
     couleur=TE;titre='VOTRE COMPAGNON EST BIEN ARRIV\u00c9 \ud83d\udc3e';
     var lv=doc.livraison||{};
@@ -14023,10 +14144,11 @@ function buildMailPro(type,id){
       type==='acquit'?'Facture '+doc.ref+' acquittée — merci pour votre règlement. Ce document vaut reçu de paiement.':
       type==='avis'?'Votre avis Google nous aide énormément : '+((db.settings||{}).avisUrl||'')+'\nMerci infiniment !':
       type==='livraison'?'Votre compagnon est bien arrivé à destination ('+((doc.livraison||{}).heure||'')+').'+((doc.livraison||{}).note?' '+(doc.livraison||{}).note:'')+((doc.livraison||{}).drive?'\nPhoto : '+(doc.livraison||{}).drive.url:''):
+      type==='vaccin'?'Rappel de vaccin à prévoir pour '+(doc.nom||'votre animal')+' — date au dossier : '+String(doc.vaccin1||doc.vaccin2||'').slice(0,10)+'. Pensez à prendre rendez-vous chez votre vétérinaire ; un vaccin à jour est exigé pour tout transport ou garde.':
       type==='solde'?'Facture '+doc.ref+' — Solde à régler avant la prise en charge : '+euro(aRegler)+(pen?' (dont pénalités de retard '+euro(pen.totalPenalites)+')':'')+'\n'+_payLinks(aRegler,doc.ref).text:
       'Facture '+doc.ref+' du '+dDoc+' — Total : '+euro(total)+' TTC'+(reste!==total?' — Reste à régler : '+euro(reste):'')+'\nRèglement à réception (virement, chèque ou espèces).')
     +'\n\nBien cordialement,\nCathy — Cathy Pets\nTaxi animalier : 07 81 30 41 10 · Garde : 07 83 43 63 06\ncathypetsitter.com · cathydelormepets@gmail.com';
-  var _docId=id,_noPdf=(type==='pec'||type==='avis'||type==='livraison');
+  var _docId=id,_noPdf=(type==='pec'||type==='avis'||type==='livraison'||type==='vaccin');
   if(type==='livraison'&&typeof fLie!=='undefined'&&fLie){_docId=fLie.id;_noPdf=false;} // V80.30 : PDF facture acquittée joint
   return {to:cl.email||'',subject:subject,html:html,text:text,clientNom:nomCl,isDev:isDev,docId:_docId,noPdf:_noPdf,type:type};
 }
@@ -29425,6 +29547,13 @@ function exportFacturXZip(d1,d2,label,base){
     });
   });
 }
+// V80.37 : rappel de vaccin au client (mail Pro type 'vaccin', journal 60 j sur l'animal)
+function rappelVaccin(aId){
+  var a=(db.animaux||[]).find(function(x){return x.id===aId});if(!a)return;
+  openMailPro('vaccin',aId);
+  if(window._mpCur){window._mpCur.onSent=function(){a.vacRappelSent=tdy();stamp(a);sav();lH('email','Rappel vaccin envoyé — '+a.nom+' ('+cN(a.clientId)+')');try{rDash()}catch(e){}}}
+}
+function marquerVaccinFait(aId){var a=(db.animaux||[]).find(function(x){return x.id===aId});if(!a)return;a.vacRappelSent=tdy();stamp(a);sav();try{rDash()}catch(e){}showToast('✔ Rappel vaccin mis en sommeil 60 jours pour '+(a.nom||''))}
 // V80.24 : demande d'avis Google (mail Pro) + journal pour ne jamais redemander
 function demanderAvis(fId,tId){
   var t=db.transports.find(function(x){return x.id===tId});
