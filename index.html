@@ -610,7 +610,7 @@ body.nuit .card{border-color:#0a1520}
 </div>
 </aside>
 <main class="main">
-<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.37</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
+<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.38</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
 <div class="cnt">
 
 <!-- DASHBOARD -->
@@ -7799,6 +7799,35 @@ function devSetOpt(id,val){
   showToast(val==='none'?('❌ Sans option (refusée) — total '+euro(q.total)+' · le devis peut être facturé'):val?('✅ '+devOptLabel(val)+' retenue — total '+euro(q.total)+(q.contratPecUrl?' · lien PEC mis à jour':'')):('🔀 Option à choisir — total '+euro(q.total)));
   rAll();
 }
+// V80.38 : PUBLIER LES PLACES LIBRES d'un transport/tournée sur la plateforme Vercel
+function publierPlaces(tId){
+  var t=db.transports.find(function(x){return x.id===tId});if(!t)return;
+  var ist='width:100%;background:#080f1a;border:1px solid var(--ln);color:var(--tx);border-radius:10px;padding:10px;font:inherit;font-size:13px';
+  var wps=(t.waypoints||[]);
+  var axe=t.tourZone||((wps[0]?_supabaseExtractCity(wps[0]):'')+' → '+(wps.length>1?_supabaseExtractCity(wps[wps.length-1]):''));
+  var h='<div style="font-size:12px;color:var(--mt);margin-bottom:8px">'+t.ref+' — '+(t.date||'')+'</div>'
+    +'<div class="row"><div class="c4 fd"><label>🐾 Places disponibles</label><input id="pp_n" type="number" min="0" max="8" value="'+(t.placesDispo||1)+'" style="'+ist+';font-size:16px;font-weight:800"></div>'
+    +'<div class="c4 fd"><label>💶 Prix par animal €</label><input id="pp_prix" type="number" step="5" value="'+(t.prixPlace||'')+'" placeholder="Ex : 180" style="'+ist+'"></div>'
+    +'<div class="c4 fd"><label>🗺️ Axe affiché</label><input id="pp_axe" value="'+esc(axe)+'" style="'+ist+'"></div></div>'
+    +'<div class="fd"><label>📝 Note publique (facultatif)</label><input id="pp_note" value="'+esc(t.notePublique||'')+'" placeholder="Ex : départ matinal, cages fournies, arrêt possible sur l\'axe" style="'+ist+'"></div>'
+    +'<div class="nt" style="font-size:10px;margin-top:6px">Le trajet apparaîtra sur la plateforme publique : « '+esc(axe)+' — '+(t.date||'')+' — X place(s) » avec le formulaire de demande. Prix indicatif « à partir de ». Mettre 0 place pour dépublier.</div>'
+    +'<div style="display:flex;gap:8px;margin-top:10px"><button class="btn gn" style="flex:1;padding:12px" onclick="savePlaces(\''+tId+'\')">📢 Publier / mettre à jour</button></div>';
+  oMo('📢 Places libres — '+t.ref,h,'');
+}
+function savePlaces(tId){
+  var t=db.transports.find(function(x){return x.id===tId});if(!t)return;
+  t.placesDispo=Math.max(0,Math.round(E(V('pp_n'))));
+  t.prixPlace=E(V('pp_prix'))||null;
+  t.tourZone=V('pp_axe')||'';
+  t.notePublique=V('pp_note')||'';
+  stamp(t);sav();cMo();
+  lH('transport','📢 Places publiées : '+t.ref+' — '+t.placesDispo+' place(s)'+(t.prixPlace?' à '+euro(t.prixPlace):''));
+  try{rTrp()}catch(e){}
+  if(typeof syncSupabase==='function'){
+    showToast('📢 Synchronisation de la plateforme…');
+    Promise.resolve(syncSupabase(true)).then(function(){showToast(t.placesDispo>0?('✅ Publié : '+t.placesDispo+' place(s) sur '+(t.tourZone||t.ref)):'✅ Dépublié (0 place)')}).catch(function(){showToast('⚠️ Synchro plateforme à relancer (onglet 🌐)')});
+  }
+}
 // V80.28 : COMPTE-RENDU DE LIVRAISON — photo + heure + note + envoi "bien arrivé"
 var _lvPhotos=[];
 function livraisonModal(tId){
@@ -11456,7 +11485,7 @@ function rCli(filterQuery){
 }
 function filterCliTable(val){rCli(val);}
 function rAni(){rTbl('anTbl',['Animal','Client','Espèce','Race','CITES',''],act(db.animaux).map(function(a){return '<tr><td>'+a.nom+'</td><td>'+cN(a.clientId)+'</td><td>'+a.espece+'</td><td>'+(a.race||'')+'</td><td>'+(a.cites||'')+'</td><td><button class="btn sm bu" onclick="eAni(\''+a.id+'\')">✏️</button></td></tr>'}))}
-function rTrp(){try{rRentaHist()}catch(e){}rTbl('trTbl',['Réf','Date','Client','Trajet','Km','Coût','TTC','HT','Brute','Nette','Extras','GPS',''],act(db.transports).map(function(t){var l=tLegs(t);var tr=l.length<=3?l.join(' → '):(l[0]+' → ... → '+l[l.length-1]);var co=totalCostTr(t);var m=fmtMarg(t.price,co);var gmUrl=l.length>1?'https://www.google.com/maps/dir/?api=1&origin='+l.map(encodeURIComponent)[0]+'&destination='+l.map(encodeURIComponent)[l.length-1]+(l.length>2?'&waypoints='+l.slice(1,l.length-1).map(encodeURIComponent).join('|'):'')+'&travelmode=driving':'';var gmNoToll=gmUrl?gmUrl+'&avoid=tolls':'';var hasFac=act(db.factures).find(function(f){return f.transportId===t.id});return '<tr><td>'+t.ref+(hasFac?' <span class="pill gt" style="font-size:8px">FAC</span>':'')+'</td><td>'+t.date+'</td><td>'+cN(t.clientId)+'</td><td style="font-size:11px">'+tr+'</td><td>'+(t.kmManual||0)+'</td><td>'+euro(co)+'</td><td>'+euro(t.price)+'</td><td>'+euro(m.priceHT)+'</td><td style="color:'+(m.brute>=0?'var(--a2)':'var(--rd)')+'">'+euro(m.brute)+'</td><td style="color:'+(m.nette>=0?'var(--a2)':'var(--rd)')+'"><b>'+euro(m.nette)+'</b></td><td style="font-size:10px">'+extraHtml(t)+'</td><td style="white-space:nowrap">'+(gmUrl?'<a class="btn sm bu" href="'+gmUrl+'" target="_blank" title="Rapide">🚀</a> <a class="btn sm" style="background:#16332015;border-color:#22a69340;color:#22a693" href="'+gmNoToll+'" target="_blank" title="Sans péage">🌿</a>':'')+'</td><td style="display:flex;gap:3px;flex-wrap:wrap"><button class="btn sm bu" onclick="eTr(\''+t.id+'\')">✏️</button><button class="btn sm og" onclick="dupTr(\''+t.id+'\')" title="Dupliquer">📋</button>'+(t.livraison?'<span class="pill gt" style="font-size:8px" title="Livré le '+t.livraison.date+' à '+t.livraison.heure+'">📦✓</span>':'<button class="btn sm" style="background:#2a1a05;border-color:#8a5a1a;color:#f0a060" onclick="livraisonModal(\''+t.id+'\')" title="Compte-rendu de livraison (photo + email bien arrivé)">📦</button>')+(hasFac?'':'<button class="btn sm gn" onclick="facExpressFromTr(\''+t.id+'\')" title="Facturer express">💶</button>')+'</td></tr>'}))}
+function rTrp(){try{rRentaHist()}catch(e){}rTbl('trTbl',['Réf','Date','Client','Trajet','Km','Coût','TTC','HT','Brute','Nette','Extras','GPS',''],act(db.transports).map(function(t){var l=tLegs(t);var tr=l.length<=3?l.join(' → '):(l[0]+' → ... → '+l[l.length-1]);var co=totalCostTr(t);var m=fmtMarg(t.price,co);var gmUrl=l.length>1?'https://www.google.com/maps/dir/?api=1&origin='+l.map(encodeURIComponent)[0]+'&destination='+l.map(encodeURIComponent)[l.length-1]+(l.length>2?'&waypoints='+l.slice(1,l.length-1).map(encodeURIComponent).join('|'):'')+'&travelmode=driving':'';var gmNoToll=gmUrl?gmUrl+'&avoid=tolls':'';var hasFac=act(db.factures).find(function(f){return f.transportId===t.id});return '<tr><td>'+t.ref+(hasFac?' <span class="pill gt" style="font-size:8px">FAC</span>':'')+'</td><td>'+t.date+'</td><td>'+cN(t.clientId)+'</td><td style="font-size:11px">'+tr+'</td><td>'+(t.kmManual||0)+'</td><td>'+euro(co)+'</td><td>'+euro(t.price)+'</td><td>'+euro(m.priceHT)+'</td><td style="color:'+(m.brute>=0?'var(--a2)':'var(--rd)')+'">'+euro(m.brute)+'</td><td style="color:'+(m.nette>=0?'var(--a2)':'var(--rd)')+'"><b>'+euro(m.nette)+'</b></td><td style="font-size:10px">'+extraHtml(t)+'</td><td style="white-space:nowrap">'+(gmUrl?'<a class="btn sm bu" href="'+gmUrl+'" target="_blank" title="Rapide">🚀</a> <a class="btn sm" style="background:#16332015;border-color:#22a69340;color:#22a693" href="'+gmNoToll+'" target="_blank" title="Sans péage">🌿</a>':'')+'</td><td style="display:flex;gap:3px;flex-wrap:wrap"><button class="btn sm bu" onclick="eTr(\''+t.id+'\')">✏️</button><button class="btn sm og" onclick="dupTr(\''+t.id+'\')" title="Dupliquer">📋</button>'+(t.livraison?'<span class="pill gt" style="font-size:8px" title="Livré le '+t.livraison.date+' à '+t.livraison.heure+'">📦✓</span>':'<button class="btn sm" style="background:#2a1a05;border-color:#8a5a1a;color:#f0a060" onclick="livraisonModal(\''+t.id+'\')" title="Compte-rendu de livraison (photo + email bien arrivé)">📦</button>')+((t.date||'')>=tdy()?(t.placesDispo>0?'<button class="btn sm" style="background:#0a2c3d;border-color:#2a5a8d;color:#7ab7fc" onclick="publierPlaces(\''+t.id+'\')" title="Places publiées : '+t.placesDispo+' — modifier">📢'+t.placesDispo+'</button>':'<button class="btn sm" style="background:#0a1a2d;border-color:#2a4a6d;color:#6a9acc" onclick="publierPlaces(\''+t.id+'\')" title="Publier les places libres sur la plateforme (co-voiturage animaux)">📢</button>'):'')+(hasFac?'':'<button class="btn sm gn" onclick="facExpressFromTr(\''+t.id+'\')" title="Facturer express">💶</button>')+'</td></tr>'}))}
 function rGrd2(){var typeIcons={garde_domicile:'🏡',garde_famille:'👨‍👩‍👧',pension:'🏠',promenade:'🐕',veterinaire:'🩺',combine:'🚗🏡'};rTbl('grTbl',['Réf','Type','Animal','Trajet','Entrée','Sortie','Coût','TTC','Nette HT',''],act(db.gardes).map(function(g){var m=fmtMarg(g.price,E(g.cost));var hasFac=act(db.factures).find(function(f){return f.gardeId===g.id});var ico=typeIcons[g.type||'garde_domicile']||'🏡';var trajet='';if(g.villeDepart)trajet+=g.villeDepart;if(g.villePEC)trajet+=(trajet?' → ':'')+g.villePEC;if(g.villeArrivee)trajet+=(trajet?' → ':'')+g.villeArrivee;return '<tr><td>'+g.ref+(hasFac?' <span class="pill gt" style="font-size:8px">FAC</span>':'')+'</td><td title="'+(g.type||'garde_domicile')+'">'+ico+'</td><td>'+aNs(g)+'</td><td style="font-size:11px">'+esc(trajet)+'</td><td>'+fD(g.start)+'</td><td>'+fD(g.end)+'</td><td>'+euro(g.cost||0)+'</td><td>'+euro(g.price)+'</td><td style="color:'+(m.nette>=0?'var(--a2)':'var(--rd)')+'"><b>'+euro(m.nette)+'</b></td><td style="display:flex;gap:3px"><button class="btn sm bu" onclick="eGrd(\''+g.id+'\')">✏️</button>'+(hasFac?'':'<button class="btn sm gn" onclick="facExpressFromGrd(\''+g.id+'\')" title="Facturer express">💶</button>')+'</td></tr>'}))}
 function rDev2(){rTbl('dvTbl',['Réf','Client','Mode','Trajet','Total','Statut','Actions'],act(db.devis).map(function(q){var sc=q.status==='facturé'?'gt':q.status==='accepté'?'bt':q.status==='refusé'?'rt':'gy';var wps=q.waypoints||[];var tr=wps.length>=2?(wps[0].address+' → ... → '+wps[wps.length-1].address):wps.length===1?wps[0].address:'—';return '<tr><td>'+q.ref+'</td><td>'+cN(q.clientId)+'</td><td>'+(q.mode||'km')+'</td><td style="font-size:11px;max-width:160px">'+tr+'</td><td>'+euro(q.total)+'</td><td><span class="pill '+sc+'">'+q.status+'</span></td><td style="white-space:nowrap;display:flex;gap:3px;flex-wrap:wrap">'+
   '<button class="btn sm bu" onclick="eDev(\''+q.id+'\')" title="Modifier">✏️</button>'+
@@ -13535,6 +13564,7 @@ function tourCreerTransport(){
   sav();lH('transport','🚐 Tournée groupée créée : '+t.ref+' — '+p.ordre.length+' clients, '+p.kmTour+' km, CA '+euro(p.ca));
   cMo();_tourSel=[];try{renderTourAll()}catch(e){}
   showToast('🚐 Transport groupé '+t.ref+' créé — '+p.ordre.length+' clients. Chaque devis se facture normalement (💶).');
+  setTimeout(function(){if(confirm('📢 Publier les places restantes de cette tournée sur la plateforme (co-voiturage animaux) ?'))publierPlaces(t.id)},600);
 }
 function tourCopierPlan(){
   var p=_tourPlan;if(!p)return;
@@ -16254,22 +16284,22 @@ function _trToSupabaseObj(t){
   return {
     id:t.id.substring(0,9),
     date:t.date?new Date(t.date).toISOString():'',
-    notes:'',
+    notes:t.notePublique||'',
     stops:stops,
     origin:origin,
     status:'confirmed',
     endDate:null,
     vehicle:t.vehicle||'',
     capacity:'',
-    tourZone:null,
-    tripType:stops.length>0?'tournee':'simple',
-    basePrice:null,
+    tourZone:t.tourZone||null,
+    tripType:(t.type==='groupe'||stops.length>0)?'tournee':'simple',
+    basePrice:t.prixPlace||null,
     createdAt:t._createdAt||new Date().toISOString(),
-    tourTitle:null,
+    tourTitle:(t.placesDispo>0)?((t.tourZone||origin+' → '+destination)+' — '+(t.placesDispo)+' place(s) disponible(s)'):null,
     cargoTypes:['animal'],
-    totalSeats:null,
+    totalSeats:(t.placesDispo>0)?t.placesDispo:null,
     destination:destination,
-    pricePerAnimal:null,
+    pricePerAnimal:t.prixPlace||null,
     pricePerParcel:null
   };
 }
