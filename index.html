@@ -610,7 +610,7 @@ body.nuit .card{border-color:#0a1520}
 </div>
 </aside>
 <main class="main">
-<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.38</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
+<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.39</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
 <div class="cnt">
 
 <!-- DASHBOARD -->
@@ -7804,22 +7804,61 @@ function publierPlaces(tId){
   var t=db.transports.find(function(x){return x.id===tId});if(!t)return;
   var ist='width:100%;background:#080f1a;border:1px solid var(--ln);color:var(--tx);border-radius:10px;padding:10px;font:inherit;font-size:13px';
   var wps=(t.waypoints||[]);
-  var axe=t.tourZone||((wps[0]?_supabaseExtractCity(wps[0]):'')+' → '+(wps.length>1?_supabaseExtractCity(wps[wps.length-1]):''));
-  var h='<div style="font-size:12px;color:var(--mt);margin-bottom:8px">'+t.ref+' — '+(t.date||'')+'</div>'
+  var origin=wps[0]?_supabaseExtractCity(wps[0]):'';
+  // Villes proposables : toutes les étapes sauf la base de départ et le retour base
+  var villes=[];
+  wps.slice(1).forEach(function(w){var c=_supabaseExtractCity(w);if(c&&c!==origin&&villes.indexOf(c)<0)villes.push(c)});
+  var axe=t.tourZone||(origin+' → '+(villes[villes.length-1]||''));
+  var pe=t.prixEtapes||{};
+  var h='<div style="font-size:12px;color:var(--mt);margin-bottom:8px">'+t.ref+' — '+(t.date||'')+' — départ '+esc(origin)+'</div>'
     +'<div class="row"><div class="c4 fd"><label>🐾 Places disponibles</label><input id="pp_n" type="number" min="0" max="8" value="'+(t.placesDispo||1)+'" style="'+ist+';font-size:16px;font-weight:800"></div>'
-    +'<div class="c4 fd"><label>💶 Prix par animal €</label><input id="pp_prix" type="number" step="5" value="'+(t.prixPlace||'')+'" placeholder="Ex : 180" style="'+ist+'"></div>'
-    +'<div class="c4 fd"><label>🗺️ Axe affiché</label><input id="pp_axe" value="'+esc(axe)+'" style="'+ist+'"></div></div>'
-    +'<div class="fd"><label>📝 Note publique (facultatif)</label><input id="pp_note" value="'+esc(t.notePublique||'')+'" placeholder="Ex : départ matinal, cages fournies, arrêt possible sur l\'axe" style="'+ist+'"></div>'
-    +'<div class="nt" style="font-size:10px;margin-top:6px">Le trajet apparaîtra sur la plateforme publique : « '+esc(axe)+' — '+(t.date||'')+' — X place(s) » avec le formulaire de demande. Prix indicatif « à partir de ». Mettre 0 place pour dépublier.</div>'
+    +'<div class="c4 fd"><label>🗺️ Axe affiché</label><input id="pp_axe" value="'+esc(axe)+'" style="'+ist+'"></div>'
+    +'<div class="c4 fd"><label>📝 Note publique</label><input id="pp_note" value="'+esc(t.notePublique||'')+'" placeholder="Ex : cages fournies" style="'+ist+'"></div></div>'
+    +'<div style="font-weight:800;font-size:12px;color:#7ab7fc;margin:8px 0 4px">💶 Prix par animal SELON LA VILLE de dépose (un client Paris→Dijon ne paie pas Paris→Marseille)</div>'
+    +'<div style="display:flex;gap:8px;align-items:end;margin-bottom:6px">'
+    +'<div class="fd" style="flex:1"><label>Tarif groupé €/km</label><input id="pp_rate" type="number" step="0.05" value="'+((db.grilleTarif||{}).groupe||0.45)+'" style="'+ist+'"></div>'
+    +'<div class="fd" style="flex:1"><label>Prix minimum €</label><input id="pp_min" type="number" step="5" value="'+(E((db.settings||{}).minFee)||60)+'" style="'+ist+'"></div>'
+    +'<button class="btn" style="padding:10px 14px;font-size:12px" onclick="ppCalcEtapes(\''+tId+'\')">🧮 Calculer</button></div>'
+    +'<div id="pp_etapes">'
+    +villes.map(function(c,i){return '<div class="row" style="align-items:center;margin-bottom:4px"><div class="c8" style="font-size:12px;padding:4px 0">📍 '+esc(origin)+' → <b>'+esc(c)+'</b></div><div class="c4"><input id="pp_e_'+i+'" data-city="'+esc(c)+'" type="number" step="5" value="'+(pe[c]||'')+'" placeholder="€ / animal" style="'+ist+';padding:7px"></div></div>'}).join('')
+    +'</div>'
+    +'<div class="nt" style="font-size:10px;margin-top:6px">🧮 remplit chaque ville au tarif groupé (km cumulés × €/km, minimum appliqué, arrondi aux 5 €) — tu ajustes ensuite à la main. Une ville sans prix = « sur demande ». 0 place = dépublication.</div>'
     +'<div style="display:flex;gap:8px;margin-top:10px"><button class="btn gn" style="flex:1;padding:12px" onclick="savePlaces(\''+tId+'\')">📢 Publier / mettre à jour</button></div>';
   oMo('📢 Places libres — '+t.ref,h,'');
+}
+// V80.39 : calcul automatique des prix par étape (km cumulés le long de la tournée × €/km groupé)
+function ppCalcEtapes(tId){
+  var t=db.transports.find(function(x){return x.id===tId});if(!t)return;
+  var wps=(t.waypoints||[]);var origin=wps[0]?_supabaseExtractCity(wps[0]):'';
+  var inputs=[].slice.call(document.querySelectorAll('#pp_etapes input'));
+  if(!inputs.length)return;
+  var rate=E(V('pp_rate'))||0.45, mini=E(V('pp_min'))||60;
+  var cities=[origin].concat(inputs.map(function(el){return el.dataset.city}));
+  showToast('📍 Calcul des distances… (~1 s par ville)');
+  var pts=[];var chain=Promise.resolve();
+  cities.forEach(function(c){chain=chain.then(function(){return geocodeSmart(c).then(function(g){pts.push(g);return new Promise(function(r){setTimeout(r,350)})})})});
+  chain.then(function(){
+    var cum=0;
+    for(var i=1;i<pts.length;i++){
+      var el=inputs[i-1];
+      if(pts[i-1]&&pts[i]){
+        cum+=haversineKm(pts[i-1].lat,pts[i-1].lon,pts[i].lat,pts[i].lon)*1.25;
+        var px=Math.max(mini,Math.round(cum*rate/5)*5);
+        el.value=px;
+      } else { el.placeholder='ville introuvable'; }
+    }
+    showToast('✅ Grille calculée — ajuste si besoin puis Publier');
+  });
 }
 function savePlaces(tId){
   var t=db.transports.find(function(x){return x.id===tId});if(!t)return;
   t.placesDispo=Math.max(0,Math.round(E(V('pp_n'))));
-  t.prixPlace=E(V('pp_prix'))||null;
   t.tourZone=V('pp_axe')||'';
   t.notePublique=V('pp_note')||'';
+  // V80.39 : grille de prix par ville de dépose
+  t.prixEtapes={};var _lastPx=null;
+  [].slice.call(document.querySelectorAll('#pp_etapes input')).forEach(function(el){var v=E(el.value);if(v>0){t.prixEtapes[el.dataset.city]=v;_lastPx=v}});
+  t.prixPlace=_lastPx; // prix de l'axe complet = dernière étape
   stamp(t);sav();cMo();
   lH('transport','📢 Places publiées : '+t.ref+' — '+t.placesDispo+' place(s)'+(t.prixPlace?' à '+euro(t.prixPlace):''));
   try{rTrp()}catch(e){}
@@ -16278,7 +16317,7 @@ function _trToSupabaseObj(t){
     stops=wps.slice(1,-1).map(function(w){
       var c=_supabaseExtractCity(w);
       if(!c)return null;
-      return {city:c,time:null,type:'pickup',price:null};
+      return {city:c,time:null,type:'pickup',price:(t.prixEtapes||{})[c]||null}; // V80.39
     }).filter(Boolean);
   }
   return {
@@ -16295,11 +16334,11 @@ function _trToSupabaseObj(t){
     tripType:(t.type==='groupe'||stops.length>0)?'tournee':'simple',
     basePrice:t.prixPlace||null,
     createdAt:t._createdAt||new Date().toISOString(),
-    tourTitle:(t.placesDispo>0)?((t.tourZone||origin+' → '+destination)+' — '+(t.placesDispo)+' place(s) disponible(s)'):null,
+    tourTitle:(t.placesDispo>0)?((t.tourZone||origin+' → '+destination)+' — '+(t.placesDispo)+' place(s) disponible(s)'+(function(){var vs=Object.keys(t.prixEtapes||{}).map(function(k){return t.prixEtapes[k]});return vs.length?' — à partir de '+Math.min.apply(null,vs)+' €':''})()):null,
     cargoTypes:['animal'],
     totalSeats:(t.placesDispo>0)?t.placesDispo:null,
     destination:destination,
-    pricePerAnimal:t.prixPlace||null,
+    pricePerAnimal:((t.prixEtapes||{})[destination])||t.prixPlace||null,
     pricePerParcel:null
   };
 }
