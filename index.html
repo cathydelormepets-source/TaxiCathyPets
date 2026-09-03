@@ -610,7 +610,7 @@ body.nuit .card{border-color:#0a1520}
 </div>
 </aside>
 <main class="main">
-<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.33</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
+<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.34</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
 <div class="cnt">
 
 <!-- DASHBOARD -->
@@ -1009,6 +1009,7 @@ body.nuit .card{border-color:#0a1520}
       <div class="tour-acts" style="gap:4px">
         <button class="tour-abtn auto" onclick="tourAutoSuggest()" style="padding:4px 8px;font-size:10px">✨ Auto</button>
         <button class="tour-abtn clear" onclick="tourClear()">Vider</button>
+        <button class="tour-abtn save" style="background:#E8650A;border-color:#E8650A" onclick="tourPlanifier()">🚐 Planifier</button>
         <button class="tour-abtn save" onclick="tourSave()">Valider</button>
       </div>
       <div id="tourItemsList"><div style="text-align:center;color:var(--mt);font-size:11px;padding:10px">Cliquez sur un trajet pour l'ajouter à la tournée</div></div>
@@ -13326,6 +13327,112 @@ function drawTourRoute(tourTrips){
   });
 }
 
+// ═══════════ V80.34 : PLANIFICATEUR DE TOURNÉE GROUPÉE ═══════════
+// Ordonne les étapes (plus proche voisin depuis la base), calcule km/coûts/marge,
+// répartit le coût entre clients au prorata de leurs km solo, crée le transport groupé.
+var _tourPlan=null;
+function tourPlanifier(){
+  var trips=_tourSel.map(function(id){return _tourData.find(function(t){return t.id===id})}).filter(function(t){return t&&t.type!=='garde'&&(t.to||t.from)});
+  if(trips.length<2){showToast('⚠️ Sélectionne au moins 2 trajets (clique sur les cartes ou ✨ Auto)');return}
+  oMo('🚐 Planification de la tournée','<div id="tpBody" style="text-align:center;padding:30px;color:var(--mt)">📍 Géocodage des étapes… <span id="tpProg">0/'+trips.length+'</span><br><span style="font-size:10px">(environ 1 seconde par adresse)</span></div>','');
+  var st=db.settings||{};
+  var base={lat:E(st.baseLat)||49.169,lon:E(st.baseLon)||3.257,label:'Base — Neuilly-Saint-Front'};
+  var pts=[];var done=0;
+  var chain=Promise.resolve();
+  trips.forEach(function(t){
+    chain=chain.then(function(){
+      return geocode(t.to||t.from).then(function(g){
+        done++;var pe=document.getElementById('tpProg');if(pe)pe.textContent=done+'/'+trips.length;
+        pts.push({trip:t,lat:g?g.lat:null,lon:g?g.lon:null,label:t.to||t.from});
+        return new Promise(function(res){setTimeout(res,400)}); // rythme Nominatim
+      }).catch(function(){done++;pts.push({trip:t,lat:null,lon:null,label:t.to||t.from})});
+    });
+  });
+  chain.then(function(){_tourBuildPlan(base,pts)});
+}
+function _tourBuildPlan(base,pts){
+  var st=db.settings||{};
+  var geo=pts.filter(function(p){return p.lat!==null});
+  var noGeo=pts.filter(function(p){return p.lat===null});
+  // Ordonnancement : plus proche voisin depuis la base
+  var order=[];var cur={lat:base.lat,lon:base.lon};var pool=geo.slice();
+  while(pool.length){
+    var bi=0,bd=1e12;
+    pool.forEach(function(p,i){var d=haversineKm(cur.lat,cur.lon,p.lat,p.lon);if(d<bd){bd=d;bi=i}});
+    var nx=pool.splice(bi,1)[0];nx._legKm=bd;order.push(nx);cur=nx;
+  }
+  noGeo.forEach(function(p){p._legKm=0;order.push(p)}); // non géocodés en fin, km inconnu
+  var retourKm=order.length&&order[order.length-1].lat!==null?haversineKm(cur.lat,cur.lon,base.lat,base.lon):0;
+  var ROAD=1.25; // facteur route vs vol d'oiseau
+  var kmTour=Math.round((order.reduce(function(s2,p){return s2+p._legKm},0)+retourKm)*ROAD);
+  var kmSolo=Math.round(pts.reduce(function(s2,p){return s2+(E(p.trip.km)||0)},0));
+  if(!kmSolo)kmSolo=Math.round(pts.reduce(function(s2,p){return s2+(p.lat!==null?haversineKm(base.lat,base.lon,p.lat,p.lon)*2*ROAD:0)},0));
+  // Coûts de la tournée
+  var conso=E(st.consumption)||7.5, fuel=E(st.fuelPrice)||1.8, tollK=E(st.tollPerKm)||0.105;
+  var coutCarb=Math.round(kmTour*conso/100*fuel);
+  var coutPeage=Math.round(kmTour*0.6*tollK); // ~60% du parcours sur autoroute
+  var coutTour=coutCarb+coutPeage;
+  var ca=Math.round(pts.reduce(function(s2,p){return s2+(E(p.trip.prix)||0)},0)*100)/100;
+  var marge=Math.round((ca-coutTour)*100)/100;
+  var ecoKm=Math.max(0,kmSolo-kmTour);
+  // Répartition du coût par client au prorata des km solo
+  var totSolo=pts.reduce(function(s2,p){return s2+(E(p.trip.km)||1)},0);
+  var lignes=order.map(function(p,i){
+    var part=(E(p.trip.km)||1)/totSolo;
+    var coutCli=Math.round(coutTour*part*100)/100;
+    var mgCli=Math.round(((E(p.trip.prix)||0)-coutCli)*100)/100;
+    return {n:i+1,trip:p.trip,km:Math.round((p._legKm||0)*ROAD),coutCli:coutCli,mgCli:mgCli,geo:p.lat!==null};
+  });
+  _tourPlan={base:base,ordre:lignes,kmTour:kmTour,kmSolo:kmSolo,ecoKm:ecoKm,coutCarb:coutCarb,coutPeage:coutPeage,coutTour:coutTour,ca:ca,marge:marge,dates:pts.map(function(p){return p.trip.date}).filter(Boolean).sort()};
+  // Rendu
+  var h='<div style="font-size:12px">';
+  h+='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px;text-align:center">'
+    +'<div style="background:rgba(26,122,110,.12);border-radius:8px;padding:8px"><div style="font-size:10px;color:var(--mt)">Distance tournée</div><b style="font-size:16px;color:var(--a2)">'+kmTour+' km</b><div style="font-size:9px;color:var(--gn)">-'+ecoKm+' km vs séparés</div></div>'
+    +'<div style="background:rgba(232,101,10,.12);border-radius:8px;padding:8px"><div style="font-size:10px;color:var(--mt)">Coûts estimés</div><b style="font-size:16px;color:var(--or)">'+euro(coutTour)+'</b><div style="font-size:9px;color:var(--mt)">⛽ '+euro(coutCarb)+' · 🛣️ '+euro(coutPeage)+'</div></div>'
+    +'<div style="background:rgba(59,130,246,.12);border-radius:8px;padding:8px"><div style="font-size:10px;color:var(--mt)">CA de la tournée</div><b style="font-size:16px;color:#60a5fa">'+euro(ca)+'</b></div>'
+    +'<div style="background:rgba(157,221,102,.12);border-radius:8px;padding:8px"><div style="font-size:10px;color:var(--mt)">Marge estimée</div><b style="font-size:16px;color:'+(marge>=0?'var(--gn)':'var(--rd)')+'">'+euro(marge)+'</b><div style="font-size:9px;color:var(--mt)">'+(ca>0?Math.round(marge/ca*100):0)+'%</div></div></div>';
+  h+='<div style="font-weight:800;color:var(--a2);margin:6px 0 4px">📍 Ordre des étapes (optimisé depuis la base)</div>';
+  h+='<table style="width:100%;font-size:11px;border-collapse:collapse"><tr style="color:var(--mt)"><th style="text-align:left;padding:3px">#</th><th style="text-align:left">Client</th><th style="text-align:left">Destination</th><th style="text-align:left">Date</th><th style="text-align:right">Étape</th><th style="text-align:right">Coût attribué</th><th style="text-align:right">Marge client</th></tr>';
+  lignes.forEach(function(l){
+    h+='<tr><td style="padding:3px;border-top:1px solid rgba(255,255,255,.05)">'+l.n+'</td><td style="border-top:1px solid rgba(255,255,255,.05)"><b>'+esc(l.trip.client)+'</b><div style="font-size:9px;color:var(--mt)">'+esc(l.trip.ref||'')+'</div></td><td style="border-top:1px solid rgba(255,255,255,.05)">'+esc(l.trip.to||l.trip.from)+(l.geo?'':' <span style="color:var(--or)" title="Adresse non géocodée — km non comptés">⚠️</span>')+'</td><td style="border-top:1px solid rgba(255,255,255,.05)">'+(l.trip.date||'—')+'</td><td style="text-align:right;border-top:1px solid rgba(255,255,255,.05)">'+(l.km||'—')+' km</td><td style="text-align:right;border-top:1px solid rgba(255,255,255,.05)">'+euro(l.coutCli)+'</td><td style="text-align:right;border-top:1px solid rgba(255,255,255,.05);font-weight:800;color:'+(l.mgCli>=0?'var(--a2)':'var(--rd)')+'">'+euro(l.mgCli)+'</td></tr>';
+  });
+  h+='<tr><td colspan="4" style="padding:3px;color:var(--mt)">↩️ Retour base</td><td style="text-align:right;color:var(--mt)">'+Math.round(retourKm*ROAD)+' km</td><td></td><td></td></tr></table>';
+  if(_tourPlan.dates.length)h+='<div style="font-size:10px;color:var(--mt);margin-top:4px">📅 Dates des demandes : '+_tourPlan.dates[0]+(_tourPlan.dates.length>1?' → '+_tourPlan.dates[_tourPlan.dates.length-1]:'')+' — vérifie leur compatibilité avant de créer.</div>';
+  h+='<div style="font-size:10px;color:var(--mt);margin-top:2px">Estimations : distances à vol d\'oiseau ×1,25, péages ≈ 60 % du parcours. Le 🧮 du transport affinera les km réels.</div>';
+  h+='<div style="display:flex;gap:8px;margin-top:12px">'
+    +'<button class="btn gn" style="flex:1;padding:12px" onclick="tourCreerTransport()">🚐 Créer le transport groupé</button>'
+    +'<button class="btn" style="padding:12px" onclick="tourCopierPlan()">📋 Copier le plan</button></div>';
+  h+='</div>';
+  var el=document.getElementById('tpBody');
+  if(el){el.style.textAlign='left';el.style.padding='0';el.style.color='var(--tx)';el.innerHTML=h}
+}
+function tourCreerTransport(){
+  var p=_tourPlan;if(!p)return;
+  var d0=p.dates[0]||tdy();
+  var wps=[{address:p.base.label.replace('Base — ','')}].concat(p.ordre.map(function(l){return {address:l.trip.to||l.trip.from,label:l.trip.client}}));
+  wps.push({address:p.base.label.replace('Base — ','')});
+  var refs=p.ordre.map(function(l){return l.trip.ref+' ('+l.trip.client+')'}).join(' · ');
+  var t={id:uid('t'),ref:'TR-'+(act(db.transports).length+1).toString().padStart(4,'0'),
+    clientId:p.ordre[0].trip.clientId,type:'groupe',date:d0,heure:'',
+    waypoints:wps,participants:p.ordre.length,
+    kmManual:p.kmTour,kmAuto:p.kmTour,tolls:p.coutPeage,price:p.ca,
+    notes:'🚐 TOURNÉE GROUPÉE — '+p.ordre.length+' clients : '+refs+'\nOrdre : '+p.ordre.map(function(l,i){return (i+1)+'. '+(l.trip.to||l.trip.from)}).join(' → ')+' → retour base.\nCoûts estimés '+euro(p.coutTour)+' (⛽ '+euro(p.coutCarb)+' + 🛣️ '+euro(p.coutPeage)+') — marge estimée '+euro(p.marge)+'.',
+    groupeRefs:p.ordre.map(function(l){return {srcType:l.trip.srcType,srcId:l.trip.srcId,ref:l.trip.ref,clientId:l.trip.clientId,coutCli:l.coutCli}})};
+  stamp(t);db.transports.push(t);
+  if(!db.tournees)db.tournees=[];
+  db.tournees.push({id:Date.now().toString(36),date:d0,name:'Tournée '+d0,stops:_tourSel.slice(),totalKm:p.kmTour,transportId:t.id});
+  sav();lH('transport','🚐 Tournée groupée créée : '+t.ref+' — '+p.ordre.length+' clients, '+p.kmTour+' km, CA '+euro(p.ca));
+  cMo();_tourSel=[];try{renderTourAll()}catch(e){}
+  showToast('🚐 Transport groupé '+t.ref+' créé — '+p.ordre.length+' clients. Chaque devis se facture normalement (💶).');
+}
+function tourCopierPlan(){
+  var p=_tourPlan;if(!p)return;
+  var txt='🚐 TOURNÉE GROUPÉE — '+(p.dates[0]||tdy())+'\n'
+    +'Distance : '+p.kmTour+' km (économie '+p.ecoKm+' km) · Coûts '+euro(p.coutTour)+' · CA '+euro(p.ca)+' · Marge '+euro(p.marge)+'\n\n'
+    +p.ordre.map(function(l,i){return (i+1)+'. '+l.trip.client+' — '+(l.trip.to||l.trip.from)+' ('+(l.trip.date||'date ?')+') — '+euro(E(l.trip.prix))+' — coût attribué '+euro(l.coutCli)+' — marge '+euro(l.mgCli)}).join('\n')
+    +'\n↩️ Retour base.';
+  navigator.clipboard.writeText(txt).then(function(){showToast('📋 Plan de tournée copié')}).catch(function(){});
+}
 function tourSave(){
   if(_tourSel.length<2){showToast('⚠️ Ajoutez au moins 2 trajets');return}
   var tourTrips=_tourSel.map(function(id){return _tourData.find(function(t){return t.id===id})}).filter(Boolean);
