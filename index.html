@@ -610,7 +610,7 @@ body.nuit .card{border-color:#0a1520}
 </div>
 </aside>
 <main class="main">
-<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.51</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
+<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.52</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
 <div class="cnt">
 
 <!-- DASHBOARD -->
@@ -1119,7 +1119,7 @@ body.nuit .card{border-color:#0a1520}
         <option value="accepté">✅ Acceptés</option>
         <option value="brouillon">📝 Brouillons</option>
       </select>
-      <button class="btn sm" onclick="rTourDevis()" style="font-size:10px;padding:4px 8px;background:#1a2a3a;border-color:#2a4a6f;color:#8ec8ff">🔄</button>
+      <button class="btn sm" onclick="rTourDevis()" style="font-size:10px;padding:4px 8px;background:#1a2a3a;border-color:#2a4a6f;color:#8ec8ff">🔄</button>      <button class="btn sm" onclick="loadDemandesSupabase()" id="btnLoadDem" style="font-size:10px;padding:4px 8px;background:#1a0a3a;border-color:#6a4abf;color:#b094f6">📥 Demandes</button>
     </div>
   </div><div class="bd">
     <div id="tourDevContent" style="font-size:12px"></div>
@@ -12433,6 +12433,80 @@ function rPlanWeek(){
 
 // PLANNING
 function plN(d){plOff+=d;rPlan()}
+// V80.52 : charger les demandes clients depuis la plateforme Vercel/Supabase
+var _demandesCache=[];
+function loadDemandesSupabase(){
+  var btn=document.getElementById('btnLoadDem');if(btn)btn.textContent='⏳…';
+  var SU=typeof SUPABASE_URL!=='undefined'?SUPABASE_URL:'';
+  var SK=typeof SUPABASE_KEY!=='undefined'?SUPABASE_KEY:'';
+  if(!SU||!SK){showToast('⚠️ Supabase non configuré — va dans ⚙️ Paramètres');if(btn)btn.textContent='📥 Demandes';return}
+  Promise.all([
+    fetch(SU+'/rest/v1/app_data?key=eq.cathy-pets-v4:requests&select=value',{headers:{'apikey':SK,'Authorization':'Bearer '+SK}}).then(function(r){return r.json()}),
+    fetch(SU+'/rest/v1/app_data?key=eq.'+SUPABASE_TRIPS_KEY+'&select=value',{headers:{'apikey':SK,'Authorization':'Bearer '+SK}}).then(function(r){return r.json()})
+  ]).then(function(res){
+    var requests=(res[0][0]||{}).value||[];
+    var trips=(res[1][0]||{}).value||[];
+    // Demandes directes (sans trajet lié) + trajets créés sur la plateforme
+    var today=tdy();
+    _demandesCache=[];
+    requests.forEach(function(req){
+      if(req.status==='completed'||req.status==='cancelled'||req.status==='refused')return;
+      if(!req.origin||!req.destination)return;
+      var d=req.date?req.date.slice(0,10):'';
+      if(d&&d<today)return;
+      _demandesCache.push({src:'request',id:req.id,origin:req.origin,dest:req.destination,date:d,animal:req.cargoType||'animal',client:req.clientName||req.email||'Client plateforme',notes:req.notes||'',status:req.status||'pending',tripId:req.tripId||null});
+    });
+    // Trajets plateforme sans source v77 (créés côté Vercel)
+    trips.filter(function(t){return t.source!=='v77'&&t.origin&&t.destination}).forEach(function(t){
+      if(t.date&&t.date.slice(0,10)<today)return;
+      _demandesCache.push({src:'platform',id:t.id,origin:t.origin,dest:t.destination,date:t.date?t.date.slice(0,10):'',animal:'animal',client:'Trajet plateforme',notes:t.notes||'',status:t.status||'available',tripId:null,seats:t.totalSeats,price:t.pricePerAnimal});
+    });
+    _demandesCache.sort(function(a,b){return (a.date||'').localeCompare(b.date||'')});
+    if(btn)btn.textContent='📥 Demandes ('+_demandesCache.length+')';
+    renderDemandesZone();
+    showToast('📥 '+_demandesCache.length+' demande(s) chargée(s) depuis la plateforme');
+  }).catch(function(e){showToast('⚠️ Erreur chargement demandes : '+e.message);if(btn)btn.textContent='📥 Demandes'});
+}
+function renderDemandesZone(){
+  var existingZone=document.getElementById('tourDemandesZone');
+  var parent=document.getElementById('tourDevContent');if(!parent)return;
+  if(!existingZone){
+    existingZone=document.createElement('div');existingZone.id='tourDemandesZone';
+    parent.insertBefore(existingZone,parent.firstChild);
+  }
+  if(!_demandesCache.length){existingZone.innerHTML='';return}
+  var villeF=((document.getElementById('tourVilleFilter')||{}).value||'').trim().toLowerCase();
+  var filtered=villeF?_demandesCache.filter(function(d){return (d.origin+' '+d.dest+' '+d.notes).toLowerCase().indexOf(villeF)>=0}):_demandesCache;
+  var h='<div style="font-weight:800;font-size:12px;color:#b094f6;margin-bottom:6px;padding:4px 0;border-bottom:1px solid rgba(176,148,246,.3)">📥 '+filtered.length+' demande(s) de la plateforme</div>';
+  filtered.forEach(function(d){
+    var badge=d.src==='request'
+      ?'<span style="background:#1a0a3a;color:#b094f6;padding:1px 6px;border-radius:4px;font-size:10px;border:1px solid #6a4abf">📬 Demande client</span>'
+      :'<span style="background:#0a1a3a;color:#7ab7fc;padding:1px 6px;border-radius:4px;font-size:10px;border:1px solid #2a5a8d">🌐 Trajet plateforme</span>';
+    var tourBtn=_tourData&&_tourData.length?'<button class="btn sm" onclick="_addDemToTour(\''+d.id+'\')" style="font-size:10px;padding:3px 7px;background:#0a2c1a;border-color:#1a7a3a;color:#5ee89a" title="Ajouter à la sélection de tournée">➕ Tournée</button>':'';
+    h+='<div style="border:1px solid rgba(176,148,246,.25);border-radius:8px;padding:7px 10px;margin-bottom:5px;font-size:11px">'
+      +'<div style="display:flex;justify-content:space-between;align-items:start">'
+      +'<div>'+badge+' <b style="color:var(--tx)">'+esc(d.origin)+' → '+esc(d.dest)+'</b>'+(d.date?' — '+d.date:'')+'<div style="color:var(--mt);margin-top:2px">'+esc(d.client)+(d.notes?' · '+esc(d.notes):'')+(d.seats?' · '+d.seats+' place(s)':'')+(d.price?' · '+d.price+' €/animal':'')+'</div></div>'
+      +'<div style="display:flex;gap:4px;flex-shrink:0">'+tourBtn+'</div>'
+      +'</div></div>';
+  });
+  existingZone.innerHTML=h;
+}
+function _addDemToTour(id){
+  // Trouver le trajet V77 compatible et l'ajouter à la sélection de tournée
+  var dem=_demandesCache.find(function(d){return d.id===id});if(!dem)return;
+  // Chercher un trajet V77 compatible dans _tourData
+  var compatible=(_tourData||[]).find(function(t){
+    var hay=(t.to||'')+(t.from||'')+'';
+    return hay.toLowerCase().indexOf((dem.dest||'').toLowerCase().slice(0,5))>=0||hay.toLowerCase().indexOf((dem.origin||'').toLowerCase().slice(0,5))>=0;
+  });
+  if(compatible){
+    if(_tourSel.indexOf(compatible.id)<0)_tourSel.push(compatible.id);
+    try{renderTourAll()}catch(e){}
+    showToast('✅ Trajet '+compatible.ref+' ajouté à la sélection de tournée');
+  } else {
+    showToast('ℹ️ Aucun trajet V77 compatible — crée un ⚡ Trajet express puis planifie la tournée');
+  }
+}
 // V80.50 : recherche de trajet compatible par ville + date
 var _geocCacheSearch={};
 function plSearch(){
@@ -13460,7 +13534,7 @@ function initTourMap(){
   if(!_tourMap){
     _tourMap=L.map('tourMap',{zoomControl:false}).setView([46.8,2.8],6);
     L.control.zoom({position:'topright'}).addTo(_tourMap);
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{maxZoom:19,attribution:'© OSM © CARTO'}).addTo(_tourMap);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18,attribution:'© <a href="https://www.openstreetmap.org">OpenStreetMap</a>'}).addTo(_tourMap);
     _tourMlg=L.layerGroup().addTo(_tourMap);
     _tourRlg=L.layerGroup().addTo(_tourMap);
   }
