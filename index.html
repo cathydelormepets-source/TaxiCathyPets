@@ -610,7 +610,7 @@ body.nuit .card{border-color:#0a1520}
 </div>
 </aside>
 <main class="main">
-<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.58</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
+<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.59</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
 <div class="cnt">
 
 <!-- DASHBOARD -->
@@ -26868,7 +26868,7 @@ window.loadAlertes=function(){
     return diff>0&&diff<48&&t.statut!=='effectue'&&t.statut!=='confirme';
   }).forEach(function(t){
     var cl=act(db.clients).find(function(c){return c.id===t.clientId;});
-    urgH+='<div class="alert-card urgent"><span class="alert-icon">🚗</span><div class="alert-content"><div class="alert-title">Transport non confirmé !</div><div class="alert-desc">'+(cl?cl.nom:'')+ ' - '+t.depart+' → '+t.arrivee+'<br>'+t.date+' à '+(t.heure||'?')+'</div><div class="alert-actions"><button class="btn sm rd">📱 SMS urgent</button><button class="btn sm" onclick="sTab(\'tr\')">Voir</button></div></div></div>';
+    urgH+='<div class="alert-card urgent"><span class="alert-icon">🚗</span><div class="alert-content"><div class="alert-title">Transport non confirmé !</div><div class="alert-desc">'+(cl?cl.nom:'')+' - '+t.depart+' → '+t.arrivee+'<br>'+t.date+' à '+(t.heure||'?')+'</div><div class="alert-actions"><button class="btn sm rd">📱 SMS urgent</button><button class="btn sm" onclick="sTab(\'tr\')">Voir</button></div></div></div>';
   });
   // Infos
   // Stock Nutrica bas
@@ -27044,7 +27044,10 @@ window.loadLiveLink=function(){
   var opts='<option value="">-- Sélectionner --</option>';
   act(db.transports).filter(function(t){return new Date(t.date)>=new Date();}).forEach(function(t){
     var cl=act(db.clients).find(function(c){return c.id===t.clientId;});
-    opts+='<option value="'+t.id+'">'+t.date+' - '+(cl?cl.nom:'')+' - '+t.depart+' → '+t.arrivee+'</option>';
+    var _wll=t.waypoints||[];
+    var _dll=_wll[0]?(_supabaseExtractCity(_wll[0])||_wll[0].address||_wll[0].label||'?'):'?';
+    var _all=_wll.length>1?(_supabaseExtractCity(_wll[_wll.length-1])||_wll[_wll.length-1].address||_wll[_wll.length-1].label||'?'):'?';
+    opts+='<option value="'+t.id+'">'+t.date+' - '+(cl?cl.nom:'')+' - '+_dll+' → '+_all+'</option>';
   });
   sel.innerHTML=opts;
   renderLiveSteps();
@@ -27054,9 +27057,9 @@ window.genLiveLink=function(){
   if(!tid){$('liveLinkBox').style.display='none';return;}
   var t=act(db.transports).find(function(x){return x.id===tid;});
   var code='TR-'+new Date().getFullYear()+'-'+tid.slice(-4).toUpperCase();
-  $('liveLinkUrl').value='https://track.cathypets.com/'+code;
+  $('liveLinkUrl').value='https://www.cathypetsitter.com/?suivi='+code;
   $('liveLinkBox').style.display='block';
-  $('liveDestTxt').textContent=t?t.arrivee:'—';
+  var _wa=t?t.waypoints||[]:[];$('liveDestTxt').textContent=_wa.length>1?(_supabaseExtractCity(_wa[_wa.length-1])||_wa[_wa.length-1].address||'—'):'—';
   $('liveEtaTxt').textContent=t&&t.heure?t.heure:'--:--';
   renderLiveSteps();
 };
@@ -27065,7 +27068,7 @@ function renderLiveSteps(){
 }
 window.copyLiveLink=function(){
   var inp=$('liveLinkUrl');inp.select();document.execCommand('copy');
-  alert('Lien copié !');
+  showToast('📋 Lien copié !');
 };
 window.sendLiveSMS=function(){alert('📱 SMS envoyé au client');};
 window.sendLiveEmail=function(){alert('📧 Email envoyé au client');};
