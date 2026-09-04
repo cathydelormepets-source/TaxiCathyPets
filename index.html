@@ -610,7 +610,7 @@ body.nuit .card{border-color:#0a1520}
 </div>
 </aside>
 <main class="main">
-<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.55</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
+<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.56</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
 <div class="cnt">
 
 <!-- DASHBOARD -->
@@ -1199,8 +1199,8 @@ body.nuit .card{border-color:#0a1520}
 <div id="t_segZone"></div>
 <div class="il" style="margin-bottom:10px"><button class="btn sm at" onclick="addSeg('tseg')" type="button">➕ Ajouter un tronçon</button></div>
 <div class="nt" style="margin-bottom:10px">📍 Jusqu'à <b>15 étapes</b>. Écris ville ou adresse complète. Le calcul OSRM donne les vrais km tronçon par tronçon.<br>💡 <b>Astuce :</b> écris "Neuilly-Saint-Front, 02470" ou "6 chemin du lavoir, Neuilly-Saint-Front" pour un géocodage précis.</div>
-<div id="wpBox"></div>
-<div class="il" style="margin-bottom:12px"><button class="btn bu sm" onclick="addWP()">📍 + Prise en charge</button><button class="btn sm og" onclick="addWPDest()">🏁 + Destination</button><button class="btn sm" style="background:#1a2a3f;border-color:#2a4a6f;color:#aac" onclick="addWPRetour()">🔙 + Retour</button><button class="btn sm rd" onclick="resetWPs()">🔄 Réinit.</button></div>
+<div id="wpBox"></div><div id="dv_cout_zone" style="display:none;margin:10px 0;padding:10px 14px;background:#040c18;border:1px solid #1a3a5a;border-left:4px solid #E8650A;border-radius:10px;font-size:12px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><span style="font-weight:800;color:#E8650A">🔒 Coûts internes — non visibles par le client</span><span id="dv_cout_src" style="font-size:10px;color:var(--mt)"></span></div><div id="dv_cout_detail" style="color:var(--mt)">Calcul en cours…</div><div style="display:flex;align-items:center;gap:8px;margin-top:8px"><label style="font-size:11px;color:var(--mt);white-space:nowrap">💶 Ton tarif client :</label><input id="dv_tarif_input" type="number" step="5" placeholder="Ex : 450" style="background:#080f1a;border:1px solid var(--ln);color:var(--tx);border-radius:8px;padding:6px 10px;font:inherit;font-size:13px;width:110px" oninput="dvMajMarge()"><span id="dv_marge_badge" style="font-size:13px;font-weight:800"></span></div><div style="font-size:10px;color:var(--mt);margin-top:4px">Estimation à vol d'oiseau ×1,25 — le 🧮 ci-dessous affine avec les vrais km OSRM</div></div>
+<div class="il" style="margin-bottom:12px"><button class="btn bu sm" onclick="addWP();setTimeout(dvAutoCalcCout,800)">📍 + Prise en charge</button><button class="btn sm og" onclick="addWPDest();setTimeout(dvAutoCalcCout,800)">🏁 + Destination</button><button class="btn sm" style="background:#1a2a3f;border-color:#2a4a6f;color:#aac" onclick="addWPRetour()">🔙 + Retour</button><button class="btn sm rd" onclick="resetWPs()">🔄 Réinit.</button></div>
 <div class="nt" style="margin-bottom:10px">🛣️ <b>3 options de trajet :</b> avec péage (rapide) · sans péage · éco (meilleur coût). Renseigne les péages pour une comparaison précise.</div>
 <div class="row">
 <div class="c3 fd"><label>Participants</label><input id="t_pa" type="number" min="1" value="1"></div>
@@ -7599,6 +7599,44 @@ function renderDevCard(title,color,key,data,allerAll,rk,pts,showRetour){
   h+='</details></div>';
   return h;
 }
+// V80.56 : calcul automatique des coûts internes dans le devis
+var _dvCoutKm=0;var _dvCoutData=null;
+function dvAutoCalcCout(){
+  var wps=typeof getDWPs==='function'?getDWPs():[];
+  if(wps.length<2)return;
+  var dep=wps[0]&&(wps[0].address||wps[0].label);
+  var arr=wps[wps.length-1]&&(wps[wps.length-1].address||wps[wps.length-1].label);
+  if(!dep||!arr)return;
+  var z=document.getElementById('dv_cout_zone');if(!z)return;
+  z.style.display='block';
+  document.getElementById('dv_cout_detail').innerHTML='<span style="color:var(--mt)">📍 Estimation des km…</span>';
+  var _geoFn=typeof geocodeFast==='function'?geocodeFast:geocodeSmart;
+  Promise.all([_geoFn(dep),_geoFn(arr)]).then(function(res){
+    var a=res[0],b=res[1];if(!a||!b){document.getElementById('dv_cout_detail').innerHTML='<span style="color:var(--or)">Villes non reconnues — clique 🧮 pour le calcul exact</span>';return}
+    var km=Math.round(haversineKm(a.lat,a.lon,b.lat,b.lon)*1.25);
+    var kmAR=km*2;
+    var toll=typeof estTolls==='function'?estTolls(km):Math.round(km*0.6*0.105);
+    var cd=typeof costDetail==='function'?costDetail(kmAR,toll,''):null;
+    _dvCoutKm=km;_dvCoutData=cd;
+    var html='<b style="color:var(--tx)">'+esc(dep.split(',')[0])+' → '+esc(arr.split(',')[0])+'</b> — ~'+km+' km aller (~'+kmAR+' km A/R)<br>';
+    if(cd)html+='⛽ '+euro(cd.fuel)+' · 🛣️ Péages ~'+euro(cd.tolls)+' · <b style="color:var(--or)">Coût total estimé : '+euro(cd.fraisReels)+'</b>';
+    else html+='~'+kmAR+' km A/R estimés';
+    document.getElementById('dv_cout_detail').innerHTML=html;
+    if(document.getElementById('dv_cout_src'))document.getElementById('dv_cout_src').textContent='~'+km+' km aller';
+    dvMajMarge();
+  }).catch(function(){});
+}
+function dvMajMarge(){
+  var badge=document.getElementById('dv_marge_badge');if(!badge)return;
+  var inp=document.getElementById('dv_tarif_input');
+  var tarif=E(inp?inp.value:'');
+  var cout=_dvCoutData?_dvCoutData.fraisReels:0;
+  if(!tarif){badge.innerHTML='';return}
+  var marge=Math.round((tarif-cout)*100)/100;
+  var pct=cout>0?Math.round(marge/tarif*100):100;
+  badge.innerHTML='→ <b style="color:'+(marge>=0?'var(--gn)':'var(--rd)')+'">'+euro(marge)+'</b> <span style="color:var(--mt);font-size:10px">('+pct+' %)</span>';
+  var tot=document.getElementById('q_to');if(tot&&!E(tot.value))tot.value=tarif.toFixed(2);
+}
 function selectDevRoute(mode,kmA,kmR,tot,clearTolls){
   $('qd_km').value=kmA;$('qd_kr').value=kmR;
   $('q_to').value=tot;
@@ -8267,7 +8305,8 @@ function addDev(){
   var devLignes=devGetLignes();
   var tvaRate=((document.getElementById('q_tva')||{}).value!==''&&(document.getElementById('q_tva')||{}).value!==undefined?parseFloat((document.getElementById('q_tva')||{}).value):20);
   var remiseRate=parseFloat((document.getElementById('q_remise')||{}).value||0)||0;
-  var q={id:uid('q'),ref:'CP-DEV-'+_Y+'-'+db.settings.nextQuote,mode:V('q_mo'),clientId:V('q_cl'),animalIds:aniIds,animalId:aniIds[0]||'',accompagnants:accs,bienEtre:be,segments:segs,sigPec:sigs.sigPec||'',sigDep:sigs.sigDep||'',total:E(V('q_to')),objet:V('q_obj'),notes:V('q_no'),conditions:V('q_cond'),notesInternes:V('q_notes_int'),lignes:devLignes,optMode:(V('q_optmode')||'cumule'),tva:tvaRate,remise:remiseRate,waypoints:wps,hotel:V('q_htl'),hotelNuits:E(V('q_htn')),hotelCost:E(V('q_htc')),multiModal:V('q_mm'),mmCompagnie:V('q_mmc'),mmRef:V('q_mmr'),mmCost:E(V('q_mmx')),dateDebut:V('q_dateDebut')||'',dateFin:V('q_dateFin')||'',status:'brouillon',date:new Date().toISOString()};
+  var _dvCout=_dvCoutData?{km:_dvCoutKm,fuel:_dvCoutData.fuel,tolls:_dvCoutData.tolls,total:_dvCoutData.fraisReels}:null;
+  var q={id:uid('q'),ref:'CP-DEV-'+_Y+'-'+db.settings.nextQuote,coutInterne:_dvCout,mode:V('q_mo'),clientId:V('q_cl'),animalIds:aniIds,animalId:aniIds[0]||'',accompagnants:accs,bienEtre:be,segments:segs,sigPec:sigs.sigPec||'',sigDep:sigs.sigDep||'',total:E(V('q_to')),objet:V('q_obj'),notes:V('q_no'),conditions:V('q_cond'),notesInternes:V('q_notes_int'),lignes:devLignes,optMode:(V('q_optmode')||'cumule'),tva:tvaRate,remise:remiseRate,waypoints:wps,hotel:V('q_htl'),hotelNuits:E(V('q_htn')),hotelCost:E(V('q_htc')),multiModal:V('q_mm'),mmCompagnie:V('q_mmc'),mmRef:V('q_mmr'),mmCost:E(V('q_mmx')),dateDebut:V('q_dateDebut')||'',dateFin:V('q_dateFin')||'',status:'brouillon',date:new Date().toISOString()};
   if(!q.clientId||!q.total){alert('⚠️ Client et montant requis');return}
   if(!q.objet||!q.objet.trim()){
     alert('⚠️ L\'objet / titre du devis est OBLIGATOIRE.\n\nEx: "Transport canin Paris → Lyon le 22/03/2026"');
