@@ -610,7 +610,7 @@ body.nuit .card{border-color:#0a1520}
 </div>
 </aside>
 <main class="main">
-<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.39</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
+<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.40</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
 <div class="cnt">
 
 <!-- DASHBOARD -->
@@ -13529,90 +13529,191 @@ function tourPlanifier(){
   });
   chain.then(function(){_tourBuildPlan(base,pts)});
 }
-function _tourBuildPlan(base,pts){
+function _tourBuildPlan(base,pts,opts){
+  opts=opts||{};
+  var ptsRetour=opts.ptsRetour||[];
+  var anchorId=opts.anchorId||'';
   var st=db.settings||{};
+  var ROAD=1.25;
+  // Cache pour recalcul
+  opts._ptsCache=pts; opts._ptsRetourCache=ptsRetour;
+
+  // === ALLER : plus proche voisin depuis base ===
   var geo=pts.filter(function(p){return p.lat!==null});
   var noGeo=pts.filter(function(p){return p.lat===null});
-  // Ordonnancement : plus proche voisin depuis la base
-  var order=[];var cur={lat:base.lat,lon:base.lon};var pool=geo.slice();
-  while(pool.length){
-    var bi=0,bd=1e12;
-    pool.forEach(function(p,i){var d=haversineKm(cur.lat,cur.lon,p.lat,p.lon);if(d<bd){bd=d;bi=i}});
-    var nx=pool.splice(bi,1)[0];nx._legKm=bd;order.push(nx);cur=nx;
-  }
-  noGeo.forEach(function(p){p._legKm=0;order.push(p)}); // non géocodés en fin, km inconnu
-  var retourKm=order.length&&order[order.length-1].lat!==null?haversineKm(cur.lat,cur.lon,base.lat,base.lon):0;
-  var ROAD=1.25; // facteur route vs vol d'oiseau
-  var kmTour=Math.round((order.reduce(function(s2,p){return s2+p._legKm},0)+retourKm)*ROAD);
-  var kmSolo=Math.round(pts.reduce(function(s2,p){return s2+(E(p.trip.km)||0)},0));
-  if(!kmSolo)kmSolo=Math.round(pts.reduce(function(s2,p){return s2+(p.lat!==null?haversineKm(base.lat,base.lon,p.lat,p.lon)*2*ROAD:0)},0));
-  // Coûts de la tournée
-  var conso=E(st.consumption)||7.5, fuel=E(st.fuelPrice)||1.8, tollK=E(st.tollPerKm)||0.105;
-  var coutCarb=Math.round(kmTour*conso/100*fuel);
-  var coutPeage=Math.round(kmTour*0.6*tollK); // ~60% du parcours sur autoroute
-  var coutTour=coutCarb+coutPeage;
-  var ca=Math.round(pts.reduce(function(s2,p){return s2+(E(p.trip.prix)||0)},0)*100)/100;
-  var marge=Math.round((ca-coutTour)*100)/100;
+  var orderAller=[],cur={lat:base.lat,lon:base.lon},pool=geo.slice();
+  while(pool.length){var bi=0,bd=1e12;pool.forEach(function(p,i){var d=haversineKm(cur.lat,cur.lon,p.lat,p.lon);if(d<bd){bd=d;bi=i}});var nx=pool.splice(bi,1)[0];nx._legKm=bd;orderAller.push(nx);cur=nx;}
+  noGeo.forEach(function(p){p._legKm=0;p.geo=false;orderAller.push(p)});
+
+  // === RETOUR : plus proche voisin depuis terminus vers base ===
+  var terminus=cur;
+  var orderRetour=[],curR=terminus,poolR=ptsRetour.filter(function(p){return p.lat!==null}).slice();
+  while(poolR.length){var biR=0,bdR=1e12;poolR.forEach(function(p,i){var d=haversineKm(curR.lat,curR.lon,p.lat,p.lon);if(d<bdR){bdR=d;biR=i}});var nxR=poolR.splice(biR,1)[0];nxR._legKm=bdR;orderRetour.push(nxR);curR=nxR;}
+  ptsRetour.filter(function(p){return p.lat===null}).forEach(function(p){p._legKm=0;p.geo=false;orderRetour.push(p)});
+  var retourFinKm=curR&&curR.lat?haversineKm(curR.lat,curR.lon,base.lat,base.lon):
+                  (terminus&&terminus.lat?haversineKm(terminus.lat,terminus.lon,base.lat,base.lon):0);
+
+  // Km & coûts
+  var kmAller=Math.round(orderAller.reduce(function(s2,p){return s2+(p._legKm||0)},0)*ROAD);
+  var kmRetour=Math.round((orderRetour.reduce(function(s2,p){return s2+(p._legKm||0)},0)+retourFinKm)*ROAD);
+  var kmTour=kmAller+kmRetour;
+  var kmSolo=Math.round(pts.concat(ptsRetour).reduce(function(s2,p){return s2+(E(p.trip.km)||0)},0));
+  if(!kmSolo)kmSolo=Math.round(pts.concat(ptsRetour).reduce(function(s2,p){return s2+(p.lat?haversineKm(base.lat,base.lon,p.lat,p.lon)*2*ROAD:0)},0));
   var ecoKm=Math.max(0,kmSolo-kmTour);
-  // Répartition du coût par client au prorata des km solo
-  var totSolo=pts.reduce(function(s2,p){return s2+(E(p.trip.km)||1)},0);
-  var lignes=order.map(function(p,i){
-    var part=(E(p.trip.km)||1)/totSolo;
-    var coutCli=Math.round(coutTour*part*100)/100;
-    var mgCli=Math.round(((E(p.trip.prix)||0)-coutCli)*100)/100;
-    return {n:i+1,trip:p.trip,km:Math.round((p._legKm||0)*ROAD),coutCli:coutCli,mgCli:mgCli,geo:p.lat!==null};
-  });
-  _tourPlan={base:base,ordre:lignes,kmTour:kmTour,kmSolo:kmSolo,ecoKm:ecoKm,coutCarb:coutCarb,coutPeage:coutPeage,coutTour:coutTour,ca:ca,marge:marge,dates:pts.map(function(p){return p.trip.date}).filter(Boolean).sort()};
-  // Rendu
+  var conso=E(st.consumption)||7.5,fuel=E(st.fuelPrice)||1.8,tollK=E(st.tollPerKm)||0.105;
+  var coutCarb=Math.round(kmTour*conso/100*fuel);
+  var coutPeage=Math.round(kmTour*0.6*tollK);
+  var coutTour=coutCarb+coutPeage;
+  var allOrders=orderAller.concat(orderRetour);
+  var ca=Math.round(allOrders.reduce(function(s2,l){return s2+(E(l.trip.prix)||0)},0)*100)/100;
+  var marge=Math.round((ca-coutTour)*100)/100;
+
+  // Répartition des coûts
+  if(anchorId){
+    // Anchor absorbe TOUS les frais — les satellites = bénéfice quasi pur
+    allOrders.forEach(function(l){
+      var isA=(l.trip.srcId===anchorId||l.trip.id===anchorId||l.trip.ref===anchorId);
+      l.isAnchor=isA; l.coutCli=isA?coutTour:0;
+      l.mgCli=Math.round((E(l.trip.prix)-(isA?coutTour:0))*100)/100;
+    });
+  } else {
+    var totSolo=allOrders.reduce(function(s2,p){return s2+(E(p.trip.km)||1)},0);
+    allOrders.forEach(function(l){var part=(E(l.trip.km)||1)/totSolo;l.coutCli=Math.round(coutTour*part*100)/100;l.mgCli=Math.round((E(l.trip.prix)-l.coutCli)*100)/100;l.isAnchor=false;});
+  }
+
+  _tourPlan={base:base,ordre:orderAller,ordreRetour:orderRetour,kmTour:kmTour,kmAller:kmAller,kmRetour:kmRetour,kmSolo:kmSolo,ecoKm:ecoKm,coutCarb:coutCarb,coutPeage:coutPeage,coutTour:coutTour,ca:ca,marge:marge,opts:opts,dates:allOrders.map(function(l){return l.trip.date}).filter(Boolean).sort()};
+
+  // Rendu HTML
   var h='<div style="font-size:12px">';
   h+='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px;text-align:center">'
-    +'<div style="background:rgba(26,122,110,.12);border-radius:8px;padding:8px"><div style="font-size:10px;color:var(--mt)">Distance tournée</div><b style="font-size:16px;color:var(--a2)">'+kmTour+' km</b><div style="font-size:9px;color:var(--gn)">-'+ecoKm+' km vs séparés</div></div>'
-    +'<div style="background:rgba(232,101,10,.12);border-radius:8px;padding:8px"><div style="font-size:10px;color:var(--mt)">Coûts estimés</div><b style="font-size:16px;color:var(--or)">'+euro(coutTour)+'</b><div style="font-size:9px;color:var(--mt)">⛽ '+euro(coutCarb)+' · 🛣️ '+euro(coutPeage)+'</div></div>'
-    +'<div style="background:rgba(59,130,246,.12);border-radius:8px;padding:8px"><div style="font-size:10px;color:var(--mt)">CA de la tournée</div><b style="font-size:16px;color:#60a5fa">'+euro(ca)+'</b></div>'
-    +'<div style="background:rgba(157,221,102,.12);border-radius:8px;padding:8px"><div style="font-size:10px;color:var(--mt)">Marge estimée</div><b style="font-size:16px;color:'+(marge>=0?'var(--gn)':'var(--rd)')+'">'+euro(marge)+'</b><div style="font-size:9px;color:var(--mt)">'+(ca>0?Math.round(marge/ca*100):0)+'%</div></div></div>';
-  h+='<div style="font-weight:800;color:var(--a2);margin:6px 0 4px">📍 Ordre des étapes (optimisé depuis la base)</div>';
-  h+='<table style="width:100%;font-size:11px;border-collapse:collapse"><tr style="color:var(--mt)"><th style="text-align:left;padding:3px">#</th><th style="text-align:left">Client</th><th style="text-align:left">Destination</th><th style="text-align:left">Date</th><th style="text-align:right">Étape</th><th style="text-align:right">Coût attribué</th><th style="text-align:right">Marge client</th></tr>';
-  lignes.forEach(function(l){
-    h+='<tr><td style="padding:3px;border-top:1px solid rgba(255,255,255,.05)">'+l.n+'</td><td style="border-top:1px solid rgba(255,255,255,.05)"><b>'+esc(l.trip.client)+'</b><div style="font-size:9px;color:var(--mt)">'+esc(l.trip.ref||'')+'</div></td><td style="border-top:1px solid rgba(255,255,255,.05)">'+esc(l.trip.to||l.trip.from)+(l.geo?'':' <span style="color:var(--or)" title="Adresse non géocodée — km non comptés">⚠️</span>')+'</td><td style="border-top:1px solid rgba(255,255,255,.05)">'+(l.trip.date||'—')+'</td><td style="text-align:right;border-top:1px solid rgba(255,255,255,.05)">'+(l.km||'—')+' km</td><td style="text-align:right;border-top:1px solid rgba(255,255,255,.05)">'+euro(l.coutCli)+'</td><td style="text-align:right;border-top:1px solid rgba(255,255,255,.05);font-weight:800;color:'+(l.mgCli>=0?'var(--a2)':'var(--rd)')+'">'+euro(l.mgCli)+'</td></tr>';
-  });
-  h+='<tr><td colspan="4" style="padding:3px;color:var(--mt)">↩️ Retour base</td><td style="text-align:right;color:var(--mt)">'+Math.round(retourKm*ROAD)+' km</td><td></td><td></td></tr></table>';
-  if(_tourPlan.dates.length)h+='<div style="font-size:10px;color:var(--mt);margin-top:4px">📅 Dates des demandes : '+_tourPlan.dates[0]+(_tourPlan.dates.length>1?' → '+_tourPlan.dates[_tourPlan.dates.length-1]:'')+' — vérifie leur compatibilité avant de créer.</div>';
-  h+='<div style="font-size:10px;color:var(--mt);margin-top:2px">Estimations : distances à vol d\'oiseau ×1,25, péages ≈ 60 % du parcours. Le 🧮 du transport affinera les km réels.</div>';
-  h+='<div style="display:flex;gap:8px;margin-top:12px">'
-    +'<button class="btn gn" style="flex:1;padding:12px" onclick="tourCreerTransport()">🚐 Créer le transport groupé</button>'
-    +'<button class="btn" style="padding:12px" onclick="tourCopierPlan()">📋 Copier le plan</button></div>';
+   +'<div style="background:rgba(26,122,110,.12);border-radius:8px;padding:8px"><div style="font-size:10px;color:var(--mt)">Boucle '+(orderRetour.length?'aller-retour':'aller')+' estimée</div><b style="font-size:16px;color:var(--a2)">'+kmTour+' km</b><div style="font-size:9px;color:var(--gn)">↩️ -'+ecoKm+' km vs séparés</div></div>'
+   +'<div style="background:rgba(232,101,10,.12);border-radius:8px;padding:8px"><div style="font-size:10px;color:var(--mt)">Coûts estimés</div><b style="font-size:16px;color:var(--or)">'+euro(coutTour)+'</b><div style="font-size:9px;color:var(--mt)">⛽'+euro(coutCarb)+' 🛣️'+euro(coutPeage)+'</div></div>'
+   +'<div style="background:rgba(59,130,246,.12);border-radius:8px;padding:8px"><div style="font-size:10px;color:var(--mt)">CA total</div><b style="font-size:16px;color:#60a5fa">'+euro(ca)+'</b></div>'
+   +'<div style="background:rgba(157,221,102,.12);border-radius:8px;padding:8px"><div style="font-size:10px;color:var(--mt)">Marge</div><b style="font-size:16px;color:'+(marge>=0?'var(--gn)':'var(--rd)')+'">'+euro(marge)+'</b><div style="font-size:9px;color:var(--mt)">'+(ca>0?Math.round(marge/ca*100):0)+'%'+(anchorId?' · satellites bénéf. pur':'')+'</div></div></div>';
+
+  function mkTable(rows,titre,kmSect,isRetour){
+    if(!rows.length)return'';
+    var out='<div style="font-weight:800;color:'+(isRetour?'#7ab7fc':'var(--a2)')+';margin:8px 0 3px">'+titre+(kmSect?' — '+kmSect+' km':'')+'</div>';
+    out+='<table style="width:100%;font-size:11px;border-collapse:collapse"><tr style="color:var(--mt)"><th style="text-align:left;padding:3px">#</th><th>Client</th><th>Destination</th><th>Date</th><th style="text-align:right">Étape</th><th style="text-align:right">Coût</th><th style="text-align:right">Marge</th></tr>';
+    rows.forEach(function(l,i){
+      var badge=l.isAnchor?'<span style="background:#1a3a0a;color:#9cde5c;padding:1px 5px;border-radius:4px;font-size:9px;margin-left:3px">🎯 anchor</span>':(anchorId&&!l.isAnchor?'<span style="background:#0a1f3a;color:#7ab7fc;padding:1px 5px;border-radius:4px;font-size:9px;margin-left:3px">💰 bénéf. pur</span>':'');
+      out+='<tr><td style="padding:3px;border-top:1px solid rgba(255,255,255,.05)">'+(i+1)+'</td>'
+        +'<td style="border-top:1px solid rgba(255,255,255,.05)"><b>'+esc(l.trip.client)+'</b>'+badge+'<div style="font-size:9px;color:var(--mt)">'+esc(l.trip.ref||'')+'</div></td>'
+        +'<td style="border-top:1px solid rgba(255,255,255,.05)">'+esc(l.trip.to||l.trip.from)+(l.geo===false?' <span style="color:var(--or)" title="adresse approchée">⚠️</span>':'')+'</td>'
+        +'<td style="border-top:1px solid rgba(255,255,255,.05)">'+(l.trip.date||'—')+'</td>'
+        +'<td style="text-align:right;border-top:1px solid rgba(255,255,255,.05)">'+(Math.round((l._legKm||0)*ROAD)||'—')+' km</td>'
+        +'<td style="text-align:right;border-top:1px solid rgba(255,255,255,.05)">'+(l.coutCli===0&&anchorId?'<span style="color:var(--gn)">—</span>':euro(l.coutCli))+'</td>'
+        +'<td style="text-align:right;border-top:1px solid rgba(255,255,255,.05);font-weight:800;color:'+(l.mgCli>=0?'var(--a2)':'var(--rd)')+'">'+euro(l.mgCli)+'</td></tr>';
+    });
+    return out+'</table>';
+  }
+
+  h+=mkTable(orderAller,'📍 Aller — depuis base',kmAller,false);
+  if(orderRetour.length)h+=mkTable(orderRetour,'↩️ Retour — depuis terminus',kmRetour,true);
+
+  // Contrôles interactifs
+  h+='<div style="display:flex;gap:6px;margin-top:10px;align-items:flex-end;flex-wrap:wrap">';
+  h+='<div class="fd" style="flex:2;min-width:160px"><label>🎯 Client anchor (absorbe tous les frais)</label>'
+    +'<select id="tp_anc" class="inp" style="font-size:12px"><option value="">— Répartition au prorata (défaut) —</option>';
+  allOrders.forEach(function(l){var id=l.trip.srcId||l.trip.id||l.trip.ref;h+='<option value="'+esc(id)+'"'+(anchorId===id?' selected':'')+'>'+esc(l.trip.client)+' — '+esc(l.trip.to||l.trip.from)+'</option>'});
+  h+='</select></div>'
+   +'<button class="btn" style="padding:9px 14px;font-size:12px" onclick="_tourRecalc()">🔄 Recalculer</button>'
+   +'<button class="btn" style="padding:9px 14px;font-size:12px;color:#7ab7fc;border-color:#2a5a8d" onclick="_tourOpenRetour()">↩️ + Arrêts retour</button>'
+   +'</div>';
+
+  if(_tourPlan.dates.length)h+='<div style="font-size:10px;color:var(--mt);margin-top:4px">📅 '+_tourPlan.dates[0]+(_tourPlan.dates.length>1?' → '+_tourPlan.dates[_tourPlan.dates.length-1]:'')+' — vérifie la compatibilité des dates avant de créer.</div>';
+  h+='<div style="font-size:10px;color:var(--mt);margin-top:2px">Distances à vol d\'oiseau ×1,25. Le 🧮 du transport affinera les km réels.</div>';
+  h+='<div style="display:flex;gap:8px;margin-top:12px"><button class="btn gn" style="flex:1;padding:12px" onclick="tourCreerTransport()">🚐 Créer le transport pivot</button><button class="btn" style="padding:12px" onclick="tourCopierPlan()">📋 Copier le plan</button></div>';
   h+='</div>';
+
   var el=document.getElementById('tpBody');
-  if(el){el.style.textAlign='left';el.style.padding='0';el.style.color='var(--tx)';el.innerHTML=h}
+  if(el){el.style.textAlign='left';el.style.padding='0';el.style.color='var(--tx)';el.innerHTML=h;}
 }
+
+// Recalculer avec le nouvel anchor sélectionné
+function _tourRecalc(){
+  if(!_tourPlan)return;
+  var anc=document.getElementById('tp_anc');
+  _tourBuildPlan(_tourPlan.base,_tourPlan.opts._ptsCache||[],{anchorId:anc?anc.value:'',ptsRetour:_tourPlan.opts._ptsRetourCache||[]});
+}
+
+// Ouvrir la sélection des trajets retour
+function _tourOpenRetour(){
+  if(!_tourPlan)return;
+  var deja=_tourSel.concat((_tourPlan.ordreRetour||[]).map(function(l){return l.trip.id}));
+  var dispo=(_tourData||[]).filter(function(t){return t.type!=='garde'&&(t.to||t.from)&&deja.indexOf(t.id)<0});
+  if(!dispo.length){showToast('Pas de trajet disponible — crée des devis/transports dans la direction retour.');return}
+  var h='<div style="font-size:12px"><div style="color:var(--mt);margin-bottom:6px">Clients à embarquer sur le trajet retour :</div>';
+  dispo.forEach(function(t){h+='<label style="display:flex;align-items:center;gap:6px;padding:5px 0;border-top:1px solid rgba(255,255,255,.05);cursor:pointer"><input type="checkbox" value="'+t.id+'" style="flex-shrink:0"><span><b>'+esc(t.client)+'</b> — '+esc(t.to||t.from)+(t.date?' ('+t.date+')':'')+(t.prix?' — '+euro(E(t.prix)):'')+'</span></label>'});
+  h+='<button class="btn gn" style="margin-top:10px;width:100%;padding:10px" onclick="_tourConfirmRetour()">↩️ Ajouter ces arrêts retour</button></div>';
+  oMo('↩️ Arrêts retour à ajouter',h,'');
+}
+
+// Géocoder les trajets retour et recalculer
+function _tourConfirmRetour(){
+  var checked=[].slice.call(document.querySelectorAll('#moModal input[type=checkbox]:checked')).map(function(el){return el.value});
+  if(!checked.length){cMo();return}
+  var trips=checked.map(function(id){return(_tourData||[]).find(function(t){return t.id===id})}).filter(Boolean);
+  cMo();showToast('📍 Géocodage des arrêts retour… (~1 s par adresse)');
+  var nouveauxPts=[];var chain=Promise.resolve();
+  trips.forEach(function(t){
+    chain=chain.then(function(){
+      return geocodeSmart(t.to||t.from).then(function(g){
+        nouveauxPts.push({trip:t,lat:g?g.lat:null,lon:g?g.lon:null,label:t.to||t.from});
+        return new Promise(function(r){setTimeout(r,400)});
+      }).catch(function(){nouveauxPts.push({trip:t,lat:null,lon:null,label:t.to||t.from})});
+    });
+  });
+  chain.then(function(){
+    if(!_tourPlan)return;
+    var anc=document.getElementById('tp_anc');
+    var deja=_tourPlan.opts._ptsRetourCache||[];
+    _tourBuildPlan(_tourPlan.base,_tourPlan.opts._ptsCache||[],{anchorId:anc?anc.value:'',ptsRetour:deja.concat(nouveauxPts)});
+  });
+}
+
 function tourCreerTransport(){
   var p=_tourPlan;if(!p)return;
   var d0=p.dates[0]||tdy();
-  var wps=[{address:p.base.label.replace('Base — ','')}].concat(p.ordre.map(function(l){return {address:l.trip.to||l.trip.from,label:l.trip.client}}));
-  wps.push({address:p.base.label.replace('Base — ','')});
-  var refs=p.ordre.map(function(l){return l.trip.ref+' ('+l.trip.client+')'}).join(' · ');
+  var wps=[{address:p.base.label?p.base.label.replace('Base — ',''):p.base.label||''}]
+    .concat(p.ordre.map(function(l){return{address:l.trip.to||l.trip.from,label:l.trip.client+(l.isAnchor?' [anchor]':'')}}))
+    .concat((p.ordreRetour||[]).map(function(l){return{address:l.trip.to||l.trip.from,label:l.trip.client+' [retour]'}}))
+    .concat([{address:p.base.label?p.base.label.replace('Base — ',''):p.base.label||''}]);
+  var allL=p.ordre.concat(p.ordreRetour||[]);
+  var anchorClient=(allL.find(function(l){return l.isAnchor})||{}).trip;
+  var refs=allL.map(function(l){return l.trip.ref+' ('+l.trip.client+(l.isAnchor?' 🎯':'')+')'}).join(' · ');
+  var notes='🚐 TOURNÉE PIVOT — '+allL.length+' clients : '+refs
+    +'\n📍 Aller : '+p.ordre.map(function(l,i){return (i+1)+'. '+(l.trip.to||l.trip.from)}).join(' → ')
+    +(p.ordreRetour&&p.ordreRetour.length?'\n↩️ Retour : '+p.ordreRetour.map(function(l,i){return (i+1)+'. '+(l.trip.to||l.trip.from)}).join(' → '):'')
+    +' → retour base.'
+    +(anchorClient?'\n🎯 Anchor : '+anchorClient.client+' (couvre les frais '+euro(p.coutTour)+'). Satellites = bénéfice pur.':'')
+    +'\nCoûts '+euro(p.coutTour)+' · CA '+euro(p.ca)+' · Marge '+euro(p.marge)+'.';
   var t={id:uid('t'),ref:'TR-'+(act(db.transports).length+1).toString().padStart(4,'0'),
     clientId:p.ordre[0].trip.clientId,type:'groupe',date:d0,heure:'',
-    waypoints:wps,participants:p.ordre.length,
-    kmManual:p.kmTour,kmAuto:p.kmTour,tolls:p.coutPeage,price:p.ca,
-    notes:'🚐 TOURNÉE GROUPÉE — '+p.ordre.length+' clients : '+refs+'\nOrdre : '+p.ordre.map(function(l,i){return (i+1)+'. '+(l.trip.to||l.trip.from)}).join(' → ')+' → retour base.\nCoûts estimés '+euro(p.coutTour)+' (⛽ '+euro(p.coutCarb)+' + 🛣️ '+euro(p.coutPeage)+') — marge estimée '+euro(p.marge)+'.',
-    groupeRefs:p.ordre.map(function(l){return {srcType:l.trip.srcType,srcId:l.trip.srcId,ref:l.trip.ref,clientId:l.trip.clientId,coutCli:l.coutCli}})};
+    waypoints:wps,participants:allL.length,
+    kmManual:p.kmTour,kmAuto:p.kmTour,tolls:p.coutPeage,price:p.ca,notes:notes,
+    groupeRefs:allL.map(function(l){return{srcType:l.trip.srcType,srcId:l.trip.srcId,ref:l.trip.ref,clientId:l.trip.clientId,coutCli:l.coutCli,isAnchor:l.isAnchor||false}})};
   stamp(t);db.transports.push(t);
   if(!db.tournees)db.tournees=[];
-  db.tournees.push({id:Date.now().toString(36),date:d0,name:'Tournée '+d0,stops:_tourSel.slice(),totalKm:p.kmTour,transportId:t.id});
-  sav();lH('transport','🚐 Tournée groupée créée : '+t.ref+' — '+p.ordre.length+' clients, '+p.kmTour+' km, CA '+euro(p.ca));
+  db.tournees.push({id:Date.now().toString(36),date:d0,name:'Tournée pivot '+d0,stops:_tourSel.slice(),totalKm:p.kmTour,transportId:t.id,hasRetour:(p.ordreRetour||[]).length>0});
+  sav();lH('transport','🚐 Tournée pivot créée : '+t.ref+' — '+allL.length+' clients, '+p.kmTour+' km, CA '+euro(p.ca));
   cMo();_tourSel=[];try{renderTourAll()}catch(e){}
-  showToast('🚐 Transport groupé '+t.ref+' créé — '+p.ordre.length+' clients. Chaque devis se facture normalement (💶).');
-  setTimeout(function(){if(confirm('📢 Publier les places restantes de cette tournée sur la plateforme (co-voiturage animaux) ?'))publierPlaces(t.id)},600);
+  showToast('🚐 Transport pivot '+t.ref+' créé — '+allL.length+' clients. Chaque devis se facture normalement (💶).');
+  setTimeout(function(){if(confirm('📢 Publier les places restantes de cette tournée sur la plateforme ?'))publierPlaces(t.id)},600);
 }
+
 function tourCopierPlan(){
   var p=_tourPlan;if(!p)return;
-  var txt='🚐 TOURNÉE GROUPÉE — '+(p.dates[0]||tdy())+'\n'
-    +'Distance : '+p.kmTour+' km (économie '+p.ecoKm+' km) · Coûts '+euro(p.coutTour)+' · CA '+euro(p.ca)+' · Marge '+euro(p.marge)+'\n\n'
-    +p.ordre.map(function(l,i){return (i+1)+'. '+l.trip.client+' — '+(l.trip.to||l.trip.from)+' ('+(l.trip.date||'date ?')+') — '+euro(E(l.trip.prix))+' — coût attribué '+euro(l.coutCli)+' — marge '+euro(l.mgCli)}).join('\n')
-    +'\n↩️ Retour base.';
-  navigator.clipboard.writeText(txt).then(function(){showToast('📋 Plan de tournée copié')}).catch(function(){});
+  var allL=p.ordre.concat(p.ordreRetour||[]);
+  var txt='🚐 TOURNÉE PIVOT — '+(p.dates[0]||tdy())+'\n'
+    +'Boucle : '+p.kmTour+' km (économie '+p.ecoKm+' km vs séparés) · Coûts '+euro(p.coutTour)+' · CA '+euro(p.ca)+' · Marge '+euro(p.marge)+'\n\n'
+    +(p.opts&&p.opts.anchorId?'🎯 Modèle anchor : les frais ('+euro(p.coutTour)+') sont absorbés par l\'anchor. Les satellites génèrent du bénéfice quasi pur.\n\n':'')
+    +'📍 ALLER :\n'+p.ordre.map(function(l,i){return (i+1)+'. '+l.trip.client+(l.isAnchor?' 🎯 ANCHOR':p.opts&&p.opts.anchorId?' 💰 satellite':'')+' — '+(l.trip.to||l.trip.from)+' ('+(l.trip.date||'?')+') — '+euro(E(l.trip.prix))+' — '+(l.isAnchor?'absorbe les frais '+euro(l.coutCli)+' — marge '+euro(l.mgCli):l.coutCli===0&&p.opts&&p.opts.anchorId?'BÉNÉFICE PUR ✅ '+euro(l.mgCli):'coût '+euro(l.coutCli)+' — marge '+euro(l.mgCli))}).join('\n');
+  if(p.ordreRetour&&p.ordreRetour.length)txt+='\n\n↩️ RETOUR :\n'+p.ordreRetour.map(function(l,i){return (i+1)+'. '+l.trip.client+(p.opts&&p.opts.anchorId?' 💰 satellite — BÉNÉFICE PUR ✅ '+euro(l.mgCli):'') +' — '+(l.trip.to||l.trip.from)+' ('+(l.trip.date||'?')+') — '+euro(E(l.trip.prix))}).join('\n');
+  txt+='\n\n↩️ Retour base.';
+  navigator.clipboard.writeText(txt).then(function(){showToast('📋 Plan pivot copié ✅')}).catch(function(){});
 }
+
 function tourSave(){
   if(_tourSel.length<2){showToast('⚠️ Ajoutez au moins 2 trajets');return}
   var tourTrips=_tourSel.map(function(id){return _tourData.find(function(t){return t.id===id})}).filter(Boolean);
