@@ -610,7 +610,7 @@ body.nuit .card{border-color:#0a1520}
 </div>
 </aside>
 <main class="main">
-<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.56</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
+<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.57</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
 <div class="cnt">
 
 <!-- DASHBOARD -->
@@ -863,7 +863,7 @@ body.nuit .card{border-color:#0a1520}
 <select id="plVw" onchange="rPlan()" style="background:#080f1a;border:1px solid var(--ln);color:var(--tx);border-radius:8px;padding:5px 8px;font-size:12px"><option value="sem">Semaine</option><option value="mois">Mois</option><option value="list">Liste</option></select>
 <select id="plFi" onchange="rPlan()" style="background:#080f1a;border:1px solid var(--ln);color:var(--tx);border-radius:8px;padding:5px 8px;font-size:12px"><option value="all">Tout</option><option value="tr">Transports</option><option value="grd">Gardes</option><option value="dev">Devis</option><option value="gc">Google Agenda</option></select>
 </div></div><div class="bd" id="plCnt" style="min-height:280px"></div></div>
-<div class="card" style="margin-top:14px"><div class="hd"><h3>🔍 Recherche de trajet compatible</h3><span style="font-size:11px;color:var(--mt)">Un client demande une ville à une date ? Vérifie en 2 secondes.</span></div><div class="bd"><div class="row" style="align-items:flex-end"><div class="c5 fd"><label>📍 Ville / région demandée</label><input id="plSrchVille" placeholder="Ex : Bordeaux, 33, Gironde…" oninput="plSearch()" style="font-size:13px"></div><div class="c3 fd"><label>📅 Date (optionnel)</label><input id="plSrchDate" type="date" onchange="plSearch()" style="font-size:13px"></div><div class="c2 fd"><label>Rayon</label><select id="plSrchRayon" onchange="plSearch()" style="background:#080f1a;border:1px solid var(--ln);color:var(--tx);border-radius:10px;padding:10px;font:inherit;font-size:12px;width:100%"><option value="50">50 km</option><option value="100" selected>100 km</option><option value="200">200 km</option><option value="500">500 km</option></select></div><div class="c2"><button class="btn" onclick="plSrchClear()" style="padding:10px;font-size:12px">✖ Effacer</button></div></div><div id="plSrchRes" style="margin-top:8px;font-size:12px;color:var(--mt)">Saisis une ville pour voir les trajets compatibles.</div></div></div><div class="card" style="margin-top:14px"><div class="hd"><h3>📊 Résumé</h3></div><div class="bd" id="plSum"></div></div>
+<div class="card" style="margin-top:14px"><div class="hd"><h3>🔍 Recherche de trajet compatible</h3><span style="font-size:11px;color:var(--mt)">Un client demande une ville à une date ? Vérifie en 2 secondes.</span></div><div class="bd"><div class="row" style="align-items:flex-end"><div class="c5 fd"><label>📍 Ville / région demandée</label><input id="plSrchVille" placeholder="Ex : Bordeaux, 33, Gironde…" oninput="plSearch()" style="font-size:13px"></div><div class="c3 fd"><label>📅 Date (optionnel)</label><input id="plSrchDate" type="date" onchange="plSearch()" style="font-size:13px"></div><div class="c2 fd"><label>Rayon</label><select id="plSrchRayon" onchange="plSearch()" style="background:#080f1a;border:1px solid var(--ln);color:var(--tx);border-radius:10px;padding:10px;font:inherit;font-size:12px;width:100%"><option value="50">50 km</option><option value="100" selected>100 km</option><option value="200">200 km</option><option value="500">500 km</option></select></div><div class="c2"><button class="btn" onclick="plSrchClear()" style="padding:10px;font-size:12px">✖ Effacer</button></div></div><div id="plSrchRes" style="margin-top:8px;font-size:12px;color:var(--mt)">Saisis une ville pour voir les trajets compatibles.</div><div id="plSrchMap" style="height:260px;border-radius:10px;margin-top:8px;display:none;border:1px solid var(--ln)"></div></div></div><div class="card" style="margin-top:14px"><div class="hd"><h3>📊 Résumé</h3></div><div class="bd" id="plSum"></div></div>
 </section>
 
 <!-- FEUILLE DE ROUTE -->
@@ -12616,8 +12616,40 @@ function plSearch(){
   if(_plGeoCache[cacheKey]!==undefined){doGeoSearch(_plGeoCache[cacheKey]);return}
   geocodeSmart(ville).then(function(g){_plGeoCache[cacheKey]=g;doGeoSearch(g)}).catch(function(){doGeoSearch(null)});
 }
+function _initPlSrchMap(){
+  var el=document.getElementById('plSrchMap');if(!el)return;
+  if(el._leaflet_id)return; // déjà init
+  el.style.display='block';
+  var m=L.map('plSrchMap').setView([46.8,2.8],5);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18,attribution:'© OSM'}).addTo(m);
+  el._map=m; el._lg=L.layerGroup().addTo(m);
+}
+function _plSrchMapRender(coord,results){
+  var el=document.getElementById('plSrchMap');if(!el||!el._map)return;
+  var m=el._map; el._lg.clearLayers();
+  // Marqueur ville recherchée
+  if(coord&&coord.lat){L.circleMarker([coord.lat,coord.lon||coord.lng],{radius:8,color:'#f59e42',fillColor:'#f59e42',fillOpacity:0.7}).bindPopup('📍 '+coord.label||'Ville recherchée').addTo(el._lg)}
+  var bds=[];
+  results.forEach(function(item){
+    var wps=item.obj.waypoints||[];
+    var prev=null;
+    wps.forEach(function(w){
+      var g=typeof geocodeFast==='function'?null:null;
+      var d=estimateCoordsCity(w.address||w.label||'');
+      if(d){
+        var mk=L.circleMarker([d.lat,d.lng],{radius:5,color:'#22c55e',fillOpacity:0.8}).bindPopup(esc(w.address||w.label||'')).addTo(el._lg);
+        bds.push([d.lat,d.lng]);
+        if(prev)L.polyline([prev,[d.lat,d.lng]],{color:'#22c55e',weight:2,opacity:0.5}).addTo(el._lg);
+        prev=[d.lat,d.lng];
+      }
+    });
+  });
+  if(bds.length)setTimeout(function(){try{m.fitBounds(bds,{padding:[20,20]})}catch(e){}},200);
+}
 function renderSearch(results,ville,date,rayon,el){
   results.sort(function(a,b){return (a.km||0)-(b.km||0)});
+  // Afficher sur la carte
+  try{_initPlSrchMap();}catch(e){}
   if(!results.length){
     el.innerHTML='<div style="color:var(--or);padding:8px">❌ Aucun trajet dans un rayon de '+rayon+' km autour de <b>'+esc(ville)+'</b>'+(date?' le '+date:'')+'.<br>'
       +'<span style="color:var(--mt)">Crée un trajet avec ⚡ Trajet express dans 🚗 Préparer.</span></div>';
@@ -12646,6 +12678,7 @@ function renderSearch(results,ville,date,rayon,el){
   });
   h+='</table>';
   el.innerHTML=h;
+  try{_plSrchMapRender(null,results)}catch(e){}
 }
 function plSrchClear(){
   var v=document.getElementById('plSrchVille');if(v)v.value='';
@@ -29309,6 +29342,72 @@ function estimateCoordsCity(city){
     'tours': {lat: 47.3941, lng: 0.6848}, 'rouen': {lat: 49.4432, lng: 1.0993}, 'metz': {lat: 49.1193, lng: 6.1757},
     'nancy': {lat: 48.6921, lng: 6.1844}, 'soissons': {lat: 49.3817, lng: 3.3236}, 'laon': {lat: 49.5639, lng: 3.6200},
     'neuilly-saint-front': {lat: 49.1556, lng: 3.2533}, 'chateau-thierry': {lat: 49.0469, lng: 3.4031},
+    'versailles': {lat: 48.8014, lng: 2.1301}, 'chartres': {lat: 48.4469, lng: 1.4894},
+    'orleans': {lat: 47.9029, lng: 1.9039}, 'tours': {lat: 47.3941, lng: 0.6848},
+    'le mans': {lat: 48.0061, lng: 0.1996}, 'angers': {lat: 47.4784, lng: -0.5632},
+    'nantes': {lat: 47.2184, lng: -1.5536}, 'rennes': {lat: 48.1173, lng: -1.6778},
+    'brest': {lat: 48.3897, lng: -4.4861}, 'quimper': {lat: 47.9961, lng: -4.0999},
+    'saint-nazaire': {lat: 47.2736, lng: -2.2139}, 'laval': {lat: 48.0714, lng: -0.7715},
+    'caen': {lat: 49.1829, lng: -0.3707}, 'rouen': {lat: 49.4432, lng: 1.0993},
+    'le havre': {lat: 49.4938, lng: 0.1077}, 'cherbourg': {lat: 49.6333, lng: -1.6167},
+    'amiens': {lat: 49.8942, lng: 2.2957}, 'beauvais': {lat: 49.4308, lng: 2.0808},
+    'calais': {lat: 50.9513, lng: 1.8587}, 'dunkerque': {lat: 51.0343, lng: 2.3767},
+    'valenciennes': {lat: 50.3569, lng: 3.5236}, 'arras': {lat: 50.2919, lng: 2.7784},
+    'lille': {lat: 50.6292, lng: 3.0573}, 'metz': {lat: 49.1193, lng: 6.1757},
+    'nancy': {lat: 48.6921, lng: 6.1844}, 'strasbourg': {lat: 48.5734, lng: 7.7521},
+    'mulhouse': {lat: 47.7508, lng: 7.3359}, 'colmar': {lat: 48.0793, lng: 7.3585},
+    'belfort': {lat: 47.6390, lng: 6.8631}, 'besancon': {lat: 47.2378, lng: 6.0241},
+    'dijon': {lat: 47.3220, lng: 5.0415}, 'chalon': {lat: 46.7805, lng: 4.8537},
+    'macon': {lat: 46.3069, lng: 4.8287}, 'bourg': {lat: 46.2059, lng: 5.2267},
+    'grenoble': {lat: 45.1885, lng: 5.7245}, 'chambery': {lat: 45.5646, lng: 5.9178},
+    'annecy': {lat: 45.8992, lng: 6.1294}, 'gap': {lat: 44.5594, lng: 6.0796},
+    'valence': {lat: 44.9334, lng: 4.8924}, 'avignon': {lat: 43.9493, lng: 4.8055},
+    'nimes': {lat: 43.8367, lng: 4.3601}, 'montpellier': {lat: 43.6108, lng: 3.8767},
+    'beziers': {lat: 43.3442, lng: 3.2140}, 'perpignan': {lat: 42.6887, lng: 2.8948},
+    'carcassonne': {lat: 43.2130, lng: 2.3491}, 'narbonne': {lat: 43.1839, lng: 3.0038},
+    'pau': {lat: 43.2951, lng: -0.3708}, 'tarbes': {lat: 43.2328, lng: 0.0781},
+    'bayonne': {lat: 43.4929, lng: -1.4748}, 'biarritz': {lat: 43.4832, lng: -1.5586},
+    'mont-de-marsan': {lat: 43.8902, lng: -0.5006}, 'agen': {lat: 44.2025, lng: 0.6258},
+    'perigueux': {lat: 45.1838, lng: 0.7211}, 'cahors': {lat: 44.4479, lng: 1.4415},
+    'brive': {lat: 45.1597, lng: 1.5305}, 'limoges': {lat: 45.8315, lng: 1.2578},
+    'clermont': {lat: 45.7772, lng: 3.0870}, 'vichy': {lat: 46.1290, lng: 3.4272},
+    'saint-etienne': {lat: 45.4347, lng: 4.3922}, 'roanne': {lat: 46.0347, lng: 4.0678},
+    'auxerre': {lat: 47.7981, lng: 3.5672}, 'troyes': {lat: 48.2973, lng: 4.0744},
+    'reims': {lat: 49.2583, lng: 4.0317}, 'chalons': {lat: 48.9540, lng: 4.3655},
+    'chaumont': {lat: 48.1119, lng: 5.1371}, 'epinal': {lat: 48.1744, lng: 6.4509},
+    'verdun': {lat: 49.1599, lng: 5.3836}, 'bar-le-duc': {lat: 48.7723, lng: 5.1623},
+    'thionville': {lat: 49.3582, lng: 6.1682}, 'sarrebourg': {lat: 48.7353, lng: 7.0494},
+    'vitry': {lat: 48.7370, lng: 4.5786},
+    'monaco': {lat: 43.7333, lng: 7.4167}, 'menton': {lat: 43.7760, lng: 7.5020},
+    'grasse': {lat: 43.6609, lng: 6.9232}, 'draguignan': {lat: 43.5392, lng: 6.4647},
+    'hyeres': {lat: 43.1196, lng: 6.1285}, 'la seyne': {lat: 43.1044, lng: 5.8800},
+    'aubagne': {lat: 43.2958, lng: 5.5676}, 'aix': {lat: 43.5297, lng: 5.4474},
+    'aix-en-provence': {lat: 43.5297, lng: 5.4474}, 'martigues': {lat: 43.4056, lng: 5.0482},
+    'arles': {lat: 43.6767, lng: 4.6278}, 'narbonne': {lat: 43.1839, lng: 3.0038},
+    'sedan': {lat: 49.7019, lng: 4.9383}, 'charleville': {lat: 49.7694, lng: 4.7169},
+    'bruxelles': {lat: 50.8503, lng: 4.3517}, 'bruges': {lat: 51.2093, lng: 3.2247},
+    'anvers': {lat: 51.2194, lng: 4.4025}, 'gand': {lat: 51.0500, lng: 3.7167},
+    'liege': {lat: 50.6326, lng: 5.5797}, 'namur': {lat: 50.4669, lng: 4.8674},
+    'amsterdam': {lat: 52.3676, lng: 4.9041}, 'rotterdam': {lat: 51.9244, lng: 4.4777},
+    'la haye': {lat: 52.0705, lng: 4.3007}, 'utrecht': {lat: 52.0907, lng: 5.1214},
+    'berlin': {lat: 52.5200, lng: 13.4050}, 'hambourg': {lat: 53.5753, lng: 10.0153},
+    'francfort': {lat: 50.1109, lng: 8.6821}, 'munich': {lat: 48.1351, lng: 11.5820},
+    'cologne': {lat: 50.9333, lng: 6.9500}, 'dusseldorf': {lat: 51.2217, lng: 6.7762},
+    'madrid': {lat: 40.4168, lng: -3.7038}, 'barcelone': {lat: 41.3851, lng: 2.1734},
+    'bilbao': {lat: 43.2627, lng: -2.9253}, 'seville': {lat: 37.3886, lng: -5.9823},
+    'rome': {lat: 41.9028, lng: 12.4964}, 'milan': {lat: 45.4642, lng: 9.1900},
+    'turin': {lat: 45.0703, lng: 7.6869}, 'venise': {lat: 45.4408, lng: 12.3155},
+    'florence': {lat: 43.7696, lng: 11.2558}, 'naples': {lat: 40.8518, lng: 14.2681},
+    'genes': {lat: 44.4056, lng: 8.9463}, 'bologne': {lat: 44.4949, lng: 11.3426},
+    'verone': {lat: 45.4384, lng: 10.9916}, 'padoue': {lat: 45.4064, lng: 11.8768},
+    'lausanne': {lat: 46.5196, lng: 6.6323}, 'berne': {lat: 46.9480, lng: 7.4474},
+    'bale': {lat: 47.5596, lng: 7.5886}, 'interlaken': {lat: 46.6863, lng: 7.8632},
+    'vienne': {lat: 48.2082, lng: 16.3738}, 'prague': {lat: 50.0755, lng: 14.4378},
+    'varsovie': {lat: 52.2297, lng: 21.0122}, 'budapest': {lat: 47.4979, lng: 19.0402},
+    'lisbonne': {lat: 38.7223, lng: -9.1393}, 'porto': {lat: 41.1579, lng: -8.6291},
+    'irlande': {lat: 53.3498, lng: -6.2603}, 'dublin': {lat: 53.3498, lng: -6.2603},
+    'oslo': {lat: 59.9139, lng: 10.7522}, 'stockholm': {lat: 59.3293, lng: 18.0686},
+    'copenhague': {lat: 55.6761, lng: 12.5683},
     'bruxelles': {lat: 50.8503, lng: 4.3517}, 'amsterdam': {lat: 52.3676, lng: 4.9041}, 'londres': {lat: 51.5074, lng: -0.1278},
     'berlin': {lat: 52.5200, lng: 13.4050}, 'madrid': {lat: 40.4168, lng: -3.7038}, 'barcelone': {lat: 41.3851, lng: 2.1734},
     'rome': {lat: 41.9028, lng: 12.4964}, 'milan': {lat: 45.4642, lng: 9.1900}, 'geneve': {lat: 46.2044, lng: 6.1432},
