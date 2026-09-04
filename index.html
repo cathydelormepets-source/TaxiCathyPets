@@ -610,7 +610,7 @@ body.nuit .card{border-color:#0a1520}
 </div>
 </aside>
 <main class="main">
-<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.54</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
+<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.55</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
 <div class="cnt">
 
 <!-- DASHBOARD -->
@@ -13524,9 +13524,23 @@ function toggleNoTva(){
 
 // MAP
 function initMap(){if(typeof L==='undefined')return;if(!map){map=L.map('eMap').setView([48.85,6.5],4);L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18,attribution:'© OSM'}).addTo(map);mlg=L.layerGroup().addTo(map)}rfMap()}
+// V80.55 : geocodeFast — dictionnaire instantané puis geocodeSmart (évite le rate-limit Nominatim)
+var _geoFastCache={};
+function geocodeFast(q){
+  q=String(q||'').trim();if(!q)return Promise.resolve(null);
+  if(_geoFastCache[q])return Promise.resolve(_geoFastCache[q]);
+  // 1. Dictionnaire local (instantané, pas de réseau)
+  var d=estimateCoordsCity(q);
+  if(d){_geoFastCache[q]={lat:d.lat,lon:d.lng};return Promise.resolve({lat:d.lat,lon:d.lng})}
+  // 2. geocodeSmart (BAN + Nominatim avec cache)
+  return geocodeSmart(q).then(function(g){
+    if(g){_geoFastCache[q]={lat:g.lat,lon:g.lon||g.lng};return _geoFastCache[q]}
+    return null;
+  }).catch(function(){return null});
+}
 function rfMap(){if(!map)return initMap();mlg.clearLayers();var bds=[];
   var ms=act(db.transports).map(function(t){var l=tLegs(t);return{from:l[0]||'',to:l[l.length-1]||'',ref:t.ref,type:t.type}});
-  ms.forEach(function(m){if(!m.from||!m.to)return;geocode(m.from).then(function(a){if(!a)return;geocode(m.to).then(function(b){if(!b)return;var col=m.type==='animal'?'#22c57a':'#3b82f6';L.marker([a.lat,a.lon]).addTo(mlg);L.marker([b.lat,b.lon]).addTo(mlg);L.polyline([[a.lat,a.lon],[b.lat,b.lon]],{color:col,weight:4}).addTo(mlg);bds.push([a.lat,a.lon],[b.lat,b.lon]);if(bds.length>=2)map.fitBounds(bds,{padding:[30,30]})})})});
+  ms.forEach(function(m){if(!m.from||!m.to)return;geocodeFast(m.from).then(function(a){if(!a)return;geocodeFast(m.to).then(function(b){if(!b)return;var col=m.type==='animal'?'#22c57a':'#3b82f6';L.marker([a.lat,a.lon]).addTo(mlg);L.marker([b.lat,b.lon]).addTo(mlg);L.polyline([[a.lat,a.lon],[b.lat,b.lon]],{color:col,weight:4}).addTo(mlg);bds.push([a.lat,a.lon],[b.lat,b.lon]);if(bds.length>=2)map.fitBounds(bds,{padding:[30,30]})})})});
 }
 function ftAll(){if(map&&mlg.getLayers().length)map.fitBounds(L.featureGroup(mlg.getLayers()).getBounds(),{padding:[30,30]})}
 
