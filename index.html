@@ -610,7 +610,7 @@ body.nuit .card{border-color:#0a1520}
 </div>
 </aside>
 <main class="main">
-<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.47</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
+<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.49</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
 <div class="cnt">
 
 <!-- DASHBOARD -->
@@ -7828,22 +7828,28 @@ function publierPlaces(tId){
   oMo('📢 Places libres — '+t.ref,h,'');
 }
 // V80.46 : créer automatiquement le trajet retour (inversion départ ↔ arrivée)
-// V80.47 : trajet express — minimum de champs pour publier sur la plateforme en 10 secondes
+// V80.48 : trajet express avec arrêts intermédiaires (multi-stops)
+var _trxStops=[]; // [{ville, prix}]
 function trExpress(){
+  _trxStops=[];
   var ist='width:100%;background:#080f1a;border:1px solid var(--ln);color:var(--tx);border-radius:10px;padding:10px;font:inherit;font-size:13px';
-  var h='<div style="font-size:12px;color:var(--mt);margin-bottom:10px">Crée un trajet rapide pour le publier sur la plateforme. Aucun client requis.</div>'
+  var h='<div style="font-size:12px;color:var(--mt);margin-bottom:10px">Crée un trajet rapide pour la plateforme. Aucun client requis.</div>'
     +'<div class="row">'
-    +'<div class="c6 fd"><label>📍 Ville de départ *</label><input id="trx_dep" placeholder="Ex : Paris, Neuilly-Saint-Front..." style="'+ist+'"></div>'
-    +'<div class="c6 fd"><label>🏁 Ville d\'arrivée *</label><input id="trx_arr" placeholder="Ex : Marseille, Lyon..." style="'+ist+'"></div>'
+    +'<div class="c6 fd"><label>📍 Ville de départ *</label><input id="trx_dep" placeholder="Ex : Paris, Neuilly-Saint-Front…" style="'+ist+'"></div>'
+    +'<div class="c6 fd"><label>🏁 Ville d\'arrivée *</label><input id="trx_arr" placeholder="Ex : Marseille, Lyon…" style="'+ist+'"></div>'
+    +'</div>'
+    +'<div id="trx_stops_zone" style="margin:4px 0"></div>'
+    +'<button class="btn sm" onclick="trxAddStop()" style="font-size:11px;margin-bottom:10px">➕ Ajouter un arrêt intermédiaire</button>'
+    +'<div class="row">'
     +'<div class="c4 fd"><label>📅 Date *</label><input id="trx_dt" type="date" value="'+tdy()+'" style="'+ist+'"></div>'
     +'<div class="c4 fd"><label>⏰ Heure départ</label><input id="trx_hr" type="time" placeholder="08:00" style="'+ist+'"></div>'
     +'<div class="c4 fd"><label>🐾 Places dispo</label><input id="trx_pl" type="number" min="1" max="8" value="2" style="'+ist+';font-size:16px;font-weight:800"></div>'
     +'</div>'
     +'<div class="row">'
-    +'<div class="c6 fd"><label>💶 Prix / animal € <span style="font-size:10px;color:var(--mt)">(optionnel — sinon « sur demande »)</span></label><input id="trx_px" type="number" step="5" placeholder="Ex : 150" style="'+ist+'"></div>'
+    +'<div class="c6 fd"><label>💶 Prix arrivée finale €/animal <span style="font-size:10px;color:var(--mt)">(optionnel)</span></label><input id="trx_px" type="number" step="5" placeholder="Ex : 180" style="'+ist+'"></div>'
     +'<div class="c6 fd"><label>📝 Note publique <span style="font-size:10px;color:var(--mt)">(optionnel)</span></label><input id="trx_no" placeholder="Ex : cages fournies, départ matinal" style="'+ist+'"></div>'
     +'</div>'
-    +'<div class="nt" style="font-size:10px;margin-top:6px">Le trajet sera créé dans ta liste et publié immédiatement sur la plateforme. Tu pourras le modifier ensuite.</div>'
+    +'<div class="nt" style="font-size:10px;margin-top:4px">Les prix des arrêts intermédiaires peuvent être fixés par arrêt — les clients déposés à Lyon ne paient pas le prix Marseille.</div>'
     +'<div style="display:flex;gap:8px;margin-top:12px">'
     +'<button class="btn gn" style="flex:1;padding:12px;font-weight:700" onclick="trExpressSave()">⚡ Créer et publier</button>'
     +'<button class="btn" style="padding:12px" onclick="cMo()">Annuler</button>'
@@ -7851,32 +7857,52 @@ function trExpress(){
   oMo('⚡ Trajet express',h,'');
   setTimeout(function(){var e=document.getElementById('trx_dep');if(e)e.focus()},200);
 }
+function trxAddStop(){
+  var ist='background:#080f1a;border:1px solid var(--ln);color:var(--tx);border-radius:8px;padding:8px;font:inherit;font-size:12px';
+  var idx=_trxStops.length; _trxStops.push({ville:'',prix:''});
+  var z=document.getElementById('trx_stops_zone');if(!z)return;
+  var row=document.createElement('div');row.id='trxs_'+idx;
+  row.style='display:grid;grid-template-columns:3fr 1.5fr auto;gap:6px;align-items:center;margin-bottom:6px';
+  row.innerHTML='<input placeholder="📍 Ville d\'arrêt (ex : Lyon)" style="'+ist+';width:100%" onchange="_trxSt('+idx+',\'ville\',this.value)">'
+    +'<input type="number" step="5" placeholder="€ / animal" style="'+ist+';width:100%;text-align:right" onchange="_trxSt('+idx+',\'prix\',this.value)">'
+    +'<button class="btn sm rd" onclick="_trxDelSt('+idx+')" style="padding:5px 8px">🗑️</button>';
+  z.appendChild(row);
+}
+function _trxSt(i,k,v){if(_trxStops[i]!==undefined)_trxStops[i][k]=v}
+function _trxDelSt(i){_trxStops[i]=null;var el=document.getElementById('trxs_'+i);if(el)el.remove()}
 function trExpressSave(){
   var dep=(V('trx_dep')||'').trim();var arr=(V('trx_arr')||'').trim();var dt=V('trx_dt')||tdy();
   if(!dep||!arr){alert('Départ et arrivée sont obligatoires.');return}
+  var stops=_trxStops.filter(function(x){return x&&x.ville&&x.ville.trim()});
   var pl=Math.max(1,Math.round(E(V('trx_pl'))||2));
-  var px=E(V('trx_px'))||null;
+  var pxFinal=E(V('trx_px'))||null;
   var no=(V('trx_no')||'').trim();
+  // Waypoints : départ + arrêts + arrivée
+  var wps=[{address:dep,label:'Départ'}];
+  stops.forEach(function(st){wps.push({address:st.ville.trim(),label:'Arrêt'})});
+  wps.push({address:arr,label:'Destination'});
+  // Grille de prix par étape
+  var prixEtapes={};
+  stops.forEach(function(st){if(E(st.prix)>0)prixEtapes[st.ville.trim()]=E(st.prix)});
+  if(pxFinal)prixEtapes[arr]=pxFinal;
+  // Axe affiché
+  var axe=dep+(stops.length?' → '+stops.map(function(st){return st.ville}).join(' → '):'')+(arr?' → '+arr:'');
   var t={id:uid('t'),ref:'TR-'+(act(db.transports).length+1).toString().padStart(4,'0'),
     clientId:'',type:'simple',date:dt,heure:V('trx_hr')||'',
-    waypoints:[{address:dep,label:'Départ'},{address:arr,label:'Destination'}],
-    participants:pl,kmManual:0,kmAuto:0,tolls:0,price:0,
-    tourZone:dep+' → '+arr,placesDispo:pl,prixPlace:px||null,
-    notePublique:no,notes:'⚡ Trajet express — publié sur la plateforme.'};
+    waypoints:wps,participants:pl,kmManual:0,kmAuto:0,tolls:0,price:0,
+    tourZone:axe,placesDispo:pl,prixPlace:pxFinal||null,prixEtapes:prixEtapes,
+    notePublique:no,notes:'⚡ Trajet express'+(stops.length?' multi-stops':'')+' — publié sur la plateforme.'+(stops.length?'\nArrêts : '+stops.map(function(st){return st.ville+(E(st.prix)?' ('+euro(E(st.prix))+'/animal)':'')}).join(', '):'')};
   stamp(t);db.transports.push(t);
-  // Publication immédiate
-  t.prixEtapes={};if(px)t.prixEtapes[arr]=px;
-  sav();lH('transport','⚡ Trajet express créé : '+t.ref+' — '+dep+' → '+arr+' ('+pl+' place(s))');
+  sav();lH('transport','⚡ Trajet express créé : '+t.ref+' — '+axe+' ('+pl+' place(s))');
   try{rTrp()}catch(e){}
-  cMo();
+  cMo();_trxStops=[];
   showToast('⚡ Trajet '+t.ref+' créé — synchronisation plateforme…');
   if(typeof syncSupabase==='function'){
     Promise.resolve(syncSupabase(true))
-      .then(function(){showToast('✅ '+t.ref+' publié sur la plateforme ! ('+dep+' → '+arr+' — '+pl+' place(s)'+( px?' — '+euro(px)+'/animal':'')+')')})
+      .then(function(){showToast('✅ '+t.ref+' publié ! '+axe+' — '+pl+' place(s)')})
       .catch(function(){showToast('⚠️ Créé mais synchro à relancer (onglet 🌐 Plateforme)')});
   }
-  // Proposer le retour
-  setTimeout(function(){if(confirm('↩️ Créer aussi le trajet retour '+arr+' → '+dep+' pour la plateforme ?'))creerTrajetRetour(t.id)},800);
+  setTimeout(function(){if(confirm('↩️ Créer aussi le trajet retour ('+arr+' → '+dep+') ?'))creerTrajetRetour(t.id)},800);
 }
 function creerTrajetRetour(tId){
   var t=db.transports.find(function(x){return x.id===tId});if(!t)return;
@@ -8249,6 +8275,10 @@ function addDev(){
     return;
   }
   db.settings.nextQuote++;stamp(q);db.devis.push(q);lH('devis','Devis: '+q.ref+' ('+wps.length+' étapes, '+devLignes.length+' article(s))');sav();
+  // V80.49 : si le devis a un trajet → synchro automatique vers la plateforme (sans prix)
+  if(wps.length>=2&&typeof syncSupabase==='function'){
+    setTimeout(function(){Promise.resolve(syncSupabase(true)).then(function(){showToast('🗺️ Trajet du devis '+q.ref+' visible sur la plateforme (sans tarif)')}).catch(function(){})},500);
+  }
   var dz=$('q_aniZone');if(dz)dz.innerHTML='';
   var da=$('q_accZone');if(da)da.innerHTML='';
   var db2=$('q_beZone');if(db2)db2.innerHTML='';
