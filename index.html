@@ -610,7 +610,7 @@ body.nuit .card{border-color:#0a1520}
 </div>
 </aside>
 <main class="main">
-<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.49</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
+<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.51</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
 <div class="cnt">
 
 <!-- DASHBOARD -->
@@ -863,7 +863,7 @@ body.nuit .card{border-color:#0a1520}
 <select id="plVw" onchange="rPlan()" style="background:#080f1a;border:1px solid var(--ln);color:var(--tx);border-radius:8px;padding:5px 8px;font-size:12px"><option value="sem">Semaine</option><option value="mois">Mois</option><option value="list">Liste</option></select>
 <select id="plFi" onchange="rPlan()" style="background:#080f1a;border:1px solid var(--ln);color:var(--tx);border-radius:8px;padding:5px 8px;font-size:12px"><option value="all">Tout</option><option value="tr">Transports</option><option value="grd">Gardes</option><option value="dev">Devis</option><option value="gc">Google Agenda</option></select>
 </div></div><div class="bd" id="plCnt" style="min-height:280px"></div></div>
-<div class="card" style="margin-top:14px"><div class="hd"><h3>📊 Résumé</h3></div><div class="bd" id="plSum"></div></div>
+<div class="card" style="margin-top:14px"><div class="hd"><h3>🔍 Recherche de trajet compatible</h3><span style="font-size:11px;color:var(--mt)">Un client demande une ville à une date ? Vérifie en 2 secondes.</span></div><div class="bd"><div class="row" style="align-items:flex-end"><div class="c5 fd"><label>📍 Ville / région demandée</label><input id="plSrchVille" placeholder="Ex : Bordeaux, 33, Gironde…" oninput="plSearch()" style="font-size:13px"></div><div class="c3 fd"><label>📅 Date (optionnel)</label><input id="plSrchDate" type="date" onchange="plSearch()" style="font-size:13px"></div><div class="c2 fd"><label>Rayon</label><select id="plSrchRayon" onchange="plSearch()" style="background:#080f1a;border:1px solid var(--ln);color:var(--tx);border-radius:10px;padding:10px;font:inherit;font-size:12px;width:100%"><option value="50">50 km</option><option value="100" selected>100 km</option><option value="200">200 km</option><option value="500">500 km</option></select></div><div class="c2"><button class="btn" onclick="plSrchClear()" style="padding:10px;font-size:12px">✖ Effacer</button></div></div><div id="plSrchRes" style="margin-top:8px;font-size:12px;color:var(--mt)">Saisis une ville pour voir les trajets compatibles.</div></div></div><div class="card" style="margin-top:14px"><div class="hd"><h3>📊 Résumé</h3></div><div class="bd" id="plSum"></div></div>
 </section>
 
 <!-- FEUILLE DE ROUTE -->
@@ -1113,7 +1113,7 @@ body.nuit .card{border-color:#0a1520}
   <div class="card" style="border-top:3px solid #f472b6"><div class="hd">
     <h3 style="font-size:14px">📋 Planning devis — Vue tournée</h3>
     <div style="display:flex;gap:4px">
-      <select id="tourDevFilter" onchange="rTourDevis()" style="padding:4px 8px;font-size:11px;background:#080f1a;border:1px solid var(--ln);color:var(--tx);border-radius:6px">
+      <input id="tourVilleFilter" placeholder="🔍 Ville / région…" oninput="rTourDevis()" style="padding:4px 8px;font-size:11px;background:#080f1a;border:1px solid var(--ln);color:var(--tx);border-radius:6px;width:130px;font:inherit">      <select id="tourDevFilter" onchange="rTourDevis()" style="padding:4px 8px;font-size:11px;background:#080f1a;border:1px solid var(--ln);color:var(--tx);border-radius:6px">
         <option value="all">Tous</option>
         <option value="envoyé">📨 Envoyés</option>
         <option value="accepté">✅ Acceptés</option>
@@ -12433,6 +12433,94 @@ function rPlanWeek(){
 
 // PLANNING
 function plN(d){plOff+=d;rPlan()}
+// V80.50 : recherche de trajet compatible par ville + date
+var _geocCacheSearch={};
+function plSearch(){
+  var ville=(document.getElementById('plSrchVille')||{}).value||'';
+  var date=(document.getElementById('plSrchDate')||{}).value||'';
+  var rayon=parseInt((document.getElementById('plSrchRayon')||{}).value||100);
+  var el=document.getElementById('plSrchRes');
+  if(!el)return;
+  ville=ville.trim();
+  if(ville.length<2){el.innerHTML='<span style="color:var(--mt)">Saisis une ville pour voir les trajets compatibles.</span>';return}
+  el.innerHTML='<span style="color:var(--mt)">🔍 Recherche en cours…</span>';
+  // Géocoder la ville demandée
+  var cacheKey='srch:'+ville;
+  var doSearch=function(coord){
+    if(!coord){el.innerHTML='<span style="color:var(--or)">⚠️ Ville introuvable — vérifie l\'orthographe.</span>';return}
+    var today=tdy();
+    var allItems=[];
+    // Transports
+    act(db.transports).forEach(function(t){
+      if(t.date&&t.date<today)return;
+      if(date&&t.date!==date)return;
+      var wps=t.waypoints||[];
+      var matched=false;var closestKm=9999;var matchCity='';
+      wps.forEach(function(w){
+        var c=_supabaseExtractCity(w)||w.address||w.label||'';
+        if(!c)return;
+        // Estimation distance : on compare juste le nom (fallback rapide)
+        var norm=function(s){return s.toLowerCase().replace(/[\-_]/g,' ').trim()};
+        var nv=norm(ville),nc=norm(c);
+        if(nc.indexOf(nv)>=0||nv.indexOf(nc)>=0){matched=true;closestKm=0;matchCity=c}
+      });
+      if(matched)allItems.push({type:'transport',ref:t.ref,date:t.date,client:cN(t.clientId),axe:(t.tourZone||wps.map(function(w){return _supabaseExtractCity(w)||''}).filter(Boolean).join(' → ')),matchCity:matchCity,km:closestKm,obj:t});
+    });
+    // Devis
+    act(db.devis).forEach(function(q){
+      if(q.status==='refusé'||q.status==='annulé')return;
+      var dp=q.dateDebut||q.dateTransport||q.date;
+      if(dp&&dp<today)return;
+      if(date&&dp!==date)return;
+      var wps=q.waypoints||[];
+      var matched=false;var matchCity='';
+      wps.forEach(function(w){
+        var c=_supabaseExtractCity(w)||w.address||w.label||'';
+        var norm=function(s){return s.toLowerCase().replace(/[\-_]/g,' ').trim()};
+        var nv=norm(ville),nc=norm(c);
+        if(nc.indexOf(nv)>=0||nv.indexOf(nc)>=0){matched=true;matchCity=c}
+      });
+      if(matched)allItems.push({type:'devis',ref:q.ref,date:dp||'',client:cN(q.clientId),axe:(q.waypoints||[]).map(function(w){return _supabaseExtractCity(w)||''}).filter(Boolean).join(' → '),matchCity:matchCity,km:0,obj:q});
+    });
+    allItems.sort(function(a,b){return (a.date||'').localeCompare(b.date||'')});
+    if(!allItems.length){
+      el.innerHTML='<div style="color:var(--or);padding:8px">❌ Aucun trajet passant par ou près de <b>'+esc(ville)+'</b>'+(date?' le '+date:'')+'.<br>'
+        +'<span style="color:var(--mt)">Pas de trajet → tu peux en créer un avec ⚡ Trajet express dans 🚗 Préparer.</span></div>';
+      return;
+    }
+    var h='<div style="color:var(--gn);font-weight:700;margin-bottom:6px">✅ '+allItems.length+' trajet(s) compatibles avec <b>'+esc(ville)+'</b>'+(date?' le '+date:'')+'</div>';
+    h+='<table style="width:100%;border-collapse:collapse">'
+      +'<tr style="color:var(--mt);font-size:11px"><th style="text-align:left;padding:3px">Réf</th><th>Type</th><th>Date</th><th>Client</th><th>Axe</th><th>Match</th><th></th></tr>';
+    allItems.forEach(function(item){
+      var badge=item.type==='transport'
+        ?'<span style="background:rgba(26,122,110,.2);color:var(--a2);padding:1px 6px;border-radius:4px;font-size:10px">🚗 Transport</span>'
+        :'<span style="background:rgba(59,130,246,.2);color:#60a5fa;padding:1px 6px;border-radius:4px;font-size:10px">📋 Devis</span>';
+      var action=item.type==='transport'
+        ?'<button class="btn sm" onclick="publierPlaces(\''+item.obj.id+'\')" style="font-size:10px">📢</button>'
+        :'<button class="btn sm" onclick="sTab(\'dev\')" style="font-size:10px">✏️</button>';
+      h+='<tr style="border-top:1px solid rgba(255,255,255,.06)">'
+        +'<td style="padding:4px;font-weight:700">'+esc(item.ref)+'</td>'
+        +'<td style="padding:4px">'+badge+'</td>'
+        +'<td style="padding:4px">'+item.date+'</td>'
+        +'<td style="padding:4px">'+esc(item.client||'—')+'</td>'
+        +'<td style="padding:4px;font-size:11px">'+esc(item.axe||'—')+'</td>'
+        +'<td style="padding:4px;color:var(--gn);font-size:11px">📍 '+esc(item.matchCity)+'</td>'
+        +'<td style="padding:4px">'+action+'</td>'
+        +'</tr>';
+    });
+    h+='</table>';
+    el.innerHTML=h;
+  };
+  if(_geocCacheSearch[cacheKey]!==undefined){doSearch(_geocCacheSearch[cacheKey]);return}
+  // Simple recherche textuelle d'abord (instantanée)
+  doSearch({lat:0,lon:0});
+}
+function plSrchClear(){
+  var v=document.getElementById('plSrchVille');if(v)v.value='';
+  var d=document.getElementById('plSrchDate');if(d)d.value='';
+  var el=document.getElementById('plSrchRes');
+  if(el)el.innerHTML='<span style="color:var(--mt)">Saisis une ville pour voir les trajets compatibles.</span>';
+}
 function rPlan(){
   var vw=V('plVw')||'sem',fi=V('plFi')||'all';
   var evts=[];
@@ -18145,10 +18233,19 @@ function addTourMarker(q,w,wi){
 // ═══ PLANNING DEVIS VUE TOURNÉE ═══
 function rTourDevis(){
   var el=$('tourDevContent');if(!el)return;
+  var mapInfo=document.getElementById('tourMapInfo');
+  if(mapInfo&&villeF)mapInfo.innerHTML='<span style="background:rgba(26,122,110,.2);color:var(--a2);padding:2px 8px;border-radius:4px">🔍 Filtre actif : <b>'+esc(villeF)+'</b> — <a href="#" onclick="var e=document.getElementById(\'tourVilleFilter\');if(e){e.value=\'\';rTourDevis()}return false" style="color:var(--mt)">✖ Effacer</a></span>';
+  else if(mapInfo)mapInfo.innerHTML='';
+
   var filter=V('tourDevFilter')||'all';
+  var villeF=((document.getElementById('tourVilleFilter')||{}).value||'').trim().toLowerCase();
   var devs=act(db.devis).filter(function(q){
     if(filter!=='all'&&q.status!==filter)return false;
-    return q.status==='envoyé'||q.status==='accepté'||q.status==='brouillon';
+    if(!(q.status==='envoyé'||q.status==='accepté'||q.status==='brouillon'))return false;
+    if(!villeF)return true;
+    // Chercher la ville dans tous les waypoints + objet + notes
+    var hay=((q.waypoints||[]).map(function(w){return (w.address||w.label||'')}).join(' ')+(q.objet||'')+(q.notes||'')).toLowerCase();
+    return hay.indexOf(villeF)>=0;
   });
   if(!devs.length){el.innerHTML='<div style="padding:20px;text-align:center;color:var(--mt)">Aucun devis en cours</div>';return}
   // Grouper par date
