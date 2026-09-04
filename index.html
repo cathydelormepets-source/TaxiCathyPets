@@ -610,7 +610,7 @@ body.nuit .card{border-color:#0a1520}
 </div>
 </aside>
 <main class="main">
-<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.53</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
+<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.54</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
 <div class="cnt">
 
 <!-- DASHBOARD -->
@@ -14121,8 +14121,10 @@ function searchProx(){
   var resEl=$('proxResults');if(!resEl)return;
   resEl.innerHTML='<div class="prox-empty">🔄 Recherche en cours...</div>';
 
-  geocode(city.trim()).then(function(geo){
-    if(!geo){resEl.innerHTML='<div class="prox-empty">❌ Ville introuvable</div>';return}
+  var _proxCity2=city.trim();
+  var _fd=estimateCoordsCity(_proxCity2);
+  (_fd?Promise.resolve(_fd):geocodeSmart(_proxCity2).then(function(g){return g?{lat:g.lat,lng:g.lon}:null})).then(function(geo){
+    if(!geo){resEl.innerHTML='<div class="prox-empty" style="color:var(--or)">❌ <b>'+esc(_proxCity2)+'</b> introuvable — essaie : <em>Bordeaux</em>, <em>33 Bordeaux</em></div>';return}
 
     // Center map on city + show radius circle
     if(_tourMap){
@@ -28745,7 +28747,7 @@ window.calcQuickQuote = async function(){
   }
   
   if(coords.length < 2){
-    alert('Impossible de localiser les adresses');
+    showToast('⚠️ Adresses introuvables — vérifie départ et arrivée');
     return;
   }
   
@@ -29017,7 +29019,7 @@ window.searchMultiTransport = async function(){
   }
   
   if(coords.length < 2){
-    alert('Impossible de localiser les adresses');
+    showToast('⚠️ Adresses introuvables — vérifie départ et arrivée');
     return;
   }
   
@@ -29236,23 +29238,18 @@ window.addToTournee = function(type, id){
 /* ═══ UTILITAIRES GÉOGRAPHIQUES ═══ */
 
 async function geocodeAddress(address){
-  try {
-    var response = await fetch('https://nominatim.openstreetmap.org/search?format=json&q='+encodeURIComponent(address)+'&limit=1');
-    var data = await response.json();
-    if(data && data.length > 0){
-      return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
-    }
-  } catch(e){
-    console.log('Geocode error:', e);
-  }
-  // Fallback: estimation par ville connue
-  return estimateCoordsCity(address);
+  // V80.54 : dictionnaire instantané en premier (pas de rate limit)
+  var fromDict=estimateCoordsCity(address);
+  if(fromDict)return fromDict;
+  // Ensuite geocodeSmart (BAN + Nominatim)
+  try{var g=await geocodeSmart(address);if(g)return{lat:g.lat,lng:g.lon};} catch(e){}
+  return null;
 }
 
 function estimateCoordsCity(city){
   var cities = {
     'paris': {lat: 48.8566, lng: 2.3522}, 'lyon': {lat: 45.7640, lng: 4.8357}, 'marseille': {lat: 43.2965, lng: 5.3698},
-    'toulouse': {lat: 43.6047, lng: 1.4442}, 'nice': {lat: 43.7102, lng: 7.2620}, 'nantes': {lat: 47.2184, lng: -1.5536},
+    'toulouse': {lat: 43.6047, lng: 1.4442}, 'nice': {lat: 43.7102, lng: 7.2620}, 'saint-raphael': {lat: 43.4253, lng: 6.7687}, 'saint raphael': {lat: 43.4253, lng: 6.7687}, 'cannes': {lat: 43.5528, lng: 7.0174}, 'toulon': {lat: 43.1242, lng: 5.9279}, 'frejus': {lat: 43.4327, lng: 6.7373}, 'nantes': {lat: 47.2184, lng: -1.5536},
     'strasbourg': {lat: 48.5734, lng: 7.7521}, 'montpellier': {lat: 43.6108, lng: 3.8767}, 'bordeaux': {lat: 44.8378, lng: -0.5792},
     'lille': {lat: 50.6292, lng: 3.0573}, 'rennes': {lat: 48.1173, lng: -1.6778}, 'reims': {lat: 49.2583, lng: 4.0317},
     'dijon': {lat: 47.3220, lng: 5.0415}, 'grenoble': {lat: 45.1885, lng: 5.7245}, 'orleans': {lat: 47.9029, lng: 1.9039},
