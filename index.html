@@ -610,7 +610,7 @@ body.nuit .card{border-color:#0a1520}
 </div>
 </aside>
 <main class="main">
-<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.45</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
+<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.46</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
 <div class="cnt">
 
 <!-- DASHBOARD -->
@@ -7823,8 +7823,44 @@ function publierPlaces(tId){
     +villes.map(function(c,i){return '<div class="row" style="align-items:center;margin-bottom:4px"><div class="c8" style="font-size:12px;padding:4px 0">📍 '+esc(origin)+' → <b>'+esc(c)+'</b></div><div class="c4"><input id="pp_e_'+i+'" data-city="'+esc(c)+'" type="number" step="5" value="'+(pe[c]||'')+'" placeholder="€ / animal" style="'+ist+';padding:7px"></div></div>'}).join('')
     +'</div>'
     +'<div class="nt" style="font-size:10px;margin-top:6px">🧮 remplit chaque ville au tarif groupé (km cumulés × €/km, minimum appliqué, arrondi aux 5 €) — tu ajustes ensuite à la main. Une ville sans prix = « sur demande ». 0 place = dépublication.</div>'
-    +'<div style="display:flex;gap:8px;margin-top:10px"><button class="btn gn" style="flex:1;padding:12px" onclick="savePlaces(\''+tId+'\')">📢 Publier / mettre à jour</button></div>';
+    +'<div style="display:flex;gap:8px;margin-top:10px">'    +'<button class="btn gn" style="flex:1;padding:12px" onclick="savePlaces(\''+tId+'\')">📢 Publier / mettre à jour</button>'    +'<button class="btn" style="padding:12px;color:#7ab7fc;border-color:#2a5a8d" onclick="creerTrajetRetour(\''+tId+'\')">↩️ Créer le retour</button>'    +'</div>';
   oMo('📢 Places libres — '+t.ref,h,'');
+}
+// V80.46 : créer automatiquement le trajet retour (inversion départ ↔ arrivée)
+function creerTrajetRetour(tId){
+  var t=db.transports.find(function(x){return x.id===tId});if(!t)return;
+  var wps=(t.waypoints||[]).slice();
+  // Inverser les waypoints (retirer le "retour base" s'il existe et le recalculer)
+  var wpsR=wps.slice().reverse();
+  // S'assurer qu'il y a au moins départ + destination
+  if(wpsR.length<2){showToast('⚠️ Le trajet doit avoir au moins départ et destination.');return}
+  var dest=_supabaseExtractCity(wps[wps.length-1]);
+  var orig=_supabaseExtractCity(wps[0]);
+  // Vérifier qu'un retour identique n'existe pas déja
+  var doublon=act(db.transports).find(function(x){
+    if(x.id===tId)return false;
+    var w0=x.waypoints&&x.waypoints[0]?_supabaseExtractCity(x.waypoints[0]):'';
+    var wN=x.waypoints&&x.waypoints.length>1?_supabaseExtractCity(x.waypoints[x.waypoints.length-1]):'';
+    return w0===dest&&wN===orig&&x.date===t.date;
+  });
+  if(doublon){
+    if(!confirm('Un trajet retour similaire existe déjà le même jour ('+doublon.ref+'). Créer quand même ?'))return;
+  }
+  var tR={id:uid('t'),ref:'TR-'+(act(db.transports).length+1).toString().padStart(4,'0'),
+    clientId:t.clientId,type:t.type||'simple',date:t.date,heure:'',
+    waypoints:wpsR,participants:t.participants||1,
+    kmManual:t.kmManual||t.kmAuto||0,kmAuto:t.kmAuto||0,
+    tolls:t.tolls||0,price:0,
+    tourZone:dest+' → '+orig,
+    notes:'↩️ Retour automatique depuis '+t.ref+' ('+orig+' → '+dest+'). Prix à définir.',
+    retourDeId:tId};
+  stamp(tR);db.transports.push(tR);sav();
+  lH('transport','↩️ Trajet retour créé : '+tR.ref+' ('+dest+' → '+orig+')');
+  try{rTrp()}catch(e){}
+  cMo();
+  showToast('✅ Trajet retour '+tR.ref+' créé ('+dest+' → '+orig+'). Définis le prix puis 📢 Publier les places.');
+  // Ouvrir directement la publication pour ce nouveau trajet
+  setTimeout(function(){publierPlaces(tR.id)},400);
 }
 // V80.39 : calcul automatique des prix par étape (km cumulés le long de la tournée × €/km groupé)
 function ppCalcEtapes(tId){
