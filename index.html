@@ -11697,6 +11697,7 @@ function rDev2(){rTbl('dvTbl',['Réf','Client','Mode','Trajet','Total','Statut',
   (q.status==='envoyé'||q.status==='brouillon'?'<button class="btn sm gn" onclick="quickAcceptDev(\''+q.id+'\')" title="Valider ce devis" style="font-size:10px">✅ Valider</button>':'')+
   (q.status==='accepté'?'<button class="btn sm gn" onclick="devToFacDirect(\''+q.id+'\')" title="→ Facture en 1 clic" style="font-size:10px">💶 Facturer</button>':'')+
   (q.status==='facturé'&&!act(db.factures).some(function(f){return f.quoteId===q.id})?'<button class="btn sm" style="background:#5a1a1a;border-color:#8a3030;color:#ff8080;font-size:9px" onclick="reFacturerDev(\''+q.id+'\')" title="Facture supprimée — re-créer">⚠️ Re-facturer</button>':'')+
+  (q.total?'<button class="btn sm" style="background:#1a2a3a;border-color:#2a5a8d;color:#7ab7fc;font-size:10px" onclick="printFactureAcompte(\'dev\',\''+q.id+'\')" title="Facture d\'acompte 30% — à envoyer au client">🧾 FA</button>':'')+
   '<button class="btn sm" style="background:#1a2030;border-color:#2a3a50;color:#aab" onclick="dupDev(\''+q.id+'\')" title="Dupliquer">📋</button>'+
   '<button class="btn sm rd" onclick="hardDelDev(\''+q.id+'\')" title="Supprimer">🗑️</button>'+
   '</td></tr>';}))}
