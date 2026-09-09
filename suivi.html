@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Suivi Cathy Pets 🐾</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0d1117;color:#e6edf3;min-height:100vh}
+.hdr{background:#161b22;border-bottom:1px solid #30363d;padding:12px 16px;display:flex;align-items:center;gap:12px}
+.logo{font-size:20px;font-weight:800;color:#22c55e}.sub{font-size:11px;color:#8b949e;margin-top:1px}
+.badge{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:4px 12px;border-radius:20px;margin-left:auto}
+.badge.live{background:rgba(34,197,94,.15);color:#22c55e;border:1px solid rgba(34,197,94,.3)}
+.badge.wait{background:rgba(251,191,36,.15);color:#fbbf24;border:1px solid rgba(251,191,36,.3)}
+.badge.end{background:rgba(139,148,158,.1);color:#8b949e;border:1px solid #30363d}
+.dot{width:8px;height:8px;border-radius:50%;background:currentColor;animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+#map{height:calc(100vh - 200px);width:100%}
+.info{background:#161b22;border-top:1px solid #30363d;padding:14px 16px}
+.info-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:10px}
+.info-card{background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:10px}
+.ic-label{font-size:10px;color:#8b949e;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px}
+.ic-val{font-size:16px;font-weight:700;color:#e6edf3}
+.etapes{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+.etape{display:flex;align-items:center;gap:10px;font-size:13px}
+.etape-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0}
+.done{background:#22c55e}.current{background:#3b82f6;animation:pulse 1.5s infinite}.pending{background:#374151}
+.etape-label{flex:1}.etape-time{font-size:11px;color:#8b949e}
+.err{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;text-align:center}
+.err h2{font-size:18px;margin:12px 0 8px;color:#e6edf3}.err p{color:#8b949e;font-size:14px}
+#refreshBtn{margin-top:14px;background:#22c55e;color:#000;border:none;border-radius:8px;padding:8px 20px;font:600 13px/1 inherit;cursor:pointer}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div>
+    <div class="logo">🐾 Cathy Pets</div>
+    <div class="sub">Suivi en temps réel</div>
+  </div>
+  <span id="statusBadge" class="badge wait"><span class="dot"></span> Chargement…</span>
+</div>
+
+<div id="mapContainer">
+  <div id="map"></div>
+</div>
+
+<div class="info">
+  <div class="info-grid">
+    <div class="info-card">
+      <div class="ic-label">📍 Position</div>
+      <div class="ic-val" id="infoPos">—</div>
+    </div>
+    <div class="info-card">
+      <div class="ic-label">🕐 Dernière MAJ</div>
+      <div class="ic-val" id="infoMaj">—</div>
+    </div>
+    <div class="info-card">
+      <div class="ic-label">🏁 Destination</div>
+      <div class="ic-val" id="infoDest">—</div>
+    </div>
+    <div class="info-card">
+      <div class="ic-label">⏱️ ETA estimé</div>
+      <div class="ic-val" id="infoEta">—</div>
+    </div>
+  </div>
+  <div id="etapesZone" class="etapes"></div>
+</div>
+
+<script>
+var SU='https://lwbebblanpnslwdztxzu.supabase.co';
+var SK='sb_publishable_POmi_s0QF8lp5a2Kg5GHnA_crn9C2d3';
+var HEADERS={'apikey':SK,'Authorization':'Bearer '+SK,'Content-Type':'application/json'};
+
+var map=L.map('map').setView([46.8,2.8],6);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18,attribution:'© OSM'}).addTo(map);
+
+var marker=null, traceLine=null, destMarker=null;
+var trackHistory=[];
+var code=new URLSearchParams(location.search).get('code')||new URLSearchParams(location.search).get('suivi')||'';
+
+function setStatus(s,txt){
+  var b=document.getElementById('statusBadge');
+  b.className='badge '+s;
+  b.innerHTML='<span class="dot"></span> '+txt;
+}
+
+function fmtTime(ts){
+  if(!ts)return '—';
+  return new Date(ts).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+}
+
+function fetchTracking(){
+  if(!code){
+    setStatus('end','Code manquant');
+    document.getElementById('infoPos').textContent='Lien invalide';
+    return;
+  }
+  fetch(SU+'/rest/v1/app_data?key=eq.tracking:'+encodeURIComponent(code)+'&select=value',{headers:HEADERS})
+    .then(function(r){return r.json()})
+    .then(function(d){
+      var data=(d[0]||{}).value;
+      if(!data||!data.lat){
+        setStatus('wait','En attente du départ');
+        document.getElementById('infoPos').textContent='Pas encore en route';
+        document.getElementById('infoMaj').textContent='—';
+        if(data&&data.dest)document.getElementById('infoDest').textContent=data.dest;
+        if(data&&data.etapes)renderEtapes(data.etapes,data.etapeActuelle);
+        return;
+      }
+      // Mise à jour de la carte
+      var lat=parseFloat(data.lat),lon=parseFloat(data.lon);
+      if(!isNaN(lat)&&!isNaN(lon)){
+        trackHistory.push([lat,lon]);
+        if(!marker){
+          var camIcon=L.divIcon({html:'<div style="font-size:28px;line-height:1;filter:drop-shadow(0 2px 4px rgba(0,0,0,.5))">🚐</div>',iconSize:[32,32],iconAnchor:[16,16],className:''});
+          marker=L.marker([lat,lon],{icon:camIcon}).addTo(map);
+          map.setView([lat,lon],12);
+        } else {
+          marker.setLatLng([lat,lon]);
+        }
+        // Tracé de l'itinéraire
+        if(trackHistory.length>1){
+          if(traceLine)traceLine.remove();
+          traceLine=L.polyline(trackHistory,{color:'#22c55e',weight:3,opacity:.7}).addTo(map);
+        }
+        // Marqueur destination
+        if(data.destLat&&data.destLon){
+          if(!destMarker){
+            var destIcon=L.divIcon({html:'<div style="font-size:24px">🏁</div>',iconSize:[24,24],iconAnchor:[12,12],className:''});
+            destMarker=L.marker([parseFloat(data.destLat),parseFloat(data.destLon)],{icon:destIcon}).addTo(map);
+          }
+        }
+        setStatus('live','🟢 En route');
+        document.getElementById('infoPos').textContent=(data.ville||lat.toFixed(4)+', '+lon.toFixed(4));
+        document.getElementById('infoMaj').textContent=fmtTime(data.ts);
+        if(data.dest)document.getElementById('infoDest').textContent=data.dest;
+        if(data.eta)document.getElementById('infoEta').textContent=data.eta;
+        if(data.etapes)renderEtapes(data.etapes,data.etapeActuelle);
+        if(data.statut==='arrivé'){setStatus('end','Arrivé ✅');clearInterval(refreshTimer)}
+      }
+    })
+    .catch(function(e){
+      setStatus('wait','Connexion…');
+      console.error(e);
+    });
+}
+
+function renderEtapes(etapes,actuelle){
+  var z=document.getElementById('etapesZone');if(!z||!etapes||!etapes.length)return;
+  var h='';
+  etapes.forEach(function(e,i){
+    var cls=i<(actuelle||0)?'done':i===(actuelle||0)?'current':'pending';
+    h+='<div class="etape"><div class="etape-dot '+cls+'"></div><div class="etape-label">'+e.label+'</div><div class="etape-time">'+(e.time||'')+'</div></div>';
+  });
+  z.innerHTML=h;
+}
+
+// Démarrer le suivi
+fetchTracking();
+var refreshTimer=setInterval(fetchTracking,15000);
+document.getElementById('refreshBtn')&&document.getElementById('refreshBtn').addEventListener('click',fetchTracking);
+</script>
+
+<div style="text-align:center;padding:8px;font-size:10px;color:#484f58">
+  Mise à jour automatique toutes les 15 secondes · 
+  <a href="https://cathypetsitter.com" style="color:#22c55e">cathypetsitter.com</a>
+  <br><button id="refreshBtn" onclick="fetchTracking()">🔄 Actualiser maintenant</button>
+</div>
+
+</body>
+</html>
