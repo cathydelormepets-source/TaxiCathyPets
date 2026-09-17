@@ -610,7 +610,7 @@ body.nuit .card{border-color:#0a1520}
 </div>
 </aside>
 <main class="main">
-<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.63</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
+<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.64</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
 <div class="cnt">
 
 <!-- DASHBOARD -->
@@ -12145,14 +12145,87 @@ function rFac2(){
         +'</div>';
     });
   }
+  // V80.64 : Dépôts Nutrica pour ce client
+  var depsCli=act(db.depots||[]).filter(function(d){return d.clientId===cliId;});
+  if(depsCli.length){
+    h+='<div style="font-size:11px;font-weight:800;color:var(--mt);text-transform:uppercase;margin:10px 0 6px">📦 Dépôts Nutrica ('+depsCli.length+')</div>';
+    depsCli.slice().sort(function(a,b){return (b.date||'').localeCompare(a.date||'');}).forEach(function(dep){
+      var totalDep=0,totalVend=0,totalNet=0;
+      dep.produits.forEach(function(p){totalDep+=E(p.qtyDeposee);totalVend+=E(p.qtyVendue);totalNet+=E(p.qtyVendue)*E(p.prixVente);});
+      var restant=totalDep-totalVend;
+      var pillCl=dep.status==='cloture'?'color:var(--a2)':'color:var(--or)';
+      var did=dep.id;
+      h+='<div style="background:#080f1a;border:1px solid rgba(139,92,246,.3);border-radius:8px;padding:8px 10px;margin-bottom:6px">';
+      h+='<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">';
+      h+='<span style="font-size:11px;font-weight:800;color:var(--pu)">'+dep.ref+'</span>';
+      h+='<span style="font-size:10px;color:var(--mt)">'+new Date(dep.date).toLocaleDateString('fr-FR')+'</span>';
+      h+='<span style="flex:1"></span>';
+      h+='<span style="font-size:10px;font-weight:700;'+pillCl+'">'+dep.status+'</span>';
+      if(dep.status!=='cloture'){
+        h+='<button class="btn sm" style="background:rgba(139,92,246,.2);border-color:var(--pu);color:var(--pu);font-size:10px;padding:3px 7px" onclick="cMo();setTimeout(function(){sTab(\'nut\');nutShowTab(\'depot\');},200)">Gérer</button>';
+        h+='<button class="btn sm gn" style="font-size:10px;padding:3px 7px" onclick="ficheDepCloture(\''+did+'\')">🧾 Clôturer</button>';
+      }
+      h+='</div>';
+      h+='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-top:6px;font-size:10px">';
+      h+='<div style="text-align:center"><div style="color:var(--mt)">Déposé</div><div style="font-weight:900;color:var(--bl)">'+totalDep+'u</div></div>';
+      h+='<div style="text-align:center"><div style="color:var(--mt)">Vendu</div><div style="font-weight:900;color:var(--or)">'+totalVend+'u</div></div>';
+      h+='<div style="text-align:center"><div style="color:var(--mt)">Restant</div><div style="font-weight:900;color:var(--a2)">'+restant+'u</div></div>';
+      h+='<div style="text-align:center"><div style="color:var(--mt)">CA vente</div><div style="font-weight:900;color:var(--gd)">'+euro(totalNet)+'</div></div>';
+      h+='</div>';
+      // Détail produits
+      if(dep.produits&&dep.produits.length>1){
+        h+='<div style="margin-top:5px;font-size:10px;color:var(--mt)">'+dep.produits.map(function(p){return p.nom+': <b style="color:#fff">'+p.qtyVendue+'/'+p.qtyDeposee+'</b>';}).join(' · ')+'</div>';
+      }
+      h+='</div>';
+    });
+  }
   h+='<div style="margin-top:12px;padding:10px;background:#080f1a;border-radius:8px;font-size:11px;color:var(--mt)">'
     +(cl.tel?'📞 '+cl.tel+'<br>':'')+(cl.email?'✉️ '+cl.email+'<br>':'')+(cl.adresse?'📍 '+cl.adresse+' '+(cl.cp||'')+' '+(cl.ville||''):'')
     +'</div>';
   oMo('👤 Fiche — '+nom, h,
     '<button class="btn at" onclick="quickMail(\'bienvenue\',\''+cliId+'\',\'\')">📧 Mail</button> '
-    +'<button class="btn bu" onclick="sTab(\'fac\');var s=document.getElementById(\'fc_search\');if(s)s.value=\''+nom.replace(/'/g,"\\'")+'\';rFac2();cMo()">💶 Ses factures</button>'
+    +'<button class="btn bu" onclick="sTab(\'fac\');var s=document.getElementById(\'fc_search\');if(s)s.value=\''+nom.replace(/'/g,"\\'")+'\';rFac2();cMo()">💶 Ses factures</button> '
+    +'<button class="btn" style="background:rgba(139,92,246,.2);border-color:var(--pu);color:var(--pu)" onclick="cMo();setTimeout(function(){sTab(\'nut\');nutShowTab(\'depot\');},200)">📦 Dépôts</button> '
+    +'<button class="btn gn" onclick="cMo();setTimeout(function(){ficheDepNouveauClient(\''+cliId+'\')},200)">➕ Nouveau dépôt</button>'
   );
 }
+// V80.64 : Nouveau dépôt pré-rempli avec client
+function ficheDepNouveauClient(cliId){
+  sTab('nut');
+  nutShowTab('depot');
+  setTimeout(function(){
+    var sel=document.getElementById('dep_cl');
+    if(sel){
+      sel.value=cliId;
+      var ev=new Event('change');sel.dispatchEvent(ev);
+    }
+    var dt=document.getElementById('dep_date');
+    if(dt&&!dt.value)dt.value=tdy();
+    // scroller vers le formulaire
+    var frm=document.querySelector('#nutTab-depot-panel');
+    if(frm)frm.scrollIntoView({behavior:'smooth',block:'start'});
+  },400);
+}
+
+// V80.64 : Clôturer un dépôt directement depuis la fiche client
+function ficheDepCloture(depId){
+  var dep=db.depots.find(function(d){return d.id===depId;});
+  if(!dep)return;
+  var totalVend=0,totalNet=0;
+  dep.produits.forEach(function(p){totalVend+=E(p.qtyVendue);totalNet+=E(p.qtyVendue)*E(p.prixVente);});
+  if(totalVend===0){
+    if(!confirm('Aucune vente enregistrée sur ce dépôt. Clôturer quand même ?'))return;
+  }
+  if(!confirm('Clôturer le dépôt '+dep.ref+' et générer la facture (CA: '+euro(totalNet)+') ?'))return;
+  // Appel à la fonction existante depCloturer
+  if(typeof depCloturer==='function'){
+    depCloturer(depId);
+    // Recharger la fiche client après clôture
+    var cliId=dep.clientId;
+    setTimeout(function(){showFicheClient(cliId);},600);
+  }
+}
+
 function rCol2(){rTbl('coTbl',['Client','Type','Poids','Coût','Vente','Bénéf',''],act(db.colis).map(function(p){var b=E(p.price)-E(p.cost);return '<tr><td>'+cN(p.clientId)+'</td><td>'+p.type+'</td><td>'+(p.weight||0)+' kg</td><td>'+euro(p.cost||0)+'</td><td>'+euro(p.price)+'</td><td style="color:'+(b>=0?'var(--a2)':'var(--rd)')+'">'+euro(b)+'</td><td><button class="btn sm bu" onclick="eCol(\''+p.id+'\')">✏️</button></td></tr>'}))}
 function rNut2(){rTbl('nuTbl',['Produit','Stock','Achat','Vente','Bénéf/u','Bénéf tot',''],act(db.nutrica).map(function(n){var b=E(n.price)-E(n.cost),bt=b*E(n.stock);var stk=E(n.stock);var stkC=stk<=0?'var(--rd)':stk<=3?'var(--or)':'var(--a2)';var stkB=stk<=0?'<span style="background:var(--rd);color:#fff;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:800">RUPTURE</span>':stk<=3?'<span style="background:var(--or);color:#fff;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:800">⚠️ '+stk+'</span>':'<b>'+stk+'</b>';return '<tr><td>'+n.name+'</td><td style="color:'+stkC+'">'+stkB+'</td><td>'+euro(n.cost||0)+'</td><td>'+euro(n.price)+'</td><td style="color:'+(b>=0?'var(--a2)':'var(--rd)')+'">'+euro(b)+'</td><td style="color:'+(bt>=0?'var(--a2)':'var(--rd)')+'"><b>'+euro(bt)+'</b></td><td><button class="btn sm bu" onclick="eNut(\''+n.id+'\')">✏️</button></td></tr>'}))}
 
