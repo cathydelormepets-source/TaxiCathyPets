@@ -610,7 +610,7 @@ body.nuit .card{border-color:#0a1520}
 </div>
 </aside>
 <main class="main">
-<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.64</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
+<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.65</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
 <div class="cnt">
 
 <!-- DASHBOARD -->
@@ -9457,15 +9457,21 @@ function depCreer(){
   if(!produits.length){alert('Ajoute au moins un produit');return}
 
   if(!db.depots)db.depots=[];
+  var _depDate=V('dep_date')||tdy();
+  // V80.65 : créer les mouvements initiaux de dépôt
+  var _depMvts=produits.map(function(p){
+    return {id:uid('dvm'),date:_depDate,type:'depot',produit:p.nom,prodId:p.prodId,qty:p.qtyDeposee,pu:null,total:null,notes:'Dépôt initial'};
+  });
   var depot={
     id:uid('dp'),
     ref:'DEP-'+String(db.depots.length+1).padStart(3,'0'),
     clientId:cliId,
-    date:V('dep_date')||tdy(),
+    date:_depDate,
     commission:comm,
     produits:produits,
     status:'en_cours',
     factures:[],
+    mouvements:_depMvts,
     createdAt:new Date().toISOString()
   };
   db.depots.push(depot);
@@ -9575,6 +9581,190 @@ function depUpdateVente(depId,idx,val){
   sav(false);
   depRender();
 }
+
+// V80.65 : Ouvrir le carnet de mouvements pour un client
+function openCompteDepotClient(cliId){
+  var cl=db.clients.find(function(x){return x.id===cliId;});
+  if(!cl)return;
+  var nom=(cl.nom+' '+(cl.prenom||'')).trim();
+  var deps=act(db.depots||[]).filter(function(d){return d.clientId===cliId&&!d._deleted;});
+  if(!deps.length){
+    oMo('📦 Compte dépôt — '+nom,
+      '<div style="text-align:center;padding:24px;color:var(--mt)">Aucun dépôt pour ce client.<br><br>'
+      +'<button class="btn gn" onclick="cMo();setTimeout(function(){ficheDepNouveauClient(\''+cliId+'\')},200)">➕ Créer le premier dépôt</button></div>','');
+    return;
+  }
+  // Reconstruire/compléter mouvements manquants (anciens dépôts)
+  deps.forEach(function(dep){
+    if(!dep.mouvements||!dep.mouvements.length){
+      dep.mouvements=dep.produits.map(function(p){
+        return {id:uid('dvm'),date:dep.date,type:'depot',produit:p.nom,prodId:p.prodId||'',qty:p.qtyDeposee,pu:null,total:null,notes:'Dépôt '+dep.ref};
+      });
+      // Ajouter les ventes déjà enregistrées comme mouvements
+      dep.produits.forEach(function(p){
+        if(p.qtyVendue>0){
+          dep.mouvements.push({id:uid('dvm'),date:dep.date,type:'vente',produit:p.nom,prodId:p.prodId||'',qty:p.qtyVendue,pu:p.prixVente,total:p.qtyVendue*p.prixVente,notes:'Vente (importée)'});
+        }
+      });
+    }
+  });
+  // Tous les mouvements triés chronologiquement
+  var allMvts=[];
+  deps.forEach(function(dep){
+    dep.mouvements.forEach(function(m){allMvts.push(Object.assign({},m,{depRef:dep.ref,depId:dep.id,depStatus:dep.status}));});
+  });
+  allMvts.sort(function(a,b){return (a.date||'')<(b.date||'')?-1:1;});
+  // Soldes par produit
+  var soldes={};
+  allMvts.forEach(function(m){
+    var k=m.produit||'?';
+    if(!soldes[k])soldes[k]=0;
+    soldes[k]+=(m.type==='depot'?E(m.qty):-E(m.qty));
+  });
+  // CA ventes non facturées
+  var caEnCours=0;
+  deps.forEach(function(dep){
+    if(dep.status!=='cloture'){dep.produits.forEach(function(p){caEnCours+=E(p.qtyVendue)*E(p.prixVente);});}
+  });
+  // ── SOLDES ──
+  var h='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin-bottom:12px">';
+  Object.keys(soldes).forEach(function(prod){
+    var sol=soldes[prod];
+    var col=sol<=0?'var(--rd)':sol<=5?'var(--or)':'var(--a2)';
+    h+='<div style="background:#080f1a;border:1px solid rgba(139,92,246,.3);border-radius:8px;padding:8px;text-align:center">'
+      +'<div style="font-size:9px;color:var(--mt)">'+prod+'</div>'
+      +'<div style="font-size:22px;font-weight:900;color:'+col+'">'+sol+'u</div>'
+      +'<div style="font-size:9px;color:var(--mt)">en stock</div></div>';
+  });
+  h+='</div>';
+  // ── TABLE MOUVEMENTS ──
+  h+='<div style="font-size:11px;font-weight:800;color:var(--mt);text-transform:uppercase;margin-bottom:6px">📋 Mouvements ('+allMvts.length+')</div>';
+  h+='<div style="overflow-x:auto;max-height:260px;overflow-y:auto"><table style="width:100%;font-size:11px;border-collapse:collapse">';
+  h+='<thead style="position:sticky;top:0;background:var(--bg)"><tr style="border-bottom:1px solid var(--ln)">'
+    +'<th style="text-align:left;padding:4px 6px;color:var(--mt)">Date</th>'
+    +'<th style="text-align:left;padding:4px 6px;color:var(--mt)">Réf</th>'
+    +'<th style="text-align:left;padding:4px 6px;color:var(--mt)">Type</th>'
+    +'<th style="text-align:left;padding:4px 6px;color:var(--mt)">Produit</th>'
+    +'<th style="text-align:right;padding:4px 6px;color:var(--mt)">Qté</th>'
+    +'<th style="text-align:right;padding:4px 6px;color:var(--mt)">P.U.</th>'
+    +'<th style="text-align:right;padding:4px 6px;color:var(--mt)">Total</th>'
+    +'</tr></thead><tbody>';
+  allMvts.forEach(function(m){
+    var isVente=m.type==='vente';
+    var ic=isVente?'🛒':'📥';
+    var qtyTxt=isVente
+      ?'<span style="color:var(--or);font-weight:700">-'+m.qty+'</span>'
+      :'<span style="color:var(--bl);font-weight:700">+'+m.qty+'</span>';
+    h+='<tr style="border-bottom:1px solid rgba(255,255,255,.04)'+(isVente?';background:rgba(255,165,0,.03)':'')+'">'
+      +'<td style="padding:4px 6px;color:var(--mt);white-space:nowrap">'+new Date(m.date+'T00:00:00').toLocaleDateString('fr-FR')+'</td>'
+      +'<td style="padding:4px 6px;font-size:10px;color:var(--pu)">'+m.depRef+'</td>'
+      +'<td style="padding:4px 6px">'+ic+' '+(isVente?'Vente':'Dépôt')+'</td>'
+      +'<td style="padding:4px 6px;font-weight:700">'+m.produit+'</td>'
+      +'<td style="text-align:right;padding:4px 6px">'+qtyTxt+'</td>'
+      +'<td style="text-align:right;padding:4px 6px;color:var(--mt)">'+( m.pu?euro(m.pu):'—')+'</td>'
+      +'<td style="text-align:right;padding:4px 6px;color:var(--gd);font-weight:700">'+( m.total?euro(m.total):'—')+'</td>'
+      +'</tr>';
+  });
+  h+='</tbody></table></div>';
+  // ── SAISIE VENTE ──
+  h+='<div style="margin-top:12px;padding:12px;background:#080f1a;border:1px solid rgba(139,92,246,.3);border-radius:10px">';
+  h+='<div style="font-size:11px;font-weight:800;color:var(--pu);margin-bottom:8px">➕ Enregistrer une vente</div>';
+  var depsEnCours=deps.filter(function(d){return d.status!=='cloture';});
+  if(!depsEnCours.length){
+    h+='<div style="font-size:11px;color:var(--mt)">Tous les dépôts sont clôturés.</div>';
+  } else {
+    var depOpts=depsEnCours.map(function(d){
+      return '<option value="'+d.id+'">'+d.ref+' ('+new Date(d.date+'T00:00:00').toLocaleDateString('fr-FR')+')</option>';
+    }).join('');
+    h+='<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:end">';
+    h+='<div style="flex:2;min-width:120px"><label style="font-size:10px;color:var(--mt)">Dépôt</label><select id="mvt_dep" style="width:100%;padding:6px;font-size:12px;background:var(--pn);border:1px solid var(--ln);border-radius:6px;color:#fff" onchange="mvtFillProduits(\''+ cliId+'\')">'+depOpts+'</select></div>';
+    h+='<div style="flex:2;min-width:120px"><label style="font-size:10px;color:var(--mt)">Produit</label><select id="mvt_prod" style="width:100%;padding:6px;font-size:12px;background:var(--pn);border:1px solid var(--ln);border-radius:6px;color:#fff" onchange="mvtFillPrix()"><option value="">— choisir —</option></select></div>';
+    h+='<div style="flex:1;min-width:60px"><label style="font-size:10px;color:var(--mt)">Qté</label><input id="mvt_qty" type="number" value="1" min="1" style="width:100%;padding:6px;font-size:12px;background:var(--pn);border:1px solid var(--ln);border-radius:6px;color:#fff" oninput="mvtCalcTotal()"></div>';
+    h+='<div style="flex:1;min-width:80px"><label style="font-size:10px;color:var(--mt)">P.U. €</label><input id="mvt_pu" type="number" step="0.01" style="width:100%;padding:6px;font-size:12px;background:var(--pn);border:1px solid var(--ln);border-radius:6px;color:#fff" oninput="mvtCalcTotal()"></div>';
+    h+='<div style="flex:1;min-width:80px"><label style="font-size:10px;color:var(--mt)">Date</label><input id="mvt_date" type="date" value="'+tdy()+'" style="width:100%;padding:6px;font-size:12px;background:var(--pn);border:1px solid var(--ln);border-radius:6px;color:#fff"></div>';
+    h+='<div style="flex:1;min-width:60px"><label style="font-size:10px;color:var(--mt)">Total</label><input id="mvt_total" readonly style="width:100%;padding:6px;font-size:12px;background:rgba(0,0,0,.3);border:1px solid var(--ln);border-radius:6px;color:var(--gd);font-weight:700"></div>';
+    h+='</div>';
+    h+='<div style="display:flex;gap:8px;margin-top:8px">';
+    h+='<input id="mvt_notes" placeholder="Notes (optionnel)" style="flex:1;padding:6px;font-size:12px;background:var(--pn);border:1px solid var(--ln);border-radius:6px;color:#fff">';
+    h+='<button class="btn gn" onclick="mvtSaveVente(\''+ cliId+'\')" style="white-space:nowrap;padding:6px 14px">✅ Enregistrer</button>';
+    h+='</div>';
+    // Init premier dépôt
+    h+='<script>setTimeout(function(){mvtFillProduits(\''+ cliId+'\')},100)<\/script>';
+  }
+  if(caEnCours>0){
+    h+='<div style="margin-top:8px;padding:8px;background:rgba(34,166,147,.1);border:1px solid var(--a2);border-radius:8px;font-size:11px;display:flex;justify-content:space-between;align-items:center">'
+      +'<span>💰 CA en cours (non facturé) : <b style="color:var(--gd);font-size:14px">'+euro(caEnCours)+'</b></span>'
+      +'<button class="btn gn" onclick="mvtFacturerTout(\''+ cliId+'\')" style="font-size:11px;padding:5px 12px">🧾 Facturer tout</button></div>';
+  }
+  h+='</div>';
+  window._mvtCliId=cliId;
+  oMo('📦 Compte dépôt — '+nom, h,
+    '<button class="btn gn" onclick="cMo();setTimeout(function(){ficheDepNouveauClient(\''+cliId+'\')},200)">➕ Nouveau dépôt</button> '
+    +'<button class="btn bu" onclick="cMo();setTimeout(function(){showFicheClient(\''+cliId+'\')},200)">👤 Fiche</button>'
+  );
+}
+window.mvtFillProduits=function(cliId){
+  var depId=document.getElementById('mvt_dep')&&document.getElementById('mvt_dep').value;
+  var sel=document.getElementById('mvt_prod');
+  if(!sel)return;
+  if(!depId){sel.innerHTML='<option>— choisir dépôt —</option>';return}
+  var dep=db.depots.find(function(d){return d.id===depId;});
+  if(!dep){sel.innerHTML='<option>Introuvable</option>';return}
+  sel.innerHTML='<option value="">— Produit —</option>'+dep.produits.map(function(p,i){
+    var restant=p.qtyDeposee-p.qtyVendue;
+    return '<option value="'+i+'" data-pu="'+p.prixVente+'" data-restant="'+restant+'">'+p.nom+' (stock: '+restant+'u)</option>';
+  }).join('');
+};
+window.mvtFillPrix=function(){
+  var sel=document.getElementById('mvt_prod');
+  var puEl=document.getElementById('mvt_pu');
+  if(!sel||!puEl)return;
+  var opt=sel.options[sel.selectedIndex];
+  if(opt&&opt.getAttribute('data-pu'))puEl.value=opt.getAttribute('data-pu')||'';
+  if(typeof mvtCalcTotal==='function')mvtCalcTotal();
+};
+window.mvtCalcTotal=function(){
+  var q=parseFloat((document.getElementById('mvt_qty')||{}).value||0);
+  var p=parseFloat((document.getElementById('mvt_pu')||{}).value||0);
+  var el=document.getElementById('mvt_total');
+  if(el)el.value=euro(q*p);
+};
+window.mvtSaveVente=function(cliId){
+  var depId=(document.getElementById('mvt_dep')||{}).value;
+  var pidxStr=(document.getElementById('mvt_prod')||{}).value;
+  var qty=parseInt((document.getElementById('mvt_qty')||{}).value||0);
+  var pu=parseFloat((document.getElementById('mvt_pu')||{}).value||0);
+  var date=(document.getElementById('mvt_date')||{}).value||tdy();
+  var notes=(document.getElementById('mvt_notes')||{}).value||'';
+  if(!depId){alert('Sélectionne un dépôt');return}
+  if(pidxStr===''||pidxStr===undefined){alert('Sélectionne un produit');return}
+  if(!qty||qty<1){alert('Quantité invalide');return}
+  var dep=db.depots.find(function(d){return d.id===depId;});
+  if(!dep){alert('Dépôt introuvable');return}
+  var idx=parseInt(pidxStr);
+  var p2=dep.produits[idx];if(!p2){alert('Produit introuvable');return}
+  var restant=p2.qtyDeposee-p2.qtyVendue;
+  if(qty>restant){alert('Stock insuffisant — restant: '+restant+' u');return}
+  p2.qtyVendue+=qty;
+  if(!dep.mouvements)dep.mouvements=[];
+  dep.mouvements.push({id:uid('dvm'),date:date,type:'vente',produit:p2.nom,prodId:p2.prodId||'',qty:qty,pu:pu,total:qty*pu,notes:notes});
+  stamp(dep);
+  lH('vente-depot','Vente '+qty+' × '+p2.nom+' sur '+dep.ref+' — '+euro(qty*pu));
+  sav(false);
+  showToast('✅ Vente enregistrée : '+qty+' × '+p2.nom);
+  setTimeout(function(){openCompteDepotClient(cliId);},300);
+};
+window.mvtFacturerTout=function(cliId){
+  var deps=act(db.depots||[]).filter(function(d){return d.clientId===cliId&&d.status!=='cloture';});
+  var hasSold=deps.some(function(d){return d.produits.some(function(p){return p.qtyVendue>0;});});
+  if(!hasSold){alert('Aucune vente à facturer');return}
+  if(!confirm('Clôturer et facturer toutes les ventes de ce client ?'))return;
+  deps.forEach(function(dep){
+    if(dep.produits.some(function(p){return p.qtyVendue>0;})&&typeof depCloturer==='function')depCloturer(dep.id);
+  });
+  showToast('🧾 Factures générées');
+  setTimeout(function(){openCompteDepotClient(cliId);},800);
+};
 
 function depCloturer(depId){
   var dep=db.depots.find(function(d){return d.id===depId});
@@ -12162,7 +12352,7 @@ function rFac2(){
       h+='<span style="flex:1"></span>';
       h+='<span style="font-size:10px;font-weight:700;'+pillCl+'">'+dep.status+'</span>';
       if(dep.status!=='cloture'){
-        h+='<button class="btn sm" style="background:rgba(139,92,246,.2);border-color:var(--pu);color:var(--pu);font-size:10px;padding:3px 7px" onclick="cMo();setTimeout(function(){sTab(\'nut\');nutShowTab(\'depot\');},200)">Gérer</button>';
+        h+='<button class="btn sm" style="background:rgba(139,92,246,.2);border-color:var(--pu);color:var(--pu);font-size:10px;padding:3px 7px" onclick="openCompteDepotClient(\''+cliId+'\')">📋 Mouvements</button>';
         h+='<button class="btn sm gn" style="font-size:10px;padding:3px 7px" onclick="ficheDepCloture(\''+did+'\')">🧾 Clôturer</button>';
       }
       h+='</div>';
@@ -12185,7 +12375,7 @@ function rFac2(){
   oMo('👤 Fiche — '+nom, h,
     '<button class="btn at" onclick="quickMail(\'bienvenue\',\''+cliId+'\',\'\')">📧 Mail</button> '
     +'<button class="btn bu" onclick="sTab(\'fac\');var s=document.getElementById(\'fc_search\');if(s)s.value=\''+nom.replace(/'/g,"\\'")+'\';rFac2();cMo()">💶 Ses factures</button> '
-    +'<button class="btn" style="background:rgba(139,92,246,.2);border-color:var(--pu);color:var(--pu)" onclick="cMo();setTimeout(function(){sTab(\'nut\');nutShowTab(\'depot\');},200)">📦 Dépôts</button> '
+    +'<button class="btn" style="background:rgba(139,92,246,.2);border-color:var(--pu);color:var(--pu)" onclick="openCompteDepotClient(\''+cliId+'\')">📦 Compte dépôt</button> '
     +'<button class="btn gn" onclick="cMo();setTimeout(function(){ficheDepNouveauClient(\''+cliId+'\')},200)">➕ Nouveau dépôt</button>'
   );
 }
