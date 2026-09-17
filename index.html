@@ -610,7 +610,7 @@ body.nuit .card{border-color:#0a1520}
 </div>
 </aside>
 <main class="main">
-<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.67</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
+<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.68</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
 <div class="cnt">
 
 <!-- DASHBOARD -->
@@ -9709,9 +9709,12 @@ function openCompteDepotClient(cliId){
   }
   if(caEnCours>0){
     h+='<div style="margin-top:8px;padding:8px;background:rgba(34,166,147,.1);border:1px solid var(--a2);border-radius:8px;font-size:11px;margin-bottom:6px">'
-      +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">'
-      +'<span>💰 CA en cours (non facturé) : <b style="color:var(--gd);font-size:14px">'+euro(caEnCours)+'</b></span>'
-      +'<button class="btn gn" onclick="mvtBilanTournee(\''+ cliId+'\')" style="font-size:11px;padding:5px 12px">🧾 Bilan de tournée</button></div>'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:4px">'
+      +'<span>💰 CA non facturé : <b style="color:var(--gd);font-size:14px">'+euro(caEnCours)+'</b></span>'
+      +'<div style="display:flex;gap:6px">'
+      +'<button class="btn gn" onclick="mvtFacturerVentes(\''+ cliId+'\')" style="font-size:11px;padding:5px 12px">🧾 Facturer les ventes</button>'
+      +'<button class="btn" onclick="mvtBilanTournee(\''+ cliId+'\')" style="font-size:11px;padding:5px 12px;background:rgba(239,68,68,.12);border-color:var(--rd);color:var(--rd)">🚪 Clôturer</button>'
+      +'</div></div>'
       +'<div style="border-top:1px solid rgba(34,166,147,.2);padding-top:6px">'
       +'<div style="font-weight:700;color:var(--a2);margin-bottom:4px">📦 Réappro</div>'
       +'<div style="display:flex;gap:6px;flex-wrap:wrap">'
@@ -9813,10 +9816,54 @@ window.mvtReouvrir=function(depId,cliId){
   showToast('🔓 Dépôt '+dep.ref+' rouvert');
   setTimeout(function(){openCompteDepotClient(cliId);},300);
 };
-window.window.mvtBilanTournee=function(cliId){
+window.mvtFacturerVentes=function(cliId){
+  var deps=act(db.depots||[]).filter(function(d){return d.clientId===cliId&&d.status!=='cloture';});
+  var lignes=[];
+  var totalNet=0;
+  var depsConcernes=[];
+  deps.forEach(function(dep){
+    var mvts=(dep.mouvements||[]).filter(function(m){return m.type==='vente'&&!m.facturee;});
+    if(!mvts.length)return;
+    depsConcernes.push(dep);
+    var grp={};
+    mvts.forEach(function(m){
+      var k=m.prodId||m.produit;
+      if(!grp[k])grp[k]={produit:m.produit,prodId:m.prodId||'',qty:0,pu:m.pu,mvts:[]};
+      grp[k].qty+=m.qty;grp[k].mvts.push(m);
+    });
+    var comm=dep.commission||0;
+    for(var k in grp){
+      var g=grp[k];
+      var cv=g.qty*g.pu;var cm=cv*comm/100;var net=cv-cm;
+      totalNet+=net;
+      lignes.push({article:g.produit,desc:'Vente dépôt '+dep.ref+' — '+g.qty+' u',qty:g.qty,pu:g.pu,remise:comm,montant:net,total:net});
+      g.mvts.forEach(function(m){m.facturee=true;m.facRef='__p';});
+    }
+  });
+  if(!lignes.length){alert('Aucune vente non facturée à facturer.');return;}
+  var tva=(db.settings.tvaRate!==undefined&&db.settings.tvaRate!==''&&db.settings.tvaRate!==null?E(db.settings.tvaRate):20);
+  var ref=nextFacRef();
+  depsConcernes.forEach(function(dep){
+    (dep.mouvements||[]).forEach(function(m){if(m.facRef==='__p')m.facRef=ref;});
+    dep.factures=dep.factures||[];dep.factures.push(ref);
+    stamp(dep);
+  });
+  var depRefs=depsConcernes.map(function(d){return d.ref;}).join(', ');
+  var facture={id:uid('f'),ref:ref,clientId:cliId,
+    objet:'Ventes dépôt(s) '+depRefs+' du '+new Date().toLocaleDateString('fr-FR'),
+    lignes:lignes,total:totalNet,tva:tva,remise:0,acompte:0,paiement:'virement',
+    notes:'Ventes sur dépôt(s) '+depRefs,
+    date:tdy(),activityType:'nutrica',mode:'depot-vente',status:'emise'};
+  stamp(facture);db.factures.push(facture);
+  lH('ventes-depot','Facturation '+depRefs+' — '+ref+' — '+euro(totalNet));
+  sav(false);
+  showToast('🧾 Facture '+ref+' créée — '+euro(totalNet));
+  setTimeout(function(){openCompteDepotClient(cliId);},400);
+};
+window.mvtBilanTournee=function(cliId){
   var deps=act(db.depots||[]).filter(function(d){return d.clientId===cliId&&d.status!=='cloture';});
   var vendeurs=deps.filter(function(dep){
-    return dep.produits.some(function(p){return (p.qtyVendue||0)>0;});
+    return (dep.produits||[]).some(function(p){return (p.qtyVendue||0)>0;});
   });
   if(!vendeurs.length){alert('Aucune vente enregistrée sur les dépôts en cours.');return;}
   var totalCA=0;
@@ -9829,18 +9876,67 @@ window.window.mvtBilanTournee=function(cliId){
       var rest=E(p.qtyDeposee||0)-E(p.qtyVendue||0);
       if(rest>0){
         var k=p.prodId||p.nom;
-        if(!invGroup[k]) invGroup[k]={prodId:p.prodId,nom:p.nom,qty:0,prixVente:E(p.prixVente||0),commission:dep.commission||0};
+        if(!invGroup[k])invGroup[k]={prodId:p.prodId,nom:p.nom,qty:0,prixVente:E(p.prixVente||0)};
         invGroup[k].qty+=rest;
       }
     });
   });
   var commission=vendeurs[0].commission||0;
-  if(!confirm('Générer '+vendeurs.length+' facture(s) — CA ventes : '+euro(totalCA)+' ?'))return;
-  vendeurs.forEach(function(dep){if(typeof depExecCloture==='function')depExecCloture(dep.id);});
+  var hasUnfactured=vendeurs.some(function(dep){
+    return (dep.mouvements||[]).some(function(m){return m.type==='vente'&&!m.facturee;});
+  });
+  var msg='Clôturer '+vendeurs.length+' dépôt(s) — CA total ventes : '+euro(totalCA);
+  if(hasUnfactured)msg+='\n(Les ventes non encore facturées seront incluses dans une nouvelle facture)';
+  if(!confirm(msg))return;
+  // Facturer les ventes non encore facturées
+  if(hasUnfactured){
+    var lignes=[];var totalNet=0;
+    vendeurs.forEach(function(dep){
+      var mvts=(dep.mouvements||[]).filter(function(m){return m.type==='vente'&&!m.facturee;});
+      if(!mvts.length)return;
+      var grp={};
+      mvts.forEach(function(m){
+        var k=m.prodId||m.produit;
+        if(!grp[k])grp[k]={produit:m.produit,prodId:m.prodId||'',qty:0,pu:m.pu,mvts:[]};
+        grp[k].qty+=m.qty;grp[k].mvts.push(m);
+      });
+      var comm=dep.commission||0;
+      for(var k in grp){
+        var g=grp[k];
+        var cv=g.qty*g.pu;var cm=cv*comm/100;var net=cv-cm;
+        totalNet+=net;
+        lignes.push({article:g.produit,desc:'Vente dépôt '+dep.ref+' — '+g.qty+' u',qty:g.qty,pu:g.pu,remise:comm,montant:net,total:net});
+        g.mvts.forEach(function(m){m.facturee=true;m.facRef='__p';});
+      }
+    });
+    var tva=(db.settings.tvaRate!==undefined&&db.settings.tvaRate!==''&&db.settings.tvaRate!==null?E(db.settings.tvaRate):20);
+    var ref=nextFacRef();
+    vendeurs.forEach(function(dep){
+      (dep.mouvements||[]).forEach(function(m){if(m.facRef==='__p')m.facRef=ref;});
+      dep.factures=dep.factures||[];dep.factures.push(ref);
+    });
+    var depRefs=vendeurs.map(function(d){return d.ref;}).join(', ');
+    var facture={id:uid('f'),ref:ref,clientId:cliId,
+      objet:'Bilan tournée dépôt(s) '+depRefs+' du '+new Date().toLocaleDateString('fr-FR'),
+      lignes:lignes,total:totalNet,tva:tva,remise:0,acompte:0,paiement:'virement',
+      notes:'Bilan de tournée — '+depRefs,
+      date:tdy(),activityType:'nutrica',mode:'depot-vente',status:'emise'};
+    stamp(facture);db.factures.push(facture);
+  } else {
+    // Fallback : pas de mouvements (vieille donnée) → depExecCloture
+    vendeurs.forEach(function(dep){
+      if(typeof depExecCloture==='function')depExecCloture(dep.id);
+    });
+  }
+  // Clôturer tous les dépôts
+  vendeurs.forEach(function(dep){
+    if(dep.status!=='cloture'){dep.status='cloture';dep.clotureDate=new Date().toISOString();stamp(dep);}
+  });
+  sav(false);
   var invList=[];
   for(var k in invGroup){if(invGroup[k].qty>0)invList.push(invGroup[k]);}
   if(!invList.length){
-    showToast('✅ Bilan terminé — '+vendeurs.length+' facture(s)');
+    showToast('✅ Bilan terminé — '+vendeurs.length+' dépôt(s) clôturé(s)');
     setTimeout(function(){openCompteDepotClient(cliId);},700);
     return;
   }
@@ -9857,7 +9953,7 @@ window.window.mvtBilanTournee=function(cliId){
     stamp(nd);db.depots.push(nd);sav(false);
     showToast('✅ Bilan + dépôt '+nd.ref+' créé (invendus)');
   } else {
-    showToast('✅ Bilan terminé — invendus repris');
+    showToast('✅ Bilan terminé — invendus non repris');
   }
   setTimeout(function(){openCompteDepotClient(cliId);},700);
 };
