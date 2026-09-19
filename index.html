@@ -610,7 +610,7 @@ body.nuit .card{border-color:#0a1520}
 </div>
 </aside>
 <main class="main">
-<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.68</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
+<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.69</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
 <div class="cnt">
 
 <!-- DASHBOARD -->
@@ -5538,23 +5538,97 @@ function ht(ttc){var tva=(db.settings.tvaRate!==undefined&&db.settings.tvaRate!=
 // V80.28b : Historique rentabilité (30 derniers jours) — transports réels, coûts estimés + tickets liés
 function rRentaHist(){
   var el=document.getElementById('rentaHist');if(!el)return;
-  var d30=new Date();d30.setDate(d30.getDate()-30);var s30=d30.toISOString().slice(0,10);var d0=tdy();
-  var trs=act(db.transports).filter(function(t){return t.date&&t.date>=s30&&t.date<=d0&&E(t.price)>0}).sort(function(a,b){return (b.date||'').localeCompare(a.date||'')});
-  if(!trs.length){el.innerHTML='<div class="nt" style="text-align:center;padding:14px">Aucun transport réalisé sur les 30 derniers jours — les marges apparaîtront ici après tes missions.</div>';return}
-  var h='<table style="width:100%;font-size:11px;border-collapse:collapse"><tr style="color:var(--mt)"><th style="text-align:left;padding:4px">Date</th><th style="text-align:left">Client</th><th style="text-align:left">Trajet</th><th style="text-align:right">Prix TTC</th><th style="text-align:right">Coûts</th><th style="text-align:right">Marge</th><th style="text-align:right">%</th></tr>';
+  var per=window._rentaPeriod||'30';
+  var d0=tdy();var dFrom=new Date();
+  if(per==='30')dFrom.setDate(dFrom.getDate()-30);
+  else if(per==='90')dFrom.setDate(dFrom.getDate()-90);
+  else if(per==='180')dFrom.setDate(dFrom.getDate()-180);
+  else dFrom=new Date('2000-01-01');
+  var sFrom=dFrom.toISOString().slice(0,10);
+  var trs=act(db.transports).filter(function(t){return t.date&&t.date>=sFrom&&t.date<=d0;}).sort(function(a,b){return (b.date||'').localeCompare(a.date||'')});
+  var btnSt=function(p){return 'font-size:11px;padding:3px 8px;border-radius:12px;border:1px solid var(--bd);cursor:pointer;background:'+(per===p?'var(--a1)':'var(--bg2)')+';color:'+(per===p?'#fff':'var(--tx)');};
+  var h='<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;align-items:center">'
+    +'<span style="font-size:11px;color:var(--mt)">Période :</span>'
+    +'<button onclick="window._setRentaPer(this.dataset.p)" data-p="30" style="'+btnSt('30')+'">30j</button>'
+    +'<button onclick="window._setRentaPer(this.dataset.p)" data-p="90" style="'+btnSt('90')+'">90j</button>'
+    +'<button onclick="window._setRentaPer(this.dataset.p)" data-p="180" style="'+btnSt('180')+'">6 mois</button>'
+    +'<button onclick="window._setRentaPer(this.dataset.p)" data-p="tout" style="'+btnSt('tout')+'">Tout</button>'
+    +'<span style="margin-left:auto;font-size:11px;color:var(--mt)">'+trs.length+' transport(s)</span>'
+    +'</div>';
+  if(!trs.length){
+    h+='<div class="nt" style="text-align:center;padding:14px">Aucun transport sur cette période.</div>';
+    el.innerHTML=h;return;
+  }
+  h+='<div style="overflow-x:auto"><table style="width:100%;font-size:11px;border-collapse:collapse;min-width:720px">'
+    +'<tr style="color:var(--mt)">'
+    +'<th style="text-align:left;padding:4px;white-space:nowrap">Réf</th>'
+    +'<th style="text-align:left;padding:4px;white-space:nowrap">Date</th>'
+    +'<th style="text-align:left;padding:4px;white-space:nowrap">Client</th>'
+    +'<th style="text-align:left;padding:4px;white-space:nowrap">Départ → Arrivée</th>'
+    +'<th style="text-align:right;padding:4px;white-space:nowrap">Km</th>'
+    +'<th style="text-align:left;padding:4px;white-space:nowrap">Retour</th>'
+    +'<th style="text-align:right;padding:4px;white-space:nowrap">Coût aller</th>'
+    +'<th style="text-align:right;padding:4px;white-space:nowrap">Coût retour</th>'
+    +'<th style="text-align:right;padding:4px;white-space:nowrap">Total coût</th>'
+    +'<th style="text-align:right;padding:4px;white-space:nowrap">CA</th>'
+    +'<th style="text-align:right;padding:4px;white-space:nowrap">Marge €</th>'
+    +'<th style="text-align:right;padding:4px;white-space:nowrap">%</th>'
+    +'</tr>';
   var tCA=0,tCo=0;
   trs.forEach(function(t){
-    var co=totalCostTr(t)+(db.depenses||[]).filter(function(x){return x.transportId===t.id&&!x._deleted}).reduce(function(s2,x){return s2+E(x.ttc)},0);
-    var mg=E(t.price)-co;var pc=E(t.price)>0?Math.round(mg/E(t.price)*100):0;
-    tCA+=E(t.price);tCo+=co;
-    var l=tLegs(t);var tr=l.length>1?(l[0]+' → '+l[l.length-1]):'—';
-    h+='<tr><td style="padding:4px;border-top:1px solid rgba(255,255,255,.05)">'+t.date+'</td><td style="border-top:1px solid rgba(255,255,255,.05)">'+esc(cN(t.clientId))+'</td><td style="border-top:1px solid rgba(255,255,255,.05);font-size:10px">'+esc(tr)+'</td><td style="text-align:right;border-top:1px solid rgba(255,255,255,.05)">'+euro(t.price)+'</td><td style="text-align:right;border-top:1px solid rgba(255,255,255,.05)">'+euro(co)+'</td><td style="text-align:right;border-top:1px solid rgba(255,255,255,.05);font-weight:800;color:'+(mg>=0?'var(--a2)':'var(--rd)')+'">'+euro(mg)+'</td><td style="text-align:right;border-top:1px solid rgba(255,255,255,.05);color:'+(pc>=30?'var(--a2)':pc>=0?'var(--or)':'var(--rd)')+'">'+pc+'%</td></tr>';
+    var coAller=totalCostTr(t)+(db.depenses||[]).filter(function(x){return x.transportId===t.id&&!x._deleted}).reduce(function(s2,x){return s2+E(x.ttc)},0);
+    var coRetour=(t.retourType==='vide')?rMarg(cFuel(E(t.kmManual),t.vehiculeId)+E(t.tolls)):0;
+    var co=coAller+coRetour;
+    var facCA=(db.factures||[]).filter(function(fac){return fac.transportId===t.id&&!fac._deleted}).reduce(function(s,fac){return s+E(fac.total)},0);
+    var ca=facCA||E(t.price);
+    var mg=ca-co;var pc=ca>0?Math.round(mg/ca*100):0;
+    tCA+=ca;tCo+=co;
+    var legs=tLegs(t);var trajet=legs.length>1?(esc(legs[0])+' → '+esc(legs[legs.length-1])):'--';
+    var retSel='<select onchange="setRetourType(\''+t.id+'\',this.value)" style="font-size:11px;padding:2px 4px;background:var(--bg2);border:1px solid var(--bd);border-radius:4px;color:var(--tx)">'
+      +'<option value=""'+((!t.retourType||t.retourType==='')?'selected':'')+'>--</option>'
+      +'<option value="vide"'+(t.retourType==='vide'?' selected':'')+'>Retour vide</option>'
+      +'<option value="groupe"'+(t.retourType==='groupe'?' selected':'')+'>Groupé</option>'
+      +'</select>';
+    var bd='border-top:1px solid rgba(255,255,255,.05)';
+    h+='<tr>'
+      +'<td style="padding:4px;'+bd+';font-size:10px;white-space:nowrap;color:var(--a1)">'+esc(t.ref||'--')+'</td>'
+      +'<td style="padding:4px;'+bd+';white-space:nowrap">'+esc(t.date||'')+'</td>'
+      +'<td style="padding:4px;'+bd+';white-space:nowrap;max-width:110px;overflow:hidden;text-overflow:ellipsis">'+esc(cN(t.clientId))+'</td>'
+      +'<td style="padding:4px;'+bd+';font-size:10px;max-width:150px;overflow:hidden;text-overflow:ellipsis">'+trajet+'</td>'
+      +'<td style="padding:4px;'+bd+';text-align:right;white-space:nowrap">'+(E(t.kmManual)?E(t.kmManual)+' km':'--')+'</td>'
+      +'<td style="padding:4px;'+bd+'">'+retSel+'</td>'
+      +'<td style="padding:4px;'+bd+';text-align:right;white-space:nowrap">'+euro(coAller)+'</td>'
+      +'<td style="padding:4px;'+bd+';text-align:right;white-space:nowrap;color:'+(coRetour>0?'var(--or)':'var(--mt)')+'">'+euro(coRetour)+'</td>'
+      +'<td style="padding:4px;'+bd+';text-align:right;white-space:nowrap;font-weight:700">'+euro(co)+'</td>'
+      +'<td style="padding:4px;'+bd+';text-align:right;white-space:nowrap">'+euro(ca)+'</td>'
+      +'<td style="padding:4px;'+bd+';text-align:right;white-space:nowrap;font-weight:800;color:'+(mg>=0?'var(--a2)':'var(--rd)')+'">'+euro(mg)+'</td>'
+      +'<td style="padding:4px;'+bd+';text-align:right;white-space:nowrap;font-weight:700;color:'+(pc>=30?'var(--a2)':pc>=0?'var(--or)':'var(--rd)')+'">'+pc+'%</td>'
+      +'</tr>';
   });
-  var tMg=tCA-tCo;
-  h+='<tr style="background:rgba(26,122,110,.10)"><td colspan="3" style="padding:5px;font-weight:900">TOTAL 30 j — '+trs.length+' transport(s)</td><td style="text-align:right;font-weight:900">'+euro(tCA)+'</td><td style="text-align:right;font-weight:900">'+euro(tCo)+'</td><td style="text-align:right;font-weight:900;color:'+(tMg>=0?'var(--a2)':'var(--rd)')+'">'+euro(tMg)+'</td><td style="text-align:right;font-weight:900">'+(tCA>0?Math.round(tMg/tCA*100):0)+'%</td></tr></table>';
-  h+='<div style="font-size:10px;color:var(--mt);margin-top:4px">Coûts = carburant estimé (conso véhicule) + péages + hôtel + multimodal + tickets 📸 liés au transport. Repère : 30 % de marge minimum.</div>';
+  var tMg=tCA-tCo;var tPc=tCA>0?Math.round(tMg/tCA*100):0;
+  h+='<tr style="background:rgba(26,122,110,.10)">'
+    +'<td colspan="6" style="padding:5px;font-weight:900">TOTAL — '+trs.length+' transport(s)</td>'
+    +'<td></td><td></td>'
+    +'<td style="text-align:right;font-weight:900">'+euro(tCo)+'</td>'
+    +'<td style="text-align:right;font-weight:900">'+euro(tCA)+'</td>'
+    +'<td style="text-align:right;font-weight:900;color:'+(tMg>=0?'var(--a2)':'var(--rd)')+'">'+euro(tMg)+'</td>'
+    +'<td style="text-align:right;font-weight:900">'+tPc+'%</td>'
+    +'</tr></table></div>';
+  h+='<div style="font-size:10px;color:var(--mt);margin-top:4px">Coût aller = carburant estimé + péages + hôtel + multimodal + dépenses liées. Retour vide = même coût fuel+péages. Repère : 30 % de marge minimum.</div>';
   el.innerHTML=h;
 }
+window.setRetourType=function(tId,val){
+  var t=(db.transports||[]).find(function(x){return x.id===tId});
+  if(!t)return;
+  t.retourType=val;stamp(t);
+  sav(false);
+  try{rRentaHist();}catch(e){}
+};
+window._setRentaPer=function(p){
+  window._rentaPeriod=p;
+  try{rRentaHist();}catch(e){}
+};
+
 function fmtMarg(priceTTC,cost){
   var margBrute=priceTTC-cost;
   var priceHT=ht(priceTTC);
