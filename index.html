@@ -610,7 +610,7 @@ body.nuit .card{border-color:#0a1520}
 </div>
 </aside>
 <main class="main">
-<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.76</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
+<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.77</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
 <div class="cnt">
 
 <!-- DASHBOARD -->
@@ -30716,71 +30716,50 @@ function rbCalcRoute(){
   // Mettre à jour les champs cachés rb_dep et rb_arr
   $('rb_dep').value=etapes[0];
   $('rb_arr').value=etapes[etapes.length-1];
-  
   var statusEl=$('rb_km');
   statusEl.placeholder='⏳ Calcul en cours...';
-  showToast('🗺️ Calcul route '+etapes.length+' étapes...');
-  
-  // Géocoder chaque étape
-  var coords=[];
-  var done=0;
-  etapes.forEach(function(ville,idx){
-    fetch('https://nominatim.openstreetmap.org/search?format=json&q='+encodeURIComponent(ville+', France')+'&limit=1')
-      .then(function(r){return r.json()})
-      .then(function(data){
-        if(data&&data[0]){
-          coords[idx]=[parseFloat(data[0].lon),parseFloat(data[0].lat)];
-        }
-        done++;
-        if(done===etapes.length){
-          // Toutes les villes géocodées
-          var valid=coords.filter(function(c){return c});
-          if(valid.length<2){alert('❌ Impossible de géocoder certaines villes');return}
-          // Construire l'URL OSRM avec toutes les étapes
-          var coordStr=valid.map(function(c){return c[0]+','+c[1]}).join(';');
-          fetch('https://router.project-osrm.org/route/v1/driving/'+coordStr+'?overview=false&steps=true')
-            .then(function(r){return r.json()})
-            .then(function(route){
-              if(route&&route.routes&&route.routes[0]){
-                var rt=route.routes[0];
-                var distKm=Math.round(rt.distance/1000);
-                var dureeH=Math.round(rt.duration/3600*10)/10;
-                // V78 : détection RÉELLE des km d'autoroute tronçon par tronçon (refs A1, A26...)
-                var kmAutoroute=0;
-                try{
-                  (rt.legs||[]).forEach(function(leg){
-                    (leg.steps||[]).forEach(function(st){
-                      var ref=(st.ref||'')+' '+(st.name||'');
-                      if(/\bA\s?\d{1,3}\b/.test(ref))kmAutoroute+=st.distance/1000;
-                    });
-                  });
-                }catch(e){}
-                kmAutoroute=Math.round(kmAutoroute);
-                // Tarif péage selon classe véhicule (Tourneo Connect = classe 1)
-                var clSel=$('rb_classe');
-                var tarifPeage=clSel?(parseFloat(clSel.value)||0.11):0.11;
-                var peagesEstim=Math.round(kmAutoroute*tarifPeage);
-                // Fallback si détection vide mais long trajet
-                if(kmAutoroute===0&&distKm>150)peagesEstim=Math.round(distKm*0.7*tarifPeage);
-                $('rb_km').value=distKm;
-                $('rb_peages').value=peagesEstim;
-                $('rb_temps').value=dureeH;
-                var infoA=$('rb_autoroute_info');
-                if(infoA)infoA.textContent=kmAutoroute>0?'🛣️ '+kmAutoroute+' km d\'autoroute détectés sur '+distKm+' km':'';
-                calcRenta();
-                showToast('✅ '+distKm+' km ('+kmAutoroute+' km autoroute) · '+dureeH+'h · ~'+peagesEstim+'€ péages');
-              } else {
-                alert('❌ Erreur de calcul d\'itinéraire');
-              }
-            }).catch(function(e){alert('❌ Erreur OSRM : '+e.message)});
-        }
-      }).catch(function(e){
-        done++;
-        if(done===etapes.length){alert('❌ Erreur géocodage : '+e.message)}
-      });
-  });
+  showToast('🗺️ Géocodage '+etapes.length+' villes...');
+  // Géocodage séquentiel via geocode() rate-limited (1 req/1.1s — pas de ban Nominatim)
+  Promise.all(etapes.map(function(v){return geocode(v);}))
+  .then(function(coords){
+    var valid=coords.filter(function(c){return c;});
+    if(valid.length<2){showToast('❌ Impossible de géocoder certaines villes');return;}
+    var coordStr=valid.map(function(c){return c.lon+','+c.lat;}).join(';');
+    return fetch('https://router.project-osrm.org/route/v1/driving/'+coordStr+'?overview=false&steps=true')
+    .then(function(r){return r.json();})
+    .then(function(route){
+      if(route&&route.routes&&route.routes[0]){
+        var rt=route.routes[0];
+        var distKm=Math.round(rt.distance/1000);
+        var dureeH=Math.round(rt.duration/3600*10)/10;
+        // Détection km autoroute tronçon par tronçon (refs A1, A26...)
+        var kmAutoroute=0;
+        try{
+          (rt.legs||[]).forEach(function(leg){
+            (leg.steps||[]).forEach(function(st){
+              var ref=(st.ref||'')+' '+(st.name||'');
+              if(/\bA\s?\d{1,3}\b/.test(ref))kmAutoroute+=st.distance/1000;
+            });
+          });
+        }catch(e){}
+        kmAutoroute=Math.round(kmAutoroute);
+        var clSel=$('rb_classe');
+        var tarifPeage=clSel?(parseFloat(clSel.value)||0.11):0.11;
+        var peagesEstim=Math.round(kmAutoroute*tarifPeage);
+        if(kmAutoroute===0&&distKm>150)peagesEstim=Math.round(distKm*0.7*tarifPeage);
+        $('rb_km').value=distKm;
+        $('rb_peages').value=peagesEstim;
+        $('rb_temps').value=dureeH;
+        var infoA=$('rb_autoroute_info');
+        if(infoA)infoA.textContent=kmAutoroute>0?'🛣️ '+kmAutoroute+" km d'autoroute détectés sur "+distKm+' km':'';
+        calcRenta();
+        showToast('✅ '+distKm+' km ('+kmAutoroute+' km autoroute) · '+dureeH+'h · ~'+peagesEstim+'€ péages');
+      } else {
+        showToast('❌ Erreur de calcul d\'itinéraire');
+      }
+    });
+  }).catch(function(e){showToast('❌ Erreur réseau : '+(e.message||'connexion impossible'));});
 }
-
 function rbTarifChange(){
   var sel=$('rb_tarif');if(!sel)return;
   var box=$('rb_tarif_custom_box');
