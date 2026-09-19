@@ -610,7 +610,7 @@ body.nuit .card{border-color:#0a1520}
 </div>
 </aside>
 <main class="main">
-<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.70</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
+<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.73</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
 <div class="cnt">
 
 <!-- DASHBOARD -->
@@ -2780,9 +2780,27 @@ document.getElementById('q_contrat_pec').addEventListener('change',function(){
   </div>
 </div><div class="bd">
 
+  <!-- PRE-DEPART -->
+  <div id="pre_depart_card" style="margin-bottom:10px;padding:8px;background:rgba(212,168,67,.06);border-radius:8px;border:1px solid rgba(212,168,67,.25)">
+    <div style="font-size:11px;font-weight:800;color:var(--gd);margin-bottom:6px">💡 Pré-départ — rentabilité estimée</div>
+    <div style="display:flex;gap:6px;align-items:flex-end;flex-wrap:wrap">
+      <div class="fd" style="flex:1;min-width:80px"><label style="font-size:10px">Km estimé</label><input id="pd_km" type="number" placeholder="Ex: 280" oninput="calcPreDepart()" style="padding:5px"></div>
+      <div class="fd" style="flex:1;min-width:80px"><label style="font-size:10px">Péages estimés €</label><input id="pd_peage" type="number" step="0.01" value="0" oninput="calcPreDepart()" style="padding:5px"></div>
+    </div>
+    <div style="display:flex;gap:4px;margin:6px 0 4px">
+      <button id="pd_ret_s" onclick="window._pdSetRet('simple')" class="btn sm" style="flex:1;font-size:10px;padding:4px">➡️ Simple</button>
+      <button id="pd_ret_v" onclick="window._pdSetRet('vide')" class="btn sm" style="flex:1;font-size:10px;padding:4px">↩️ Vide</button>
+      <button id="pd_ret_g" onclick="window._pdSetRet('groupe')" class="btn sm" style="flex:1;font-size:10px;padding:4px">🔄 Groupé</button>
+      <button id="pd_cat1" onclick="window._pdSetCat(1)" class="btn sm" style="font-size:10px;padding:4px 6px">Cat1</button>
+      <button id="pd_cat2" onclick="window._pdSetCat(2)" class="btn sm" style="font-size:10px;padding:4px 6px">Cat2</button>
+    </div>
+    <div id="pd_result" style="font-size:11px"></div>
+  </div>
+
   <!-- BOUTON UNIQUE : ENREGISTRER ÉTAPE -->
   <div style="display:flex;gap:6px;margin-bottom:8px">
     <button class="btn gn" onclick="carnetStamp()" style="flex:1;padding:14px;font-size:15px" id="cb_stamp_btn">📍 Enregistrer étape</button>
+    <button class="btn sm" onclick="toggleGpsTracking()" style="padding:14px;min-width:52px" id="gps_btn" title="GPS tracking">🛰️</button>
     <button class="btn sm rd" onclick="carnetStop()" style="padding:14px" title="Clôturer la mission">🏁</button>
   </div>
   <div id="cb_stamp_status" style="font-size:11px;color:var(--mt);margin-bottom:8px"></div>
@@ -12605,10 +12623,43 @@ function rFac2(){
         +'<button class="btn sm" onclick="marquerAcompte(\''+fid+'\')" title="'+(ac>0?'Modifier acompte':'Ajouter acompte')+'" style="font-size:10px;background:#1a2a10;border-color:#3a6a10;color:#9d6">💰 Ac.</button>'+(f.status!=='payée'?'<button class="btn sm gn" onclick="marquerPayeeModal(\''+fid+'\')" title="Marquer payée" style="font-size:10px">✅</button>':'')
         +(f.status==='emise'?'<button class="btn sm" onclick="marquerImpayee(\''+fid+'\')" title="Marquer impayée" style="background:#3a1010;border-color:#6a2020;color:#ff6666;font-size:10px">❌</button>':'')
         +(f.activityType!=='avoir'?'<button class="btn sm" onclick="creerAvoir(\''+fid+'\')" title="Créer un avoir" style="background:#4a1040;border-color:#8a2080;color:#e0a0d8;font-size:10px">📄 Avoir</button>':'')
+        +(f.status!=='annulee'&&f.status!=='payée'&&ac>0&&f.activityType!=='avoir'?'<button class="btn sm" onclick="annulerGarderAcompte(\''+fid+'\')" title="Annulation client — conserver acompte" style="background:#3a1a00;border-color:#8a4a00;color:#ffa060;font-size:10px">🚫</button>':'')
         +'<button class="btn sm rd" onclick="hardDelFac(\''+fid+'\')" title="Supprimer" style="font-size:10px">🗑️</button>'
       +'</td></tr>';
   }))
-}function showFicheClient(cliId){
+
+}
+function annulerGarderAcompte(facId){
+  var f=db.factures.find(function(x){return x.id===facId});
+  if(!f)return;
+  var ac=E(f.acompte)||0;
+  if(!ac){showToast('Aucun acompte sur cette facture');return;}
+  if(f.status==='annulee'){showToast('Facture déjà annulée');return;}
+  if(!confirm('Annulation client — conserver '+euro(ac)+' d\'acompte ?\n\n1. '+f.ref+' → annulée\n2. Nouvelle facture "Retenue annulation" '+euro(ac)+' → payée'))return;
+  var tvaR=(db.settings.tvaRate!==undefined&&db.settings.tvaRate!==null&&db.settings.tvaRate!==''?E(db.settings.tvaRate):20);
+  var acHT=Math.round(ac/(1+tvaR/100)*100)/100;
+  var acTVA=Math.round((ac-acHT)*100)/100;
+  var newRef=nextFacRef();
+  var newFac={
+    id:uid('f'),ref:newRef,
+    clientId:f.clientId,animalIds:f.animalIds||[],animalId:f.animalId||'',quoteId:null,
+    objet:'Retenue annulation — '+f.ref+' (annulation client)',
+    lignes:[{desc:'Retenue annulation — mission annulée par le client (acompte conservé CGV)',qty:1,pu:acHT,tva:tvaR,total:acHT}],
+    total:ac,tva:acTVA,remise:0,acompte:0,
+    paiement:f.paiementAcompte||'',paiementAcompte:'',
+    notes:'Annulation de '+f.ref+' — acompte conservé suite à annulation client.',
+    date:tdy(),echeance:tdy(),
+    activityType:f.activityType||'autre',mode:'directe',
+    status:'payée',datePaiement:tdy(),paiementDate:tdy()
+  };
+  f.status='annulee';stamp(f);
+  stamp(newFac);db.factures.push(newFac);
+  db.tresorerie.unshift({id:uid('ca'),type:'recette',label:'Retenue annulation '+f.ref+' → '+newRef+' — '+cN(f.clientId),amount:ac,date:new Date().toISOString()});
+  lH('facture','Annulation client '+f.ref+' — acompte '+euro(ac)+' conservé → '+newRef);
+  sav();rFac2();
+  showToast('✅ '+f.ref+' annulée · Retenue '+euro(ac)+' → '+newRef+' (payée)');
+}
+function showFicheClient(cliId){
   var cl=db.clients.find(function(x){return x.id===cliId;});
   if(!cl)return;
   var nom=(cl.nom+' '+(cl.prenom||'')).trim();
@@ -24046,6 +24097,106 @@ function carnetDelete(id){
   sav();renderCarnet();
 }
 
+// ── Pré-départ & GPS V80.72/73 ──────────────────────────────────────────────
+window._pdRetour = 'simple';
+window._pdCat = 1;
+window._pdSetRet = function(r){ window._pdRetour=r; calcPreDepart(); };
+window._pdSetCat = function(c){ window._pdCat=c; calcPreDepart(); };
+
+function calcPreDepart(){
+  var km=E(V('pd_km'))||0, peage=E(V('pd_peage'))||0;
+  var box=$('pd_result'); if(!box) return;
+  if(!km){ box.innerHTML='<span style="color:var(--mt)">Saisir les km pour estimer</span>'; updatePdBtns(); return; }
+  var fuelPrice=E(db.settings.fuelPrice)||2.80;
+  var conso=E(db.settings.consumption)||7.5;
+  var retour=window._pdRetour||'simple';
+  var cat=window._pdCat||1;
+  var gasoilAller=km*(conso/100)*fuelPrice;
+  var peageAller=(cat===2)?(peage/1.53):peage;
+  var peageAffi=peage;
+  var gasoilRetour=0, peageRetour=0;
+  if(retour==='vide'){ gasoilRetour=gasoilAller; peageRetour=peageAller; }
+  var totalDepenses=gasoilAller+peageAller+gasoilRetour+peageRetour;
+  var prixMin30=totalDepenses>0?(totalDepenses/0.70):0;
+  var prixMin40=totalDepenses>0?(totalDepenses/0.60):0;
+  var gpsHint=window._gpsKm>0?' · GPS '+window._gpsKm.toFixed(1)+'km':'';
+  var retLabel=retour==='vide'?'↩️ vide':retour==='groupe'?'🔄 groupé':'➡️ simple';
+  var catLabel=cat===2?'Cat 2':'Cat 1';
+  box.innerHTML='<div style="display:flex;gap:6px;margin-top:4px;flex-wrap:wrap">'
+    +'<div style="flex:1;min-width:80px;text-align:center;padding:6px;background:rgba(239,68,68,.07);border-radius:6px">'
+    +'<div style="font-size:9px;color:var(--mt)">Prix min 30%</div>'
+    +'<div style="font-size:15px;font-weight:800;color:var(--or)">'+euro(prixMin30)+'</div></div>'
+    +'<div style="flex:1;min-width:80px;text-align:center;padding:6px;background:rgba(26,122,110,.12);border:2px solid var(--a2);border-radius:6px">'
+    +'<div style="font-size:9px;color:var(--a2);font-weight:800">🎯 Prix min 40%</div>'
+    +'<div style="font-size:17px;font-weight:900;color:var(--a2)">'+euro(prixMin40)+'</div></div></div>'
+    +'<div style="font-size:10px;color:var(--mt);margin-top:3px">'+retLabel+' · '+catLabel+' · dépenses ~'+euro(totalDepenses)+gpsHint+'</div>';
+  updatePdBtns();
+}
+
+function updatePdBtns(){
+  var r=window._pdRetour||'simple', c=window._pdCat||1;
+  var act='background:var(--a2);color:#000;font-weight:800';
+  var ids=['pd_ret_s','pd_ret_v','pd_ret_g','pd_cat1','pd_cat2'];
+  ids.forEach(function(id){var b=$( id);if(b)b.style.cssText='';});
+  var rs={'simple':'pd_ret_s','vide':'pd_ret_v','groupe':'pd_ret_g'}[r];
+  if(rs&&$(rs))$(rs).style.cssText=act;
+  var cs=c===2?'pd_cat2':'pd_cat1';
+  if($(cs))$(cs).style.cssText=act;
+}
+
+// ── GPS V80.73 ───────────────────────────────────────────────────────────────
+window._gpsWatchId = null;
+window._gpsPositions = [];
+window._gpsKm = 0;
+
+function haversine(lat1,lon1,lat2,lon2){
+  var R=6371, dLat=(lat2-lat1)*Math.PI/180, dLon=(lon2-lon1)*Math.PI/180;
+  var a=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)*Math.sin(dLon/2);
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+
+function toggleGpsTracking(){
+  if(window._gpsWatchId!==null){
+    navigator.geolocation.clearWatch(window._gpsWatchId);
+    window._gpsWatchId=null;
+    updateGpsBtn();
+    showToast('GPS arrêté — '+window._gpsKm.toFixed(1)+' km enregistrés');
+  } else {
+    if(!navigator.geolocation){showToast('GPS non disponible');return;}
+    window._gpsPositions=[];window._gpsKm=0;
+    window._gpsWatchId=navigator.geolocation.watchPosition(
+      function(pos){
+        var np={lat:pos.coords.latitude,lon:pos.coords.longitude,acc:pos.coords.accuracy};
+        var positions=window._gpsPositions;
+        if(positions.length>0 && np.acc<50){
+          var prev=positions[positions.length-1];
+          var dist=haversine(prev.lat,prev.lon,np.lat,np.lon);
+          if(dist>0.02) window._gpsKm+=dist;
+        }
+        if(np.acc<50) positions.push(np);
+        updateGpsBtn();
+        calcPreDepart();
+      },
+      function(err){showToast('GPS: '+err.message);},
+      {enableHighAccuracy:true,maximumAge:3000,timeout:15000}
+    );
+    updateGpsBtn();
+    showToast('GPS démarré 🛰️');
+  }
+}
+
+function updateGpsBtn(){
+  var btn=$('gps_btn'); if(!btn)return;
+  var active=window._gpsWatchId!==null;
+  if(active){
+    btn.style.background='var(--a2)';btn.style.color='#000';btn.style.fontWeight='800';
+    btn.innerHTML='🛰️ '+(window._gpsKm||0).toFixed(1)+'km';
+  } else {
+    btn.style.background='';btn.style.color='';btn.style.fontWeight='';
+    btn.innerHTML='🛰️';
+  }
+}
+
 function carnetShowAll(){
   var all=act(db.carnet||[]);
   if(!all.length){alert('Carnet vide');return}
@@ -24187,11 +24338,11 @@ function calcRentaMission(){
   var margeNetPct=prixHT>0?((margeNetteHT/prixHT)*100):0;
   var kmFacturable=km>0?(prix/km):0;
   var coutKm=km>0?(totalDepenses/km):0;
-  var rentable=margePct>=20;
+  var rentable=margePct>=40;
 
-  // Prix minimum a facturer
-  var prixMin20=totalDepenses>0?(totalDepenses/0.80):0;
+  // Prix minimum a facturer (objectif 40%)
   var prixMin30=totalDepenses>0?(totalDepenses/0.70):0;
+  var prixMin40=totalDepenses>0?(totalDepenses/0.60):0;
 
   var h='<div style="padding:12px;background:#0a1822;border-radius:10px;border:1px solid var(--ln)">';
 
@@ -24221,11 +24372,11 @@ function calcRentaMission(){
   h+='<div style="font-size:11px;font-weight:800;color:var(--mt);margin-bottom:6px">💡 Prix minimum a facturer TTC</div>';
   h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">';
   h+='<div style="text-align:center;padding:6px;border-radius:6px;background:rgba(239,68,68,.07)">';
-  h+='<div style="font-size:9px;color:var(--mt)">Marge 20%</div>';
-  h+='<div style="font-size:16px;font-weight:800;color:var(--or)">'+euro(prixMin20)+'</div></div>';
-  h+='<div style="text-align:center;padding:6px;border-radius:6px;background:rgba(26,122,110,.07)">';
   h+='<div style="font-size:9px;color:var(--mt)">Marge 30%</div>';
-  h+='<div style="font-size:16px;font-weight:800;color:var(--a2)">'+euro(prixMin30)+'</div></div>';
+  h+='<div style="font-size:16px;font-weight:800;color:var(--or)">'+euro(prixMin30)+'</div></div>';
+  h+='<div style="text-align:center;padding:6px;border-radius:6px;background:rgba(26,122,110,.12);border:2px solid var(--a2)">';
+  h+='<div style="font-size:9px;color:var(--a2);font-weight:800">🎯 OBJECTIF 40%</div>';
+  h+='<div style="font-size:18px;font-weight:900;color:var(--a2)">'+euro(prixMin40)+'</div></div>';
   h+='</div></div>';
 
   // Resultat rentabilite (si prix saisi)
@@ -24258,10 +24409,12 @@ function calcRentaMission(){
     h+='<div style="text-align:center;margin-top:10px;padding:10px;border-radius:8px;background:'+(rentable?'rgba(26,122,110,.1)':'rgba(239,68,68,.1)')+';font-weight:800;color:'+(rentable?'var(--a2)':'var(--rd)')+'">';
     if(rentable){
       h+='✅ Mission rentable — tu gardes <b>'+euro(margeNetteHT)+'</b> net ('+margeNetPct.toFixed(0)+'%)';
+    }else if(margePct>=30){
+      h+='⚠️ Marge '+margePct.toFixed(0)+'% — objectif 40% · tu gardes <b>'+euro(margeNetteHT)+'</b> · prix min 40%: '+euro(prixMin40);
     }else if(margeBruteTTC>0){
-      h+='⚠️ Marge faible — tu ne gardes que <b>'+euro(margeNetteHT)+'</b>';
+      h+='🔴 Marge trop faible ('+margePct.toFixed(0)+'%) · prix min 40%: '+euro(prixMin40);
     }else{
-      h+='❌ MISSION A PERTE — tu perds <b>'+euro(Math.abs(margeNetteHT))+'</b>';
+      h+='❌ MISSION A PERTE — tu perds <b>'+euro(Math.abs(margeNetteHT))+'</b> · prix min 40%: '+euro(prixMin40);
     }
     h+='</div>';
 
