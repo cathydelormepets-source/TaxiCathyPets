@@ -610,7 +610,7 @@ body.nuit .card{border-color:#0a1520}
 </div>
 </aside>
 <main class="main">
-<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.73</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
+<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.76</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
 <div class="cnt">
 
 <!-- DASHBOARD -->
@@ -2829,6 +2829,7 @@ document.getElementById('q_contrat_pec').addEventListener('change',function(){
 
   <!-- Totaux -->
   <div id="carnetTotaux" style="margin-top:6px"></div>
+  <div id="bilan_carnet_box" style="margin-top:6px"></div>
   <!-- Historique -->
   <div id="carnetList" style="margin-top:8px"></div>
   <div style="display:flex;gap:6px;margin-top:6px">
@@ -23954,7 +23955,9 @@ function carnetStop(silent){
 
   var steps = _cbTodaySteps;
   var first = steps[0], last = steps[steps.length-1];
-  var totalKm = last.km - first.km;
+  var _gpsKmVal=Math.round((window._gpsKm||0)*10)/10;
+  var _kmCompteur=last.km-first.km;
+  var totalKm=(_gpsKmVal>0.5&&_kmCompteur>=0&&confirm('Utiliser les km GPS ?\n\nGPS : '+_gpsKmVal.toFixed(1)+'\u202fkm\nCompteur : '+_kmCompteur+'\u202fkm'))?_gpsKmVal:_kmCompteur;
   var totalPeage = steps.reduce(function(s,e){return s+E(e.peage)},0);
 
   // Calculer temps total
@@ -23995,6 +23998,20 @@ function carnetStop(silent){
   _cbJourneeId = null;
   carnetRenderToday();
   renderCarnet();
+  // Alerte seuil vs pré-départ
+  var _pdK=E(V('pd_km'))||0;
+  if(_pdK>0&&totalKm>0){
+    var _ekm=totalKm-_pdK;
+    var _fp=E(db.settings.fuelPrice)||2.80;
+    var _co=E(db.settings.consumption)||7.5;
+    var _sur=Math.round(_ekm>0?(_ekm*(_co/100)*_fp*100)/100:0);
+    var _ep=totalPeage-(E(V('pd_peage'))||0);
+    if(_sur+Math.max(0,_ep)>5){
+      setTimeout(function(){
+        showToast('⚠️ Dépassement budget : +'+Math.round(_ekm)+' km'+(Math.max(0,_ep)>0?' +'+euro(Math.max(0,_ep))+' péages':'')+'  ⇒ surcoût ~'+euro(_sur+Math.max(0,_ep)));
+      },1400);
+    }
+  }
   showToast('🏁 Mission clôturée — '+entry.kmTotal+' km · '+steps.length+' étapes · '+euro(totalPeage)+' péages');
 }
 
@@ -24067,6 +24084,7 @@ function renderCarnet(){
   if(all.length>10) h+='<div style="font-size:10px;color:var(--mt);text-align:center;margin-top:4px">+ '+(all.length-10)+' entrées plus anciennes</div>';
   box.innerHTML=h;
   carnetTotaux(all);
+  bilanCarnet();
 }
 
 function carnetTotaux(data){
@@ -24091,6 +24109,63 @@ function carnetTotaux(data){
   '</div>';
 }
 
+function bilanCarnet(){
+  var box=$('bilan_carnet_box'); if(!box) return;
+  var all=act(db.carnet||[]);
+  if(!all.length){box.innerHTML='';return;}
+  var now=new Date();
+  var dow=now.getDay();
+  var monday=new Date(now);
+  monday.setDate(now.getDate()+(dow===0?-6:1-dow));
+  monday.setHours(0,0,0,0);
+  var weekStr=monday.toISOString().slice(0,10);
+  var monthStr=now.toISOString().slice(0,7);
+  var weekData=all.filter(function(e){return e.date&&e.date>=weekStr});
+  var monthData=all.filter(function(e){return e.date&&e.date.slice(0,7)===monthStr});
+  function stats(data){
+    var km=0,peage=0,min=0;
+    data.forEach(function(e){
+      km+=E(e.kmTotal);
+      peage+=E(e.peage);
+      if(e.hDepart&&e.hArrivee){
+        var d=e.hDepart.split(':'),a=e.hArrivee.split(':');
+        var m=(parseInt(a[0])*60+parseInt(a[1]))-(parseInt(d[0])*60+parseInt(d[1]))-E(e.pause);
+        if(m>0) min+=m;
+      }
+    });
+    return {n:data.length,km:km,peage:peage,min:min};
+  }
+  var w=stats(weekData),m=stats(monthData);
+  var fp=E(db.settings.fuelPrice)||2.80;
+  var co=E(db.settings.consumption)||7.5;
+  function fco(km){return Math.round(km*(co/100)*fp*100)/100;}
+  function fmt(s){var h=Math.floor(s.min/60),mn=s.min%60;return s.n+' trajet'+(s.n>1?'s':'')+' · '+s.km+' km'+(s.peage>0?' · '+euro(s.peage)+' péages':'')+(s.min>0?' · '+h+'h'+(mn<10?'0':'')+mn:'');}
+  var h='<div style="margin-top:8px;padding:8px;background:rgba(139,92,246,.05);border-radius:8px;border:1px solid rgba(139,92,246,.2)">';
+  h+='<div style="font-size:11px;font-weight:800;color:var(--pu);margin-bottom:6px">📊 Bilan carnet</div>';
+  h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:11px">';
+  h+='<div style="padding:6px;background:rgba(139,92,246,.07);border-radius:6px">';
+  h+='<div style="font-size:9px;font-weight:800;color:var(--pu);margin-bottom:3px">🗃️ CETTE SEMAINE</div>';
+  if(w.n>0){
+    h+='<div style="font-weight:800">'+w.km+' km</div>';
+    h+='<div style="font-size:10px;color:var(--mt)">'+w.n+' trajet'+(w.n>1?'s':'')+(w.peage>0?' · '+euro(w.peage):'')+'</div>';
+    h+='<div style="font-size:10px;color:var(--rd)">⛽️ ~'+euro(fco(w.km))+'</div>';
+  }else{
+    h+='<div style="font-size:10px;color:var(--mt)">Aucun trajet</div>';
+  }
+  h+='</div>';
+  h+='<div style="padding:6px;background:rgba(139,92,246,.07);border-radius:6px">';
+  h+='<div style="font-size:9px;font-weight:800;color:var(--pu);margin-bottom:3px">📅 CE MOIS</div>';
+  if(m.n>0){
+    h+='<div style="font-weight:800">'+m.km+' km</div>';
+    h+='<div style="font-size:10px;color:var(--mt)">'+m.n+' trajet'+(m.n>1?'s':'')+(m.peage>0?' · '+euro(m.peage):'')+'</div>';
+    h+='<div style="font-size:10px;color:var(--rd)">⛽️ ~'+euro(fco(m.km))+'</div>';
+  }else{
+    h+='<div style="font-size:10px;color:var(--mt)">Aucun trajet</div>';
+  }
+  h+='</div>';
+  h+='</div></div>';
+  box.innerHTML=h;
+}
 function carnetDelete(id){
   if(!confirm('Supprimer cette entrée ?'))return;
   db.carnet=(db.carnet||[]).filter(function(e){return e.id!==id});
@@ -24130,6 +24205,7 @@ function calcPreDepart(){
     +'<div style="font-size:9px;color:var(--a2);font-weight:800">🎯 Prix min 40%</div>'
     +'<div style="font-size:17px;font-weight:900;color:var(--a2)">'+euro(prixMin40)+'</div></div></div>'
     +'<div style="font-size:10px;color:var(--mt);margin-top:3px">'+retLabel+' · '+catLabel+' · dépenses ~'+euro(totalDepenses)+gpsHint+'</div>';
+  if(prixMin40>0){var ts=Math.ceil(prixMin40/5)*5;box.innerHTML+='<div style="margin-top:6px;padding:5px 8px;background:rgba(212,168,67,.18);border:1px solid rgba(212,168,67,.45);border-radius:6px;font-size:11px;display:flex;align-items:center;gap:6px">💡 <span style="font-weight:800;color:var(--gd)">Tarif à proposer : </span><span style="font-weight:800;font-size:13px;color:var(--gd)">'+euro(ts)+'</span> <span style="font-size:10px;color:var(--mt)">min 40 % ↑ 5 €</span></div>';}
   updatePdBtns();
 }
 
@@ -24429,12 +24505,91 @@ function calcRentaMission(){
   }
 
   h+='</div>';
+  if(prix>0){
+    window._rmData={km:km,prix:prix,prixHT:prixHT,totalDepenses:totalDepenses,margeBruteTTC:margeBruteTTC,margeNetteHT:margeNetteHT,margePct:margePct,margeNetPct:margeNetPct,gasoilFinal:gasoilFinal,peageAller:peageAller,gasoilRetour:gasoilRetour,peageRetour:peageRetour,hotel:hotel,repas:repas,parking:parking,ferry:ferry,veto:veto,divers:divers,acompte:acompte,resteAEncaisser:resteAEncaisser,retour:retour,libelleRetour:libelleRetour,rentable:rentable,prixMin40:prixMin40};
+    h+='<div style="text-align:center;margin-top:10px"><button class="btn" onclick="genResumeMission()" style="font-size:12px;padding:8px 20px">📄 Générer résumé</button></div>';
+  }
   box.innerHTML=h;
 }
 window._rmSetRetour=function(r){window._rmRetour=r;try{calcRentaMission();}catch(e){}};
 window._rmSetCat=function(c){window._rmPeageCat=c;try{calcRentaMission();}catch(e){}};
 
 // Compat ancien nom
+function genResumeMission(){
+  var d=window._rmData;
+  if(!d){showToast('Saisir les données de la mission d\'abord');return;}
+  var nom=prompt('Nom client / mission (optionnel) :','')||'';
+  var dateStr=new Date().toLocaleDateString('fr-FR',{year:'numeric',month:'long',day:'numeric'});
+  function eur(v){return (v||0).toLocaleString('fr-FR',{style:'currency',currency:'EUR'});}
+  function li(label,val,color){
+    return '<tr><td style="padding:3px 0;color:#9ca3af">'+label+'</td>'
+      +'<td style="text-align:right;font-weight:700;color:'+(color||'#e8e4d4')+'">'+val+'</td></tr>';
+  }
+  var h='<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Résumé — Cathy Pets</title><style>'
+    +'*{margin:0;box-sizing:border-box}'
+    +'body{font-family:system-ui,sans-serif;background:#0d1b2a;color:#e8e4d4;padding:24px;max-width:520px;margin:0 auto}'
+    +'h1{font-size:22px;font-weight:900;color:#f4c842;margin-bottom:4px}'
+    +'.sub{font-size:12px;color:#6b7280;margin-bottom:20px}'
+    +'.card{background:#0a1822;border:1px solid #1e3a4a;border-radius:10px;padding:16px;margin-bottom:12px}'
+    +'.card h2{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#f89b2d;margin-bottom:10px}'
+    +'table{width:100%;border-collapse:collapse;font-size:13px}'
+    +'.big{font-size:22px;font-weight:900}'
+    +'.badge{display:block;padding:8px 16px;border-radius:20px;font-size:13px;font-weight:800;margin-top:12px;text-align:center}'
+    +'a{color:#f4c842;text-decoration:none}'
+    +'@media print{'
+    +'body{background:#fff!important;color:#000!important;padding:12px}'
+    +'.card{background:#f8f9fa!important;border-color:#dee2e6!important}'
+    +'h1,.card h2{color:#000!important}.sub{color:#666!important}'
+    +'}'
+    +'</style></head><body>';
+  h+='<h1>📋 Résumé de mission</h1>';
+  h+='<div class="sub">Cathy Pets SAS · '+dateStr+(nom?' · <b style="color:#f4c842">'+nom+'</b>':'')+'</div>';
+
+  h+='<div class="card"><h2>🚗 Route</h2><table>';
+  h+=li('Km parcourus',d.km+' km','#f4c842');
+  if(d.libelleRetour) h+=li('Type retour',d.libelleRetour,'#9ca3af');
+  h+='</table></div>';
+
+  h+='<div class="card"><h2>💸 Dépenses</h2><table>';
+  h+=li('⛽️ Gasoil aller',eur(d.gasoilFinal));
+  h+=li('🛣️ Péages aller',eur(d.peageAller));
+  if((d.gasoilRetour||0)>0) h+=li('↩️ Gasoil retour',eur(d.gasoilRetour),'#f89b2d');
+  if((d.peageRetour||0)>0) h+=li('↩️ Péages retour',eur(d.peageRetour),'#f89b2d');
+  if((d.hotel||0)>0) h+=li('🏨 Hôtel',eur(d.hotel));
+  if((d.repas||0)>0) h+=li('🍽️ Repas',eur(d.repas));
+  if((d.parking||0)>0) h+=li('🅿️ Parking',eur(d.parking));
+  if((d.ferry||0)>0) h+=li('🚢 Ferry/Train',eur(d.ferry));
+  if((d.veto||0)>0) h+=li('🏥 Vétérinaire',eur(d.veto));
+  if((d.divers||0)>0) h+=li('📦 Divers',eur(d.divers));
+  h+=li('TOTAL DÉPENSES','<b>'+eur(d.totalDepenses)+'</b>','#ef4444');
+  h+='</table></div>';
+
+  h+='<div class="card"><h2>💰 Rentabilité</h2><table>';
+  h+=li('Prix facturé TTC',eur(d.prix),'#4ade80');
+  h+=li('Prix facturé HT',eur(d.prixHT),'#86efac');
+  if((d.acompte||0)>0){
+    h+=li('Acompte reçu',eur(d.acompte),'#f4c842');
+    h+=li('Reste à encaisser',eur(d.resteAEncaisser),'#f4c842');
+  }
+  h+=li('Marge brute TTC',eur(d.margeBruteTTC)+' ('+d.margePct.toFixed(0)+'%)',d.margeBruteTTC>=0?'#4ade80':'#ef4444');
+  h+=li('Ce que tu gardes (net HT)','<span class="big">'+eur(d.margeNetteHT)+'</span> — '+d.margeNetPct.toFixed(0)+'%',d.margeNetteHT>=0?'#4ade80':'#ef4444');
+  h+='</table>';
+  var rent=(d.margePct>=40);
+  h+='<div class="badge" style="background:'+(rent?'rgba(74,222,128,.1)':'rgba(239,68,68,.1)')+';color:'+(rent?'#4ade80':'#ef4444')+';border:1px solid '+(rent?'rgba(74,222,128,.4)':'rgba(239,68,68,.4)') +'">'+( rent?'✅ Mission rentable — objectif 40 % atteint':'🔴 Sous le seuil 40 % — min. recommandé : '+eur(d.prixMin40))+'</div>';
+  h+='</div>';
+
+  h+='<div style="text-align:center;margin-top:16px;font-size:10px;color:#4b5563">'
+    +'Cathy Pets SAS · cathy-pets.fr · '
+    +'<a href="#" onclick="window.print();return false">🖨️ Imprimer / PDF</a>'
+    +'</div>';
+  h+='</body></html>';
+
+  var blob=new Blob([h],{type:'text/html;charset=utf-8'});
+  var url=URL.createObjectURL(blob);
+  var w=window.open(url,'_blank');
+  if(!w) showToast('Popup bloquée — autorisez les popups pour ce site');
+  setTimeout(function(){URL.revokeObjectURL(url);},300000);
+}
 function calcEstimation(){calcRentaMission()}
 
 // =================== PARTAGE POSITION LIVE ===================
