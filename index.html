@@ -610,7 +610,7 @@ body.nuit .card{border-color:#0a1520}
 </div>
 </aside>
 <main class="main">
-<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.69</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
+<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.70</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
 <div class="cnt">
 
 <!-- DASHBOARD -->
@@ -2834,13 +2834,33 @@ document.getElementById('q_contrat_pec').addEventListener('change',function(){
 
   <!-- ROUTE -->
   <div style="font-size:11px;font-weight:800;color:var(--or);text-transform:uppercase;letter-spacing:.1em;margin:10px 0 6px;border-top:1px solid var(--ln);padding-top:8px">🚗 Route</div>
+
+  <!-- TYPE DE TRAJET -->
+  <div style="margin-bottom:8px">
+    <div style="font-size:10px;color:var(--mt);margin-bottom:4px;font-weight:600">Type de trajet</div>
+    <div style="display:flex;gap:4px">
+      <button id="rm_ret_simple" onclick="window._rmSetRetour('simple')" class="btn sm" style="flex:1;font-size:11px;padding:5px 4px">➡️ Aller simple</button>
+      <button id="rm_ret_vide" onclick="window._rmSetRetour('vide')" class="btn sm" style="flex:1;font-size:11px;padding:5px 4px">↩️ Retour vide</button>
+      <button id="rm_ret_groupe" onclick="window._rmSetRetour('groupe')" class="btn sm" style="flex:1;font-size:11px;padding:5px 4px">🔄 Retour groupé</button>
+    </div>
+  </div>
+
   <div class="row">
-    <div class="c4 fd"><label>Km total</label><input id="rm_km" type="number" placeholder="Ex: 350" oninput="calcRentaMission()"></div>
-    <div class="c4 fd"><label>Péages réels €</label><input id="rm_peage" type="number" step="0.01" value="0" oninput="calcRentaMission()"></div>
+    <div class="c4 fd"><label>Km total (aller)</label><input id="rm_km" type="number" placeholder="Ex: 350" oninput="calcRentaMission()"></div>
+    <div class="c4 fd">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">
+        <label style="margin:0;font-size:11px">Péages réels € (aller)</label>
+        <div style="display:flex;gap:3px;align-items:center">
+          <button id="rm_cat1" onclick="window._rmSetCat(1)" style="border:1px solid var(--ln);border-radius:4px;padding:1px 6px;font-size:9px;cursor:pointer;background:transparent;color:var(--tx)">Cat 1</button>
+          <button id="rm_cat2" onclick="window._rmSetCat(2)" style="border:1px solid var(--ln);border-radius:4px;padding:1px 6px;font-size:9px;cursor:pointer;background:transparent;color:var(--tx)">Cat 2</button>
+        </div>
+      </div>
+      <input id="rm_peage" type="number" step="0.01" value="0" oninput="calcRentaMission()">
+      <div id="rm_cat_info" style="font-size:9px;color:var(--mt);margin-top:2px">Cat 1 = ≤2m · Cat 2 = &gt;2m ou remorque</div>
+    </div>
     <div class="c4 fd"><label>Gasoil réel €</label><input id="rm_gasoil" type="number" step="0.01" value="0" oninput="calcRentaMission()"></div>
   </div>
   <div class="nt" style="font-size:10px;color:var(--mt);margin-bottom:6px">💡 Si gasoil = 0, estimation auto à <span id="rm_conso_info"></span></div>
-
   <!-- HÉBERGEMENT & REPAS -->
   <div style="font-size:11px;font-weight:800;color:#f5d070;text-transform:uppercase;letter-spacing:.1em;margin:10px 0 6px;border-top:1px solid var(--ln);padding-top:8px">🏨 Hébergement & Repas</div>
   <div class="row">
@@ -24071,30 +24091,79 @@ function calcRentaMission(){
   if(!km&&!prix){box.style.display='none';return}
   box.style.display='block';
 
-  // Paramètres
-  var fuelPrice=E(db.settings.fuelPrice)||1.80;
+  // Parametres
+  var fuelPrice=E(db.settings.fuelPrice)||2.80;
   var conso=E(db.settings.consumption)||7.5;
   var tollPerKm=E(db.settings.tollPerKm)||0.09;
   var tvaRate=(db.settings.tvaRate!==undefined&&db.settings.tvaRate!==''&&db.settings.tvaRate!==null?E(db.settings.tvaRate):20);
 
+  // Type de retour et categorie peage
+  var retour=window._rmRetour||'simple';
+  var peageCat=window._rmPeageCat||1;
+
+  // Mise a jour visuelle des boutons toggle
+  ['simple','vide','groupe'].forEach(function(r){
+    var b=$('rm_ret_'+r);
+    if(b){
+      if(r===retour){b.style.background='var(--or)';b.style.color='#000';b.style.fontWeight='800';}
+      else{b.style.background='';b.style.color='';b.style.fontWeight='';}
+    }
+  });
+  [1,2].forEach(function(c){
+    var b=$('rm_cat'+c);
+    if(b){
+      if(c===peageCat){b.style.background='var(--a2)';b.style.color='#000';b.style.fontWeight='800';}
+      else{b.style.background='';b.style.color='';b.style.fontWeight='';}
+    }
+  });
+
   // Info conso
   var ci=$('rm_conso_info');
-  if(ci) ci.textContent=conso+' L/100 × '+fuelPrice.toFixed(2)+' €/L';
+  if(ci) ci.textContent=conso+' L/100 x '+fuelPrice.toFixed(2)+' €/L';
 
   // Revenus
   var acompte=E(V('rm_acompte'));
   var prixHT=prix/(1+tvaRate/100);
   var resteAEncaisser=prix-acompte;
 
-  // Dépenses route
-  var peage=E(V('rm_peage'));
+  // Depenses route aller
+  var peageSaisi=E(V('rm_peage'));
+  var peageAller=peageSaisi;
+
+  // Info categorie peage
+  var catInfo=$('rm_cat_info');
+  if(catInfo){
+    if(peageSaisi>0){
+      if(peageCat===2){
+        catInfo.textContent='Cat 2 (>2m ou remorque) - montant reel';
+        catInfo.style.color='var(--a2)';
+      } else {
+        var est2=peageSaisi*1.53;
+        catInfo.textContent='Cat 1 (<=2m) - equivalent Cat 2 ~'+euro(est2);
+        catInfo.style.color='var(--mt)';
+      }
+    } else {
+      catInfo.textContent=peageCat===2?'Cat 2 selectionnee (>2m ou remorque)':'Cat 1 selectionnee (<=2m, ex: Transit Connect)';
+      catInfo.style.color='var(--mt)';
+    }
+  }
+
   var gasoil=E(V('rm_gasoil'));
   var gasoilEstim=km*(conso/100)*fuelPrice;
   var gasoilFinal=gasoil>0?gasoil:gasoilEstim;
-  var peageEstim=km*tollPerKm;
-  if(!peage&&km) peage=0; // péage 0 si pas saisi (l'utilisateur peut le laisser à 0)
+  var peageEstim=km*tollPerKm*(peageCat===2?1.53:1);
 
-  // Dépenses hébergement & repas
+  // Cout retour selon type
+  var gasoilRetour=0, peageRetour=0, libelleRetour='';
+  if(retour==='vide'){
+    gasoilRetour=km*(conso/100)*fuelPrice;
+    peageRetour=peageAller;
+    libelleRetour='retour a vide ('+km+' km)';
+  } else if(retour==='groupe'){
+    libelleRetour='retour groupe (facture separement)';
+  }
+
+  // Depenses hebergement & repas
   var hotel=E(V('rm_hotel'));
   var repas=E(V('rm_repas'));
   var parking=E(V('rm_parking'));
@@ -24105,7 +24174,7 @@ function calcRentaMission(){
   var divers=E(V('rm_divers'));
 
   // Totaux
-  var totalRoute=gasoilFinal+peage;
+  var totalRoute=(gasoilFinal+peageAller)+(gasoilRetour+peageRetour);
   var totalSejour=hotel+repas+parking;
   var totalAutres=ferry+veto+divers;
   var totalDepenses=totalRoute+totalSejour+totalAutres;
@@ -24120,57 +24189,69 @@ function calcRentaMission(){
   var coutKm=km>0?(totalDepenses/km):0;
   var rentable=margePct>=20;
 
+  // Prix minimum a facturer
+  var prixMin20=totalDepenses>0?(totalDepenses/0.80):0;
+  var prixMin30=totalDepenses>0?(totalDepenses/0.70):0;
+
   var h='<div style="padding:12px;background:#0a1822;border-radius:10px;border:1px solid var(--ln)">';
 
-  // Résumé dépenses
-  h+='<div style="font-weight:800;font-size:13px;margin-bottom:8px;color:var(--or)">📋 Détail des coûts</div>';
+  // Resume depenses
+  h+='<div style="font-weight:800;font-size:13px;margin-bottom:8px;color:var(--or)">📋 Detail des couts</div>';
   h+='<div style="display:grid;grid-template-columns:1fr auto;gap:2px 12px;font-size:12px">';
-  h+='<span>⛽ Gasoil '+(gasoil>0?'(réel)':'(estimé: '+conso+'L/100)')+'</span><b>'+euro(gasoilFinal)+'</b>';
-  h+='<span>🛣️ Péages '+(peage>0?'(réel)':'(0€)')+'</span><b>'+euro(peage)+'</b>';
-  if(hotel>0) h+='<span>🏨 Hôtel</span><b>'+euro(hotel)+'</b>';
+  h+='<span>⛽ Gasoil aller '+(gasoil>0?'(reel)':'(estim: '+conso+'L/100)')+'</span><b>'+euro(gasoilFinal)+'</b>';
+  h+='<span>🛣️ Peages aller cat.'+peageCat+' '+(peageSaisi>0?'(reel)':'(0€)')+'</span><b>'+euro(peageAller)+'</b>';
+  if(retour==='vide'){
+    h+='<span style="color:var(--or)">↩️ Gasoil retour a vide</span><b style="color:var(--or)">'+euro(gasoilRetour)+'</b>';
+    if(peageRetour>0) h+='<span style="color:var(--or)">↩️ Peages retour</span><b style="color:var(--or)">'+euro(peageRetour)+'</b>';
+  } else if(retour==='groupe'){
+    h+='<span style="color:var(--a2)">🔄 Retour groupe — couts attribues a la mission retour</span><b style="color:var(--a2)">0,00 €</b>';
+  }
+  if(hotel>0) h+='<span>🏨 Hotel</span><b>'+euro(hotel)+'</b>';
   if(repas>0) h+='<span>🍽️ Repas</span><b>'+euro(repas)+'</b>';
   if(parking>0) h+='<span>🅿️ Parking</span><b>'+euro(parking)+'</b>';
   if(ferry>0) h+='<span>🚢 Ferry/Train</span><b>'+euro(ferry)+'</b>';
-  if(veto>0) h+='<span>🏥 Vétérinaire</span><b>'+euro(veto)+'</b>';
+  if(veto>0) h+='<span>🏥 Veterinaire</span><b>'+euro(veto)+'</b>';
   if(divers>0) h+='<span>📦 Divers</span><b>'+euro(divers)+'</b>';
-  h+='<span style="border-top:1px solid var(--ln);padding-top:4px;margin-top:4px;font-weight:800;color:var(--rd)">TOTAL DÉPENSES</span><b style="border-top:1px solid var(--ln);padding-top:4px;margin-top:4px;color:var(--rd)">'+euro(totalDepenses)+'</b>';
+  h+='<span style="border-top:1px solid var(--ln);padding-top:4px;margin-top:4px;font-weight:800;color:var(--rd)">TOTAL DEPENSES</span>';
+  h+='<b style="border-top:1px solid var(--ln);padding-top:4px;margin-top:4px;color:var(--rd)">'+euro(totalDepenses)+'</b>';
   h+='</div>';
 
-  // Résultat rentabilité
+  // Prix minimum a facturer (toujours affiche)
+  h+='<div style="margin-top:10px;padding:8px;border-radius:8px;background:rgba(255,255,255,.04);border:1px solid var(--ln)">';
+  h+='<div style="font-size:11px;font-weight:800;color:var(--mt);margin-bottom:6px">💡 Prix minimum a facturer TTC</div>';
+  h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">';
+  h+='<div style="text-align:center;padding:6px;border-radius:6px;background:rgba(239,68,68,.07)">';
+  h+='<div style="font-size:9px;color:var(--mt)">Marge 20%</div>';
+  h+='<div style="font-size:16px;font-weight:800;color:var(--or)">'+euro(prixMin20)+'</div></div>';
+  h+='<div style="text-align:center;padding:6px;border-radius:6px;background:rgba(26,122,110,.07)">';
+  h+='<div style="font-size:9px;color:var(--mt)">Marge 30%</div>';
+  h+='<div style="font-size:16px;font-weight:800;color:var(--a2)">'+euro(prixMin30)+'</div></div>';
+  h+='</div></div>';
+
+  // Resultat rentabilite (si prix saisi)
   if(prix>0){
     var tvaReversee=prix-prixHT;
 
-    // Décompte clair du haut vers le bas
     h+='<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--ln)">';
-    h+='<div style="font-weight:800;font-size:13px;margin-bottom:8px;color:var(--a2)">💰 Décompte rentabilité</div>';
+    h+='<div style="font-weight:800;font-size:13px;margin-bottom:8px;color:var(--a2)">💰 Decompte rentabilite</div>';
     h+='<div style="display:grid;grid-template-columns:1fr auto;gap:3px 12px;font-size:13px">';
-
-    // Facturé
-    h+='<span style="font-weight:700">💰 Facturé client TTC</span><b style="color:var(--a2)">'+euro(prix)+'</b>';
-
-    // - Dépenses
-    h+='<span style="color:var(--rd)">➖ Dépenses TTC (route + séjour + divers)</span><b style="color:var(--rd)">-'+euro(totalDepenses)+'</b>';
-    h+='<span style="color:var(--mt);font-size:11px">   dont HT récupérable (÷1.'+tvaRate+')</span><b style="color:var(--mt);font-size:11px">'+euro(totalDepensesHT)+'</b>';
-
-    // = Marge brute
-    h+='<span style="border-top:1px solid var(--ln);padding-top:4px;margin-top:4px;font-weight:800">= 💵 Marge brute TTC <span style="font-weight:400;font-size:11px;color:var(--mt)">(avant TVA)</span></span>';
+    h+='<span style="font-weight:700">💰 Facture client TTC</span><b style="color:var(--a2)">'+euro(prix)+'</b>';
+    h+='<span style="color:var(--rd)">➖ Depenses TTC</span><b style="color:var(--rd)">-'+euro(totalDepenses)+'</b>';
+    h+='<span style="color:var(--mt);font-size:11px">   dont HT (÷1.'+tvaRate+')</span><b style="color:var(--mt);font-size:11px">'+euro(totalDepensesHT)+'</b>';
+    h+='<span style="border-top:1px solid var(--ln);padding-top:4px;margin-top:4px;font-weight:800">= 💵 Marge brute TTC</span>';
     h+='<b style="border-top:1px solid var(--ln);padding-top:4px;margin-top:4px;font-size:16px;color:'+(margeBruteTTC>=0?'var(--a2)':'var(--rd)')+'">'+euro(margeBruteTTC)+' <span style="font-size:11px">('+margePct.toFixed(0)+'%)</span></b>';
-
-    // - TVA à reverser
-    h+='<span style="color:var(--or)">➖ TVA à reverser à l\'État ('+tvaRate+'%)</span><b style="color:var(--or)">-'+euro(tvaReversee)+'</b>';
-
-    // = CE QUE TU GARDES
+    h+='<span style="color:var(--or)">➖ TVA a reverser ('+tvaRate+'%)</span><b style="color:var(--or)">-'+euro(tvaReversee)+'</b>';
     h+='<span style="border-top:2px solid var(--gd);padding-top:6px;margin-top:6px;font-weight:900;font-size:14px">= 🏦 CE QUE TU GARDES</span>';
     h+='<b style="border-top:2px solid var(--gd);padding-top:6px;margin-top:6px;font-size:22px;color:'+(margeNetteHT>=0?'var(--a2)':'var(--rd)')+'">'+euro(margeNetteHT)+'</b>';
-    h+='<span style="font-size:10px;color:var(--mt)">Marge nette HT réelle</span><span style="font-size:10px;color:var(--mt)">'+margeNetPct.toFixed(0)+'% du CA HT</span>';
-
+    h+='<span style="font-size:10px;color:var(--mt)">Marge nette HT reelle</span>';
+    h+='<span style="font-size:10px;color:var(--mt)">'+margeNetPct.toFixed(0)+'% du CA HT</span>';
     h+='</div></div>';
 
-    // KPIs compacts
+    // KPIs
     h+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px">';
-    h+='<div style="text-align:center;padding:6px;background:rgba(255,255,255,.03);border-radius:8px"><div style="font-size:9px;color:var(--mt)">€/km facturé</div><div style="font-size:15px;font-weight:800;color:var(--gd)">'+kmFacturable.toFixed(2)+'</div></div>';
-    h+='<div style="text-align:center;padding:6px;background:rgba(255,255,255,.03);border-radius:8px"><div style="font-size:9px;color:var(--mt)">€/km coût</div><div style="font-size:15px;font-weight:800;color:var(--rd)">'+coutKm.toFixed(2)+'</div></div>';
-    h+='<div style="text-align:center;padding:6px;background:rgba(255,255,255,.03);border-radius:8px"><div style="font-size:9px;color:var(--mt)">TVA reversée</div><div style="font-size:15px;font-weight:800;color:var(--or)">'+euro(tvaReversee)+'</div></div>';
+    h+='<div style="text-align:center;padding:6px;background:rgba(255,255,255,.03);border-radius:8px"><div style="font-size:9px;color:var(--mt)">€/km facture</div><div style="font-size:15px;font-weight:800;color:var(--gd)">'+kmFacturable.toFixed(2)+'</div></div>';
+    h+='<div style="text-align:center;padding:6px;background:rgba(255,255,255,.03);border-radius:8px"><div style="font-size:9px;color:var(--mt)">€/km cout</div><div style="font-size:15px;font-weight:800;color:var(--rd)">'+coutKm.toFixed(2)+'</div></div>';
+    h+='<div style="text-align:center;padding:6px;background:rgba(255,255,255,.03);border-radius:8px"><div style="font-size:9px;color:var(--mt)">TVA reversee</div><div style="font-size:15px;font-weight:800;color:var(--or)">'+euro(tvaReversee)+'</div></div>';
     h+='</div>';
 
     // Bilan
@@ -24178,26 +24259,28 @@ function calcRentaMission(){
     if(rentable){
       h+='✅ Mission rentable — tu gardes <b>'+euro(margeNetteHT)+'</b> net ('+margeNetPct.toFixed(0)+'%)';
     }else if(margeBruteTTC>0){
-      h+='⚠️ Marge faible — tu ne gardes que <b>'+euro(margeNetteHT)+'</b> net · prix min recommandé : '+euro(totalDepenses*1.35);
+      h+='⚠️ Marge faible — tu ne gardes que <b>'+euro(margeNetteHT)+'</b>';
     }else{
-      h+='❌ MISSION À PERTE — tu perds <b>'+euro(Math.abs(margeNetteHT))+'</b> · prix min : '+euro(totalDepenses*1.35);
+      h+='❌ MISSION A PERTE — tu perds <b>'+euro(Math.abs(margeNetteHT))+'</b>';
     }
     h+='</div>';
 
-    // Reste à encaisser
     if(acompte>0){
-      h+='<div style="text-align:center;margin-top:6px;font-size:12px;color:var(--gd)">💳 Acompte reçu: '+euro(acompte)+' · Reste à encaisser: <b>'+euro(resteAEncaisser)+'</b></div>';
+      h+='<div style="text-align:center;margin-top:6px;font-size:12px;color:var(--gd)">💳 Acompte recu: '+euro(acompte)+' · Reste: <b>'+euro(resteAEncaisser)+'</b></div>';
     }
   }
 
-  // Estimation si pas de péage réel
+  // Estimation peage si non saisi
   if(!E(V('rm_peage'))&&km>0){
-    h+='<div style="margin-top:8px;font-size:10px;color:var(--mt);text-align:center">💡 Péages estimés si autoroute : ~'+euro(peageEstim)+' ('+tollPerKm.toFixed(2)+' €/km)</div>';
+    h+='<div style="margin-top:8px;font-size:10px;color:var(--mt);text-align:center">🛣️ Peages estimes autoroute ~'+euro(peageEstim)+' cat.'+peageCat+' ('+tollPerKm.toFixed(2)+' €/km)</div>';
   }
 
   h+='</div>';
   box.innerHTML=h;
 }
+window._rmSetRetour=function(r){window._rmRetour=r;try{calcRentaMission();}catch(e){}};
+window._rmSetCat=function(c){window._rmPeageCat=c;try{calcRentaMission();}catch(e){}};
+
 // Compat ancien nom
 function calcEstimation(){calcRentaMission()}
 
