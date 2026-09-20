@@ -610,7 +610,7 @@ body.nuit .card{border-color:#0a1520}
 </div>
 </aside>
 <main class="main">
-<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.77</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
+<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.78</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
 <div class="cnt">
 
 <!-- DASHBOARD -->
@@ -13243,15 +13243,23 @@ function loadDemandesSupabase(){
     _demandesCache=[];
     requests.forEach(function(req){
       if(req.status==='completed'||req.status==='cancelled'||req.status==='refused')return;
-      if(!req.origin||!req.destination)return;
+      // Accepter origin/destination ET pickupCity/dropoffCity (formats plateforme différents)
+      var ori=req.origin||req.pickupCity||req.pickupAddress||'';
+      var dst=req.destination||req.dropoffCity||req.arriveeCity||req.arriveeAddress||'';
+      if(!ori||!dst)return;
       var d=req.date?req.date.slice(0,10):'';
-      if(d&&d<today)return;
-      _demandesCache.push({src:'request',id:req.id,origin:req.origin,dest:req.destination,date:d,animal:req.cargoType||'animal',client:req.clientName||req.email||'Client plateforme',notes:req.notes||'',status:req.status||'pending',tripId:req.tripId||null});
+      // Garder les missions in-progress/accepted même si date passée
+      var actif=req.status==='in-progress'||req.status==='accepted'||req.status==='inProgress';
+      if(d&&d<today&&!actif)return;
+      _demandesCache.push({src:'request',id:req.id,origin:ori,dest:dst,date:d,animal:req.cargoType||req.animalType||'animal',client:req.clientName||req.client||req.email||'Client plateforme',notes:req.notes||'',status:req.status||'pending',tripId:req.tripId||null});
     });
     // Trajets plateforme sans source v77 (créés côté Vercel)
-    trips.filter(function(t){return t.source!=='v77'&&t.origin&&t.destination}).forEach(function(t){
+    trips.filter(function(t){return t.source!=='v77'}).forEach(function(t){
+      var ori=t.origin||t.pickupCity||t.pickupAddress||'';
+      var dst=t.destination||t.dropoffCity||t.arriveeCity||t.arriveeAddress||'';
+      if(!ori||!dst)return;
       if(t.date&&t.date.slice(0,10)<today)return;
-      _demandesCache.push({src:'platform',id:t.id,origin:t.origin,dest:t.destination,date:t.date?t.date.slice(0,10):'',animal:'animal',client:'Trajet plateforme',notes:t.notes||'',status:t.status||'available',tripId:null,seats:t.totalSeats,price:t.pricePerAnimal});
+      _demandesCache.push({src:'platform',id:t.id,origin:ori,dest:dst,date:t.date?t.date.slice(0,10):'',animal:'animal',client:'Trajet plateforme',notes:t.notes||'',status:t.status||'available',tripId:null,seats:t.totalSeats,price:t.pricePerAnimal});
     });
     _demandesCache.sort(function(a,b){return (a.date||'').localeCompare(b.date||'')});
     if(btn)btn.textContent='📥 Demandes ('+_demandesCache.length+')';
@@ -14399,19 +14407,21 @@ var _tourLabels={demande:'Demande',signe:'Devis signé',facture:'Facturé',garde
 var _tourEmoji={demande:'📩',signe:'✅',facture:'💶',garde:'🏠'};
 
 function initTourMap(){
-  if(typeof L==='undefined')return;
-  if(!_tourMap){
-    _tourMap=L.map('tourMap',{zoomControl:false}).setView([46.8,2.8],6);
-    L.control.zoom({position:'topright'}).addTo(_tourMap);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18,attribution:'© <a href="https://www.openstreetmap.org">OpenStreetMap</a>'}).addTo(_tourMap);
-    _tourMlg=L.layerGroup().addTo(_tourMap);
-    _tourRlg=L.layerGroup().addTo(_tourMap);
+  // Initialiser la carte seulement si Leaflet est charge
+  if(typeof L!=='undefined'){
+    if(!_tourMap){
+      _tourMap=L.map('tourMap',{zoomControl:false}).setView([46.8,2.8],6);
+      L.control.zoom({position:'topright'}).addTo(_tourMap);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18,attribution:'© <a href="https://www.openstreetmap.org">OpenStreetMap</a>'}).addTo(_tourMap);
+      _tourMlg=L.layerGroup().addTo(_tourMap);
+      _tourRlg=L.layerGroup().addTo(_tourMap);
+    }
+    setTimeout(function(){_tourMap.invalidateSize()},200);
   }
-  setTimeout(function(){_tourMap.invalidateSize()},200);
+  // Toujours charger les donnees et rafraichir la liste, carte ou pas
   buildTourData();
   renderTourAll();
 }
-
 function buildTourData(){
   _tourData=[];
   // Transports
