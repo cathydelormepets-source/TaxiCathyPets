@@ -610,7 +610,7 @@ body.nuit .card{border-color:#0a1520}
 </div>
 </aside>
 <main class="main">
-<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.82</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
+<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.83</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
 <div class="cnt">
 
 <!-- DASHBOARD -->
@@ -3275,6 +3275,9 @@ document.getElementById('q_contrat_pec').addEventListener('change',function(){
 
 <!-- HISTORIQUE MENSUEL -->
 <div class="card" style="margin-bottom:14px"><div class="hd"><h3>📅 Historique par mois</h3></div><div class="bd"><div id="frHistoMois"></div></div></div>
+
+<!-- IMPORT QONTO CSV -->
+<div class="card" style="border-top:3px solid #1a7a4a;margin-bottom:14px"><div class="hd"><h3>🏦 Rapprochement Qonto</h3><button class="btn sm" onclick="importQontoCSV()" style="font-size:11px;background:#0a2c1a;border-color:#1a6a3a;color:#5de8a0" title="Importe les dépenses depuis un export CSV Qonto (Débit uniquement)">📥 Importer CSV Qonto</button></div><div class="bd"><p style="margin:0 0 8px;font-size:13px;color:var(--mt)">Exporte ton relevé Qonto : <strong>Compte — Transactions — Exporter (CSV)</strong>. Les débits sont importés comme dépenses. Les doublons sont ignorés automatiquement.</p><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn gn" onclick="importQontoCSV()" style="font-size:13px">📤 Choisir le fichier CSV Qonto…</button><span style="font-size:11px;color:var(--mt);align-self:center">Colonnes reconnues : date, libellé, montant, catégorie, TVA</span></div></div></div>
 
 <!-- HISTORIQUE DÉTAILLÉ -->
 <div class="card"><div class="hd"><h3>📋 Historique des frais</h3></div><div class="bd"><div id="frHistoTbl" style="max-height:400px;overflow-y:auto"></div></div></div>
@@ -31793,6 +31796,98 @@ function batchRelance(){
 }
 function editRecur(){ return;}
 function oMoTemplate(){ return;}
+
+
+// ════ V80.83 : IMPORT CSV QONTO ════
+function importQontoCSV(){
+  var inp=document.createElement('input');
+  inp.type='file';inp.accept='.csv,text/csv';
+  inp.onchange=function(ev){
+    var file=ev.target.files[0];
+    if(!file)return;
+    var reader=new FileReader();
+    reader.onload=function(e){
+      try{_parseQontoCSV(e.target.result)}catch(err){showToast('⚠️ Erreur lecture CSV : '+err.message)}
+    };
+    reader.readAsText(file,'UTF-8');
+  };
+  inp.click();
+}
+function _parseQontoCSV(text){
+  var lines=text.replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n').filter(function(l){return l.trim();});
+  if(lines.length<2){showToast('⚠️ CSV vide ou invalide');return}
+  var sep=lines[0].indexOf(';')>0?';':',';
+  var headers=lines[0].split(sep).map(function(h){return h.replace(/"/g,'').trim().toLowerCase();});
+  function col(names){
+    for(var i=0;i<names.length;i++){var ix=headers.indexOf(names[i]);if(ix>=0)return ix;}
+    return -1;
+  }
+  var iDate=col(['settled_at','date de valeur','date','emitted_at']);
+  var iLabel=col(['label','libellé','libellé de l\'opération','reference','référence']);
+  var iAmount=col(['amount','montant','montant (eur)']);
+  var iSide=col(['side','sens','type']);
+  var iCat=col(['category','catégorie']);
+  var iNote=col(['note','notes','commentaire']);
+  var iVat=col(['vat_amount','tva','montant tva']);
+  if(iDate<0||iLabel<0||iAmount<0){showToast('⚠️ Colonnes Qonto non reconnues. Vérifie le format CSV.');return}
+  if(!db.depenses)db.depenses=[];
+  var existing=new Set((db.depenses||[]).map(function(d){return d.ref;}));
+  var added=0,skipped=0,creditSkipped=0;
+  var catMap={
+    'fuel':'602','carburant':'602',
+    'toll':'625','péage':'625','transport':'625','déplacement':'625',
+    'restaurant':'625r','food':'625r','repas':'625r',
+    'accommodation':'625h','hôtel':'625h','hotel':'625h','hébergement':'625h',
+    'car':'615','maintenance':'615','entretien':'615','réparation':'615',
+    'insurance':'616','assurance':'616',
+    'phone':'626','telecom':'626','télécommunication':'626',
+    'marketing':'623','advertising':'623','publicité':'623',
+    'software':'626','subscription':'626','abonnement':'626',
+    'office':'606','fournitures':'606','matériel':'606'
+  };
+  for(var i=1;i<lines.length;i++){
+    var cols=_qCsvLine(lines[i],sep);
+    if(cols.length<=1)continue;
+    var sideVal=(iSide>=0?(cols[iSide]||''):'').toLowerCase();
+    if(sideVal==='credit'||sideVal==='crédit'||sideVal==='cr'){creditSkipped++;continue}
+    var amtRaw=parseFloat((cols[iAmount]||'0').replace(/[^\d.,-]/g,'').replace(',','.'));
+    var amt=Math.abs(amtRaw);
+    if(amt<=0)continue;
+    var dateRaw=((cols[iDate]||'')+'').trim().replace(/['"]/g,'');
+    var dateISO=dateRaw.length>=10?dateRaw.slice(0,10):dateRaw;
+    var label=(cols[iLabel]||'Import Qonto').replace(/"/g,'').trim();
+    var catRaw=(iCat>=0?(cols[iCat]||''):'').toLowerCase();
+    var compte='625';
+    for(var k in catMap){if(catRaw.indexOf(k)>=0){compte=catMap[k];break}}
+    var vatRaw=iVat>=0?parseFloat((cols[iVat]||'0').replace(',','.')):0;
+    var tva=vatRaw>0?Math.round(vatRaw*100/amt):20;
+    var ht=Math.round(amt/(1+tva/100)*100)/100;
+    var noteVal=(iNote>=0?(cols[iNote]||''):'').replace(/"/g,'').trim();
+    var ref='QONTO_'+(dateISO.replace(/-/g,'')+'_'+Math.round(amt*100)+'_'+i);
+    if(existing.has(ref)){skipped++;continue}
+    db.depenses.push({id:uid('d'),date:dateISO,label:label,compte:compte,cat:'',
+      ht:ht,tva:tva,ttc:amt,paiement:'virement',ref:ref,
+      notes:'Import Qonto'+(noteVal?' — '+noteVal:''),source:'qonto'});
+    added++;
+  }
+  if(added>0){sav();rFrais();}
+  var msg='✅ '+added+' dépense(s) importée(s)';
+  if(skipped>0)msg+=' ('+skipped+' doublon(s) ignoré)';
+  if(creditSkipped>0)msg+=' ('+creditSkipped+' crédit(s) ignoré)';
+  showToast(msg);
+}
+function _qCsvLine(line,sep){
+  var result=[],cur='',inQ=false;
+  for(var i=0;i<line.length;i++){
+    var c=line[i];
+    if(c==='"'){inQ=!inQ;continue}
+    if(c===sep&&!inQ){result.push(cur.trim());cur='';continue}
+    cur+=c;
+  }
+  result.push(cur.trim());
+  return result;
+}
+
 
 </script><button id="fabScan" onclick="scanTicket()" title="Scanner un ticket / facture réglée" style="position:fixed;right:14px;bottom:92px;z-index:900;width:52px;height:52px;border-radius:50%;border:2px solid #f5d070;background:#2a1a05;color:#fff;font-size:22px;box-shadow:0 4px 14px rgba(0,0,0,.45);cursor:pointer">📸</button>
 </body>
