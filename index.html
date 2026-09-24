@@ -610,7 +610,7 @@ body.nuit .card{border-color:#0a1520}
 </div>
 </aside>
 <main class="main">
-<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.79</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
+<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.80</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
 <div class="cnt">
 
 <!-- DASHBOARD -->
@@ -4561,7 +4561,7 @@ document.getElementById('q_contrat_pec').addEventListener('change',function(){
       <div class="c12 fd"><label>Adresse</label><input id="s_ent_adresse" placeholder="6 Chemin Du Lavoir, 02470 Neuilly-Saint-Front"></div>
       <div class="c6 fd"><label>📞 Tél. taxi animaux</label><input id="s_ent_tel1" placeholder="07.81.30.41.10"></div>
       <div class="c6 fd"><label>📞 Tél. garde</label><input id="s_ent_tel2" placeholder="07.83.43.63.06"></div>
-      <div class="c6 fd"><label>✉️ Email</label><input id="s_ent_email" placeholder="cathydelormepets@gmail.com"></div>
+      <div class="c6 fd"><label>✉️ Email</label><input id="s_ent_email" placeholder="garde-transport@cathypetsitter.com"></div>
       <div class="c6 fd"><label>🌐 Site web</label><input id="s_ent_web" placeholder="cathypetsitter.com"></div>
       <div class="c6 fd"><label>RC Pro</label><input id="s_ent_rcpro" placeholder="Hiscox HSXIN320028640M"></div>
       <div class="c6 fd"><label>APE</label><input id="s_ent_ape" placeholder="9609Z"></div>
@@ -5560,7 +5560,7 @@ function E(n){return Number(n||0)}
 // Données entreprise centralisées
 function ENT(key){
   var s=db.settings||{};
-  var defaults={entNom:'Cathy Pets SAS',entSiret:'928 564 269',entSiretFull:'92856426900019',entSiren:'928564269',entTva:'FR65928564269',entRcs:'Soissons',entAdresse:'6 Chemin Du Lavoir, 02470 Neuilly-Saint-Front',entTel1:'07.81.30.41.10',entTel2:'07.83.43.63.06',entEmail:'cathydelormepets@gmail.com',entWeb:'cathypetsitter.com',entRcpro:'Hiscox HSXIN320028640M',entApe:'9609Z',entCapital:'5000'};
+  var defaults={entNom:'Cathy Pets SAS',entSiret:'928 564 269',entSiretFull:'92856426900019',entSiren:'928564269',entTva:'FR65928564269',entRcs:'Soissons',entAdresse:'6 Chemin Du Lavoir, 02470 Neuilly-Saint-Front',entTel1:'07.81.30.41.10',entTel2:'07.83.43.63.06',entEmail:'garde-transport@cathypetsitter.com',entWeb:'cathypetsitter.com',entRcpro:'Hiscox HSXIN320028640M',entApe:'9609Z',entCapital:'5000'};
   return s[key]||defaults[key]||'';
 }
 var _Y=new Date().getFullYear();
@@ -6334,7 +6334,7 @@ function backupEmail(){
   var stats='Clients: '+act(db.clients).length+' · Factures: '+act(db.factures).length+' · Devis: '+act(db.devis).length+' · Transports: '+act(db.transports).length;
   var subj='Backup Cathy Pets — '+dateStr;
   var body='Backup automatique Cathy Pets du '+dateStr+'\n\n'+stats+'\n\nLe fichier JSON a été téléchargé.\nPensez à le joindre à ce mail ou à le sauvegarder dans Google Drive.\n\n--\nCathy Pets SAS';
-  var url='https://mail.google.com/mail/?view=cm&fs=1&to=cathydelormepets@gmail.com&su='+encodeURIComponent(subj)+'&body='+encodeURIComponent(body);
+  var url='https://mail.google.com/mail/?view=cm&fs=1&to=garde-transport@cathypetsitter.com&su='+encodeURIComponent(subj)+'&body='+encodeURIComponent(body);
   setTimeout(function(){window.open(url,'_blank')},500);
   showToast('📧 JSON téléchargé + Gmail ouvert — attache le fichier dans Gmail');
 }
@@ -14226,7 +14226,7 @@ function rSet(){
   sv('s_ent_adresse', s.entAdresse||'6 Chemin Du Lavoir, 02470 Neuilly-Saint-Front');
   sv('s_ent_tel1', s.entTel1||'07.81.30.41.10');
   sv('s_ent_tel2', s.entTel2||'07.83.43.63.06');
-  sv('s_ent_email', s.entEmail||'cathydelormepets@gmail.com');
+  sv('s_ent_email', s.entEmail||'garde-transport@cathypetsitter.com');
   sv('s_ent_web', s.entWeb||'cathypetsitter.com');
   sv('s_ent_rcpro', s.entRcpro||'Hiscox HSXIN320028640M');
   sv('s_ent_ape', s.entApe||'9609Z');
@@ -15089,7 +15089,7 @@ function haversine(lat1,lon1,lat2,lon2){
 
 // =================== MAILS AUTO V15 ===================
 function getSIGN(){return '\n\n--\n'+ENT('entNom')+' — Transport animalier & Pet-sitting\nToutes espèces : domestiques, NAC, exotiques — France & International\n📞 Taxi animaux : '+ENT('entTel1')+' | 🏡 Garde : '+ENT('entTel2')+'\n🌐 '+ENT('entWeb')+' | ✉️ '+ENT('entEmail')+'\n'+ENT('entAdresse');}
-var SIGN = '\n\n--\nCathy Pets — Transport animalier & Pet-sitting\nToutes espèces : domestiques, NAC, exotiques — France & International\n📞 Taxi animaux : 07.81.30.41.10 | 🏡 Garde : 07.83.43.63.06\n🌐 cathypetsitter.com | ✉️ cathydelormepets@gmail.com\n6 Chemin du Lavoir, 02470 Neuilly-Saint-Front';
+var SIGN = '\n\n--\nCathy Pets — Transport animalier & Pet-sitting\nToutes espèces : domestiques, NAC, exotiques — France & International\n📞 Taxi animaux : 07.81.30.41.10 | 🏡 Garde : 07.83.43.63.06\n🌐 cathypetsitter.com | ✉️ garde-transport@cathypetsitter.com\n6 Chemin du Lavoir, 02470 Neuilly-Saint-Front';
 
 function rMails(){
   var d = tdy();
@@ -15480,7 +15480,7 @@ function buildMailPro(type,id){
     +'<td style="border-left:3px solid '+OR+';padding-left:12px">'
     +'<div style="font-size:15px;font-weight:800;color:'+NV+'">Cathy \u2014 Cathy Pets</div>'
     +'<div style="font-size:12px;color:#555;margin-top:3px">\ud83d\ude97 Taxi animalier\u00a0: <a href="tel:0781304110" style="color:'+OR+';text-decoration:none;font-weight:700">07 81 30 41 10</a> \u00b7 \ud83c\udfe1 Garde\u00a0: <a href="tel:0783436306" style="color:'+OR+';text-decoration:none;font-weight:700">07 83 43 63 06</a></div>'
-    +'<div style="font-size:12px;color:#555;margin-top:2px">\ud83c\udf10 <a href="https://www.cathypetsitter.com" style="color:'+TE+';text-decoration:none;font-weight:700">cathypetsitter.com</a> \u00b7 \u2709\ufe0f cathydelormepets@gmail.com</div>'
+    +'<div style="font-size:12px;color:#555;margin-top:2px">\ud83c\udf10 <a href="https://www.cathypetsitter.com" style="color:'+TE+';text-decoration:none;font-weight:700">cathypetsitter.com</a> \u00b7 \u2709\ufe0f garde-transport@cathypetsitter.com</div>'
     +'</td></tr></table>'
     +'</td></tr>'
     +'<tr><td style="background:'+NV+';padding:14px 24px;margin-top:20px"><div style="font-size:10px;color:#8ba3c7;line-height:1.6;text-align:center">CATHY PETS SAS \u2014 6 Chemin Du Lavoir, 02470 Neuilly-Saint-Front \u2014 SIRET 928 564 269 \u2014 RCS Soissons \u2014 TVA FR65928564269<br>Agr\u00e9ment transport d\u2019animaux vivants FR02146T2 (Types 1 &amp; 2) \u2014 RC Pro Hiscox HSXIN320028640M</div></td></tr>'
@@ -15495,7 +15495,7 @@ function buildMailPro(type,id){
       type==='vaccin'?'Rappel de vaccin à prévoir pour '+(doc.nom||'votre animal')+' — date au dossier : '+String(doc.vaccin1||doc.vaccin2||'').slice(0,10)+'. Pensez à prendre rendez-vous chez votre vétérinaire ; un vaccin à jour est exigé pour tout transport ou garde.':
       type==='solde'?'Facture '+doc.ref+' — Solde à régler avant la prise en charge : '+euro(aRegler)+(pen?' (dont pénalités de retard '+euro(pen.totalPenalites)+')':'')+'\n'+_payLinks(aRegler,doc.ref).text:
       'Facture '+doc.ref+' du '+dDoc+' — Total : '+euro(total)+' TTC'+(reste!==total?' — Reste à régler : '+euro(reste):'')+'\nRèglement à réception (virement, chèque ou espèces).')
-    +'\n\nBien cordialement,\nCathy — Cathy Pets\nTaxi animalier : 07 81 30 41 10 · Garde : 07 83 43 63 06\ncathypetsitter.com · cathydelormepets@gmail.com';
+    +'\n\nBien cordialement,\nCathy — Cathy Pets\nTaxi animalier : 07 81 30 41 10 · Garde : 07 83 43 63 06\ncathypetsitter.com · garde-transport@cathypetsitter.com';
   var _docId=id,_noPdf=(type==='pec'||type==='avis'||type==='livraison'||type==='vaccin');
   if(type==='livraison'&&typeof fLie!=='undefined'&&fLie){_docId=fLie.id;_noPdf=false;} // V80.30 : PDF facture acquittée joint
   return {to:cl.email||'',subject:subject,html:html,text:text,clientNom:nomCl,isDev:isDev,docId:_docId,noPdf:_noPdf,type:type};
@@ -17886,7 +17886,7 @@ function printFactureAcompte(src, id){
   var iban=ENT('entIBAN')||'';var bic=ENT('entBIC')||'';
   var eNom=ENT('entNom')||'Cathy Pets SAS';var eSiret=ENT('entSiret')||'';
   var eAddr=ENT('entAddr')||'6 Chemin du Lavoir, 02470 Neuilly-Saint-Front';
-  var eTel=ENT('entTel')||'07 81 30 41 10';var eEmail=ENT('entEmail')||'cathydelormepets@gmail.com';
+  var eTel=ENT('entTel')||'07 81 30 41 10';var eEmail=ENT('entEmail')||'garde-transport@cathypetsitter.com';
   var clNom=cl?((cl.nom||'')+' '+(cl.prenom||'')).trim():'Client';
   var clAddr=cl?((cl.adresse||'')+' '+(cl.cp||'')+' '+(cl.ville||'')).trim():'';
   var ref='FA-'+new Date().getFullYear()+'-'+id.slice(-4).toUpperCase();
@@ -20541,7 +20541,7 @@ function gcInitClient(clientId, promptMode){
           gcLog('Erreur auth: '+resp.error, 'err');
           if(resp.error==='access_denied'){
             window._mpPendingSend=false;
-            alert('🛑 Google a bloqué l\'accès (application non validée ou compte non autorisé).\n\nDans console.cloud.google.com → « API et services » → « Écran de consentement OAuth » :\n• Statut de publication : « Test / Testing »\n• Section « Utilisateurs test » : ajoute cathydelormepets@gmail.com\n\nPuis réessaie 🚀 Envoyer, et sur l\'écran d\'avertissement clique « Paramètres avancés → Accéder à cathydelormepets-source.github.io ».');
+            alert('🛑 Google a bloqué l\'accès (application non validée ou compte non autorisé).\n\nDans console.cloud.google.com → « API et services » → « Écran de consentement OAuth » :\n• Statut de publication : « Test / Testing »\n• Section « Utilisateurs test » : ajoute garde-transport@cathypetsitter.com\n\nPuis réessaie 🚀 Envoyer, et sur l\'écran d\'avertissement clique « Paramètres avancés → Accéder à cathydelormepets-source.github.io ».');
           }
           return;
         }
@@ -26161,7 +26161,7 @@ function printContratGarde(gardeId) {
   h += '<div class="parties">';
   h += '<div class="partie"><div style="font-size:10px;text-transform:uppercase;color:#666;margin-bottom:8px">Le prestataire</div>';
   h += '<div style="font-size:14px;font-weight:700;color:#1a7a6e;margin-bottom:8px">SAS CATHY PETS</div>';
-  h += '<div style="line-height:1.8">6 Chemin du Lavoir<br>02470 Neuilly-Saint-Front<br>SIRET : 928 564 269<br>📞 07.83.43.63.06<br>✉️ cathydelormepets@gmail.com</div></div>';
+  h += '<div style="line-height:1.8">6 Chemin du Lavoir<br>02470 Neuilly-Saint-Front<br>SIRET : 928 564 269<br>📞 07.83.43.63.06<br>✉️ garde-transport@cathypetsitter.com</div></div>';
   
   h += '<div class="partie client"><div style="font-size:10px;text-transform:uppercase;color:#666;margin-bottom:8px">Le client</div>';
   if (cl) {
@@ -26631,7 +26631,7 @@ function genRapportMensuel(moisStr) {
   h += '</style></head><body><div class="page">';
   
   // Header
-  h += '<div class="hdr"><div><div style="display:flex;align-items:center;gap:8px"><img src="'+LOGO_B64+'" style="height:60px"><img src="'+LOGO_GARDE_B64+'" style="height:60px;border-radius:6px"></div><div style="font-size:9px;color:#666;margin-top:5px">SIRET 928 564 269 · cathydelormepets@gmail.com</div></div>';
+  h += '<div class="hdr"><div><div style="display:flex;align-items:center;gap:8px"><img src="'+LOGO_B64+'" style="height:60px"><img src="'+LOGO_GARDE_B64+'" style="height:60px;border-radius:6px"></div><div style="font-size:9px;color:#666;margin-top:5px">SIRET 928 564 269 · garde-transport@cathypetsitter.com</div></div>';
   h += '<div style="text-align:right"><div style="font-size:20px;font-weight:900;color:#1a7a6e">RAPPORT MENSUEL</div><div style="font-size:14px;color:#d4a843;font-weight:700">'+moisNom+'</div><div style="font-size:10px;color:#888">Édité le '+new Date().toLocaleDateString('fr-FR')+'</div></div></div>';
   
   // KPIs
@@ -29211,7 +29211,7 @@ window.previewTemplate = function(){
 };
 
 window.testTemplate = function(){
-  alert('📧 Email test envoyé à cathydelormepets@gmail.com');
+  alert('📧 Email test envoyé à garde-transport@cathypetsitter.com');
 };
 
 /* ═══ 7. GAMIFICATION ═══ */
@@ -29471,7 +29471,7 @@ window.connectGoogleCal = function(){
   if(confirm('Connecter votre Google Agenda ?\n\nEn production, vous serez redirigé vers Google pour autoriser l\'accès.')){
     db.gcalConfig = db.gcalConfig || {};
     db.gcalConfig.connected = true;
-    db.gcalConfig.email = 'cathydelormepets@gmail.com';
+    db.gcalConfig.email = 'garde-transport@cathypetsitter.com';
     db.gcalConfig.calendar = 'primary';
     sav();
     loadGCal();
