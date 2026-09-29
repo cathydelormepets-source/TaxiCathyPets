@@ -610,7 +610,7 @@ body.nuit .card{border-color:#0a1520}
 </div>
 </aside>
 <main class="main">
-<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.83</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
+<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.84</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
 <div class="cnt">
 
 <!-- DASHBOARD -->
@@ -820,6 +820,10 @@ body.nuit .card{border-color:#0a1520}
 <div class="card"><div class="lb">Frais route</div><div class="vl" id="k7" style="color:var(--or)">0 €</div></div>
 <div class="card"><div class="lb">Marge brute TTC</div><div class="vl" id="k8" style="color:var(--ac)">0 €</div><div class="hp" id="k8b"></div></div>
 </div>
+<!-- DASHBOARD V80.84 : CHART CA + ACTIONS RAPIDES -->
+<div class="card" style="border-top:3px solid var(--a2);margin-bottom:14px"><div class="hd"><h3>📈 CA — 6 derniers mois</h3><button id="dashNotifBtn" class="btn sm" onclick="enableNotif()" style="display:none;font-size:11px;background:#1a1a3a;border-color:#3a3a7a;color:#a0a0f0;gap:4px" title="Recevoir des alertes transports, impayés, gardes">🔔 Activer les notifications</button></div><div class="bd" id="dashChart6m" style="padding:6px 0"></div></div>
+<div class="card" style="margin-bottom:14px"><div class="hd"><h3>⚡ Actions rapides</h3></div><div class="bd"><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn gn" onclick="sTab('tr')" style="font-size:13px">🚗 Transport</button><button class="btn" onclick="sTab('cli')" style="font-size:13px;background:#0a2c3a;border-color:#1a5a7a;color:#7ad0e8">👥 Client</button><button class="btn" onclick="sTab('grd')" style="font-size:13px;background:#1a3a0a;border-color:#3a7a1a;color:#a0e060">🏡 Garde</button><button class="btn" onclick="sTab('fac')" style="font-size:13px;background:#2a1a05;border-color:#8a5a1a;color:#f5c060">💶 Factures</button><button class="btn" onclick="sTab('frais')" style="font-size:13px;background:#0a2c1a;border-color:#1a6a3a;color:#5de8a0">🏨 Frais &amp; Qonto</button></div></div></div>
+
 
 <div class="sp" style="margin-top:0">
 
@@ -13029,6 +13033,8 @@ function rDash(){
   try{rFinancierTempsReel()}catch(e){console.error("rFinancier error:",e)}
   try{rBriefing()}catch(e){console.error("rBriefing error:",e)}
   try{rPlanWeek()}catch(e){console.error("rPlanWeek error:",e)}
+  try{_rDash6m()}catch(e){console.error("rDash6m error:",e)}
+  try{initNotif();checkDashNotif()}catch(e){console.error("dashNotif error:",e)}
 }
 
 // ═══ BRIEFING DU MATIN ═══
@@ -31796,6 +31802,126 @@ function batchRelance(){
 }
 function editRecur(){ return;}
 function oMoTemplate(){ return;}
+
+
+// ════ V80.84 : DASHBOARD AMÉLIORÉ + NOTIFICATIONS PWA ════
+
+function _rDash6m(){
+  var el=document.getElementById('dashChart6m');
+  if(!el)return;
+  var now=new Date();
+  var months=[];
+  for(var i=5;i>=0;i--){
+    var dt=new Date(now.getFullYear(),now.getMonth()-i,1);
+    months.push({key:dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0'),
+      label:dt.toLocaleDateString('fr-FR',{month:'short'}),val:0});
+  }
+  (act(db.factures)||[]).forEach(function(f){
+    if(f.mode==='avoir'||f.status==='avoir'||f.status==='annulee')return;
+    var mk=(f.datePaiement||f.date||'').slice(0,7);
+    var m=months.find(function(x){return x.key===mk;});
+    if(m)m.val+=E(f.total);
+  });
+  var maxV=Math.max.apply(null,months.map(function(m){return m.val;}))||1;
+  var barW=36,gap=10,pad=6,H=82;
+  var svgW=pad*2+6*(barW+gap)-gap;
+  var bars='';
+  months.forEach(function(m,i){
+    var x=pad+i*(barW+gap);
+    var bh=Math.max(4,Math.round(m.val/maxV*(H-28)));
+    var y=H-18-bh;
+    var isNow=i===5;
+    var col=isNow?'var(--a2)':'var(--ln)';
+    bars+='<rect x="'+x+'" y="'+y+'" width="'+barW+'" height="'+bh+'" rx="4" fill="'+col+'" opacity="0.9"/>';
+    bars+='<text x="'+(x+barW/2)+'" y="'+(H-3)+'" text-anchor="middle" font-size="9" fill="var(--mt)">'+m.label+'</text>';
+    if(m.val>0){
+      var lbl=m.val>=1000?Math.round(m.val/100)/10+'k€':Math.round(m.val)+'€';
+      bars+='<text x="'+(x+barW/2)+'" y="'+(y-3)+'" text-anchor="middle" font-size="8" fill="'+(isNow?'var(--a2)':'var(--tx)')+'">'+lbl+'</text>';
+    }
+  });
+  var curM=months[5].val,prevM=months[4].val;
+  var trend=prevM>0?Math.round((curM-prevM)/prevM*100):null;
+  el.innerHTML='<div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">'
+    +'<svg viewBox="0 0 '+svgW+' '+H+'" style="width:'+svgW+'px;max-width:100%;height:'+H+'px">'+bars+'</svg>'
+    +'<div style="flex:1;min-width:100px">'
+    +'<div style="font-size:11px;color:var(--mt)">Mois en cours</div>'
+    +'<div style="font-size:22px;font-weight:800;color:var(--a2)">'+euro(curM)+'</div>'
+    +(trend!==null?'<div style="font-size:11px;color:'+(trend>=0?'var(--gn)':'var(--rd)')+'">'+(trend>=0?'▲':'▼')+' '+Math.abs(trend)+'% vs mois préc.</div>':'')
+    +'</div></div>';
+}
+
+function initNotif(){
+  if(!('Notification' in window))return;
+  if(Notification.permission==='denied')return;
+  if(Notification.permission==='granted'){
+    var btn=document.getElementById('dashNotifBtn');
+    if(btn)btn.style.display='none';
+    return;
+  }
+  var btn=document.getElementById('dashNotifBtn');
+  if(btn)btn.style.display='inline-flex';
+}
+
+function enableNotif(){
+  if(!('Notification' in window)){showToast('⚠️ Notifications non supportées dans ce navigateur');return;}
+  Notification.requestPermission().then(function(p){
+    var btn=document.getElementById('dashNotifBtn');
+    if(p==='granted'){
+      showToast('🔔 Notifications activées !');
+      if(btn)btn.style.display='none';
+      checkDashNotif();
+    } else {
+      showToast('⚠️ Permission refusée — active-les dans les réglages du navigateur');
+      if(btn)btn.style.display='none';
+    }
+  });
+}
+
+function _sendNotif(title,body,tag){
+  if(!('Notification' in window)||Notification.permission!=='granted')return;
+  var key='notif_'+tag+'_'+tdy();
+  try{if(localStorage.getItem(key))return;localStorage.setItem(key,'1');}catch(e){}
+  try{new Notification(title,{body:body,tag:tag,icon:'https://cathydelormepets-source.github.io/TaxiCathyPets/icon-192.png'});}catch(e){}
+}
+
+function checkDashNotif(){
+  if(!('Notification' in window)||Notification.permission!=='granted')return;
+  var d=tdy();
+  // 1. Transports du jour
+  var todayTr=(act(db.transports)||[]).filter(function(t){return t.date===d;});
+  if(todayTr.length>0){
+    _sendNotif(
+      '🚗 '+todayTr.length+' transport(s) aujourd\'hui — Cathy Pets',
+      todayTr.slice(0,3).map(function(t){var l=tLegs(t);return t.ref+' '+l[0]+' → '+l[l.length-1];}).join('\n'),
+      'todayTr'
+    );
+  }
+  // 2. Factures impayées > 15 j
+  var lim15=new Date();lim15.setDate(lim15.getDate()-15);
+  var imp=(act(db.factures)||[]).filter(function(f){
+    if(f.mode==='avoir'||f.status==='avoir'||(f.ref||'').indexOf('CP-AV')===0)return false;
+    return f.status==='emise'&&f.date&&new Date(facDateRef(f))<lim15&&resteDuFac(f)>0.01;
+  });
+  if(imp.length>0){
+    var tot=imp.reduce(function(s,f){return s+resteDuFac(f);},0);
+    _sendNotif(
+      '⚠️ '+imp.length+' facture(s) impayée(s) — Cathy Pets',
+      'Total dû : '+euro(tot)+' — pense à relancer',
+      'impayes'
+    );
+  }
+  // 3. Gardes entrée/sortie du jour
+  var gIn=(act(db.gardes)||[]).filter(function(g){return g.start&&g.start.slice(0,10)===d;});
+  var gOut=(act(db.gardes)||[]).filter(function(g){return g.end&&g.end.slice(0,10)===d;});
+  if(gIn.length+gOut.length>0){
+    _sendNotif(
+      '🏡 Gardes du jour — Cathy Pets',
+      (gIn.length?gIn.length+' entrée(s)':'')+(gOut.length?(gIn.length?' · ':'')+gOut.length+' sortie(s)':''),
+      'gardes'
+    );
+  }
+}
+
 
 
 // ════ V80.83 : IMPORT CSV QONTO ════
