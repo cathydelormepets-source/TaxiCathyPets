@@ -560,7 +560,7 @@ body.nuit .card{border-color:#0a1520}
 <button class="nb" data-t="multi" data-role="admin">🔀 Multi-transport</button>
 <button class="nb" data-t="drv" style="border-left:3px solid var(--bl)">🚐 Mode chauffeur</button>
 <button class="nb" data-t="tournees" style="border-left:3px solid #f472b6">🚐 Tournées</button>
-<button class="nb" data-t="route">🗺️ Feuille de route</button>
+<button class="nb" data-t="route">🗺️ Feuille de route</button><button class="nb" data-t="itin" onclick="initItin()" style="border-left:3px solid #f59e0b">💰 Calcul trajet</button>
 <button class="nb" data-t="mapE">🌍 Carte Europe</button>
 <button class="nb" data-t="photos" style="border-left:3px solid #3b82f6">📸 Photos PEC/Dépose</button>
 <button class="nb" data-t="gps" style="border-left:3px solid #22c55e">📍 Compteur GPS</button>
@@ -610,7 +610,7 @@ body.nuit .card{border-color:#0a1520}
 </div>
 </aside>
 <main class="main">
-<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.84</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
+<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.86</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
 <div class="cnt">
 
 <!-- DASHBOARD -->
@@ -5526,6 +5526,55 @@ Cathy Delorme
 <div class="card"><div class="lb">🔧 Entretiens</div><div class="vl" id="vh_entretiens" style="color:var(--pu)">0</div></div>
 </div>
 </div></div>
+</section>
+
+<!-- CALCUL ITINÉRAIRE -->
+<section class="tab" id="itin">
+<div class="sp">
+
+<div class="card" style="margin-bottom:14px">
+<div class="hd"><h3>🗺️ Calcul de trajet</h3>
+<span style="font-size:11px;color:var(--mt)">Via Nominatim + OSRM</span></div>
+<div class="bd">
+<div id="itinSteps"></div>
+<div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;align-items:center">
+<button class="btn sm" onclick="_iAddStep()" style="font-size:12px">+ Étape</button>
+<label style="display:flex;align-items:center;gap:5px;font-size:13px;color:var(--mt);cursor:pointer">
+<input type="checkbox" id="itinRetour" style="width:15px;height:15px"> Retour au départ</label>
+</div>
+</div></div>
+
+<div class="card" style="margin-bottom:14px">
+<div class="hd"><h3>⚙️ Paramètres coûts</h3></div>
+<div class="bd">
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+<div><div style="font-size:11px;color:var(--mt);margin-bottom:3px">💶 €/km (amortissement)</div>
+<input type="number" id="itinKm" step="0.01" value="0.63" min="0" class="inp" style="width:100%"></div>
+<div><div style="font-size:11px;color:var(--mt);margin-bottom:3px">🛣️ % trajet en autoroute</div>
+<input type="number" id="itinPctAp" step="5" value="70" min="0" max="100" class="inp" style="width:100%"></div>
+<div><div style="font-size:11px;color:var(--mt);margin-bottom:3px">🛢 Conso Gazoil (L/100km)</div>
+<input type="number" id="itinConsoGaz" step="0.5" value="7" min="0" class="inp" style="width:100%"></div>
+<div><div style="font-size:11px;color:var(--mt);margin-bottom:3px">🛢 Prix Gazoil (€/L)</div>
+<input type="number" id="itinPxGaz" step="0.01" value="1.65" min="0" class="inp" style="width:100%"></div>
+<div><div style="font-size:11px;color:var(--mt);margin-bottom:3px">⛽ Conso Essence (L/100km)</div>
+<input type="number" id="itinConsoEss" step="0.5" value="8" min="0" class="inp" style="width:100%"></div>
+<div><div style="font-size:11px;color:var(--mt);margin-bottom:3px">⛽ Prix Essence (€/L)</div>
+<input type="number" id="itinPxEss" step="0.01" value="1.75" min="0" class="inp" style="width:100%"></div>
+<div><div style="font-size:11px;color:var(--mt);margin-bottom:3px">🚧 Péage Cl.1 moto (c€/km)</div>
+<input type="number" id="itinRtCl1" step="0.1" value="5.3" min="0" class="inp" style="width:100%"></div>
+<div><div style="font-size:11px;color:var(--mt);margin-bottom:3px">🚧 Péage Cl.2 voiture (c€/km)</div>
+<input type="number" id="itinRtCl2" step="0.1" value="6.4" min="0" class="inp" style="width:100%"></div>
+</div>
+</div></div>
+
+<button class="btn gn" onclick="_iCalcRoute()"
+  style="width:100%;padding:13px;font-size:15px;font-weight:700;margin-bottom:14px;letter-spacing:0.5px">
+🔍 Calculer l'itinéraire
+</button>
+
+<div id="itinResult"></div>
+
+</div>
 </section>
 
 </div></main></div>
@@ -13033,8 +13082,8 @@ function rDash(){
   try{rFinancierTempsReel()}catch(e){console.error("rFinancier error:",e)}
   try{rBriefing()}catch(e){console.error("rBriefing error:",e)}
   try{rPlanWeek()}catch(e){console.error("rPlanWeek error:",e)}
-  try{_rDash6m()}catch(e){console.error("rDash6m error:",e)}
-  try{initNotif();checkDashNotif()}catch(e){console.error("dashNotif error:",e)}
+  try{if(typeof _rDash6m==='function')_rDash6m()}catch(e){}
+  try{if(typeof initNotif==='function'){initNotif();if(typeof checkDashNotif==='function')checkDashNotif()}}catch(e){}
 }
 
 // ═══ BRIEFING DU MATIN ═══
@@ -31924,6 +31973,246 @@ function checkDashNotif(){
 
 
 
+// ════ V80.85 : CALCUL D'ITINÉRAIRE ════
+
+var _itinStepN = 2;
+
+function _iInitSteps(){
+  var div = document.getElementById('itinSteps');
+  if(!div) return;
+  div.innerHTML = '';
+  _itinStepN = 2;
+  _iRenderStep(div, 0, 'Départ (ville, code postal…)');
+  _iRenderStep(div, 1, 'Destination (ville, code postal…)');
+}
+
+function _iRenderStep(container, idx, placeholder){
+  var d = document.createElement('div');
+  d.className = 'itin-step';
+  d.style.cssText = 'display:flex;align-items:center;gap:6px;margin-bottom:6px';
+  var isFirst = (idx === 0);
+  var icon = isFirst ? '📍' : (idx === _itinStepN - 1 ? '🏁' : '🔹');
+  d.innerHTML = '<span style="font-size:16px;min-width:22px;text-align:center">' + icon + '</span>'
+    + '<input type="text" class="inp itin-inp" placeholder="' + placeholder
+    + '" style="flex:1;font-size:14px">'
+    + (idx >= 2 ? '<button onclick="this.parentNode.remove();_itinStepN--" style="background:#2a0a0a;border:1px solid #7a1a1a;color:#f08080;border-radius:6px;padding:2px 8px;cursor:pointer;font-size:14px">✕</button>' : '');
+  container.appendChild(d);
+}
+
+function _iAddStep(){
+  var div = document.getElementById('itinSteps');
+  if(!div) return;
+  var steps = div.querySelectorAll('.itin-step');
+  if(steps.length > 1){
+    var prevLast = steps[steps.length-1].querySelector('span');
+    if(prevLast) prevLast.textContent = '🔹';
+  }
+  _itinStepN++;
+  _iRenderStep(div, _itinStepN - 1, 'Étape ' + (_itinStepN - 2));
+  var lastInp = div.querySelectorAll('.itin-inp');
+  if(lastInp.length) lastInp[lastInp.length-1].focus();
+}
+
+function _iLoadItinParams(){
+  try { return JSON.parse(localStorage.getItem('itinP') || '{}'); } catch(e){ return {}; }
+}
+
+function _iSaveItinParams(){
+  var p = {
+    km: document.getElementById('itinKm').value,
+    cg: document.getElementById('itinConsoGaz').value,
+    pg: document.getElementById('itinPxGaz').value,
+    ce: document.getElementById('itinConsoEss').value,
+    pe: document.getElementById('itinPxEss').value,
+    r1: document.getElementById('itinRtCl1').value,
+    r2: document.getElementById('itinRtCl2').value,
+    pct: document.getElementById('itinPctAp').value
+  };
+  try { localStorage.setItem('itinP', JSON.stringify(p)); } catch(e){}
+}
+
+function initItin(){
+  var div = document.getElementById('itinSteps');
+  if(!div) return;
+  if(!div.querySelector('.itin-step')) _iInitSteps();
+  var p = _iLoadItinParams();
+  var ids = {itinKm:'km', itinConsoGaz:'cg', itinPxGaz:'pg', itinConsoEss:'ce', itinPxEss:'pe', itinRtCl1:'r1', itinRtCl2:'r2', itinPctAp:'pct'};
+  Object.keys(ids).forEach(function(id){
+    var el = document.getElementById(id);
+    if(el && p[ids[id]] !== undefined) el.value = p[ids[id]];
+  });
+}
+
+async function _iGeocode(q){
+  var r = await fetch(
+    'https://nominatim.openstreetmap.org/search?q=' + encodeURIComponent(q)
+    + '&format=json&limit=3&countrycodes=fr,be,ch,lu,de,es,it&accept-language=fr',
+    {headers:{'User-Agent':'CathyPets/1.0 (cathypetsitter.com)'}}
+  );
+  if(!r.ok) throw new Error('Erreur réseau géocodage (Nominatim)');
+  var data = await r.json();
+  if(!data.length) throw new Error('Lieu non trouvé : "' + q + '"');
+  return {
+    lat: parseFloat(data[0].lat),
+    lon: parseFloat(data[0].lon),
+    name: (data[0].display_name||q).split(',')[0].trim()
+  };
+}
+
+async function _iCalcRoute(){
+  var inputs = document.querySelectorAll('#itinSteps .itin-inp');
+  var cities = Array.from(inputs).map(function(i){ return i.value.trim(); }).filter(Boolean);
+  var retour = document.getElementById('itinRetour').checked;
+
+  if(cities.length < 2){
+    showToast('⚠️ Entrez au moins un départ et une destination');
+    return;
+  }
+
+  _iSaveItinParams();
+
+  var resDiv = document.getElementById('itinResult');
+  resDiv.innerHTML = '<div style="padding:16px;text-align:center;color:var(--mt)">⌛ Calcul en cours…</div>';
+
+  try {
+    // Géocodage séquentiel (Nominatim : 1 req/s max)
+    var coords = [];
+    for(var i = 0; i < cities.length; i++){
+      if(i > 0) await new Promise(function(resolve){ setTimeout(resolve, 1150); });
+      resDiv.innerHTML = '<div style="padding:16px;text-align:center;color:var(--mt)">⌛ Géocodage '
+        + (i+1) + '/' + cities.length + ' : <em>' + cities[i] + '</em>…</div>';
+      coords.push(await _iGeocode(cities[i]));
+    }
+    if(retour) coords.push(coords[0]);
+
+    resDiv.innerHTML = '<div style="padding:16px;text-align:center;color:var(--mt)">⌛ Calcul de l\'itinéraire…</div>';
+
+    // Routage OSRM
+    var coordStr = coords.map(function(c){ return c.lon + ',' + c.lat; }).join(';');
+    var osrmR = await fetch(
+      'https://router.project-osrm.org/route/v1/driving/' + coordStr
+      + '?overview=false&steps=false'
+    );
+    if(!osrmR.ok) throw new Error('Erreur serveur de routage (OSRM)');
+    var osrm = await osrmR.json();
+    if(osrm.code !== 'Ok' || !osrm.routes || !osrm.routes.length)
+      throw new Error('Itinéraire introuvable entre ces étapes');
+
+    var route = osrm.routes[0];
+    var distKm = Math.round(route.distance / 1000);
+    var durMin = Math.round(route.duration / 60);
+    var durH   = Math.floor(durMin / 60);
+    var durMm  = String(durMin % 60).padStart(2, '0');
+
+    // Paramètres coûts
+    var eurkm  = parseFloat(document.getElementById('itinKm').value)       || 0.63;
+    var cg     = parseFloat(document.getElementById('itinConsoGaz').value)  || 7;
+    var pg     = parseFloat(document.getElementById('itinPxGaz').value)     || 1.65;
+    var ce     = parseFloat(document.getElementById('itinConsoEss').value)  || 8;
+    var pe     = parseFloat(document.getElementById('itinPxEss').value)     || 1.75;
+    var r1     = parseFloat(document.getElementById('itinRtCl1').value)     || 5.3;
+    var r2     = parseFloat(document.getElementById('itinRtCl2').value)     || 6.4;
+    var pctAp  = parseFloat(document.getElementById('itinPctAp').value)     || 70;
+
+    // Calculs
+    var coutKm = eurkm * distKm;
+    var litG   = distKm * cg / 100;
+    var coutG  = litG * pg;
+    var litE   = distKm * ce / 100;
+    var coutE  = litE * pe;
+    var distAp = distKm * pctAp / 100;
+    var toll1  = distAp * r1 / 100;
+    var toll2  = distAp * r2 / 100;
+
+    // Détail des tronçons (si multi-étapes)
+    var legs = route.legs;
+    var legsHtml = '';
+    if(legs && legs.length > 1){
+      legsHtml = '<div style="margin-bottom:10px;padding:8px;background:var(--bg2);border-radius:6px;font-size:12px">';
+      for(var j = 0; j < legs.length; j++){
+        var legKm  = Math.round(legs[j].distance / 1000);
+        var legMin = Math.round(legs[j].duration / 60);
+        var legH   = Math.floor(legMin/60);
+        var legM   = String(legMin%60).padStart(2,'0');
+        var ico0   = (j === 0) ? '📍' : '🔹';
+        var ico1   = (j === legs.length-1) ? '🏁' : '🔹';
+        legsHtml  += '<div style="padding:3px 0;color:var(--mt)">'
+          + ico0 + ' <strong style="color:var(--tx)">' + coords[j].name + '</strong>'
+          + ' → ' + ico1 + ' <strong style="color:var(--tx)">' + coords[j+1].name + '</strong>'
+          + ' : <strong>' + legKm + ' km</strong> / ' + legH + 'h' + legM + '</div>';
+      }
+      legsHtml += '</div>';
+    }
+
+    // Ligne de tableau
+    function row(label, sub, valG, valE, clr){
+      return '<tr>'
+        + '<td style="padding:6px 4px;border-bottom:1px solid var(--ln);font-size:13px">'
+        + label
+        + (sub ? '<br><span style="font-size:10px;color:var(--mt)">' + sub + '</span>' : '')
+        + '</td>'
+        + '<td style="text-align:right;padding:6px 4px;border-bottom:1px solid var(--ln);color:'
+        + (clr||'#5de8a0') + ';font-size:13px">' + (valG===null?'—':euro(valG)) + '</td>'
+        + '<td style="text-align:right;padding:6px 4px;border-bottom:1px solid var(--ln);color:'
+        + (clr||'#f5c060') + ';font-size:13px">' + (valE===null?'—':euro(valE)) + '</td>'
+        + '</tr>';
+    }
+
+    resDiv.innerHTML =
+      '<div class="card" style="border-top:3px solid var(--a2)">'
+      + '<div class="hd"><h3>📊 Résultats</h3>'
+      + '<span style="font-size:12px;color:var(--mt)">' + distKm + ' km · ' + durH + 'h' + durMm + '</span>'
+      + '</div><div class="bd">'
+      + legsHtml
+      // Big numbers
+      + '<div style="display:flex;gap:8px;margin-bottom:12px">'
+      + '<div style="flex:1;background:var(--bg2);border-radius:8px;padding:10px;text-align:center">'
+      + '<div style="font-size:11px;color:var(--mt)">Distance totale</div>'
+      + '<div style="font-size:28px;font-weight:800;color:var(--a2)">' + distKm
+      + '<span style="font-size:14px"> km</span></div>'
+      + '</div>'
+      + '<div style="flex:1;background:var(--bg2);border-radius:8px;padding:10px;text-align:center">'
+      + '<div style="font-size:11px;color:var(--mt)">Durée estimée</div>'
+      + '<div style="font-size:28px;font-weight:800;color:var(--tx)">' + durH
+      + 'h<span style="font-size:16px">' + durMm + '</span></div>'
+      + '</div></div>'
+      // Tableau
+      + '<table style="width:100%;border-collapse:collapse">'
+      + '<thead><tr>'
+      + '<th style="text-align:left;padding:6px 4px;border-bottom:2px solid var(--ln);font-size:12px;color:var(--mt)">Poste</th>'
+      + '<th style="text-align:right;padding:6px 4px;border-bottom:2px solid var(--ln);font-size:12px;color:#5de8a0">🛢 Gazoil</th>'
+      + '<th style="text-align:right;padding:6px 4px;border-bottom:2px solid var(--ln);font-size:12px;color:#f5c060">⛽ Essence</th>'
+      + '</tr></thead><tbody>'
+      + row('💶 Coût kilométrique', eurkm.toFixed(2) + ' €/km × ' + distKm + ' km', coutKm, coutKm, 'var(--tx)')
+      + row('🛢 Carburant', litG.toFixed(1) + 'L gazoil · ' + litE.toFixed(1) + 'L essence', coutG, coutE)
+      + row('🚧 Péages Cl.1 (moto)', r1.toFixed(1) + ' c€/km · ' + pctAp + '% autoroute', toll1, toll1, 'var(--mt)')
+      + row('🚧 Péages Cl.2 (voiture)', r2.toFixed(1) + ' c€/km · ' + pctAp + '% autoroute', toll2, toll2, 'var(--mt)')
+      + '</tbody><tfoot>'
+      + '<tr style="font-weight:700;font-size:13px;background:var(--bg2)">'
+      + '<td style="padding:8px 4px">Total Cl.1 (moto)</td>'
+      + '<td style="text-align:right;padding:8px 4px;color:#5de8a0">' + euro(coutKm+coutG+toll1) + '</td>'
+      + '<td style="text-align:right;padding:8px 4px;color:#f5c060">' + euro(coutKm+coutE+toll1) + '</td>'
+      + '</tr>'
+      + '<tr style="font-weight:700;font-size:15px;border-top:2px solid var(--a2)">'
+      + '<td style="padding:8px 4px">Total Cl.2 (voiture)</td>'
+      + '<td style="text-align:right;padding:8px 4px;color:#5de8a0">' + euro(coutKm+coutG+toll2) + '</td>'
+      + '<td style="text-align:right;padding:8px 4px;color:#f5c060">' + euro(coutKm+coutE+toll2) + '</td>'
+      + '</tr>'
+      + '</tfoot></table>'
+      + '<p style="font-size:10px;color:var(--mt);margin:10px 0 0">⚠️ Péages estimés (ASFA 2024) · ' + pctAp + '% du trajet en autoroute supposé · vérifier sur ViaMichelin pour le tarif exact.</p>'
+      + '</div></div>';
+
+  } catch(err){
+    resDiv.innerHTML =
+      '<div style="padding:14px;color:var(--rd);background:var(--bg2);border-radius:8px;margin-top:10px">'
+      + '⚠️ ' + (err.message || 'Erreur inconnue') + '</div>';
+  }
+}
+
+// Init au chargement de l'onglet
+try{ _iInitSteps(); }catch(e){}
+
+
 // ════ V80.83 : IMPORT CSV QONTO ════
 function importQontoCSV(){
   var inp=document.createElement('input');
@@ -32013,6 +32302,14 @@ function _qCsvLine(line,sep){
   result.push(cur.trim());
   return result;
 }
+
+// ════ V80.86 : INIT DIFFÉRÉE (timing fix) ════
+// _rDash6m et initNotif sont définies dans ce bloc — on les appelle ici
+// pour initialiser le dashboard dès le chargement complet de la page.
+setTimeout(function(){
+  try{if(typeof _rDash6m==='function')_rDash6m();}catch(e){}
+  try{if(typeof initNotif==='function'){initNotif();if(typeof checkDashNotif==='function')checkDashNotif();}}catch(e){}
+},0);
 
 
 </script><button id="fabScan" onclick="scanTicket()" title="Scanner un ticket / facture réglée" style="position:fixed;right:14px;bottom:92px;z-index:900;width:52px;height:52px;border-radius:50%;border:2px solid #f5d070;background:#2a1a05;color:#fff;font-size:22px;box-shadow:0 4px 14px rgba(0,0,0,.45);cursor:pointer">📸</button>
