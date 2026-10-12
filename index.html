@@ -610,7 +610,7 @@ body.nuit .card{border-color:#0a1520}
 </div>
 </aside>
 <main class="main">
-<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.89</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
+<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.92</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
 <div class="cnt">
 
 <!-- DASHBOARD -->
@@ -9090,7 +9090,7 @@ function addFacFromDevis(){
   showToast('✅ Facture '+inv.ref+' créée depuis '+q.ref+' — '+facLignes.length+' ligne(s)');
   proposeMailPro('facture',inv.id);
 }
-function printFac(){var h=act(db.factures).map(function(f){var typeLabels={transport:'Transport animalier',garde:'Garde à domicile',colis:'Colis / Livraison',nutrica:'Vente produits',veterinaire:'Vétérinaire',autre:'Prestation'};var typeLbl=typeLabels[f.activityType||'autre']||'Prestation';return '<div style="page-break-after:always;font-family:Arial;padding:24px"><h1>'+f.ref+'</h1><h3 style="color:#1a7a6e;margin-top:-10px">'+typeLbl+'</h3><p><b>'+ENT('entNom')+'</b><br>SIRET: '+ENT('entSiret')+' · RCS '+ENT('entRcs')+' · TVA: '+ENT('entTva')+'<br>RC Pro: '+(ENT('entRcpro')+' · Assurance transport MSIG Europe SE — Police n°31.209.088')+'<br>'+ENT('entAdresse')+'</p><p><b>Client:</b> '+cN(f.clientId)+'</p><p><b>Date:</b> '+new Date(f.date).toLocaleDateString('fr-FR')+'</p><p><b>Total TTC:</b> '+euro(f.total)+'</p><p style="font-size:11px;color:#666;margin-top:24px">Paiement à réception. Indemnité 40€ retard (Art. D441-5 C.Com).</p></div>'}).join('');openHtmlBlob(h,'Factures_CathyPets.html')}
+function printFac(){var h=act(db.factures).map(function(f){var typeLabels={transport:'Transport animalier',garde:'Garde à domicile',colis:'Colis / Livraison',nutrica:'Vente produits',veterinaire:'Vétérinaire',autre:'Prestation'};var typeLbl=typeLabels[f.activityType||'autre']||'Prestation';return '<div style="page-break-after:always;font-family:Arial;padding:24px"><h1>'+f.ref+'</h1><h3 style="color:#1a7a6e;margin-top:-10px">'+typeLbl+'</h3><p><b>'+ENT('entNom')+'</b><br>SIRET: '+ENT('entSiret')+' · RCS '+ENT('entRcs')+' · TVA: '+ENT('entTva')+'<br>RC Pro: '+(ENT('entRcpro')+' · Assurance transport MSIG Europe SE — Police n°31.209.088')+'<br>'+ENT('entAdresse')+'</p><p><b>Client:</b> '+cN(f.clientId)+'</p><p><b>Date:</b> '+new Date(f.date).toLocaleDateString('fr-FR')+'</p><p><b>Total TTC:</b> '+euro(f.total)+'</p>'+'<p style="font-size:12px;font-weight:bold;color:#0B1D3A;margin:6px 0">Mode de paiement : '+({virement:'🏦 Virement bancaire',cheque:'📄 Chèque',especes:'💵 Espèces',cb:'💳 Carte bancaire'}[f.paiement]||f.paiement||'—')+'</p>'+'<p style="font-size:11px;color:#666;margin-top:24px">Paiement à réception. Indemnité 40€ retard (Art. D441-5 C.Com).</p></div>'}).join('');openHtmlBlob(h,'Factures_CathyPets.html')}
 // ══════ V79 : RELEVÉ DE COMPTE CLIENT — factures par statut + détail des mouvements ══════
 function _rcEsc(v){return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
 function _rcD(d){if(!d)return '—';try{return new Date(d).toLocaleDateString('fr-FR')}catch(e){return d}}
@@ -12652,6 +12652,14 @@ function rFac2(){
       datePay='<br><span style="font-size:10px;color:var(--rd)">⚠️ Impayée'+(f.echeance?' — Éch. '+new Date(f.echeance).toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'2-digit'}):'')+'</span>';
     } else if(f.status==='emise'){
       datePay='<br><span style="font-size:10px;color:var(--or)">📤 En attente'+(f.echeance?' — Éch. '+new Date(f.echeance).toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'2-digit'}):'')+'</span>';
+    }
+    if(f.paiement){
+      var _pmIcon={virement:'🏦',cheque:'📄',especes:'💵',cb:'💳'};
+      var _pmLbl={virement:'Virement',cheque:'Chèque',especes:'Espèces',cb:'CB'};
+      var _pmC={virement:'#2563eb',cheque:'#16a34a',especes:'#d97706',cb:'#7c3aed'};
+      var _pmTx=(_pmIcon[f.paiement]||'💳')+' '+(_pmLbl[f.paiement]||f.paiement);
+      var _pmCl=_pmC[f.paiement]||'var(--mt)';
+      datePay+='<br><span style="font-size:10px;font-weight:700;color:'+_pmCl+'">'+_pmTx+'</span>';
     }
     var fid=f.id, cid=f.clientId;
     return '<tr>'
@@ -18065,6 +18073,10 @@ function printFacturePro(id) {
   } else {
     html += '<div style="text-align:center;margin-bottom:10px"><div style="display:inline-block;padding:6px 20px;background:#fff8f0;border:2px solid #e67e22;border-radius:6px"><span style="font-size:16px;font-weight:900;color:#e67e22;letter-spacing:3px">EN ATTENTE DE PAIEMENT</span>';
     html += '<div style="font-size:12px;color:#e67e22;margin-top:4px">Échéance : ' + echeanceStr + '</div>';
+    var _pmIconAtt={virement:'🏦',cheque:'📄',especes:'💵',cb:'💳'};
+    var _pmLblAtt={virement:'Virement bancaire',cheque:'Chèque',especes:'Espèces',cb:'Carte bancaire'};
+    var _pmTxtAtt=(_pmIconAtt[f.paiement]||'💳')+' '+(_pmLblAtt[f.paiement]||f.paiement||'Virement');
+    html += '<div style="font-size:14px;font-weight:900;color:#e67e22;margin-top:7px;letter-spacing:0.5px">MODE : ' + _pmTxtAtt + '</div>';
     html += '</div></div>';
   }
   html += '<div style="display:grid;grid-template-columns:300px 1fr;gap:30px;margin-bottom:30px;border-bottom:2px solid #333;padding-bottom:20px">';
@@ -18246,7 +18258,14 @@ function printFacturePro(id) {
         +'R\u00e9f\u00e9rence \u00e0 indiquer : <b style="color:#E8650A">'+f.ref+'</b>'+(_plp.sumup?' \u00b7 <span style="color:#888">Carte bancaire sur demande : <a href="'+_plp.sumup+'" style="color:#1a7a6e">lien s\u00e9curis\u00e9</a></span>':'')+'</div></div>';
     }
   }
-  html += '<p style="margin:6px 0;font-weight:bold">Mode de règlement : ' + (f.paiement || 'virement, espèces') + '.</p>';
+  var _pmIcon={virement:'🏦',cheque:'📄',especes:'💵',cb:'💳'};
+  var _pmLbl={virement:'Virement bancaire',cheque:'Chèque',especes:'Espèces',cb:'Carte bancaire'};
+  var _pmBg={virement:'#e8f4ff',cheque:'#f0f7e8',especes:'#fff8e1',cb:'#f3e8ff'};
+  var _pmBd={virement:'#2563eb',cheque:'#16a34a',especes:'#d97706',cb:'#7c3aed'};
+  var _pmTxt=(_pmIcon[f.paiement]||'💳')+' '+(_pmLbl[f.paiement]||f.paiement||'Virement');
+  var _pmBgV=_pmBg[f.paiement]||'#e8f4ff';
+  var _pmBdV=_pmBd[f.paiement]||'#2563eb';
+  html += '<div style="display:inline-flex;align-items:center;gap:8px;background:'+_pmBgV+';border:2px solid '+_pmBdV+';border-radius:8px;padding:8px 18px;margin:8px 0;font-size:14px;font-weight:900;color:'+_pmBdV+'">💳 MODE DE RÈGLEMENT — ' + _pmTxt + '</div>';
   html += '<p style="margin:6px 0;color:#666">Échéance : ' + echeanceStr + '</p>';
   // V80.27 : mentions réforme facturation électronique
   html += '<p style="margin:6px 0;color:#666;font-size:10px">Catégorie d\'opération : prestation de services · TVA exigible sur les encaissements (art. 269-2-c CGI)'+(cl&&cl.type&&cl.type!=='particulier'&&cl.siret?' · SIREN client : '+String(cl.siret).replace(/\D/g,'').slice(0,9):'')+(f.transportId?' · Date de prestation : '+(function(){var t=act(db.transports).find(function(x){return x.id===f.transportId});return t&&t.date?new Date(t.date).toLocaleDateString('fr-FR'):''})():'')+'</p>';
