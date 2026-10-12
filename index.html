@@ -610,7 +610,7 @@ body.nuit .card{border-color:#0a1520}
 </div>
 </aside>
 <main class="main">
-<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.87</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
+<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.89</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
 <div class="cnt">
 
 <!-- DASHBOARD -->
@@ -4570,7 +4570,7 @@ document.getElementById('q_contrat_pec').addEventListener('change',function(){
       <div class="c6 fd"><label>📞 Tél. garde</label><input id="s_ent_tel2" placeholder="07.83.43.63.06"></div>
       <div class="c6 fd"><label>✉️ Email</label><input id="s_ent_email" placeholder="garde-transport@cathypetsitter.com"></div>
       <div class="c6 fd"><label>🌐 Site web</label><input id="s_ent_web" placeholder="cathypetsitter.com"></div>
-      <div class="c6 fd"><label>RC Pro</label><input id="s_ent_rcpro" placeholder="Hiscox HSXIN320028640M"></div>
+      <div class="c6 fd"><label>RC Pro / Assurance transport</label><input id="s_ent_rcpro" placeholder="Hiscox HSXIN320028640M · Assurance transport MSIG Europe SE — Police n°31.209.088"></div>
       <div class="c6 fd"><label>APE</label><input id="s_ent_ape" placeholder="9609Z"></div>
       <div class="c6 fd"><label>🏦 IBAN</label><input id="s_ent_iban" placeholder="FR33..." style="font-family:monospace;letter-spacing:1px"></div>
       <div class="c6 fd"><label>🏦 BIC</label><input id="s_ent_bic" placeholder="BDEIFRPPXXX" style="font-family:monospace"></div>
@@ -5564,6 +5564,8 @@ Cathy Delorme
 <input type="number" id="itinRtCl1" step="0.1" value="5.3" min="0" class="inp" style="width:100%"></div>
 <div><div style="font-size:11px;color:var(--mt);margin-bottom:3px">🚧 Péage Cl.2 voiture (c€/km)</div>
 <input type="number" id="itinRtCl2" step="0.1" value="6.4" min="0" class="inp" style="width:100%"></div>
+<div class="gi"><div style="font-size:11px;color:var(--mt);margin-bottom:4px">💼 Taux horaire €/h</div>
+<input type="number" id="itinTxH" step="0.5" value="12" min="0" class="inp" style="width:100%"></div>
 </div>
 </div></div>
 
@@ -5616,7 +5618,7 @@ function E(n){return Number(n||0)}
 // Données entreprise centralisées
 function ENT(key){
   var s=db.settings||{};
-  var defaults={entNom:'Cathy Pets SAS',entSiret:'928 564 269',entSiretFull:'92856426900019',entSiren:'928564269',entTva:'FR65928564269',entRcs:'Soissons',entAdresse:'6 Chemin Du Lavoir, 02470 Neuilly-Saint-Front',entTel1:'07.81.30.41.10',entTel2:'07.83.43.63.06',entEmail:'garde-transport@cathypetsitter.com',entWeb:'cathypetsitter.com',entRcpro:'Hiscox HSXIN320028640M',entApe:'9609Z',entCapital:'5000'};
+  var defaults={entNom:'Cathy Pets SAS',entSiret:'928 564 269',entSiretFull:'92856426900019',entSiren:'928564269',entTva:'FR65928564269',entRcs:'Soissons',entAdresse:'6 Chemin Du Lavoir, 02470 Neuilly-Saint-Front',entTel1:'07.81.30.41.10',entTel2:'07.83.43.63.06',entEmail:'garde-transport@cathypetsitter.com',entWeb:'cathypetsitter.com',entRcpro:'Hiscox HSXIN320028640M · Assurance transport MSIG Europe SE — Police n°31.209.088',entApe:'9609Z',entCapital:'5000'};
   return s[key]||defaults[key]||'';
 }
 var _Y=new Date().getFullYear();
@@ -9088,7 +9090,7 @@ function addFacFromDevis(){
   showToast('✅ Facture '+inv.ref+' créée depuis '+q.ref+' — '+facLignes.length+' ligne(s)');
   proposeMailPro('facture',inv.id);
 }
-function printFac(){var h=act(db.factures).map(function(f){var typeLabels={transport:'Transport animalier',garde:'Garde à domicile',colis:'Colis / Livraison',nutrica:'Vente produits',veterinaire:'Vétérinaire',autre:'Prestation'};var typeLbl=typeLabels[f.activityType||'autre']||'Prestation';return '<div style="page-break-after:always;font-family:Arial;padding:24px"><h1>'+f.ref+'</h1><h3 style="color:#1a7a6e;margin-top:-10px">'+typeLbl+'</h3><p><b>'+ENT('entNom')+'</b><br>SIRET: '+ENT('entSiret')+' · RCS '+ENT('entRcs')+' · TVA: '+ENT('entTva')+'<br>RC Pro: '+ENT('entRcpro')+'<br>'+ENT('entAdresse')+'</p><p><b>Client:</b> '+cN(f.clientId)+'</p><p><b>Date:</b> '+new Date(f.date).toLocaleDateString('fr-FR')+'</p><p><b>Total TTC:</b> '+euro(f.total)+'</p><p style="font-size:11px;color:#666;margin-top:24px">Paiement à réception. Indemnité 40€ retard (Art. D441-5 C.Com).</p></div>'}).join('');openHtmlBlob(h,'Factures_CathyPets.html')}
+function printFac(){var h=act(db.factures).map(function(f){var typeLabels={transport:'Transport animalier',garde:'Garde à domicile',colis:'Colis / Livraison',nutrica:'Vente produits',veterinaire:'Vétérinaire',autre:'Prestation'};var typeLbl=typeLabels[f.activityType||'autre']||'Prestation';return '<div style="page-break-after:always;font-family:Arial;padding:24px"><h1>'+f.ref+'</h1><h3 style="color:#1a7a6e;margin-top:-10px">'+typeLbl+'</h3><p><b>'+ENT('entNom')+'</b><br>SIRET: '+ENT('entSiret')+' · RCS '+ENT('entRcs')+' · TVA: '+ENT('entTva')+'<br>RC Pro: '+(ENT('entRcpro')+' · Assurance transport MSIG Europe SE — Police n°31.209.088')+'<br>'+ENT('entAdresse')+'</p><p><b>Client:</b> '+cN(f.clientId)+'</p><p><b>Date:</b> '+new Date(f.date).toLocaleDateString('fr-FR')+'</p><p><b>Total TTC:</b> '+euro(f.total)+'</p><p style="font-size:11px;color:#666;margin-top:24px">Paiement à réception. Indemnité 40€ retard (Art. D441-5 C.Com).</p></div>'}).join('');openHtmlBlob(h,'Factures_CathyPets.html')}
 // ══════ V79 : RELEVÉ DE COMPTE CLIENT — factures par statut + détail des mouvements ══════
 function _rcEsc(v){return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
 function _rcD(d){if(!d)return '—';try{return new Date(d).toLocaleDateString('fr-FR')}catch(e){return d}}
@@ -15956,7 +15958,7 @@ function printDevisPro(id) {
   html += '<h1 style="font-size:36px;font-weight:bold;margin:15px 0 0 0;color:#000">DEVIS</h1></div>';
   html += '<div><div style="margin-bottom:25px"><h3 style="font-size:14px;font-weight:bold;margin:0 0 8px 0;color:#000">'+ENT('entNom').toUpperCase()+'</h3>';
   html += '<p style="font-size:11px;margin:3px 0;color:#333">'+ENT('entAdresse')+'</p>';
-  html += '<p style="font-size:10px;margin:6px 0 3px 0;color:#666">SIRET: '+ENT('entSiret')+'<br>TVA: '+ENT('entTva')+'<br>RCS: '+ENT('entRcs')+'<br>APE: '+ENT('entApe')+'<br>RC Pro: '+ENT('entRcpro')+'</p></div>';
+  html += '<p style="font-size:10px;margin:6px 0 3px 0;color:#666">SIRET: '+ENT('entSiret')+'<br>TVA: '+ENT('entTva')+'<br>RCS: '+ENT('entRcs')+'<br>APE: '+ENT('entApe')+'<br>RC Pro: '+(ENT('entRcpro')+' · Assurance transport MSIG Europe SE — Police n°31.209.088')+'</p></div>';
   if (cl) {
     html += '<div style="border:1px solid #999;padding:12px;background:#f5f5f5;margin-bottom:15px"><h4 style="font-size:10px;font-weight:bold;margin:0 0 8px 0">CLIENT</h4>';
     html += '<p style="font-size:11px;margin:2px 0;font-weight:bold">' + (cl.nom + ' ' + (cl.prenom || '')).trim() + '</p>';
@@ -18333,7 +18335,7 @@ function printAttestation(transportId) {
   html += '<p><strong>'+ENT('entNom').toUpperCase()+'</strong></p>';
   html += '<p>'+ENT('entAdresse')+'</p>';
   html += '<p>SIRET : '+ENT('entSiret')+' · RCS '+ENT('entRcs')+'</p>';
-  html += '<p>RC Professionnelle : '+ENT('entRcpro')+'</p>';
+  html += '<p>RC Professionnelle : '+(ENT('entRcpro')+' · Assurance transport MSIG Europe SE — Police n°31.209.088')+'</p>';
   html += '<p>Tél : '+ENT('entTel1')+' · '+ENT('entEmail')+'</p>';
   html += '</div>';
   
@@ -18447,7 +18449,7 @@ function printDevis(id){
   h+='</div>';
   // Blocs société + client
   h+='<div class="bloc">';
-  h+='<div class="bloc-card"><h4>Prestataire</h4><p><strong>'+ENT('entNom')+'</strong></p><p>'+ENT('entAdresse')+'</p><p>SIRET : '+ENT('entSiret')+'<br>RCS '+ENT('entRcs')+' · TVA : '+ENT('entTva')+'</p><p>RC Pro : '+ENT('entRcpro')+'</p><p>📞 Taxi : '+ENT('entTel1')+'<br>🏡 Garde : '+ENT('entTel2')+'</p><p>✉️ '+ENT('entEmail')+'<br>🌐 '+ENT('entWeb')+'</p></div>';
+  h+='<div class="bloc-card"><h4>Prestataire</h4><p><strong>'+ENT('entNom')+'</strong></p><p>'+ENT('entAdresse')+'</p><p>SIRET : '+ENT('entSiret')+'<br>RCS '+ENT('entRcs')+' · TVA : '+ENT('entTva')+'</p><p>RC Pro : '+(ENT('entRcpro')+' · Assurance transport MSIG Europe SE — Police n°31.209.088')+'</p><p>📞 Taxi : '+ENT('entTel1')+'<br>🏡 Garde : '+ENT('entTel2')+'</p><p>✉️ '+ENT('entEmail')+'<br>🌐 '+ENT('entWeb')+'</p></div>';
   h+='<div class="bloc-card"><h4>Client</h4>';
   if(cl){
     h+='<p><strong>'+(cl.nom+' '+(cl.prenom||'')).trim()+'</strong></p>';
@@ -18676,7 +18678,7 @@ function printFacPro(id){
     h+='<div class="page">';
     h+='<div class="header"><div><div style="display:flex;align-items:center;gap:8px"><img src="'+LOGO_B64+'" style="height:70px;width:auto;object-fit:contain;border-radius:6px"><img src="'+LOGO_GARDE_B64+'" style="height:70px;width:auto;object-fit:contain;border-radius:6px"></div><div style="font-size:11px;color:#666;margin-top:4px">Transport animalier & Pet-sitting · France & International</div></div>';
     h+='<div class="ref"><h2>FACTURE '+f.ref+'</h2><div style="font-size:12px;color:#1a7a6e;font-weight:700">'+({transport:'Transport animalier',garde:'Garde à domicile',colis:'Colis / Livraison',nutrica:'Vente produits',autre:'Prestation'}[f.activityType||'autre']||'Prestation')+'</div><div class="date">Émise le '+dateStr+'</div></div></div>';
-    h+='<div class="bloc"><div class="bc"><h4>Émetteur</h4><p><strong>'+ENT('entNom')+'</strong><br>'+ENT('entAdresse')+'<br>SIRET : '+ENT('entSiret')+' · RCS '+ENT('entRcs')+'<br>TVA : '+ENT('entTva')+'<br>RC Pro : '+ENT('entRcpro')+'<br>📞 '+ENT('entTel1')+' / '+ENT('entTel2')+'<br>'+ENT('entEmail')+'</p></div>';
+    h+='<div class="bloc"><div class="bc"><h4>Émetteur</h4><p><strong>'+ENT('entNom')+'</strong><br>'+ENT('entAdresse')+'<br>SIRET : '+ENT('entSiret')+' · RCS '+ENT('entRcs')+'<br>TVA : '+ENT('entTva')+'<br>RC Pro : '+(ENT('entRcpro')+' · Assurance transport MSIG Europe SE — Police n°31.209.088')+'<br>📞 '+ENT('entTel1')+' / '+ENT('entTel2')+'<br>'+ENT('entEmail')+'</p></div>';
     h+='<div class="bc"><h4>Client</h4>';
     if(cl){h+='<p><strong>'+(cl.nom+' '+(cl.prenom||'')).trim()+'</strong>';if(cl.adresse)h+='<br>'+cl.adresse;if(cl.cp||cl.ville)h+='<br>'+(cl.cp||'')+' '+(cl.ville||'');if(cl.tel)h+='<br>📞 '+cl.tel;if(cl.email)h+='<br>✉️ '+cl.email;h+='</p>'}else{h+='<p>—</p>'}
     h+='</div></div>';
@@ -21659,7 +21661,7 @@ function ttBonPrint(){
   html += '<strong>Récapitulatif:</strong> '+pecs.length+' prise(s) en charge · '+deps.length+' dépose(s) · ';
   html += events.filter(function(e){return e.sig&&e.sig.length>100}).length+'/'+events.length+' signatures';
   html += '</div>';
-  html += '<div style="margin-top:15px;font-size:9px;color:#666;text-align:center">RC Pro: '+ENT('entRcpro')+' — TVA: '+ENT('entTva')+' — '+ENT('entWeb')+'</div>';
+  html += '<div style="margin-top:15px;font-size:9px;color:#666;text-align:center">RC Pro: '+(ENT('entRcpro')+' · Assurance transport MSIG Europe SE — Police n°31.209.088')+' — TVA: '+ENT('entTva')+' — '+ENT('entWeb')+'</div>';
   html += '</body></html>';
   openHtmlBlob(html,'BonTransport_'+dateStr+'.html');
 }
@@ -26960,7 +26962,7 @@ function genLivreFactures(){
 
   // En-tête
   h+='<div style="display:flex;justify-content:space-between;border-bottom:3px solid #1a7a6e;padding-bottom:10px;margin-bottom:12px">';
-  h+='<div><div style="display:flex;align-items:center;gap:8px"><img src="'+LOGO_B64+'" style="height:60px;border-radius:4px"><img src="'+LOGO_GARDE_B64+'" style="height:60px;border-radius:6px"></div><div style="font-size:9px;color:#666;margin-top:4px">'+ENT('entNom')+' · SIRET: '+ENT('entSiret')+' · TVA: '+ENT('entTva')+'<br>'+ENT('entAdresse')+' · RC Pro: '+ENT('entRcpro')+'</div></div>';
+  h+='<div><div style="display:flex;align-items:center;gap:8px"><img src="'+LOGO_B64+'" style="height:60px;border-radius:4px"><img src="'+LOGO_GARDE_B64+'" style="height:60px;border-radius:6px"></div><div style="font-size:9px;color:#666;margin-top:4px">'+ENT('entNom')+' · SIRET: '+ENT('entSiret')+' · TVA: '+ENT('entTva')+'<br>'+ENT('entAdresse')+' · RC Pro: '+(ENT('entRcpro')+' · Assurance transport MSIG Europe SE — Police n°31.209.088')+'</div></div>';
   h+='<div style="text-align:right"><b style="color:#1a7a6e;font-size:16px">LIVRE DES FACTURES '+annee+'</b><br>';
   h+='<span style="font-size:9px;color:#666">Document comptable obligatoire — Art. L123-12 C.Com<br>Édité le '+new Date().toLocaleDateString('fr-FR')+'<br>'+facs.length+' factures</span></div></div>';
 
@@ -27034,7 +27036,7 @@ function genLivreFactures(){
   // Footer légal
   h+='<div style="margin-top:20px;padding:10px;border-top:2px solid #1a7a6e;font-size:8px;color:#666;text-align:center">';
   h+='<b>'+ENT('entNom')+'</b> — '+ENT('entAdresse')+' — SIRET: '+ENT('entSiret')+' — RCS: '+ENT('entRcs')+'<br>';
-  h+='TVA: '+ENT('entTva')+' — APE: '+ENT('entApe')+' — RC Pro: '+ENT('entRcpro')+'<br>';
+  h+='TVA: '+ENT('entTva')+' — APE: '+ENT('entApe')+' — RC Pro: '+(ENT('entRcpro')+' · Assurance transport MSIG Europe SE — Police n°31.209.088')+'<br>';
   h+='Tél: '+ENT('entTel1')+' / '+ENT('entTel2')+' — '+ENT('entEmail')+' — '+ENT('entWeb')+'<br>';
   h+='Document généré automatiquement par CathyPets Pro V77 — Livre des factures conforme Art. L123-12 du Code de Commerce</div>';
   h+='</div></body></html>';
@@ -32026,6 +32028,7 @@ function _iSaveItinParams(){
     pe: document.getElementById('itinPxEss').value,
     r1: document.getElementById('itinRtCl1').value,
     r2: document.getElementById('itinRtCl2').value,
+    txh: document.getElementById('itinTxH').value,
     pct: document.getElementById('itinPctAp').value
   };
   try { localStorage.setItem('itinP', JSON.stringify(p)); } catch(e){}
@@ -32036,7 +32039,7 @@ function initItin(){
   if(!div) return;
   if(!div.querySelector('.itin-step')) _iInitSteps();
   var p = _iLoadItinParams();
-  var ids = {itinKm:'km', itinConsoGaz:'cg', itinPxGaz:'pg', itinConsoEss:'ce', itinPxEss:'pe', itinRtCl1:'r1', itinRtCl2:'r2', itinPctAp:'pct'};
+  var ids = {itinKm:'km', itinConsoGaz:'cg', itinPxGaz:'pg', itinConsoEss:'ce', itinPxEss:'pe', itinRtCl1:'r1', itinRtCl2:'r2', itinTxH:'txh', itinPctAp:'pct'};
   Object.keys(ids).forEach(function(id){
     var el = document.getElementById(id);
     if(el && p[ids[id]] !== undefined) el.value = p[ids[id]];
@@ -32112,9 +32115,11 @@ async function _iCalcRoute(){
     var r1     = parseFloat(document.getElementById('itinRtCl1').value)     || 5.3;
     var r2     = parseFloat(document.getElementById('itinRtCl2').value)     || 6.4;
     var pctAp  = parseFloat(document.getElementById('itinPctAp').value)     || 70;
+    var txH    = parseFloat(document.getElementById('itinTxH').value)      || 12;
 
     // Calculs
     var coutKm = eurkm * distKm;
+    var coutSal = durMin / 60 * txH;
     var litG   = distKm * cg / 100;
     var coutG  = litG * pg;
     var litE   = distKm * ce / 100;
@@ -32186,16 +32191,17 @@ async function _iCalcRoute(){
       + row('🛢 Carburant', litG.toFixed(1) + 'L gazoil · ' + litE.toFixed(1) + 'L essence', coutG, coutE)
       + row('🚧 Péages Cl.1 (moto)', r1.toFixed(1) + ' c€/km · ' + pctAp + '% autoroute', toll1, toll1, 'var(--mt)')
       + row('🚧 Péages Cl.2 (voiture)', r2.toFixed(1) + ' c€/km · ' + pctAp + '% autoroute', toll2, toll2, 'var(--mt)')
+      + row('💼 Salaire chauffeur', durH + 'h' + durMm + ' × ' + txH.toFixed(2) + ' €/h', coutSal, coutSal, '#a78bfa')
       + '</tbody><tfoot>'
       + '<tr style="font-weight:700;font-size:13px;background:var(--bg2)">'
       + '<td style="padding:8px 4px">Total Cl.1 (moto)</td>'
-      + '<td style="text-align:right;padding:8px 4px;color:#5de8a0">' + euro(coutKm+coutG+toll1) + '</td>'
-      + '<td style="text-align:right;padding:8px 4px;color:#f5c060">' + euro(coutKm+coutE+toll1) + '</td>'
+      + '<td style="text-align:right;padding:8px 4px;color:#5de8a0">' + euro(coutKm+coutG+toll1+coutSal) + '</td>'
+      + '<td style="text-align:right;padding:8px 4px;color:#f5c060">' + euro(coutKm+coutE+toll1+coutSal) + '</td>'
       + '</tr>'
       + '<tr style="font-weight:700;font-size:15px;border-top:2px solid var(--a2)">'
       + '<td style="padding:8px 4px">Total Cl.2 (voiture)</td>'
-      + '<td style="text-align:right;padding:8px 4px;color:#5de8a0">' + euro(coutKm+coutG+toll2) + '</td>'
-      + '<td style="text-align:right;padding:8px 4px;color:#f5c060">' + euro(coutKm+coutE+toll2) + '</td>'
+      + '<td style="text-align:right;padding:8px 4px;color:#5de8a0">' + euro(coutKm+coutG+toll2+coutSal) + '</td>'
+      + '<td style="text-align:right;padding:8px 4px;color:#f5c060">' + euro(coutKm+coutE+toll2+coutSal) + '</td>'
       + '</tr>'
       + '</tfoot></table>'
       + '<p style="font-size:10px;color:var(--mt);margin:10px 0 0">⚠️ Péages estimés (ASFA 2024) · ' + pctAp + '% du trajet en autoroute supposé · vérifier sur ViaMichelin pour le tarif exact.</p>'
