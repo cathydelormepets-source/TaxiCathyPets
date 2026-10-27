@@ -617,7 +617,7 @@ body.nuit .card{border-color:#0a1520}
 </div>
 </aside>
 <main class="main">
-<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.99</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
+<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.100</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
 <div class="cnt">
 
 <!-- DASHBOARD -->
@@ -4678,7 +4678,7 @@ document.getElementById('q_contrat_pec').addEventListener('change',function(){
     <div id="pinStatus" class="nt" style="margin-top:8px;font-size:11px"></div>
     <div class="row" style="margin-top:12px;border-top:1px solid var(--ln);padding-top:10px">
       <div class="c6 fd"><label>📒 Code comptable (4-6 chiffres)</label><input id="s_pinCompta" type="text" inputmode="numeric" maxlength="6" placeholder="2206" style="letter-spacing:6px;font-size:18px;text-align:center"></div>
-      <div class="c6 fd" style="display:flex;align-items:flex-end"><button class="btn sm" style="background:#2a2010;border-color:#7a5a20;color:#d4a843" onclick="savComptaPin()">📒 Enregistrer</button></div>
+      <div class="c6 fd" style="display:flex;align-items:flex-end"><button class="btn sm" style="background:#2a2010;border-color:#7a5a20;color:#d4a843" onclick="savComptaPin()">📒 Enregistrer</button> <button class="btn sm" style="background:#102a2a;border-color:#2a6a6a;color:#7ad7c0" onclick="genLienComptable()" title="Lien à envoyer au comptable : l'appli se configure toute seule sur son appareil">🔗 Lien comptable</button></div>
     </div>
     <div class="nt" style="font-size:10px;color:var(--mt)">Accès comptable = Devis (lecture, sans statut), Factures, Dépenses (historique des frais, sans rentabilité ni bénéfice) et Véhicule &amp; Carburant. Pas de vue sur les finances. Lecture + PDF/exports, boutons d'édition masqués. Code synchronisé sur tous les appareils.</div>
   </div>
@@ -6577,8 +6577,7 @@ function fbChangePass(){
     return user.updatePassword(n1);
   }).then(function(){
     db.settings.fbPass=btoa(n1);
-    sv('fb_pass',db.settings.fbPass);
-    var fpEl=$('fb_pass');if(fpEl)fpEl.placeholder='••••••• (sauvegardé)';
+    var fpEl=$('fb_pass');if(fpEl){fpEl.value=db.settings.fbPass;fpEl.placeholder='••••••• (sauvegardé)'}
     safeSave();
     syncUI('on','Synchronisé');
     lH('cloud','Mot de passe Firebase modifié ('+user.email+')');
@@ -6857,7 +6856,16 @@ function loginAs(role){
   if(screen){screen.style.opacity='0';screen.style.transition='opacity .4s';setTimeout(function(){screen.style.display='none';document.body.classList.remove('locked')},400)}
   applyMode();
   if(_appMode==='chauffeur')setTimeout(function(){sTab('terrain')},300);
-  if(_appMode==='comptable')setTimeout(function(){sTab('fac')},300);
+  if(_appMode==='comptable'){
+    setTimeout(function(){sTab('fac')},300);
+    setTimeout(function(){
+      var ok=fbConnected||(_fbAuth&&_fbAuth.currentUser);
+      if(!ok){
+        if(!db.settings.fbApiKey){alert('⚠️ Appareil non configuré : demande à Cathy Pets le « 🔗 Lien comptable » et ouvre-le ici.');return}
+        cptLoginFirebase();
+      }
+    },900);
+  }
 }
 // V80.94 : code comptable (⚙️ Paramètres → Code PIN sécurité), défaut 4821
 function comptaPin(){return (db&&db.settings&&db.settings.comptaPin)?String(db.settings.comptaPin):'2206'}
@@ -27714,6 +27722,25 @@ function savPin(){
   document.getElementById('s_pin').value='';document.getElementById('s_pin2').value='';
   showToast('🔐 PIN activé !');
 }
+// V80.100 : lien d'installation comptable (config Firebase embarquée, sans mot de passe)
+function genLienComptable(){
+  var st=db.settings||{};
+  if(!st.fbApiKey||!st.fbProjectId||!st.fbDatabaseUrl){alert('Configure d\'abord Firebase (API Key, Project ID, Database URL) et connecte-toi.');return}
+  var cfg={ak:st.fbApiKey,pid:st.fbProjectId,url:st.fbDatabaseUrl,room:st.fbRoom||'cathypets-default'};
+  var link=location.origin+location.pathname+'?cpt='+encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(cfg)))));
+  try{navigator.clipboard.writeText(link)}catch(e){}
+  prompt('🔗 Lien comptable (copié) — à envoyer avec le code '+comptaPin()+' et ses identifiants Firebase :',link);
+}
+function cptLoginFirebase(){
+  // demandé au comptable à la 1re connexion de son appareil (ou si la connexion a échoué)
+  var email=prompt('📒 Email du compte Firebase comptable :',db.settings.fbEmail||'');
+  if(!email)return false;
+  var pass=prompt('Mot de passe Firebase de '+email+' :','');
+  if(!pass)return false;
+  var _e=$('fb_email');if(_e)_e.value=email;var _p=$('fb_pass');if(_p)_p.value=pass;
+  try{fbConnect()}catch(e){alert('Erreur connexion : '+(e.message||e))}
+  return true;
+}
 function savComptaPin(){
   var p=(document.getElementById('s_pinCompta')||{}).value||'';
   if(!/^\d{4,6}$/.test(p)){showToast('⚠️ Code comptable : 4 à 6 chiffres');return}
@@ -27749,6 +27776,20 @@ function resetAll(){
 
 // BOOT
 var bl=document.getElementById('brandLogo');if(bl&&typeof LOGO_B64!=='undefined')bl.src=LOGO_B64;
+// V80.100 : lien comptable ?cpt=… → config Firebase auto (jamais de mot de passe dans le lien)
+try{
+  var _cptQ=new URLSearchParams(location.search).get('cpt');
+  if(_cptQ){
+    var _cfg=JSON.parse(decodeURIComponent(escape(atob(_cptQ))));
+    if(_cfg&&_cfg.ak&&_cfg.pid&&_cfg.url){
+      db.settings.fbApiKey=_cfg.ak;db.settings.fbProjectId=_cfg.pid;db.settings.fbDatabaseUrl=_cfg.url;db.settings.fbRoom=_cfg.room||'cathypets-default';
+      localStorage.setItem('cpMode','comptable');
+      safeSave();
+      history.replaceState(null,'',location.pathname);
+      setTimeout(function(){showToast('📒 Appareil configuré pour l\'accès comptable — entre le code')},800);
+    }
+  }
+}catch(e){console.error('cpt link',e)}
 checkPin();
 rAll();sTab('dash');
 initZoom();
