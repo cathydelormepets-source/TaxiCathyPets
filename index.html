@@ -620,7 +620,7 @@ body.nuit .card{border-color:#0a1520}
 </div>
 </aside>
 <main class="main">
-<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.106</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn" onclick="sTab('rech');setTimeout(function(){var i=$('srI');if(i)i.focus()},200)" title="Recherche globale" data-role="admin">🔎</button><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
+<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.107</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn" onclick="sTab('rech');setTimeout(function(){var i=$('srI');if(i)i.focus()},200)" title="Recherche globale" data-role="admin">🔎</button><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
 <div class="cnt">
 
 <!-- DASHBOARD -->
@@ -27772,7 +27772,7 @@ function genLienComptable(){
     var em=prompt('Email du compte Firebase du comptable :',st.cptEmail||'');
     if(em){var pw=prompt('Mot de passe de ce compte :','');if(pw){cfg.em=em;cfg.pw=pw;st.cptEmail=em;safeSave()}}
   }else if(st.fbEmail&&st.fbPass){
-    cfg.em=st.fbEmail;try{cfg.pw=atob(st.fbPass)}catch(e){cfg.pw=st.fbPass}
+    cfg.em=st.fbEmail;cfg.pw=st.fbPass;try{var _d=atob(st.fbPass);if(/^[\x20-\x7e]+$/.test(_d))cfg.pw=_d}catch(e){}
   }
   var link=location.origin+location.pathname+'?cpt='+encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(cfg)))));
   try{navigator.clipboard.writeText(link)}catch(e){}
@@ -27828,7 +27828,8 @@ try{
   var _cptQ=new URLSearchParams(location.search).get('cpt');
   if(_cptQ){
     var _cfg=JSON.parse(decodeURIComponent(escape(atob(_cptQ))));
-    if(_cfg&&_cfg.ak&&_cfg.pid&&_cfg.url){
+    var _deja=db.settings.fbEmail&&db.settings.fbPass;
+    if(_cfg&&_cfg.ak&&_cfg.pid&&_cfg.url&&(!_deja||confirm('⚠️ Cet appareil est déjà configuré ('+db.settings.fbEmail+').\n\nOK = le reconfigurer en accès COMPTABLE (tes identifiants seront remplacés)\nAnnuler = ne rien changer (recommandé sur ton propre appareil)'))){
       db.settings.fbApiKey=_cfg.ak;db.settings.fbProjectId=_cfg.pid;db.settings.fbDatabaseUrl=_cfg.url;db.settings.fbRoom=_cfg.room||'cathypets-default';
       if(_cfg.em&&_cfg.pw){db.settings.fbEmail=_cfg.em;db.settings.fbPass=btoa(_cfg.pw)}
       localStorage.setItem('cpMode','comptable');
