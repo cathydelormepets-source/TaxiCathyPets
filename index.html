@@ -617,7 +617,7 @@ body.nuit .card{border-color:#0a1520}
 </div>
 </aside>
 <main class="main">
-<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.104</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn" onclick="sTab('rech');setTimeout(function(){var i=$('srI');if(i)i.focus()},200)" title="Recherche globale" data-role="admin">🔎</button><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
+<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.105</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn" onclick="sTab('rech');setTimeout(function(){var i=$('srI');if(i)i.focus()},200)" title="Recherche globale" data-role="admin">🔎</button><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
 <div class="cnt">
 
 <!-- DASHBOARD -->
@@ -27762,10 +27762,14 @@ function genLienComptable(){
   if(!st.fbApiKey||!st.fbProjectId||!st.fbDatabaseUrl){alert('Configure d\'abord Firebase (API Key, Project ID, Database URL) et connecte-toi.');return}
   var cfg={ak:st.fbApiKey,pid:st.fbProjectId,url:st.fbDatabaseUrl,room:st.fbRoom||'cathypets-default'};
   // V80.102 : lien « tout compris » — identifiants du compte Firebase COMPTABLE (lecture seule) inclus, il n'a plus que le code à taper
-  var em=prompt('Email du compte Firebase du comptable (compte dédié, lecture seule) :',st.cptEmail||'');
-  if(em){
-    var pw=prompt('Mot de passe de ce compte comptable :','');
-    if(pw){cfg.em=em;cfg.pw=pw;st.cptEmail=em;safeSave()}
+  // V80.105 : par défaut, lien en 1 clic avec le compte Firebase déjà connecté (le comptable est bridé par l'interface) ;
+  // compte dédié lecture seule seulement si tu le demandes
+  var dedie=confirm('Lien comptable en 1 clic avec ton compte actuel ?\n\nOK = oui, simple (il ne verra que Devis/Factures/Frais)\nAnnuler = utiliser un compte Firebase dédié au comptable (plus sûr, à créer dans Firebase)')===false;
+  if(dedie){
+    var em=prompt('Email du compte Firebase du comptable :',st.cptEmail||'');
+    if(em){var pw=prompt('Mot de passe de ce compte :','');if(pw){cfg.em=em;cfg.pw=pw;st.cptEmail=em;safeSave()}}
+  }else if(st.fbEmail&&st.fbPass){
+    cfg.em=st.fbEmail;try{cfg.pw=atob(st.fbPass)}catch(e){cfg.pw=st.fbPass}
   }
   var link=location.origin+location.pathname+'?cpt='+encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(cfg)))));
   try{navigator.clipboard.writeText(link)}catch(e){}
