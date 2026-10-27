@@ -617,7 +617,7 @@ body.nuit .card{border-color:#0a1520}
 </div>
 </aside>
 <main class="main">
-<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.100</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
+<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.101</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
 <div class="cnt">
 
 <!-- DASHBOARD -->
@@ -2616,7 +2616,7 @@ document.getElementById('q_contrat_pec').addEventListener('change',function(){
 </div>
 </section>
 <section class="tab" id="hist"><div class="card"><div class="hd"><h3>Historique</h3></div><div class="bd"><div id="hiC"></div></div></div></section>
-<section class="tab" id="rech"><div class="card"><div class="hd"><h3>Recherche</h3></div><div class="bd"><input id="srI" placeholder="Nom, ville, devis, facture..." oninput="gSrch()" style="background:#080f1a;border:1px solid var(--ln);color:var(--tx);border-radius:10px;padding:10px;font:inherit;width:100%;margin-bottom:10px"><div id="srC"></div></div></div></section>
+<section class="tab" id="rech"><div class="card"><div class="hd"><h3>Recherche</h3></div><div class="bd"><input id="srI" placeholder="Nom, ville, devis, facture..." oninput="gSrch()" style="background:#080f1a;border:1px solid var(--ln);color:var(--tx);border-radius:10px;padding:10px;font:inherit;width:100%;margin-bottom:10px"><div data-role="admin" style="margin-bottom:10px"><button class="btn sm" style="background:#2a1a05;border-color:#8a5a1a;color:#f0b060" onclick="traceRef()">🕵️ Retrouver un numéro (même supprimé)</button></div><div id="srTrace"></div><div id="srC"></div></div></div></section>
 
 
 <!-- TERRAIN -->
@@ -14266,6 +14266,40 @@ function rStat(){
   }
 }
 function rHist(){$('hiC').innerHTML=db.history.map(function(h){return '<div class="itm"><span class="sm-t">'+fD(h.date)+'</span> · '+h.type+' · '+h.text+'</div>'}).join('')||'<div class="itm">—</div>'}
+// V80.101 : trace d'un numéro de devis/facture — y compris supprimés, renumérotés, et traces dans l'historique
+function traceRef(){
+  var q=(V('srI')||'').trim();
+  if(!q){alert('Tape d\'abord le numéro (ex. 453 ou CP-DEV-2026-453) dans le champ de recherche.');return}
+  var num=(q.match(/(\d{2,})\s*$/)||[])[1]||q;
+  var out=$('srTrace');var h='';
+  function esc2(x){return esc(String(x||''))}
+  function scan(arr,label){
+    (arr||[]).forEach(function(x){
+      var hit=(x.ref&&x.ref.indexOf(num)>=0)||(x.ref&&x.ref.toLowerCase()===q.toLowerCase());
+      if(!hit)return;
+      h+='<div class="itm" style="border-left:3px solid '+(x._deleted?'var(--rd)':'var(--a2)')+'"><b>'+label+' '+esc2(x.ref)+'</b> — '+esc2(cN(x.clientId))+' — '+euro(x.total)+' — statut : '+esc2(x.status||'—')
+        +(x._deleted?' — <span style="color:var(--rd);font-weight:800">SUPPRIMÉ'+(x._deletedAt?' le '+fD(x._deletedAt):'')+'</span> <button class="btn sm gn" onclick="restoreRec(\''+(label==='Devis'?'devis':'factures')+'\',\''+x.id+'\')">♻️ Restaurer</button>':'')
+        +'<div style="font-size:10px;color:var(--mt)">créé '+fD(x.date)+(x._updatedAt?' · modifié '+fD(x._updatedAt):'')+(x.quoteId?' · lié au devis '+esc2((db.devis.find(function(d){return d.id===x.quoteId})||{}).ref||x.quoteId):'')+'</div></div>';
+    });
+  }
+  scan(db.devis,'Devis');scan(db.factures,'Facture');
+  // Factures issues d'un devis portant ce numéro
+  (db.devis||[]).filter(function(d){return d.ref&&d.ref.indexOf(num)>=0}).forEach(function(d){
+    (db.factures||[]).filter(function(f){return f.quoteId===d.id}).forEach(function(f){
+      h+='<div class="itm" style="border-left:3px solid var(--bl)">↳ facturé sous <b>'+esc2(f.ref)+'</b> ('+euro(f.total)+', '+esc2(f.status||'')+(f._deleted?', supprimée':'')+')</div>';
+    });
+  });
+  // Historique
+  var hist=(db.history||[]).filter(function(e){return (e.text||'').indexOf(num)>=0});
+  if(hist.length){h+='<div class="nt" style="margin-top:8px;font-weight:700">🕘 Historique mentionnant « '+esc2(num)+' » :</div>';hist.slice(0,15).forEach(function(e){h+='<div class="itm" style="font-size:11px">'+fD(e.date)+' — ['+esc2(e.type)+'] '+esc2(e.text)+'</div>'})}
+  if(!h)h='<div class="itm" style="color:var(--rd)">Aucune trace de « '+esc2(q)+' » sur cet appareil : ni actif, ni supprimé, ni dans l\'historique. → Le numéro n\'a jamais existé ici (saut de numéro) ou il est sur un autre appareil non synchronisé.</div>';
+  out.innerHTML='<div class="card" style="margin-bottom:10px;border-top:3px solid var(--or)"><div class="bd">'+h+'</div></div>';
+}
+function restoreRec(coll,id){
+  var x=(db[coll]||[]).find(function(r){return r.id===id});if(!x)return;
+  if(!confirm('Restaurer '+x.ref+' ?'))return;
+  delete x._deleted;delete x._deletedAt;stamp(x);lH('restore',(coll==='devis'?'Devis':'Facture')+' restauré(e) : '+x.ref);sav();rAll();traceRef();showToast('♻️ '+x.ref+' restauré');
+}
 function gSrch(){
   var q=(V('srI')||'').toLowerCase();
   // Minimum 3 caractères pour lancer la recherche
