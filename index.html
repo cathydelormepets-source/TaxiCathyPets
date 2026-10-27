@@ -158,7 +158,7 @@ body.nuit .card{border-color:#0a1520}
 #wpBox,#dwpBox{display:flex;flex-direction:column;gap:3px;margin-bottom:6px;max-height:320px;overflow-y:auto}
 #wpBox .row,#dwpBox .row{align-items:center;background:rgba(0,0,0,.15);border:1px solid var(--ln);border-radius:6px;padding:3px 5px}
 .mode-comptable .btn.rd,.mode-comptable .btn.at,.mode-comptable .btn.og,.mode-comptable .btn.gn{display:none!important}
-.mode-comptable #dev .card:first-child,.mode-comptable #facTab-creer,.mode-comptable #facTab-creer-panel{display:none!important}
+.mode-comptable .cpt-hide,.mode-comptable #dev .card:first-child,.mode-comptable #facTab-creer,.mode-comptable #facTab-creer-panel{display:none!important}
 .mode-comptable #pwaInstallBtn,.mode-comptable .topbar button[onclick^="saveAppToPhone"]{display:none!important}
 </style>
 
@@ -617,7 +617,7 @@ body.nuit .card{border-color:#0a1520}
 </div>
 </aside>
 <main class="main">
-<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.98</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
+<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.99</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
 <div class="cnt">
 
 <!-- DASHBOARD -->
@@ -3247,7 +3247,7 @@ document.getElementById('q_contrat_pec').addEventListener('change',function(){
 
 <!-- FRAIS & RENTABILITÉ -->
 <section class="tab" id="frais">
-<div class="grid kpi" style="grid-template-columns:repeat(4,1fr);margin-bottom:14px">
+<div class="grid kpi cpt-hide" style="grid-template-columns:repeat(4,1fr);margin-bottom:14px">
   <div class="card"><div class="lb">Frais du jour</div><div class="vl" id="frK1" style="color:var(--rd)">0 €</div></div>
   <div class="card"><div class="lb">Frais semaine</div><div class="vl" id="frK2" style="color:var(--or)">0 €</div></div>
   <div class="card"><div class="lb">Frais du mois</div><div class="vl" id="frK3" style="color:#e11d48">0 €</div></div>
@@ -3255,14 +3255,14 @@ document.getElementById('q_contrat_pec').addEventListener('change',function(){
 </div>
 
 <!-- RENTABILITÉ -->
-<div class="card" style="border-top:3px solid var(--a2);margin-bottom:14px"><div class="hd"><h3>📊 Rentabilité</h3>
+<div class="card cpt-hide" style="border-top:3px solid var(--a2);margin-bottom:14px"><div class="hd"><h3>📊 Rentabilité</h3>
   <select id="fr_periode" onchange="rFrais()" style="padding:4px 8px;font-size:11px;background:#080f1a;border:1px solid var(--ln);color:var(--tx);border-radius:6px">
     <option value="jour">Aujourd'hui</option><option value="semaine">Cette semaine</option><option value="mois" selected>Ce mois</option><option value="annee">Cette année</option>
   </select>
 </div><div class="bd"><div id="frRenta"></div></div></div>
 
 <!-- AJOUTER UN FRAIS -->
-<div class="card" style="border-top:3px solid #e11d48;margin-bottom:14px"><div class="hd"><h3>➕ Nouveau frais</h3></div><div class="bd">
+<div class="card cpt-hide" style="border-top:3px solid #e11d48;margin-bottom:14px"><div class="hd"><h3>➕ Nouveau frais</h3></div><div class="bd">
   <div class="row">
     <div class="c4 fd"><label>Date</label><input id="fr_dt" type="date"></div>
     <div class="c4 fd"><label>Catégorie</label><select id="fr_cat" onchange="frCatChange()">
@@ -3288,7 +3288,7 @@ document.getElementById('q_contrat_pec').addEventListener('change',function(){
 <div class="card" style="margin-bottom:14px"><div class="hd"><h3>📅 Historique par mois</h3></div><div class="bd"><div id="frHistoMois"></div></div></div>
 
 <!-- IMPORT QONTO CSV -->
-<div class="card" style="border-top:3px solid #1a7a4a;margin-bottom:14px"><div class="hd"><h3>🏦 Rapprochement Qonto</h3><button class="btn sm" onclick="importQontoCSV()" style="font-size:11px;background:#0a2c1a;border-color:#1a6a3a;color:#5de8a0" title="Importe les dépenses depuis un export CSV Qonto (Débit uniquement)">📥 Importer CSV Qonto</button></div><div class="bd"><p style="margin:0 0 8px;font-size:13px;color:var(--mt)">Exporte ton relevé Qonto : <strong>Compte — Transactions — Exporter (CSV)</strong>. Les débits sont importés comme dépenses. Les doublons sont ignorés automatiquement.</p><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn gn" onclick="importQontoCSV()" style="font-size:13px">📤 Choisir le fichier CSV Qonto…</button><span style="font-size:11px;color:var(--mt);align-self:center">Colonnes reconnues : date, libellé, montant, catégorie, TVA</span></div></div></div>
+<div class="card cpt-hide" style="border-top:3px solid #1a7a4a;margin-bottom:14px"><div class="hd"><h3>🏦 Rapprochement Qonto</h3><button class="btn sm" onclick="importQontoCSV()" style="font-size:11px;background:#0a2c1a;border-color:#1a6a3a;color:#5de8a0" title="Importe les dépenses depuis un export CSV Qonto (Débit uniquement)">📥 Importer CSV Qonto</button></div><div class="bd"><p style="margin:0 0 8px;font-size:13px;color:var(--mt)">Exporte ton relevé Qonto : <strong>Compte — Transactions — Exporter (CSV)</strong>. Les débits sont importés comme dépenses. Les doublons sont ignorés automatiquement.</p><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn gn" onclick="importQontoCSV()" style="font-size:13px">📤 Choisir le fichier CSV Qonto…</button><span style="font-size:11px;color:var(--mt);align-self:center">Colonnes reconnues : date, libellé, montant, catégorie, TVA</span></div></div></div>
 
 <!-- HISTORIQUE DÉTAILLÉ -->
 <div class="card"><div class="hd"><h3>📋 Historique des frais</h3></div><div class="bd"><div id="frHistoTbl" style="max-height:400px;overflow-y:auto"></div></div></div>
@@ -4680,7 +4680,7 @@ document.getElementById('q_contrat_pec').addEventListener('change',function(){
       <div class="c6 fd"><label>📒 Code comptable (4-6 chiffres)</label><input id="s_pinCompta" type="text" inputmode="numeric" maxlength="6" placeholder="2206" style="letter-spacing:6px;font-size:18px;text-align:center"></div>
       <div class="c6 fd" style="display:flex;align-items:flex-end"><button class="btn sm" style="background:#2a2010;border-color:#7a5a20;color:#d4a843" onclick="savComptaPin()">📒 Enregistrer</button></div>
     </div>
-    <div class="nt" style="font-size:10px;color:var(--mt)">Accès comptable = Devis (lecture, sans statut) et Factures uniquement. Pas de vue sur les finances. Lecture + PDF/exports, boutons d'édition masqués. Code synchronisé sur tous les appareils.</div>
+    <div class="nt" style="font-size:10px;color:var(--mt)">Accès comptable = Devis (lecture, sans statut), Factures, Dépenses (historique des frais, sans rentabilité ni bénéfice) et Véhicule &amp; Carburant. Pas de vue sur les finances. Lecture + PDF/exports, boutons d'édition masqués. Code synchronisé sur tous les appareils.</div>
   </div>
 </div>
 
@@ -6861,7 +6861,7 @@ function loginAs(role){
 }
 // V80.94 : code comptable (⚙️ Paramètres → Code PIN sécurité), défaut 4821
 function comptaPin(){return (db&&db.settings&&db.settings.comptaPin)?String(db.settings.comptaPin):'2206'}
-var COMPTA_TABS=['dev','fac'];
+var COMPTA_TABS=['dev','fac','frais','carbu'];
 
 function loginCheck(){
   var pin=$('loginPin')?$('loginPin').value:'';
@@ -6907,8 +6907,8 @@ function applyMode(){
   if(isCompta){
     // V80.94 : seuls les onglets compta sont visibles (+ groupes Commerce/Système)
     document.querySelectorAll('.nb').forEach(function(b){b.style.display=COMPTA_TABS.indexOf(b.dataset.t)>=0?'':'none'});
-    document.querySelectorAll('.ng').forEach(function(g){var t=g.textContent.trim();g.style.display=(t==='Commerce')?'':'none'});
-    document.querySelectorAll('.nv').forEach(function(v){v.style.display=v.querySelector('.nb[data-t="fac"]')?'':'none'});
+    document.querySelectorAll('.ng').forEach(function(g){var t=g.textContent.trim();g.style.display=(t==='Commerce'||t==='Exploitation')?'':'none'});
+    document.querySelectorAll('.nv').forEach(function(v){v.style.display=v.querySelector('.nb[data-t="fac"],.nb[data-t="frais"]')?'':'none'});
   }else{
     document.querySelectorAll('.nb,.nv').forEach(function(b){if(!b.hasAttribute('data-role'))b.style.display=''});
   }
