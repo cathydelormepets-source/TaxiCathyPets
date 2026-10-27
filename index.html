@@ -157,6 +157,9 @@ body.nuit .card{border-color:#0a1520}
 .autosave-toast.show{opacity:1}
 #wpBox,#dwpBox{display:flex;flex-direction:column;gap:3px;margin-bottom:6px;max-height:320px;overflow-y:auto}
 #wpBox .row,#dwpBox .row{align-items:center;background:rgba(0,0,0,.15);border:1px solid var(--ln);border-radius:6px;padding:3px 5px}
+.mode-comptable .btn.rd,.mode-comptable .btn.at,.mode-comptable .btn.og,.mode-comptable .btn.gn{display:none!important}
+.mode-comptable #dev .card:first-child,.mode-comptable #facTab-creer,.mode-comptable #facTab-creer-panel{display:none!important}
+.mode-comptable #pwaInstallBtn,.mode-comptable .topbar button[onclick^="saveAppToPhone"]{display:none!important}
 </style>
 
 <style id="printCSS">
@@ -536,6 +539,10 @@ body.nuit .card{border-color:#0a1520}
         <div style="font-size:24px;margin-bottom:4px">🚐</div>
         Chauffeur
       </button>
+      <button onclick="loginAs('comptable')" style="flex:1;padding:16px 10px;border-radius:14px;border:2px solid #d4a843;background:rgba(212,168,67,.1);color:#fff;font-size:14px;font-weight:800;cursor:pointer;transition:all .2s">
+        <div style="font-size:24px;margin-bottom:4px">📒</div>
+        Comptable
+      </button>
     </div>
 
     <div id="loginError" style="color:#ef4444;font-size:12px;font-weight:700;min-height:20px"></div>
@@ -610,7 +617,7 @@ body.nuit .card{border-color:#0a1520}
 </div>
 </aside>
 <main class="main">
-<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.92</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
+<div class="topbar"><div style="display:flex;align-items:center;gap:12px"><button class="btn mtg" onclick="tSb(true)">☰</button><div><h2 id="pTi">Dashboard</h2><div class="sub" id="synI">—</div></div></div><div class="acts"><span id="modeBadge" onclick="switchMode(_appMode==='admin'?'chauffeur':'admin')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;background:rgba(26,122,110,.15);color:var(--a2)">🐾 Cathy Pets</span><span title="Version de l'application" style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;background:rgba(232,101,10,.18);color:#f0a060">V80.98</span><div class="sync-badge"><span class="sync-dot off" id="syncDot"></span><span id="syncLbl">Local</span></div><span id="pwaStatus" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:4px" title="Hors-ligne"></span><button class="btn at" onclick="sav(true)">💾 Sauver</button><button id="pwaInstallBtn" class="btn gn" onclick="installPWA()" style="display:none">📲 Installer</button><button class="btn gn" onclick="saveAppToPhone()" title="Sauvegarder l'appli sur le téléphone">📲 Sauver appli</button><button class="btn" onclick="expJ()" data-role="admin">⬇️ Export données</button><label class="btn" style="cursor:pointer" data-role="admin">⬆️ Import<input type="file" accept=".json" style="display:none" onchange="impJ(event)"></label></div></div>
 <div class="cnt">
 
 <!-- DASHBOARD -->
@@ -4669,6 +4676,11 @@ document.getElementById('q_contrat_pec').addEventListener('change',function(){
       <button class="btn sm" style="background:#1a2030;border-color:#2a3050;color:#aab" onclick="removePin()">🔓 Désactiver</button>
     </div>
     <div id="pinStatus" class="nt" style="margin-top:8px;font-size:11px"></div>
+    <div class="row" style="margin-top:12px;border-top:1px solid var(--ln);padding-top:10px">
+      <div class="c6 fd"><label>📒 Code comptable (4-6 chiffres)</label><input id="s_pinCompta" type="text" inputmode="numeric" maxlength="6" placeholder="2206" style="letter-spacing:6px;font-size:18px;text-align:center"></div>
+      <div class="c6 fd" style="display:flex;align-items:flex-end"><button class="btn sm" style="background:#2a2010;border-color:#7a5a20;color:#d4a843" onclick="savComptaPin()">📒 Enregistrer</button></div>
+    </div>
+    <div class="nt" style="font-size:10px;color:var(--mt)">Accès comptable = Devis (lecture, sans statut) et Factures uniquement. Pas de vue sur les finances. Lecture + PDF/exports, boutons d'édition masqués. Code synchronisé sur tous les appareils.</div>
   </div>
 </div>
 
@@ -4727,6 +4739,7 @@ document.getElementById('q_contrat_pec').addEventListener('change',function(){
     <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
       <button class="btn sm at" onclick="fbConnect()">🔌 Connecter</button>
       <button class="btn sm rd" onclick="fbDisconnect()">⛔ Déco</button>
+      <button class="btn sm" onclick="fbChangePass()" style="background:#2a2010;border-color:#7a5a20;color:#f0c060" title="Changer le mot de passe du compte Firebase">🔑 Mot de passe</button>
       <button class="btn sm og" onclick="fbPush()">⬆️ Envoyer</button>
       <button class="btn sm bu" onclick="fbPull()">⬇️ Récupérer</button>
       <button class="btn sm" onclick="fbForceCloud()" style="background:#2a1040;border-color:#5a2080;color:#c8a">🔄 Forcer cloud</button>
@@ -6545,6 +6558,40 @@ function fbConnect(){
     }
   }catch(e){console.error('fb connect err',e);syncUI('err','Erreur: '+e.message);fbConnected=false}
 }
+// V80.93 : changement du mot de passe du compte Firebase (réauth obligatoire)
+function fbChangePass(){
+  if(!_fbAuth||!_fbAuth.currentUser){alert('🔒 Connecte-toi d\'abord (🔌 Connecter) avant de changer le mot de passe.');return}
+  var user=_fbAuth.currentUser;
+  var cur='';
+  try{cur=db.settings.fbPass?atob(db.settings.fbPass):''}catch(e){cur=''}
+  var old=prompt('Mot de passe ACTUEL de '+user.email+' :',cur||'');
+  if(!old)return;
+  var n1=prompt('NOUVEAU mot de passe (8 caractères minimum) :','');
+  if(!n1)return;
+  if(n1.length<8){alert('❌ 8 caractères minimum.');return}
+  var n2=prompt('Confirme le NOUVEAU mot de passe :','');
+  if(n1!==n2){alert('❌ Les deux saisies ne correspondent pas.');return}
+  syncUI('syncing','🔑 Changement du mot de passe...');
+  var cred=firebase.auth.EmailAuthProvider.credential(user.email,old);
+  user.reauthenticateWithCredential(cred).then(function(){
+    return user.updatePassword(n1);
+  }).then(function(){
+    db.settings.fbPass=btoa(n1);
+    sv('fb_pass',db.settings.fbPass);
+    var fpEl=$('fb_pass');if(fpEl)fpEl.placeholder='••••••• (sauvegardé)';
+    safeSave();
+    syncUI('on','Synchronisé');
+    lH('cloud','Mot de passe Firebase modifié ('+user.email+')');
+    alert('✅ Mot de passe changé.\n\nPense à le mettre à jour sur les AUTRES appareils (⚙️ Paramètres → Mot de passe → 🔌 Connecter), sinon ils ne pourront plus se synchroniser.');
+  }).catch(function(err){
+    syncUI('err','❌ Mot de passe non changé');
+    var c=err.code||'';
+    if(c==='auth/wrong-password'||c==='auth/invalid-credential'||c==='auth/invalid-login-credentials')alert('❌ Mot de passe actuel incorrect.');
+    else if(c==='auth/weak-password')alert('❌ Nouveau mot de passe trop faible (6 caractères minimum côté Firebase).');
+    else if(c==='auth/requires-recent-login')alert('❌ Session trop ancienne : fais ⛔ Déco puis 🔌 Connecter et réessaie.');
+    else alert('Erreur : '+(err.message||err));
+  });
+}
 function fbDisconnect(){
   if(fbRef&&fbListener)fbRef.off('value',fbListener);
   fbListener=null;fbConnected=false;fbRef=null;
@@ -6795,6 +6842,11 @@ function loginAs(role){
     if(!adminCode)adminCode='2470'; // Défaut premier lancement — à changer dans Paramètres
     if(pin!==adminCode){if(err)err.textContent='❌ Code incorrect';return}
     _appMode='admin';
+  } else if(role==='comptable'){
+    // V80.94 : accès comptable (lecture + exports compta uniquement)
+    var cCode=comptaPin();
+    if(pin!==cCode){if(err)err.textContent='❌ Code comptable incorrect';return}
+    _appMode='comptable';
   } else {
     var chauffCode=db&&db.settings&&db.settings.chauffeurPin?db.settings.chauffeurPin:'0000';
     if(pin!==chauffCode){if(err)err.textContent='❌ Code chauffeur incorrect';return}
@@ -6805,7 +6857,11 @@ function loginAs(role){
   if(screen){screen.style.opacity='0';screen.style.transition='opacity .4s';setTimeout(function(){screen.style.display='none';document.body.classList.remove('locked')},400)}
   applyMode();
   if(_appMode==='chauffeur')setTimeout(function(){sTab('terrain')},300);
+  if(_appMode==='comptable')setTimeout(function(){sTab('fac')},300);
 }
+// V80.94 : code comptable (⚙️ Paramètres → Code PIN sécurité), défaut 4821
+function comptaPin(){return (db&&db.settings&&db.settings.comptaPin)?String(db.settings.comptaPin):'2206'}
+var COMPTA_TABS=['dev','fac'];
 
 function loginCheck(){
   var pin=$('loginPin')?$('loginPin').value:'';
@@ -6814,6 +6870,7 @@ function loginCheck(){
   if(!adminCode)adminCode='2470';
   var chauffCode=db&&db.settings&&db.settings.chauffeurPin?db.settings.chauffeurPin:'0000';
   if(pin===adminCode)loginAs('cathypets');
+  else if(pin===comptaPin())loginAs('comptable');
   else if(pin===chauffCode)loginAs('chauffeur');
 }
 
@@ -6834,25 +6891,36 @@ function switchMode(mode){
   _appMode=mode;
   localStorage.setItem('cpMode',mode);
   applyMode();
-  showToast(mode==='admin'?'🐾 Mode Cathy Pets activé':'🚐 Mode Chauffeur activé');
+  showToast(mode==='admin'?'🐾 Mode Cathy Pets activé':mode==='comptable'?'📒 Mode Comptable activé':'🚐 Mode Chauffeur activé');
   if(mode==='chauffeur')sTab('terrain');
+  if(mode==='comptable')sTab('fac');
 }
 
 function applyMode(){
   var isAdmin=_appMode==='admin';
+  var isCompta=_appMode==='comptable';
+  document.body.classList.toggle('mode-comptable',isCompta);
   // Masquer/afficher les éléments admin
   document.querySelectorAll('[data-role="admin"]').forEach(function(el){
     el.style.display=isAdmin?'':'none';
   });
+  if(isCompta){
+    // V80.94 : seuls les onglets compta sont visibles (+ groupes Commerce/Système)
+    document.querySelectorAll('.nb').forEach(function(b){b.style.display=COMPTA_TABS.indexOf(b.dataset.t)>=0?'':'none'});
+    document.querySelectorAll('.ng').forEach(function(g){var t=g.textContent.trim();g.style.display=(t==='Commerce')?'':'none'});
+    document.querySelectorAll('.nv').forEach(function(v){v.style.display=v.querySelector('.nb[data-t="fac"]')?'':'none'});
+  }else{
+    document.querySelectorAll('.nb,.nv').forEach(function(b){if(!b.hasAttribute('data-role'))b.style.display=''});
+  }
   // Masquer les prix dans terrain si chauffeur
   var priceEls=document.querySelectorAll('.admin-only');
   priceEls.forEach(function(el){el.style.display=isAdmin?'':'none'});
   // Badge mode
   var badge=$('modeBadge');
   if(badge){
-    badge.textContent=isAdmin?'🐾 Cathy Pets':'🚐 Chauffeur';
-    badge.style.background=isAdmin?'rgba(26,122,110,.15)':'rgba(59,130,246,.15)';
-    badge.style.color=isAdmin?'var(--a2)':'#60a5fa';
+    badge.textContent=isAdmin?'🐾 Cathy Pets':isCompta?'📒 Comptable':'🚐 Chauffeur';
+    badge.style.background=isAdmin?'rgba(26,122,110,.15)':isCompta?'rgba(212,168,67,.15)':'rgba(59,130,246,.15)';
+    badge.style.color=isAdmin?'var(--a2)':isCompta?'#d4a843':'#60a5fa';
   }
 }
 
@@ -6860,6 +6928,7 @@ function applyMode(){
 setTimeout(function(){applyMode()},200);
 document.querySelectorAll('.nb').forEach(function(b){b.addEventListener('click',function(){sTab(b.dataset.t)})});
 function sTab(t){
+  if(typeof _appMode!=='undefined'&&_appMode==='comptable'&&COMPTA_TABS.indexOf(t)<0)t='fac';
   document.querySelectorAll('.tab').forEach(function(x){x.classList.remove('active')});
   $(t).classList.add('active');
   document.querySelectorAll('.nb').forEach(function(b){b.classList.toggle('active',b.dataset.t===t)});
@@ -9439,13 +9508,9 @@ function nutVenteFacturer(payNow){
   // Numérotation séquentielle Nutrica
   var tva=(db.settings.tvaRate!==undefined&&db.settings.tvaRate!==''&&db.settings.tvaRate!==null?E(db.settings.tvaRate):20);
   var yr=new Date().getFullYear();
-  var maxNut=0;
-  db.factures.forEach(function(f){
-    if(!f.ref||f._deleted)return;
-    var m=f.ref.match(/NUT-\d+-(\d+)/);
-    if(m){var n=parseInt(m[1],10);if(n>maxNut)maxNut=n}
-  });
-  var ref='CP-NUT-'+yr+'-'+String(maxNut+1).padStart(3,'0');
+  // V80.98 : numéro réservé dans le compteur cloud (anti-doublon multi-appareils, jamais réutilisé après suppression, série par année)
+  var ref=nextFacRef('CP-NUT-');
+  var maxNut=parseInt((ref.match(/-(\d+)$/)||[0,0])[1],10)-1;
   var dateVente=V('nut_date')||tdy();
   var ech=new Date(dateVente);ech.setDate(ech.getDate()+30);
   var facture={
@@ -11467,7 +11532,8 @@ function facDateRef(f){
 }
 function nextFacRef(isAvoir){
   var yr=new Date().getFullYear();
-  var prefix=isAvoir?'CP-AV-':'CP-FAC-';
+  // V80.98 : isAvoir peut être un préfixe explicite ('CP-NUT-') — même série atomique que CP-FAC/CP-AV
+  var prefix=(typeof isAvoir==='string'&&/^CP-[A-Z]+-$/.test(isAvoir))?isAvoir:(isAvoir?'CP-AV-':'CP-FAC-');
   // Trouver le plus grand numéro existant pour ce préfixe+année
   var maxNum=0;
   db.factures.forEach(function(f){
@@ -11489,7 +11555,7 @@ function claimFacRef(ref){
     if(!fbConnected||!fbDb)return;
     var f=act(db.factures).find(function(x){return x.ref===ref});
     if(!f)return; // création annulée
-    var m=ref.match(/^(CP-(?:FAC|AV))-(\d{4})-(\d+)$/);
+    var m=ref.match(/^(CP-(?:FAC|AV|NUT))-(\d{4})-(\d+)$/);
     if(!m)return;
     var key=m[1]+'-'+m[2], num=parseInt(m[3],10);
     var room=db.settings.fbRoom||'cathypets-default';
@@ -11523,7 +11589,7 @@ function fixDupFacRefs(){
     if(!f.ref)return;
     if(seen[f.ref]){
       var old=f.ref;
-      f.ref=nextFacRef(old.indexOf('CP-AV')===0);
+      f.ref=nextFacRef(old.indexOf('CP-AV')===0?true:old.indexOf('CP-NUT')===0?'CP-NUT-':false);
       stamp(f);changed=true;
       lH('fix','Doublon de numéro corrigé: '+old+' → '+f.ref);
     }
@@ -12280,7 +12346,13 @@ function filterCliTable(val){rCli(val);}
 function rAni(){rTbl('anTbl',['Animal','Client','Espèce','Race','CITES',''],act(db.animaux).map(function(a){return '<tr><td>'+a.nom+'</td><td>'+cN(a.clientId)+'</td><td>'+a.espece+'</td><td>'+(a.race||'')+'</td><td>'+(a.cites||'')+'</td><td><button class="btn sm bu" onclick="eAni(\''+a.id+'\')">✏️</button></td></tr>'}))}
 function rTrp(){try{rRentaHist()}catch(e){}rTbl('trTbl',['Réf','Date','Client','Trajet','Km','Coût','TTC','HT','Brute','Nette','Extras','GPS',''],act(db.transports).map(function(t){var l=tLegs(t);var tr=l.length<=3?l.join(' → '):(l[0]+' → ... → '+l[l.length-1]);var co=totalCostTr(t);var m=fmtMarg(t.price,co);var gmUrl=l.length>1?'https://www.google.com/maps/dir/?api=1&origin='+l.map(encodeURIComponent)[0]+'&destination='+l.map(encodeURIComponent)[l.length-1]+(l.length>2?'&waypoints='+l.slice(1,l.length-1).map(encodeURIComponent).join('|'):'')+'&travelmode=driving':'';var gmNoToll=gmUrl?gmUrl+'&avoid=tolls':'';var hasFac=act(db.factures).find(function(f){return f.transportId===t.id});return '<tr><td>'+t.ref+(hasFac?' <span class="pill gt" style="font-size:8px">FAC</span>':'')+'</td><td>'+t.date+'</td><td>'+cN(t.clientId)+'</td><td style="font-size:11px">'+tr+'</td><td>'+(t.kmManual||0)+'</td><td>'+euro(co)+'</td><td>'+euro(t.price)+'</td><td>'+euro(m.priceHT)+'</td><td style="color:'+(m.brute>=0?'var(--a2)':'var(--rd)')+'">'+euro(m.brute)+'</td><td style="color:'+(m.nette>=0?'var(--a2)':'var(--rd)')+'"><b>'+euro(m.nette)+'</b></td><td style="font-size:10px">'+extraHtml(t)+'</td><td style="white-space:nowrap">'+(gmUrl?'<a class="btn sm bu" href="'+gmUrl+'" target="_blank" title="Rapide">🚀</a> <a class="btn sm" style="background:#16332015;border-color:#22a69340;color:#22a693" href="'+gmNoToll+'" target="_blank" title="Sans péage">🌿</a>':'')+'</td><td style="display:flex;gap:3px;flex-wrap:wrap"><button class="btn sm bu" onclick="eTr(\''+t.id+'\')">✏️</button><button class="btn sm og" onclick="dupTr(\''+t.id+'\')" title="Dupliquer">📋</button>'+(t.livraison?'<span class="pill gt" style="font-size:8px" title="Livré le '+t.livraison.date+' à '+t.livraison.heure+'">📦✓</span>':'<button class="btn sm" style="background:#2a1a05;border-color:#8a5a1a;color:#f0a060" onclick="livraisonModal(\''+t.id+'\')" title="Compte-rendu de livraison (photo + email bien arrivé)">📦</button>')+((t.date||'')>=tdy()?(t.placesDispo>0?'<button class="btn sm" style="background:#0a2c3d;border-color:#2a5a8d;color:#7ab7fc" onclick="publierPlaces(\''+t.id+'\')" title="Places publiées : '+t.placesDispo+' — modifier">📢'+t.placesDispo+'</button>':'<button class="btn sm" style="background:#0a1a2d;border-color:#2a4a6d;color:#6a9acc" onclick="publierPlaces(\''+t.id+'\')" title="Publier les places libres sur la plateforme (co-voiturage animaux)">📢</button>'):'')+(hasFac?'':'<button class="btn sm gn" onclick="facExpressFromTr(\''+t.id+'\')" title="Facturer express">💶</button>')+'</td></tr>'}))}
 function rGrd2(){var typeIcons={garde_domicile:'🏡',garde_famille:'👨‍👩‍👧',pension:'🏠',promenade:'🐕',veterinaire:'🩺',combine:'🚗🏡'};rTbl('grTbl',['Réf','Type','Animal','Trajet','Entrée','Sortie','Coût','TTC','Nette HT',''],act(db.gardes).map(function(g){var m=fmtMarg(g.price,E(g.cost));var hasFac=act(db.factures).find(function(f){return f.gardeId===g.id});var ico=typeIcons[g.type||'garde_domicile']||'🏡';var trajet='';if(g.villeDepart)trajet+=g.villeDepart;if(g.villePEC)trajet+=(trajet?' → ':'')+g.villePEC;if(g.villeArrivee)trajet+=(trajet?' → ':'')+g.villeArrivee;return '<tr><td>'+g.ref+(hasFac?' <span class="pill gt" style="font-size:8px">FAC</span>':'')+'</td><td title="'+(g.type||'garde_domicile')+'">'+ico+'</td><td>'+aNs(g)+'</td><td style="font-size:11px">'+esc(trajet)+'</td><td>'+fD(g.start)+'</td><td>'+fD(g.end)+'</td><td>'+euro(g.cost||0)+'</td><td>'+euro(g.price)+'</td><td style="color:'+(m.nette>=0?'var(--a2)':'var(--rd)')+'"><b>'+euro(m.nette)+'</b></td><td style="display:flex;gap:3px"><button class="btn sm bu" onclick="eGrd(\''+g.id+'\')">✏️</button>'+(hasFac?'':'<button class="btn sm gn" onclick="facExpressFromGrd(\''+g.id+'\')" title="Facturer express">💶</button>')+'</td></tr>'}))}
-function rDev2(){rTbl('dvTbl',['Réf','Client','Mode','Trajet','Total','Statut','Actions'],act(db.devis).map(function(q){var sc=q.status==='facturé'?'gt':q.status==='accepté'?'bt':q.status==='refusé'?'rt':'gy';var wps=q.waypoints||[];var tr=wps.length>=2?(wps[0].address+' → ... → '+wps[wps.length-1].address):wps.length===1?wps[0].address:'—';return '<tr><td>'+q.ref+'</td><td>'+cN(q.clientId)+'</td><td>'+(q.mode||'km')+'</td><td style="font-size:11px;max-width:160px">'+tr+'</td><td>'+euro(q.total)+'</td><td><span class="pill '+sc+'">'+q.status+'</span></td><td style="white-space:nowrap;display:flex;gap:3px;flex-wrap:wrap">'+
+function rDev2(){
+  if(typeof _appMode!=='undefined'&&_appMode==='comptable'){
+    // V80.95 : vue comptable — pas de statut, pas de validation, lecture + PDF seulement
+    rTbl('dvTbl',['Réf','Date','Client','Trajet','Total TTC','PDF'],act(db.devis).map(function(q){var wps=q.waypoints||[];var tr=wps.length>=2?(wps[0].address+' → ... → '+wps[wps.length-1].address):wps.length===1?wps[0].address:'—';return '<tr><td>'+esc(q.ref||'')+'</td><td>'+(q.date?fD(q.date):'—')+'</td><td>'+cN(q.clientId)+'</td><td style="font-size:11px;max-width:200px">'+esc(tr)+'</td><td>'+euro(q.total)+'</td><td><button class="btn sm" style="background:#2a2010;border-color:#7a5a20;color:#d4a843" onclick="printDevisPro(\''+q.id+'\')">🖨️ PDF</button></td></tr>'}));
+    return;
+  }
+  rTbl('dvTbl',['Réf','Client','Mode','Trajet','Total','Statut','Actions'],act(db.devis).map(function(q){var sc=q.status==='facturé'?'gt':q.status==='accepté'?'bt':q.status==='refusé'?'rt':'gy';var wps=q.waypoints||[];var tr=wps.length>=2?(wps[0].address+' → ... → '+wps[wps.length-1].address):wps.length===1?wps[0].address:'—';return '<tr><td>'+q.ref+'</td><td>'+cN(q.clientId)+'</td><td>'+(q.mode||'km')+'</td><td style="font-size:11px;max-width:160px">'+tr+'</td><td>'+euro(q.total)+'</td><td><span class="pill '+sc+'">'+q.status+'</span></td><td style="white-space:nowrap;display:flex;gap:3px;flex-wrap:wrap">'+
   '<button class="btn sm bu" onclick="eDev(\''+q.id+'\')" title="Modifier">✏️</button>'+
   '<button class="btn sm og" onclick="printDevisPro(\''+q.id+'\')" title="Voir PDF">🖨️ PDF</button>'+
   '<button class="btn sm at" onclick="quickMail(\'conf_dev\',\''+q.clientId+'\',\''+q.id+'\')" title="Mail texte rapide">📧</button>'+
@@ -14349,6 +14421,7 @@ function rSet(){
     if(fpEl)fpEl.placeholder='••••••• (sauvegardé)';
   }
   sv('s_asl', s.autoSaveLocal?'1':'0');
+  sv('s_pinCompta', s.comptaPin||'');
   sv('s_asc', s.autoSaveCloud?'1':'0');
   // Solde banque + objectif dans dashboard (ne pas écraser si l'utilisateur tape)
   var bkEl=document.getElementById('bk_solde');
@@ -27640,6 +27713,11 @@ function savPin(){
   if(st){st.textContent='✅ PIN activé — demandé à chaque ouverture';st.style.color='var(--a2)';}
   document.getElementById('s_pin').value='';document.getElementById('s_pin2').value='';
   showToast('🔐 PIN activé !');
+}
+function savComptaPin(){
+  var p=(document.getElementById('s_pinCompta')||{}).value||'';
+  if(!/^\d{4,6}$/.test(p)){showToast('⚠️ Code comptable : 4 à 6 chiffres');return}
+  db.settings.comptaPin=p;safeSave();showToast('📒 Code comptable enregistré : '+p);
 }
 function removePin(){
   localStorage.removeItem('cathypets_pin');
